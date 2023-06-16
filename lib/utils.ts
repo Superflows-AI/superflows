@@ -1,3 +1,5 @@
+import { SwaggerResult } from "./types";
+
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
 ): string {
@@ -56,24 +58,38 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
 
 export function camelToCapitalizedWords(camelCaseStr: string): string {
   return camelCaseStr
-    .replace(/([A-Z])/g, ' $1') // Add a space before each uppercase letter
+    .replace(/([A-Z])/g, " $1") // Add a space before each uppercase letter
     .replace(/^./, (match) => match.toUpperCase()); // Capitalize the first letter
 }
 
-export function unpackAndCall<Args extends object>(func: ((...args: any[]) => any) | undefined, obj: {
-  [p: string]: any
-}): any {
+export function unpackAndCall<Args extends object>(
+  func: ((...args: any[]) => any) | undefined,
+  obj: {
+    [p: string]: any;
+  }
+): any {
   if (!func) return "";
-// export function unpackAndCall(func, obj) {
+  // export function unpackAndCall(func, obj) {
   // Get the names of the function parameters
   // @ts-ignore
-  const paramNames = func.toString().match(/function\s.*?\(([^)]*)\)/)[1].split(',').map(param => param.trim());
+  const paramNames = func
+    .toString()
+    .match(/function\s.*?\(([^)]*)\)/)[1]
+    .split(",")
+    .map((param) => param.trim());
 
   // Sort the object properties according to the function parameters
   // @ts-ignore
-  const args = paramNames.map(paramName => obj[paramName]);
+  const args = paramNames.map((paramName) => obj[paramName]);
 
   // Call the function with the unpacked arguments
   // @ts-ignore
   return func(...args);
+}
+
+export async function getApiFromSwagger() {
+  console.log("Getting swagger");
+  const url = "https://frontapi.rcontrol.app/swagger/v1/swagger.json";
+  const swagger = await fetch(url).then((res) => res.json());
+  return swagger as SwaggerResult;
 }

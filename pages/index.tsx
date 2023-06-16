@@ -1,9 +1,9 @@
 import Head from "next/head";
 import React, { useEffect, useState } from "react";
 // import ChatBotSlideover from "../components/chatBotSlideover";
-import { Navbar } from "../components/navbar";
-import Playground from "../components/playground";
-import { pageActions } from "../lib/totangoMock";
+import { getApiFromSwagger } from "../lib/utils";
+import EditActionModal from "../components/actions/editActionModal";
+import { SwaggerResult } from "../lib/types";
 
 export default function App() {
   return (
@@ -17,23 +17,26 @@ export default function App() {
   );
 }
 
-function Dashboard() {
-  const allActions = pageActions.flatMap((page) => page.actions);
-  // obviously bad cos doesn't persist between page loads and doesn't
-  // deal with actions being available on some pages but not others
+interface Action {
+  route: string;
+}
 
-  const [activeActions, setActiveActions] = useState<string[]>(
-    allActions.map((action) => action.name)
-  );
+function Dashboard() {
+  const [swagger, setSwagger] = useState<SwaggerResult>();
+
+  useEffect(() => {
+    async function fetchData() {
+      const result = await getApiFromSwagger();
+      setSwagger(result);
+    }
+    fetchData();
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col max-h-screen">
-      <Navbar current={"Playground"} />
-      <Playground
-        pageActions={pageActions}
-        activeActions={activeActions}
-        setActiveActions={setActiveActions}
-      />
+    <div>
+      <pre>
+        {JSON.stringify(swagger?.paths["/api/v1/Access"] ?? {}, null, 2)}
+      </pre>
     </div>
   );
 }

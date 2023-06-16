@@ -29,3 +29,18 @@ export interface ReturnedAction {
     properties: { [key: string]: string };
   };
 }
+export interface SwaggerResult {
+  openapi: object;
+  info: object;
+  paths: { [key: string]: SwaggerPath };
+  components: object;
+}
+
+interface SwaggerPathMethod {}
+
+interface SwaggerPath {
+  get?: SwaggerPathMethod;
+  post?: SwaggerPathMethod;
+  put?: SwaggerPathMethod;
+  delete?: SwaggerPathMethod;
+}

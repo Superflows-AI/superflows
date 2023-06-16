@@ -5,7 +5,6 @@ import { Navbar } from "../components/navbar";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { classNames } from "../lib/utils";
 import PageActionsSection from "../components/actions/actionsSection";
-import { PageAction } from "../lib/types";
 
 export default function App() {
   return (
