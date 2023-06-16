@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .logo {
+    @apply font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400 select-none;
+  }
+  .popup {
+    @apply opacity-0 peer-hover:opacity-100 absolute bg-gray-600 text-gray-50 px-2 py-1 rounded-md select-none pointer-events-none transition delay-100 duration-300 z-50;
+  }
+}
