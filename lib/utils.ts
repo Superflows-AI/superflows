@@ -1,5 +1,3 @@
-import { SwaggerResult } from "./types";
-
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
 ): string {
@@ -85,11 +83,4 @@ export function unpackAndCall<Args extends object>(
   // Call the function with the unpacked arguments
   // @ts-ignore
   return func(...args);
-}
-
-export async function getApiFromSwagger() {
-  console.log("Getting swagger");
-  const url = "https://frontapi.rcontrol.app/swagger/v1/swagger.json";
-  const swagger = await fetch(url).then((res) => res.json());
-  return swagger as SwaggerResult;
 }

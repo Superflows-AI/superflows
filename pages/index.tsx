@@ -1,9 +1,8 @@
 import Head from "next/head";
-import React, { useEffect, useState } from "react";
 // import ChatBotSlideover from "../components/chatBotSlideover";
-import { getApiFromSwagger } from "../lib/utils";
-import EditActionModal from "../components/actions/editActionModal";
-import { SwaggerResult } from "../lib/types";
+import { Navbar } from "../components/navbar";
+import Playground from "../components/playground";
+import { Api } from "../lib/swaggerTypes";
 
 export default function App() {
   return (
@@ -17,26 +16,15 @@ export default function App() {
   );
 }
 
-interface Action {
-  route: string;
-}
-
 function Dashboard() {
-  const [swagger, setSwagger] = useState<SwaggerResult>();
-
-  useEffect(() => {
-    async function fetchData() {
-      const result = await getApiFromSwagger();
-      setSwagger(result);
-    }
-    fetchData();
-  }, []);
+  const api = new Api();
 
   return (
     <div>
-      <pre>
-        {JSON.stringify(swagger?.paths["/api/v1/Access"] ?? {}, null, 2)}
-      </pre>
+      <div className="min-h-screen flex flex-col max-h-screen">
+        <Navbar current={"Playground"} />
+        <Playground api={api} />
+      </div>
     </div>
   );
 }
