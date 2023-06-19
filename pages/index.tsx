@@ -1,8 +1,9 @@
 import Head from "next/head";
-// import ChatBotSlideover from "../components/chatBotSlideover";
 import { Navbar } from "../components/navbar";
 import Playground from "../components/playground";
-import { Api } from "../lib/swaggerTypes";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import React from "react";
+import SignInComponent from "../components/signIn";
 
 export default function App() {
   return (
@@ -17,13 +18,16 @@ export default function App() {
 }
 
 function Dashboard() {
-  const api = new Api();
+  const session = useSession();
+  const supabase = useSupabaseClient();
 
-  return (
+  return !session ? (
+    <SignInComponent />
+  ) : (
     <div>
       <div className="min-h-screen flex flex-col max-h-screen">
         <Navbar current={"Playground"} />
-        <Playground api={api} />
+        <Playground />
       </div>
     </div>
   );

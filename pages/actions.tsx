@@ -5,6 +5,9 @@ import { Navbar } from "../components/navbar";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { classNames } from "../lib/utils";
 import PageActionsSection from "../components/actions/actionsSection";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { Database } from "../lib/database.types";
+import {useProfile} from "../components/contextManagers/profile";
 
 export default function App() {
   return (
@@ -33,16 +36,31 @@ function Dashboard() {
   );
 }
 
+type ActionGroup = Database["public"]["Tables"]["action_groups"]["Insert"];
+
 export function RepliesPage() {
-  const [userPageActions, setActions] = useState<PageAction[]>(pageActions);
+  const supabase = useSupabaseClient();
+  const { profile } = useProfile();
+
+  const [userPageActions, setActions] = useState<ActionGroup[]>([]);
+  useEffect(() => {
+    (async () => {
+      const actionGroupRes = await supabase
+        .from("action_groups")
+        .select("*, actions(*)")
+        .eq("org_id", 1);
+      if (actionGroupRes.error) throw new Error(actionGroupRes.error);
+    })();
+  }, []);
+
   return (
     <div className={classNames("w-full relative")}>
-      {pageActions ? (
+      {userPageActions ? (
         <PageActionsSection
           pageActions={userPageActions}
           setActions={setActions}
         />
-      ) : pageActions !== undefined ? (
+      ) : userPageActions !== undefined ? (
         <div className="flex flex-col gap-y-4 text-lg place-items-center justify-center h-120 w-full">
           <LoadingSpinner classes="h-20 w-20" />
           Sprinkling magic dust...

@@ -129,7 +129,10 @@ export default function PageActionsSection(props: {
   return (
     <div className="mt-5">
       {props.pageActions.map((pageAction, index) => (
-        <div className="shadow-2xl px-6 py-4 m-5 border border-gray-600 rounded-lg" key={index}>
+        <div
+          className="shadow-2xl px-6 py-4 m-5 border border-gray-600 rounded-lg"
+          key={index}
+        >
           <h2 className="text-white font-bold text-2xl">
             {pageAction.pageName}
           </h2>

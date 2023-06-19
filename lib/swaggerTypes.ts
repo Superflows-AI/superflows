@@ -959,16 +959,22 @@ export interface FullRequestParams extends Omit<RequestInit, "body"> {
   cancelToken?: CancelToken;
 }
 
-export type RequestParams = Omit<FullRequestParams, "body" | "method" | "query" | "path">;
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
-  securityWorker?: (securityData: SecurityDataType | null) => Promise<RequestParams | void> | RequestParams | void;
+  securityWorker?: (
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown> extends Response {
+export interface HttpResponse<D extends unknown, E extends unknown = unknown>
+  extends Response {
   data: D;
   error: E;
 }
@@ -987,7 +993,8 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
-  private customFetch = (...fetchParams: Parameters<typeof fetch>) => fetch(...fetchParams);
+  private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
+    fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: "same-origin",
@@ -1006,7 +1013,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected encodeQueryParam(key: string, value: any) {
     const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
+    return `${encodedKey}=${encodeURIComponent(
+      typeof value === "number" ? value : `${value}`
+    )}`;
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
@@ -1020,9 +1029,15 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
-    const keys = Object.keys(query).filter((key) => "undefined" !== typeof query[key]);
+    const keys = Object.keys(query).filter(
+      (key) => "undefined" !== typeof query[key]
+    );
     return keys
-      .map((key) => (Array.isArray(query[key]) ? this.addArrayQueryParam(query, key) : this.addQueryParam(query, key)))
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key)
+      )
       .join("&");
   }
 
@@ -1033,8 +1048,13 @@ export class HttpClient<SecurityDataType = unknown> {
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string") ? JSON.stringify(input) : input,
-    [ContentType.Text]: (input: any) => (input !== null && typeof input !== "string" ? JSON.stringify(input) : input),
+      input !== null && (typeof input === "object" || typeof input === "string")
+        ? JSON.stringify(input)
+        : input,
+    [ContentType.Text]: (input: any) =>
+      input !== null && typeof input !== "string"
+        ? JSON.stringify(input)
+        : input,
     [ContentType.FormData]: (input: any) =>
       Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
@@ -1044,14 +1064,17 @@ export class HttpClient<SecurityDataType = unknown> {
             ? property
             : typeof property === "object" && property !== null
             ? JSON.stringify(property)
-            : `${property}`,
+            : `${property}`
         );
         return formData;
       }, new FormData()),
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
   };
 
-  protected mergeRequestParams(params1: RequestParams, params2?: RequestParams): RequestParams {
+  protected mergeRequestParams(
+    params1: RequestParams,
+    params2?: RequestParams
+  ): RequestParams {
     return {
       ...this.baseApiParams,
       ...params1,
@@ -1064,7 +1087,9 @@ export class HttpClient<SecurityDataType = unknown> {
     };
   }
 
-  protected createAbortSignal = (cancelToken: CancelToken): AbortSignal | undefined => {
+  protected createAbortSignal = (
+    cancelToken: CancelToken
+  ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
       if (abortController) {
@@ -1108,15 +1133,27 @@ export class HttpClient<SecurityDataType = unknown> {
     const payloadFormatter = this.contentFormatters[type || ContentType.Json];
     const responseFormat = format || requestParams.format;
 
-    return this.customFetch(`${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`, {
-      ...requestParams,
-      headers: {
-        ...(requestParams.headers || {}),
-        ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
-      },
-      signal: cancelToken ? this.createAbortSignal(cancelToken) : requestParams.signal,
-      body: typeof body === "undefined" || body === null ? null : payloadFormatter(body),
-    }).then(async (response) => {
+    return this.customFetch(
+      `${baseUrl || this.baseUrl || ""}${path}${
+        queryString ? `?${queryString}` : ""
+      }`,
+      {
+        ...requestParams,
+        headers: {
+          ...(requestParams.headers || {}),
+          ...(type && type !== ContentType.FormData
+            ? { "Content-Type": type }
+            : {}),
+        },
+        signal: cancelToken
+          ? this.createAbortSignal(cancelToken)
+          : requestParams.signal,
+        body:
+          typeof body === "undefined" || body === null
+            ? null
+            : payloadFormatter(body),
+      }
+    ).then(async (response) => {
       const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
       r.error = null as unknown as E;
@@ -1151,7 +1188,9 @@ export class HttpClient<SecurityDataType = unknown> {
  * @title rcCoreAPI
  * @version 1.0
  */
-export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+export class Api<
+  SecurityDataType extends unknown
+> extends HttpClient<SecurityDataType> {
   api = {
     /**
      * No description
@@ -1506,7 +1545,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Order?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblChatmessage[], any>({
         path: `/api/v1/Chatmessage`,
@@ -1583,7 +1622,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format date-time */
         Time?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblChatmessage[], any>({
         path: `/api/v1/Chatmessage/search`,
@@ -1686,7 +1725,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Order?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ViewUserroom[], any>({
         path: `/api/v1/Chatroom/owneruser/${id}`,
@@ -1865,7 +1904,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Order?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblComment[], any>({
         path: `/api/v1/Comment/list`,
@@ -2215,7 +2254,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1EstimateproductsCreate
      * @request POST:/api/v1/Estimateproducts
      */
-    v1EstimateproductsCreate: (data: TblEstimateproduct, params: RequestParams = {}) =>
+    v1EstimateproductsCreate: (
+      data: TblEstimateproduct,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Estimateproducts`,
         method: "POST",
@@ -2246,7 +2288,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1EstimateproductsUpdate
      * @request PUT:/api/v1/Estimateproducts
      */
-    v1EstimateproductsUpdate: (data: TblEstimateproduct, params: RequestParams = {}) =>
+    v1EstimateproductsUpdate: (
+      data: TblEstimateproduct,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Estimateproducts`,
         method: "PUT",
@@ -2291,7 +2336,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1EstimateproductsEstimateDetail
      * @request GET:/api/v1/Estimateproducts/estimate/{id}
      */
-    v1EstimateproductsEstimateDetail: (id: number, params: RequestParams = {}) =>
+    v1EstimateproductsEstimateDetail: (
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<TblEstimateproduct[], any>({
         path: `/api/v1/Estimateproducts/estimate/${id}`,
         method: "GET",
@@ -2625,7 +2673,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1EventszonesfilesCreate
      * @request POST:/api/v1/Eventszonesfiles
      */
-    v1EventszonesfilesCreate: (data: TblEventszonesfile, params: RequestParams = {}) =>
+    v1EventszonesfilesCreate: (
+      data: TblEventszonesfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Eventszonesfiles`,
         method: "POST",
@@ -2656,7 +2707,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1EventszonesfilesUpdate
      * @request PUT:/api/v1/Eventszonesfiles
      */
-    v1EventszonesfilesUpdate: (data: TblEventszonesfile, params: RequestParams = {}) =>
+    v1EventszonesfilesUpdate: (
+      data: TblEventszonesfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Eventszonesfiles`,
         method: "PUT",
@@ -2777,7 +2831,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ExtcompaniesCreate
      * @request POST:/api/v1/Extcompanies
      */
-    v1ExtcompaniesCreate: (data: TblExternalcompany, params: RequestParams = {}) =>
+    v1ExtcompaniesCreate: (
+      data: TblExternalcompany,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Extcompanies`,
         method: "POST",
@@ -2808,7 +2865,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ExtcompaniesUpdate
      * @request PUT:/api/v1/Extcompanies
      */
-    v1ExtcompaniesUpdate: (data: TblExternalcompany, params: RequestParams = {}) =>
+    v1ExtcompaniesUpdate: (
+      data: TblExternalcompany,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Extcompanies`,
         method: "PUT",
@@ -2853,7 +2913,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ExtemployeesCreate
      * @request POST:/api/v1/Extemployees
      */
-    v1ExtemployeesCreate: (data: TblExternalemployee, params: RequestParams = {}) =>
+    v1ExtemployeesCreate: (
+      data: TblExternalemployee,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Extemployees`,
         method: "POST",
@@ -2884,7 +2947,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ExtemployeesUpdate
      * @request PUT:/api/v1/Extemployees
      */
-    v1ExtemployeesUpdate: (data: TblExternalemployee, params: RequestParams = {}) =>
+    v1ExtemployeesUpdate: (
+      data: TblExternalemployee,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Extemployees`,
         method: "PUT",
@@ -3081,7 +3147,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1PlaidtransCreate
      * @request POST:/api/v1/Plaidtrans
      */
-    v1PlaidtransCreate: (data: TblPlaidtransaction, params: RequestParams = {}) =>
+    v1PlaidtransCreate: (
+      data: TblPlaidtransaction,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Plaidtrans`,
         method: "POST",
@@ -3106,7 +3175,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Order?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblPlaidtransaction[], any>({
         path: `/api/v1/Plaidtrans`,
@@ -3123,7 +3192,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1PlaidtransUpdate
      * @request PUT:/api/v1/Plaidtrans
      */
-    v1PlaidtransUpdate: (data: TblPlaidtransaction, params: RequestParams = {}) =>
+    v1PlaidtransUpdate: (
+      data: TblPlaidtransaction,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Plaidtrans`,
         method: "PUT",
@@ -3178,7 +3250,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         Order?: number;
         id?: boolean;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblPlaidtransaction[], any>({
         path: `/api/v1/Plaidtrans/byused`,
@@ -3271,7 +3343,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ProductserialsCreate
      * @request POST:/api/v1/Productserials
      */
-    v1ProductserialsCreate: (data: TblProductserial, params: RequestParams = {}) =>
+    v1ProductserialsCreate: (
+      data: TblProductserial,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Productserials`,
         method: "POST",
@@ -3302,7 +3377,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ProductserialsUpdate
      * @request PUT:/api/v1/Productserials
      */
-    v1ProductserialsUpdate: (data: TblProductserial, params: RequestParams = {}) =>
+    v1ProductserialsUpdate: (
+      data: TblProductserial,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Productserials`,
         method: "PUT",
@@ -3347,7 +3425,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ProductserialsByproductidDetail
      * @request GET:/api/v1/Productserials/byproductid/{id}
      */
-    v1ProductserialsByproductidDetail: (id: number, params: RequestParams = {}) =>
+    v1ProductserialsByproductidDetail: (
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<TblProductserial[], any>({
         path: `/api/v1/Productserials/byproductid/${id}`,
         method: "GET",
@@ -3704,7 +3785,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Tipo?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblProperty, any>({
         path: `/api/v1/Properties/search`,
@@ -3873,7 +3954,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetfilesCreate
      * @request POST:/api/v1/Scopesheetfiles
      */
-    v1ScopesheetfilesCreate: (data: TblScopesheetfile, params: RequestParams = {}) =>
+    v1ScopesheetfilesCreate: (
+      data: TblScopesheetfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Scopesheetfiles`,
         method: "POST",
@@ -3904,7 +3988,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetfilesUpdate
      * @request PUT:/api/v1/Scopesheetfiles
      */
-    v1ScopesheetfilesUpdate: (data: TblScopesheetfile, params: RequestParams = {}) =>
+    v1ScopesheetfilesUpdate: (
+      data: TblScopesheetfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Scopesheetfiles`,
         method: "PUT",
@@ -3949,7 +4036,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetfilesByscopesheetDetail
      * @request GET:/api/v1/Scopesheetfiles/byscopesheet/{id}
      */
-    v1ScopesheetfilesByscopesheetDetail: (id: number, params: RequestParams = {}) =>
+    v1ScopesheetfilesByscopesheetDetail: (
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<TblScopesheetfile, any>({
         path: `/api/v1/Scopesheetfiles/byscopesheet/${id}`,
         method: "GET",
@@ -3964,7 +4054,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetzonesCreate
      * @request POST:/api/v1/Scopesheetzones
      */
-    v1ScopesheetzonesCreate: (data: TblScopesheetzone, params: RequestParams = {}) =>
+    v1ScopesheetzonesCreate: (
+      data: TblScopesheetzone,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Scopesheetzones`,
         method: "POST",
@@ -3995,7 +4088,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetzonesUpdate
      * @request PUT:/api/v1/Scopesheetzones
      */
-    v1ScopesheetzonesUpdate: (data: TblScopesheetzone, params: RequestParams = {}) =>
+    v1ScopesheetzonesUpdate: (
+      data: TblScopesheetzone,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Scopesheetzones`,
         method: "PUT",
@@ -4040,7 +4136,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1ScopesheetzonesByscopesheetDetail
      * @request GET:/api/v1/Scopesheetzones/byscopesheet/{id}
      */
-    v1ScopesheetzonesByscopesheetDetail: (id: number, params: RequestParams = {}) =>
+    v1ScopesheetzonesByscopesheetDetail: (
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<TblScopesheetzone, any>({
         path: `/api/v1/Scopesheetzones/byscopesheet/${id}`,
         method: "GET",
@@ -4131,7 +4230,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojectfilesCreate
      * @request POST:/api/v1/Subprojectfiles
      */
-    v1SubprojectfilesCreate: (data: TblSubprojectfile, params: RequestParams = {}) =>
+    v1SubprojectfilesCreate: (
+      data: TblSubprojectfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojectfiles`,
         method: "POST",
@@ -4162,7 +4264,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojectfilesUpdate
      * @request PUT:/api/v1/Subprojectfiles
      */
-    v1SubprojectfilesUpdate: (data: TblSubprojectfile, params: RequestParams = {}) =>
+    v1SubprojectfilesUpdate: (
+      data: TblSubprojectfile,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojectfiles`,
         method: "PUT",
@@ -4220,7 +4325,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         FiletypeId?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblSubprojectfile[], any>({
         path: `/api/v1/Subprojectfiles/search`,
@@ -4244,7 +4349,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         FiletypeId?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TblSubprojectfile, any>({
         path: `/api/v1/Subprojectfiles/count`,
@@ -4261,7 +4366,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojectpolicyaCreate
      * @request POST:/api/v1/Subprojectpolicya
      */
-    v1SubprojectpolicyaCreate: (data: TblSubprojectpolicya, params: RequestParams = {}) =>
+    v1SubprojectpolicyaCreate: (
+      data: TblSubprojectpolicya,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojectpolicya`,
         method: "POST",
@@ -4292,7 +4400,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojectpolicyaUpdate
      * @request PUT:/api/v1/Subprojectpolicya
      */
-    v1SubprojectpolicyaUpdate: (data: TblSubprojectpolicya, params: RequestParams = {}) =>
+    v1SubprojectpolicyaUpdate: (
+      data: TblSubprojectpolicya,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojectpolicya`,
         method: "PUT",
@@ -4337,7 +4448,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojectpolicyaSubprojectDetail
      * @request GET:/api/v1/Subprojectpolicya/subproject/{id}
      */
-    v1SubprojectpolicyaSubprojectDetail: (id: number, params: RequestParams = {}) =>
+    v1SubprojectpolicyaSubprojectDetail: (
+      id: number,
+      params: RequestParams = {}
+    ) =>
       this.request<TblSubprojectpolicya, any>({
         path: `/api/v1/Subprojectpolicya/subproject/${id}`,
         method: "GET",
@@ -4443,7 +4557,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojecttypesCreate
      * @request POST:/api/v1/Subprojecttypes
      */
-    v1SubprojecttypesCreate: (data: TblSubprojecttype, params: RequestParams = {}) =>
+    v1SubprojecttypesCreate: (
+      data: TblSubprojecttype,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojecttypes`,
         method: "POST",
@@ -4474,7 +4591,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubprojecttypesUpdate
      * @request PUT:/api/v1/Subprojecttypes
      */
-    v1SubprojecttypesUpdate: (data: TblSubprojecttype, params: RequestParams = {}) =>
+    v1SubprojecttypesUpdate: (
+      data: TblSubprojecttype,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subprojecttypes`,
         method: "PUT",
@@ -4595,7 +4715,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubtemproductsCreate
      * @request POST:/api/v1/Subtemproducts
      */
-    v1SubtemproductsCreate: (data: TblSubtemplateproduct, params: RequestParams = {}) =>
+    v1SubtemproductsCreate: (
+      data: TblSubtemplateproduct,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subtemproducts`,
         method: "POST",
@@ -4626,7 +4749,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1SubtemproductsUpdate
      * @request PUT:/api/v1/Subtemproducts
      */
-    v1SubtemproductsUpdate: (data: TblSubtemplateproduct, params: RequestParams = {}) =>
+    v1SubtemproductsUpdate: (
+      data: TblSubtemplateproduct,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Subtemproducts`,
         method: "PUT",
@@ -4929,7 +5055,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1UsersLoginCreate
      * @request POST:/api/v1/Users/login
      */
-    v1UsersLoginCreate: (data: AuthenticateRequest, params: RequestParams = {}) =>
+    v1UsersLoginCreate: (
+      data: AuthenticateRequest,
+      params: RequestParams = {}
+    ) =>
       this.request<UsersDto, any>({
         path: `/api/v1/Users/login`,
         method: "POST",
@@ -5095,7 +5224,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         /** @format int32 */
         Order?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ViewUserschat[], any>({
         path: `/api/v1/Userschat`,
@@ -5124,7 +5253,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         firstname?: string;
         lastname?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ViewUserschat[], any>({
         path: `/api/v1/Userschat/search`,
@@ -5292,7 +5421,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1WallettransCreate
      * @request POST:/api/v1/Wallettrans
      */
-    v1WallettransCreate: (data: TblWallettransaction, params: RequestParams = {}) =>
+    v1WallettransCreate: (
+      data: TblWallettransaction,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Wallettrans`,
         method: "POST",
@@ -5323,7 +5455,10 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name V1WallettransUpdate
      * @request PUT:/api/v1/Wallettrans
      */
-    v1WallettransUpdate: (data: TblWallettransaction, params: RequestParams = {}) =>
+    v1WallettransUpdate: (
+      data: TblWallettransaction,
+      params: RequestParams = {}
+    ) =>
       this.request<void, any>({
         path: `/api/v1/Wallettrans`,
         method: "PUT",
