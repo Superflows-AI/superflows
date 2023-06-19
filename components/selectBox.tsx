@@ -3,23 +3,36 @@ import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { classNames } from "../lib/utils";
 
-export default function SelectBox(props: { title: string, options: string[], theme: "light" | "dark", selected: string, setSelected: (selected: string) => void }) {
-
+export default function SelectBox(props: {
+  title: string;
+  options: string[];
+  theme: "light" | "dark";
+  selected: string;
+  setSelected: (selected: string) => void;
+}) {
   return (
     <Listbox value={props.selected} onChange={props.setSelected}>
       {({ open }) => (
         <>
-          {props.title && <Listbox.Label className={classNames(
-              "block text-sm font-medium leading-6",
+          {props.title && (
+            <Listbox.Label
+              className={classNames(
+                "block text-sm font-medium leading-6",
                 props.theme === "light" ? "text-gray-700" : "text-gray-200"
-          )}>
-            {props.title}
-          </Listbox.Label>}
+              )}
+            >
+              {props.title}
+            </Listbox.Label>
+          )}
           <div className="relative flex-1">
-            <Listbox.Button className={classNames(
+            <Listbox.Button
+              className={classNames(
                 "relative w-full cursor-default rounded-md py-1.5 pl-3 pr-10 text-left shadow-sm ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6",
-                props.theme === "light" ? "bg-gray-50 text-gray-900 ring-indigo-300" : "bg-gray-700 text-gray-50 ring-gray-300"
-            )}>
+                props.theme === "light"
+                  ? "bg-gray-50 text-gray-900 ring-indigo-300"
+                  : "bg-gray-700 text-gray-50 ring-gray-300"
+              )}
+            >
               <span className="block truncate">{props.selected}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <ChevronUpDownIcon

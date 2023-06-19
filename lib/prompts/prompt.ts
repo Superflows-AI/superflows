@@ -64,7 +64,8 @@ Plan:
 Commands:
 FUNCTION_NAME_1(PARAM_NAME_1=PARAM_VALUE_1, PARAM_NAME_2=PARAM_VALUE_2, ...)
 
-Completed: (true or false) set to true when the above commands, when executed, would achieve the task set by the user. Alternatively, if the task isn't possible and you need to ask a clarifying question, set to true. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!`},
-        ...userCopilotMessages
-    ]
+Completed: (true or false) set to true when the above commands, when executed, would achieve the task set by the user. Alternatively, if the task isn't possible and you need to ask a clarifying question, set to true. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!`,
+    },
+    ...userCopilotMessages,
+  ];
 }

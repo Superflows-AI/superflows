@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Disclosure } from "@headlessui/react";
-import { Cog6ToothIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRightOnRectangleIcon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
 import Link from "next/link";
-import {SparklesIcon} from "@heroicons/react/24/solid";
+import { SparklesIcon } from "@heroicons/react/24/solid";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -13,6 +17,7 @@ const navigation = [
 
 export function Navbar(props: { current: string }) {
   const [open, setOpen] = useState(false);
+  const supabase = useSupabaseClient();
 
   return (
     <div className="border-b border-gray-700 z-10">
@@ -55,6 +60,19 @@ export function Navbar(props: { current: string }) {
                   >
                     <span className="sr-only">View notifications</span>
                     <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                    }}
+                  >
+                    <span className="sr-only">Sign out</span>
+                    <ArrowRightOnRectangleIcon
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    />
                   </button>
                 </div>
               </div>

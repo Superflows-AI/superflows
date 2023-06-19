@@ -1,0 +1,16 @@
+package-lock.json
+.next
+node_modules/
+tsconfig.json
+tailwind.config.js
+.eslintrc.json
+next.config.js
+next-env.d.ts
+package.json
+postcss.config.js
+README.md
+sentry.*
+styles/globals.css
+local/
+pages/api/local/
+supabase/.temp/

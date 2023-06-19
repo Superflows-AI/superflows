@@ -1,5 +1,5 @@
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Action } from "../lib/types";
 import { classNames } from "../lib/utils";
 import SelectBox from "./selectBox";
@@ -7,19 +7,26 @@ import { Api } from "../lib/swaggerTypes";
 
 export default function Playground() {
   const [model, setModel] = useState("GPT4");
+  const [paths, setPaths] = useState<string[]>([]);
 
-  const api = new Api();
-  const paths = Object.values(api.api)
-    .map((fn) => {
-      if (typeof fn === "function") {
-        const functionString = fn.toString();
-        const pathMatch = functionString.match(/path:\s*["']([^"']*)["']/);
-        return pathMatch ? pathMatch[1] : undefined;
-      }
-
-      return undefined;
-    })
-    .filter((path) => path !== undefined);
+  // const api = new Api();
+  // useEffect(() => {
+  //   const outPaths = Object.values(api.api)
+  //       .map((fn) => {
+  //         if (typeof fn === "function") {
+  //           const functionString = fn.toString();
+  //           const pathMatch = functionString.match(/path:\s*["']([^"']*)["']/);
+  //           const path = pathMatch ? pathMatch[1] : undefined;
+  //           const methodMatch = functionString.match(/method:\s*["']([^"']*)["']/);
+  //           const method = methodMatch ? methodMatch[1] : undefined;
+  //           return path ? method ? method + " " + path : path : undefined;
+  //         }
+  //
+  //         return undefined;
+  //       })
+  //       .filter((path) => path !== undefined) as string[];
+  //   setPaths(outPaths);
+  // }, []);
 
   return (
     <>
@@ -104,9 +111,9 @@ function Card(props: {
         "relative flex cursor-pointer rounded-lg border p-2.5 shadow-sm focus:outline-none text-left bg-gray-900 hover:bg-gray-950"
       )}
     >
-      <div className="flex flex-col w-[99%] max-h-32">
+      <div className="flex flex-col w-full max-h-32 truncate">
         <span
-          className="block text-md font-medium text-gray-200 whitespace-normal"
+          className="font-medium text-gray-200"
           style={{ maxWidth: "calc(100% - 2rem)" }}
         >
           {props.action.name}
@@ -115,7 +122,7 @@ function Card(props: {
           {props.action.description}
         </span>
       </div>
-      <span className="flex-shrink-0">
+      <span className="flex-shrink-0 rounded-full bg-900">
         <CheckCircleIcon
           className={classNames(
             !props.active ? "invisible" : "",

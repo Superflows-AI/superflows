@@ -108,39 +108,56 @@ export interface ParsedOutput {
   completed: boolean;
 }
 
-function getSectionText(inputStr: string, sectionName: string, nextSectionName: string): string {
+function getSectionText(
+  inputStr: string,
+  sectionName: string,
+  nextSectionName: string
+): string {
   const sectionIndex = inputStr.indexOf(sectionName + ":");
   const nextSectionIdx = inputStr.indexOf(nextSectionName + ":");
 
-  if (sectionIndex === -1 || nextSectionIdx === -1 || sectionIndex > nextSectionIdx) {
+  if (
+    sectionIndex === -1 ||
+    nextSectionIdx === -1 ||
+    sectionIndex > nextSectionIdx
+  ) {
     return "Invalid input string";
   }
 
-  return inputStr.slice(sectionIndex + sectionName.length + 1, nextSectionIdx).trim();
+  return inputStr
+    .slice(sectionIndex + sectionName.length + 1, nextSectionIdx)
+    .trim();
 }
 
 export function parseOutput(gptString: string): ParsedOutput {
   const commandsText = getSectionText(gptString, "Commands", "Completed");
   let commands: FunctionCall[] = [];
   if (gptString.toLowerCase().includes("completed:")) {
-    commandsText.split("\n")
-        // Filter out comments & empty lines
-        .filter((line: string) => (!line.startsWith("# ") || line.trim().length === 0))
-        .forEach((line: string) => {
-          commands.push(parseFunctionCall(line))
-        });
+    commandsText
+      .split("\n")
+      // Filter out comments & empty lines
+      .filter(
+        (line: string) => !line.startsWith("# ") || line.trim().length === 0
+      )
+      .forEach((line: string) => {
+        commands.push(parseFunctionCall(line));
+      });
   }
 
   let completed = false;
   if (gptString.split("Completed: ").length > 1) {
-    completed = gptString.split("Completed: ")[1].trim().toLowerCase().startsWith("true");
+    completed = gptString
+      .split("Completed: ")[1]
+      .trim()
+      .toLowerCase()
+      .startsWith("true");
   }
   return {
     reasoning: getSectionText(gptString, "Reasoning", "Plan"),
     plan: getSectionText(gptString, "Plan", "Commands"),
     commands,
-    completed
-  }
+    completed,
+  };
 }
 
 // function parseFunctionCall(text: string) {
@@ -177,7 +194,6 @@ export function parseOutput(gptString: string): ParsedOutput {
 //   return { name, args };
 // }
 
-
 const argumentRegex = /(\w+)=({.*}?|[^,]+)/g;
 const dictionaryRegex = /{(.*?)}/g;
 
@@ -188,7 +204,7 @@ function parseFunctionCall(text: string) {
 
   const functionCallMatch = text.match(functionCallRegex);
   if (!functionCallMatch) {
-    throw new Error('Invalid function call format' + text);
+    throw new Error("Invalid function call format" + text);
   }
 
   const name = functionCallMatch[1];
@@ -205,7 +221,7 @@ function parseFunctionCall(text: string) {
     } else if (/^["'](.*)["']$/.test(argMatch[2])) {
       value = argMatch[2].slice(1, -1);
     } else if (/^(true|false)$/.test(argMatch[2])) {
-      value = argMatch[2] === 'true';
+      value = argMatch[2] === "true";
     } else if (dictionaryRegex.test(argMatch[2])) {
       value = argMatch[2];
     } else {

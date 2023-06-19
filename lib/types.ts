@@ -40,11 +40,13 @@ export interface SwaggerPath {
 }
 interface SwaggerPathMethod {
   tags: string[];
+  summary?: string;
+  description?: string;
   requestBody?: {
     content: { [key: string]: object };
   };
   parameters?: object[];
-  responses: { [key: number]: Response }; // key is a http code, but may be string of it not sure
+  responses: { [key: string]: Response }; // key is a http code (eg 200)
 }
 
 interface Response {
