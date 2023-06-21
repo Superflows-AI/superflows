@@ -1,0 +1,741 @@
+{
+  "schemas": {
+    "Agreements": {
+      "properties": {
+        "id": "integer",
+        "subprojects_id": "integer",
+        "register_date": "string",
+        "notes": "string",
+        "users_id": "integer"
+      }
+    },
+    "AuthenticateRequest": {
+      "required": ["password", "username"],
+      "properties": {
+        "username": {
+          "minLength": 1,
+          "type": "string",
+          "password": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "Companies": {
+          "properties": {
+            "id": "integer",
+            "name": "string",
+            "phone": "string",
+            "website": "string",
+            "email": "string",
+            "address1": "string",
+            "address2": "string",
+            "city": "string",
+            "state": "string",
+            "zip": "string",
+            "country": "string",
+            "logo": "string",
+            "logo_white": "string",
+            "w9_page": "string",
+            "tag": "string",
+            "document_background": "string",
+            "document_sign": "string",
+            "status": "string"
+          }
+        },
+        "Customers": {
+          "properties": {
+            "id": "integer",
+            "first_name": "string",
+            "second_name": "string",
+            "last_name": "string",
+            "birthday": "string",
+            "picture": "string",
+            "phone": "string",
+            "mobile": "string",
+            "email": "string",
+            "notes": "string",
+            "register_date": "string",
+            "pid_properties": "integer",
+            "mid_properties": "integer"
+          }
+        },
+        "CustomersDto": {
+          "properties": {
+            "id": "integer",
+            "first_name": "string",
+            "second_name": "string",
+            "last_name": "string",
+            "birthday": "string",
+            "picture": "string",
+            "phone": "string",
+            "mobile": "string",
+            "email": "string",
+            "notes": "string",
+            "register_date": "string",
+            "pid_properties": "integer",
+            "pid_address": "string",
+            "pid_address2": "string",
+            "pid_unit": "string",
+            "pid_city": "string",
+            "pid_state": "string",
+            "pid_postalcode": "string",
+            "pid_country": "string",
+            "mid_properties": "integer",
+            "mid_address": "string",
+            "mid_address2": "string",
+            "mid_unit": "string",
+            "mid_city": "string",
+            "mid_state": "string",
+            "mid_postalcode": "string",
+            "mid_country": "string"
+          }
+        },
+        "TblAccess": {
+          "properties": {
+            "id": "integer",
+            "name": "string",
+            "endpoint": "string",
+            "metodo": "string",
+            "parentAccess": "integer",
+            "position": "integer"
+          }
+        },
+        "TblBankaccount": {
+          "properties": {
+            "id": "integer",
+            "customerId": "string",
+            "companiesId": "integer",
+            "tokenType": "string",
+            "token": "string",
+            "itemId": "string",
+            "requestId": "string"
+          }
+        },
+        "TblCategory": {
+          "properties": {
+            "id": "integer",
+            "name": "string",
+            "type": "string"
+          }
+        },
+        "TblChatmessage": {
+          "properties": {
+            "id": "integer",
+            "chatroomId": "integer",
+            "userId": "integer",
+            "message": "string",
+            "time": "string",
+            "attach": "string",
+            "replymessageId": "integer",
+            "status": "string",
+            "type": "string"
+          }
+        },
+        "TblChatroom": {
+          "properties": {
+            "id": "integer",
+            "subject": "string"
+          }
+        },
+        "TblChatroomuser": {
+          "properties": {
+            "id": "integer",
+            "chatroomId": "integer",
+            "userId": "integer"
+          }
+        },
+        "TblComment": {
+          "properties": {
+            "id": "integer",
+            "updateId": "integer",
+            "usersId": "integer",
+            "message": "string",
+            "time": "string"
+          }
+        },
+        "TblDepartment": {
+          "properties": {
+            "id": "integer",
+            "name": "string"
+          }
+        },
+        "TblEmployee": {
+          "properties": {
+            "id": "integer",
+            "firstName": "string",
+            "secondName": "string",
+            "lastName": "string",
+            "birthday": "string",
+            "gender": "integer",
+            "picture": "string",
+            "personalPhone": "string",
+            "personalMobile": "string",
+            "personalEmail": "string",
+            "propertiesId": "integer",
+            "companiesId": "integer",
+            "jobsId": "integer",
+            "link": "string",
+            "face": "string",
+            "inst": "string",
+            "book": "string",
+            "notes": "string",
+            "registerDate": "string"
+          }
+        },
+        "TblEstimate": {
+          "properties": {
+            "id": "integer",
+            "note": "string",
+            "status": "integer",
+            "createdDate": "string",
+            "usersId": "integer",
+            "pstType": "integer",
+            "worksId": "integer"
+          }
+        },
+        "TblEstimateproduct": {
+          "properties": {
+            "id": "integer",
+            "estimatesId": "integer",
+            "productId": "integer",
+            "description": "string",
+            "price": "number",
+            "qty": "number",
+            "order": "integer",
+            "estimates": {
+              "$ref": "#/components/schemas/TblEstimate",
+              "product": {
+                "$ref": "#/components/schemas/TblProduct"
+              }
+            },
+            "TblEvent": {
+              "properties": {
+                "id": "integer",
+                "worksId": "integer",
+                "eventtypesId": "integer",
+                "registerDate": "string",
+                "notes": "string",
+                "file": "boolean",
+                "usersId": "integer"
+              }
+            },
+            "TblEventsfile": {
+              "properties": {
+                "id": "integer",
+                "eventsId": "integer",
+                "url": "string",
+                "type": "string",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblEventszone": {
+              "properties": {
+                "id": "integer",
+                "eventsId": "integer",
+                "zonetypesId": "integer",
+                "large": "number",
+                "width": "number",
+                "height": "number",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblEventszonesfile": {
+              "properties": {
+                "id": "integer",
+                "eventszonesId": "integer",
+                "url": "string",
+                "type": "string",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblEventtype": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "color": "string",
+                "department": "string",
+                "file": "boolean"
+              }
+            },
+            "TblExternalcompany": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "type": "string",
+                "phone": "string",
+                "ext": "string",
+                "email": "string",
+                "website": "string",
+                "address": "string",
+                "address2": "string",
+                "address3": "string",
+                "city": "string",
+                "state": "string",
+                "postalcode": "string",
+                "country": "string"
+              }
+            },
+            "TblExternalemployee": {
+              "properties": {
+                "id": "integer",
+                "externalcompaniesId": "integer",
+                "fullname": "string",
+                "mobile": "string",
+                "phone": "string",
+                "ext": "string",
+                "email": "string"
+              }
+            },
+            "TblJob": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "departmentsId": "integer"
+              }
+            },
+            "TblLead": {
+              "properties": {
+                "id": "integer",
+                "nickname": "string",
+                "firstName": "string",
+                "secondName": "string",
+                "lastName": "string",
+                "owner2": "integer",
+                "fistName2": "string",
+                "lastName2": "string",
+                "phone": "string",
+                "mobile": "string",
+                "email": "string",
+                "registerDate": "string",
+                "usersId": "integer",
+                "companiesId": "integer",
+                "pidProperties": "integer",
+                "midProperties": "integer"
+              }
+            },
+            "TblPlaidtransaction": {
+              "properties": {
+                "id": "integer",
+                "accountId": "string",
+                "accountOwner": "string",
+                "amount": "string",
+                "payment": "string",
+                "categoryId": "string",
+                "date": "string",
+                "isoCurrencyCode": "string",
+                "location": "string",
+                "name": "string",
+                "byOrderOf": "string",
+                "payee": "string",
+                "payer": "string",
+                "paymentMethod": "string",
+                "paymentProcessor": "string",
+                "ppdId": "string",
+                "reason": "string",
+                "referenceNumber": "string",
+                "pending": "string",
+                "pendingTransactionId": "string",
+                "transactionId": "string",
+                "transactionType": "string",
+                "used": "boolean"
+              }
+            },
+            "TblProduct": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "alias": "string",
+                "description": "string",
+                "type": "integer",
+                "categoryId": "integer",
+                "price": "number",
+                "image": "string",
+                "qty": "integer",
+                "unit": "string",
+                "regdate": "string"
+              }
+            },
+            "TblProductserial": {
+              "properties": {
+                "id": "integer",
+                "productId": "integer",
+                "serial": "string",
+                "status": "string"
+              }
+            },
+            "TblProject": {
+              "properties": {
+                "id": "integer",
+                "projecttypesId": "integer",
+                "internalId": "string",
+                "status": "integer",
+                "createdDate": "string",
+                "leadsId": "integer",
+                "customersId": "integer",
+                "usersId": "integer",
+                "propertiesId": "integer"
+              }
+            },
+            "TblProjectfile": {
+              "properties": {
+                "id": "integer",
+                "projectsId": "integer",
+                "filetypeId": "integer",
+                "url": "string",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblProjecttype": {
+              "properties": {
+                "id": "integer",
+                "name": "string"
+              }
+            },
+            "TblProperty": {
+              "properties": {
+                "id": "integer",
+                "address": "string",
+                "address2": "string",
+                "unit": "string",
+                "city": "string",
+                "state": "string",
+                "postalcode": "string",
+                "country": "string",
+                "type": "integer",
+                "yearBuilt": "integer",
+                "totalpurchaseprice": "number"
+              }
+            },
+            "TblScopesheet": {
+              "properties": {
+                "id": "integer",
+                "subprojectsId": "integer",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblScopesheetfile": {
+              "properties": {
+                "id": "integer",
+                "url": "string",
+                "scopesheetId": "integer",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblScopesheetzone": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "scopesheetId": "integer",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblShift": {
+              "properties": {
+                "id": "integer",
+                "subprojectsId": "integer",
+                "startTime": "string",
+                "endTime": "string",
+                "startPropertiesId": "integer",
+                "endPropertiesId": "integer",
+                "usersId": "integer"
+              }
+            },
+            "TblSubproject": {
+              "properties": {
+                "id": "integer",
+                "subprojecttypesId": "integer",
+                "status": "integer",
+                "createdDate": "string",
+                "finishedDate": "string",
+                "updatedDate": "string",
+                "usersId": "integer",
+                "projectsId": "integer",
+                "notes": "string"
+              }
+            },
+            "TblSubprojectfile": {
+              "properties": {
+                "id": "integer",
+                "subprojectsId": "integer",
+                "filetypeId": "integer",
+                "url": "string",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblSubprojectpolicya": {
+              "properties": {
+                "id": "integer",
+                "subprojectsId": "integer",
+                "insuranceCompany": "string",
+                "policyNumber": "string",
+                "claimNumber": "string",
+                "causeLoss": "string",
+                "insuranceInspection": "string",
+                "dateloss": "string",
+                "statusclaim": "string",
+                "firstclaim": "string",
+                "visibledamage": "string",
+                "visibledamageNotes": "string",
+                "stateEmergency": "string",
+                "lastclaimNotes": "string",
+                "descriptionlossNotes": "string",
+                "additionalNotes": "string",
+                "statusInternal": "string",
+                "dwellingAmount": "number",
+                "dwellingLimit": "number",
+                "deductibleAmount": "number",
+                "denialReason": "string",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblSubprojecttype": {
+              "properties": {
+                "id": "integer",
+                "name": "string"
+              }
+            },
+            "TblSubtemplate": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "description": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblSubtemplateproduct": {
+              "properties": {
+                "id": "integer",
+                "subtemplatesId": "integer",
+                "productId": "integer",
+                "qty": "number",
+                "order": "integer"
+              }
+            },
+            "TblTemplate": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "description": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblUpdate": {
+              "properties": {
+                "id": "integer",
+                "usersId": "integer",
+                "message": "string",
+                "time": "string",
+                "state": "string",
+                "background": "string",
+                "attach": "string",
+                "attachType": "string"
+              }
+            },
+            "TblUpdatelike": {
+              "properties": {
+                "id": "integer",
+                "usersId": "integer",
+                "updateId": "integer"
+              }
+            },
+            "TblWallet": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "type": "string",
+                "idType": "integer",
+                "usersId": "integer",
+                "category": "string",
+                "irscategory": "string"
+              }
+            },
+            "TblWallettransaction": {
+              "properties": {
+                "id": "integer",
+                "subject": "string",
+                "amount": "number",
+                "walletIdFrom": "integer",
+                "walletIdTo": "integer",
+                "type": "integer",
+                "banktransid": "integer",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "TblZonetype": {
+              "properties": {
+                "id": "integer",
+                "zonename": "string"
+              }
+            },
+            "Users": {
+              "properties": {
+                "id": "integer",
+                "username": "string",
+                "password": "string",
+                "status": "string",
+                "employees_id": "integer",
+                "roles_id": "integer",
+                "lastactivity": "string"
+              }
+            },
+            "UsersDto": {
+              "properties": {
+                "id": "integer",
+                "first_name": "string",
+                "last_name": "string",
+                "picture": "string",
+                "username": "string",
+                "password": "string",
+                "status": "string",
+                "personal_email": "string",
+                "personal_phone": "string",
+                "employees_id": "integer",
+                "roles_id": "integer",
+                "lastactivity": "string",
+                "departmentname": "string",
+                "jobname": "string",
+                "tag": "string",
+                "companies_id": "integer",
+                "token": "string",
+                "rolename": "string",
+                "accessname": "string",
+                "seccod": "string"
+              }
+            },
+            "UsersSummary": {
+              "properties": {
+                "id": "integer",
+                "date": "string",
+                "user": "string",
+                "extS": "string",
+                "phoneNumbers": "string",
+                "totalCalls": "integer",
+                "totalCallDuration": "string",
+                "inboundCalls": "integer",
+                "inboundCallDuration": "string",
+                "outboundCalls": "integer",
+                "outboundCallDuration": "string",
+                "intraPbxCalls": "integer",
+                "intraPbxCallDuration": "string",
+                "missedCalls": "integer",
+                "answeredCalls": "integer",
+                "voicemailCalls": "integer"
+              }
+            },
+            "ViewJob": {
+              "properties": {
+                "id": "integer",
+                "name": "string",
+                "departmentsId": "integer",
+                "departmentname": "string"
+              }
+            },
+            "ViewLead": {
+              "properties": {
+                "id": "integer",
+                "nickname": "string",
+                "firstName": "string",
+                "secondName": "string",
+                "lastName": "string",
+                "owner2": "integer",
+                "fistName2": "string",
+                "lastName2": "string",
+                "phone": "string",
+                "mobile": "string",
+                "email": "string",
+                "registerDate": "string",
+                "companiesId": "integer",
+                "pidProperties": "integer",
+                "midProperties": "integer",
+                "pidAddress": "string",
+                "pidAddress2": "string",
+                "pidUnit": "string",
+                "pidCity": "string",
+                "pidState": "string",
+                "pidPostalcode": "string",
+                "pidCountry": "string",
+                "yearBuilt": "integer",
+                "totalpurchaseprice": "number",
+                "midAddress": "string",
+                "midAddress2": "string",
+                "midUnit": "string",
+                "midCity": "string",
+                "midState": "string",
+                "midPostalcode": "string",
+                "midCountry": "string",
+                "usersId": "integer",
+                "usersName": "string",
+                "tag": "string"
+              }
+            },
+            "ViewRoommessage": {
+              "properties": {
+                "id": "integer",
+                "subject": "string",
+                "userId": "integer"
+              }
+            },
+            "ViewUserroom": {
+              "properties": {
+                "id": "integer",
+                "subject": "string",
+                "userId": "integer"
+              }
+            },
+            "ViewUserschat": {
+              "properties": {
+                "id": "integer",
+                "username": "string",
+                "firstName": "string",
+                "lastName": "string",
+                "personalMobile": "string",
+                "personalEmail": "string",
+                "birthday": "string"
+              }
+            },
+            "ViewWallettran": {
+              "properties": {
+                "id": "integer",
+                "subject": "string",
+                "name": "string",
+                "amount": "number",
+                "walletIdFrom": "integer",
+                "walletIdTo": "integer",
+                "type": "integer",
+                "banktransid": "integer",
+                "registerDate": "string",
+                "usersId": "integer"
+              }
+            },
+            "Works": {
+              "properties": {
+                "id": "integer",
+                "subprojects_id": "integer",
+                "worktypes_id": "integer",
+                "status": "string",
+                "register_date": "string",
+                "users_id": "integer"
+              }
+            },
+            "Worktypes": {
+              "properties": {
+                "id": "integer",
+                "name": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,23 +1,9 @@
-export interface ActionProperties {
-  type: string;
-  enum?: string[] | number[];
-  description?: string;
-}
+import { Database } from "./database.types";
 
-export interface PageAction {
-  pageName: string;
-  pageEndpoint: string;
-  description: string;
-  actions: Action[];
-}
-
-export interface ReturnedAction {
-  name: string;
-  parameters: {
-    type: string;
-    properties: { [key: string]: string };
+export type ActionGroupJoinActions =
+  Database["public"]["Tables"]["action_groups"]["Row"] & {
+    actions: Action[];
   };
-}
 
 export interface Swagger {
   openapi: object;
@@ -54,7 +40,8 @@ interface Response {
   content: { [key: string]: object };
 }
 
-export interface Action extends SwaggerPathMethod {
-  route: string;
-  method: "get" | "post" | "put" | "delete";
-}
+export type Action = Database["public"]["Tables"]["actions"]["Row"];
+// extends SwaggerPathMethod {
+//   route: string;
+//   method: "get" | "post" | "put" | "delete";
+// }

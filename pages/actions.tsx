@@ -1,13 +1,13 @@
 import Head from "next/head";
-import React, { useEffect, useState } from "react";
-// import ChatBotSlideover from "../components/chatBotSlideover";
+import React, { useCallback, useEffect, useState } from "react";
 import { Navbar } from "../components/navbar";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { classNames } from "../lib/utils";
 import PageActionsSection from "../components/actions/actionsSection";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { Database } from "../lib/database.types";
-import {useProfile} from "../components/contextManagers/profile";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useProfile } from "../components/contextManagers/profile";
+import SignInComponent from "../components/signIn";
+import { ActionGroupJoinActions } from "../lib/types";
 
 export default function App() {
   return (
@@ -22,13 +22,15 @@ export default function App() {
 }
 
 function Dashboard() {
-  const [open, setOpen] = useState(true);
-  const [hidden, setHidden] = useState(false);
-  return (
-    <div className="h-full bg-gray-800">
+  const session = useSession();
+
+  return !session ? (
+    <SignInComponent />
+  ) : (
+    <div className="min-h-screen bg-gray-800">
       <Navbar current={"Actions"} />
-      <div className="flex flex-col gap-y-4 mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-        <div className="min-h-full rounded px-6">
+      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="h-full rounded px-6">
           <RepliesPage />
         </div>
       </div>
@@ -36,32 +38,44 @@ function Dashboard() {
   );
 }
 
-type ActionGroup = Database["public"]["Tables"]["action_groups"]["Insert"];
-
 export function RepliesPage() {
   const supabase = useSupabaseClient();
   const { profile } = useProfile();
+  const [isError, setIsError] = useState(false);
 
-  const [userPageActions, setActions] = useState<ActionGroup[]>([]);
+  const [userPageActions, setActionGroupsJoinActions] = useState<
+    ActionGroupJoinActions[]
+  >([]);
+  const loadActions = useCallback(async () => {
+    const actionGroupRes = await supabase
+      .from("action_groups")
+      .select("*, actions(*)")
+      .eq("org_id", profile?.org_id);
+    if (actionGroupRes.error) {
+      setIsError(true);
+      throw actionGroupRes.error;
+    }
+    if (actionGroupRes.data === null) {
+      setIsError(true);
+      throw new Error("No data returned");
+    }
+    setActionGroupsJoinActions(actionGroupRes.data);
+  }, [profile, supabase]);
   useEffect(() => {
-    (async () => {
-      const actionGroupRes = await supabase
-        .from("action_groups")
-        .select("*, actions(*)")
-        .eq("org_id", 1);
-      if (actionGroupRes.error) throw new Error(actionGroupRes.error);
-    })();
-  }, []);
+    if (!profile) return;
+    loadActions();
+  }, [profile]);
 
   return (
-    <div className={classNames("w-full relative")}>
+    <div className={classNames("w-full relative h-full")}>
       {userPageActions ? (
         <PageActionsSection
           pageActions={userPageActions}
-          setActions={setActions}
+          setActions={setActionGroupsJoinActions}
+          loadActions={loadActions}
         />
-      ) : userPageActions !== undefined ? (
-        <div className="flex flex-col gap-y-4 text-lg place-items-center justify-center h-120 w-full">
+      ) : !isError ? (
+        <div className="flex flex-col gap-y-4 text-lg place-items-center justify-center h-full w-full text-gray-300">
           <LoadingSpinner classes="h-20 w-20" />
           Sprinkling magic dust...
         </div>

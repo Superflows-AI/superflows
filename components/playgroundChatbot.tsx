@@ -1,7 +1,7 @@
 import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import runSSE from "../lib/sse";
-import { Action, PageAction } from "../lib/types";
+import {Action, ActionGroupJoinActions} from "../lib/types";
 import { LoadingSpinner } from "./loadingspinner";
 import SelectBox from "./selectBox";
 import {
@@ -31,7 +31,7 @@ interface ChatItem {
 }
 
 export default function PlaygroundChatbot(props: {
-  pageActions: PageAction[];
+  pageActions: ActionGroupJoinActions[];
   activeActions: string[];
   page: string;
   setPage: (page: string) => void;
@@ -51,14 +51,14 @@ export default function PlaygroundChatbot(props: {
     async (chat: ChatItem[], activeActions: string[]) => {
       const chatCopy = [...chat];
       chat.push({ role: "assistant", content: "" });
-      let filteredPageActions: PageAction[] = props.pageActions.map(
+      let filteredPageActions: ActionGroupJoinActions[] = props.pageActions.map(
         (pageAction) => {
           let filteredActions: Action[] = pageAction.actions.filter(
             (action) => {
               return activeActions.includes(action.name);
             }
           );
-          let filteredPageAction: PageAction = {
+          let filteredPageAction: ActionGroupJoinActions = {
             ...pageAction,
             actions: filteredActions,
           };
@@ -90,11 +90,14 @@ export default function PlaygroundChatbot(props: {
             ...prev.slice(0, prev.length - 1),
             { role: "assistant", content: fullOutput },
           ]);
+
           const output = parseOutput(fullOutput);
           output.commands.forEach((command) => {
             console.log("command", command);
             const thisPageActions = props.pageActions.find(
-              (pageAction) => pageAction.pageName === gptPageName
+              // (pageAction) => pageAction.pageName === gptPageName
+                // TODO: Fix
+              (pageAction) => true
             );
             if (!thisPageActions)
               throw Error("GPTPageName is incorrect: " + gptPageName);
@@ -137,7 +140,9 @@ export default function PlaygroundChatbot(props: {
               throw Error("Command name is incorrect: " + command.name);
             console.log("commandAction", commandAction);
             console.log("command.args", command.args);
-            const out = unpackAndCall(commandAction.func, command.args);
+            // const out = unpackAndCall(commandAction.func, command.args);
+            // TODO: Fix
+            const out = unpackAndCall(() => {}, command.args);
             console.log("out from calling function", out);
             if (out) {
               setVisualChatContents((prev) => {
@@ -222,7 +227,9 @@ export default function PlaygroundChatbot(props: {
           <div className="flex flex-row gap-x-2 place-items-center w-48">
             <SelectBox
               title="Page:"
-              options={props.pageActions.map((p) => p.pageName)}
+              // TODO: Fix
+              // options={props.pageActions.map((p) => p.pageName)}
+              options={props.pageActions.map((p) => p.name)}
               theme={"light"}
               selected={props.page}
               setSelected={(selected: string) => {
@@ -247,8 +254,9 @@ export default function PlaygroundChatbot(props: {
               onClick={() => {
                 setVisualChatContents([]);
                 // Set GPT page to initial page
-                setGptPageName(props.pageActions[0].pageName);
-                props.setPage(props.pageActions[0].pageName);
+                // TODO: Fix
+                // setGptPageName(props.pageActions[0].pageName);
+                // props.setPage(props.pageActions[0].pageName);
               }}
             >
               <ArrowPathIcon className="h-5 w-5" /> Clear chat
