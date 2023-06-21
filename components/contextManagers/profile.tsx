@@ -7,7 +7,8 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
-import { ProfilesRow } from "../../lib/models";
+
+type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 const ProfileContext = createContext<{
   profile: ProfilesRow | null;
@@ -28,6 +29,7 @@ export function ProfileContextProvider(props: {
       .select("*")
       .single();
     if (error) throw Error(error.message);
+    console.log("data", data);
     setProfile(data);
   }, [props.disabled, setProfile, props.supabase]);
 

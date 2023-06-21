@@ -1,12 +1,14 @@
 import { ChatGPTMessage } from "../models";
-import { PageAction } from "../types";
+import { ActionGroupJoinActions } from "../types";
 
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
-  pageActions: PageAction[],
+  pageActions: ActionGroupJoinActions[],
   currentPageName: string
 ): ChatGPTMessage[] {
-  const currentPage = pageActions.find((p) => p.pageName === currentPageName);
+  // TODO: Fix
+  // const currentPage = pageActions.find((p) => p.pageName === currentPageName);
+  const currentPage = pageActions.find((p) => true);
 
   if (!currentPage) {
     throw new Error(`Page ${currentPageName} not found in pageActions`);
@@ -15,21 +17,26 @@ export default function getMessages(
   let numberedActions = "";
   currentPage.actions.forEach((action) => {
     let paramString = "";
-    Object.entries(action.parameters.properties).forEach(([key, value]) => {
-      paramString += `\n- ${key} (${value.type})${
-        value.description ? `: ${value.description}` : ""
-      }. ${action.required.includes(key) ? "REQUIRED" : ""}`;
-    });
+    // TODO: Fix
+    // Object.entries(action.parameters.properties).forEach(([key, value]) => {
+    //   paramString += `\n- ${key} (${value.type})${
+    //     value.description ? `: ${value.description}` : ""
+    //   }. ${action.required.includes(key) ? "REQUIRED" : ""}`;
+    // });
     numberedActions += `${i}. ${action.name}: ${action.description}.${
       paramString ? " PARAMETERS: " + paramString : ""
     }\n`;
     i++;
   });
-  const otherPages = pageActions.filter((p) => p.pageName !== currentPageName);
+  // TODO: Fix
+  // const otherPages = pageActions.filter((p) => p.pageName !== currentPageName);
+  const otherPages = pageActions.filter((p) => true);
   const availablePages = otherPages
     .map(
       (pageAction) =>
-        "\n- '" + pageAction.pageName + "': " + pageAction.description
+        // TODO: Fix this
+        // "\n- '" + pageAction.pageName + "': " + pageAction.description
+        ""
     )
     .join("");
   return [

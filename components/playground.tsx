@@ -9,25 +9,6 @@ export default function Playground() {
   const [model, setModel] = useState("GPT4");
   const [paths, setPaths] = useState<string[]>([]);
 
-  // const api = new Api();
-  // useEffect(() => {
-  //   const outPaths = Object.values(api.api)
-  //       .map((fn) => {
-  //         if (typeof fn === "function") {
-  //           const functionString = fn.toString();
-  //           const pathMatch = functionString.match(/path:\s*["']([^"']*)["']/);
-  //           const path = pathMatch ? pathMatch[1] : undefined;
-  //           const methodMatch = functionString.match(/method:\s*["']([^"']*)["']/);
-  //           const method = methodMatch ? methodMatch[1] : undefined;
-  //           return path ? method ? method + " " + path : path : undefined;
-  //         }
-  //
-  //         return undefined;
-  //       })
-  //       .filter((path) => path !== undefined) as string[];
-  //   setPaths(outPaths);
-  // }, []);
-
   return (
     <>
       {/* Left sidebar */}
@@ -35,34 +16,34 @@ export default function Playground() {
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-r border-gray-700 px-6 pb-4">
           <div className="mt-6">
-            <h1 className="text-xl text-gray-50 pb-2">{"hi"} Actions</h1>
+            <h1 className="text-xl text-gray-50 pb-2">{""} Actions</h1>
             <div className="flex flex-col overflow-y-auto gap-y-3 px-1 py-2">
-              {paths.map((path, idx) => (
-                <Card
-                  key={idx}
-                  active={
-                    // !!props.activeActions.find((item) => item === action.name)
-                    true
-                  }
-                  handleStateChange={() => {}}
-                  //   if (
-                  //     !props.activeActions.find((item) => item === action.name)
-                  //   ) {
-                  //     props.setActiveActions([
-                  //       ...props.activeActions,
-                  //       action.name,
-                  //     ]);
-                  //   } else {
-                  //     props.setActiveActions(
-                  //       props.activeActions.filter(
-                  //         (item) => item !== action.name
-                  //       )
-                  //     );
-                  //   }
-                  // }}
-                  action={{ name: path }}
-                />
-              ))}
+              {/*{paths.map((path, idx) => (*/}
+              {/*  <Card*/}
+              {/*    key={idx}*/}
+              {/*    active={*/}
+              {/*      // !!props.activeActions.find((item) => item === action.name)*/}
+              {/*      true*/}
+              {/*    }*/}
+              {/*    handleStateChange={() => {}}*/}
+              {/*    //   if (*/}
+              {/*    //     !props.activeActions.find((item) => item === action.name)*/}
+              {/*    //   ) {*/}
+              {/*    //     props.setActiveActions([*/}
+              {/*    //       ...props.activeActions,*/}
+              {/*    //       action.name,*/}
+              {/*    //     ]);*/}
+              {/*    //   } else {*/}
+              {/*    //     props.setActiveActions(*/}
+              {/*    //       props.activeActions.filter(*/}
+              {/*    //         (item) => item !== action.name*/}
+              {/*    //       )*/}
+              {/*    //     );*/}
+              {/*    //   }*/}
+              {/*    // }}*/}
+              {/*    action={}*/}
+              {/*  />*/}
+              {/*))}*/}
             </div>
           </div>
         </div>

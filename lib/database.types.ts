@@ -39,6 +39,95 @@ export interface Database {
           created_at: string | null;
           id: number;
           name: string;
+          org_id: number | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "action_groups_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      actions: {
+        Row: {
+          action_group: number | null;
+          action_type: string;
+          active: boolean;
+          created_at: string;
+          description: string;
+          id: number;
+          name: string;
+          org_id: number | null;
+          parameters: Json | null;
+          path: string | null;
+          request_body_contents: Json | null;
+          request_method: string | null;
+          responses: Json | null;
+        };
+        Insert: {
+          action_group?: number | null;
+          action_type?: string;
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+          parameters?: Json | null;
+          path?: string | null;
+          request_body_contents?: Json | null;
+          request_method?: string | null;
+          responses?: Json | null;
+        };
+        Update: {
+          action_group?: number | null;
+          action_type?: string;
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+          parameters?: Json | null;
+          path?: string | null;
+          request_body_contents?: Json | null;
+          request_method?: string | null;
+          responses?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "actions_action_group_fkey";
+            columns: ["action_group"];
+            referencedRelation: "action_groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "actions_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      organizations: {
+        Row: {
+          created_at: string | null;
+          id: number;
+          name: string;
         };
         Insert: {
           created_at?: string | null;
@@ -52,48 +141,42 @@ export interface Database {
         };
         Relationships: [];
       };
-      actions: {
+      profiles: {
         Row: {
-          action_group: number | null;
-          created_at: string;
-          description: string;
-          id: number;
-          name: string;
-          parameters: Json | null;
-          path: string | null;
-          request_body_contents: Json | null;
-          request_method: string | null;
-          responses: Json | null;
+          avatar_url: string | null;
+          email_address: string | null;
+          full_name: string;
+          id: string;
+          org_id: number | null;
+          updated_at: string | null;
         };
         Insert: {
-          action_group?: number | null;
-          created_at?: string;
-          description?: string;
-          id?: number;
-          name?: string;
-          parameters?: Json | null;
-          path?: string | null;
-          request_body_contents?: Json | null;
-          request_method?: string | null;
-          responses?: Json | null;
+          avatar_url?: string | null;
+          email_address?: string | null;
+          full_name?: string;
+          id: string;
+          org_id?: number | null;
+          updated_at?: string | null;
         };
         Update: {
-          action_group?: number | null;
-          created_at?: string;
-          description?: string;
-          id?: number;
-          name?: string;
-          parameters?: Json | null;
-          path?: string | null;
-          request_body_contents?: Json | null;
-          request_method?: string | null;
-          responses?: Json | null;
+          avatar_url?: string | null;
+          email_address?: string | null;
+          full_name?: string;
+          id?: string;
+          org_id?: number | null;
+          updated_at?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: "actions_action_group_fkey";
-            columns: ["action_group"];
-            referencedRelation: "action_groups";
+            foreignKeyName: "profiles_id_fkey";
+            columns: ["id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
             referencedColumns: ["id"];
           }
         ];

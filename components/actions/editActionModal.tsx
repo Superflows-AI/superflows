@@ -20,15 +20,18 @@ import React, { Fragment, useRef, useState } from "react";
 import { Action } from "../../lib/types";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
+import { Database } from "../../lib/database.types";
 
 export default function EditActionModal(props: {
-  action: Action;
+  action: Database["public"]["Tables"]["actions"]["Row"];
   close: () => void;
-  setAction: (action: Action) => void;
+  setAction: (action: Database["public"]["Tables"]["actions"]["Row"]) => void;
 }) {
   const saveRef = useRef(null);
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
-  const [localAction, setLocalAction] = React.useState<Action>(props.action);
+  const [localAction, setLocalAction] = React.useState<
+    Database["public"]["Tables"]["actions"]["Row"]
+  >(props.action);
 
   return (
     <Transition.Root show={!!props.action} as={Fragment}>
