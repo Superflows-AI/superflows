@@ -14,7 +14,9 @@ import EditActionGroupModal from "./editActionGroupModal";
 
 export default function PageActionsSection(props: {
   actionGroups: ActionGroupJoinActions[];
-  setActionGroups: Dispatch<SetStateAction<ActionGroupJoinActions[] | undefined>>;
+  setActionGroups: Dispatch<
+    SetStateAction<ActionGroupJoinActions[] | undefined>
+  >;
   loadActions: () => Promise<void>;
 }) {
   const supabase = useSupabaseClient();
@@ -53,13 +55,14 @@ export default function PageActionsSection(props: {
                     .select("*");
                   if (res.error) throw res.error;
                   if (res.data === null) throw new Error("No data returned");
-                  props.setActionGroups((prev) => [
-                    ...prev,
+                  const newActionGroups = [
                     {
                       ...res.data[0],
                       actions: [],
                     },
-                  ]);
+                    ...props.actionGroups,
+                  ];
+                  props.setActionGroups(newActionGroups);
                 }}
               >
                 <PlusIcon className="text-gray-200 w-5 h-5" /> Add
@@ -83,23 +86,26 @@ export default function PageActionsSection(props: {
               <ActionsSection
                 key={actionGroup.id}
                 actionGroupJoinActions={actionGroup}
-                setActionGroup={(actionGroup: ActionGroupJoinActions) =>
-                  props.setActionGroups((prev) => {
-                    const copy = [...prev];
-                    const agIndex = props.actionGroups.findIndex(
-                      (ag) => ag.id === actionGroup.id
-                    );
-                    copy[agIndex] = actionGroup;
-                    return copy;
-                  })
-                }
+                setActionGroup={(actionGroup: ActionGroupJoinActions) => {
+                  const copy = [...props.actionGroups];
+                  const agIndex = props.actionGroups.findIndex(
+                    (ag) => ag.id === actionGroup.id
+                  );
+                  copy[agIndex] = actionGroup;
+                  props.setActionGroups(copy);
+                }}
                 deleteActionGroup={async () => {
-                    const copy = [...props.actionGroups];
-                    const agIndex = props.actionGroups.findIndex(ag => ag.id === actionGroup.id);
-                    copy.splice(agIndex, 1);
-                    props.setActionGroups(copy);
-                    const res = await supabase.from("action_groups").delete().match({id: actionGroup.id});
-                    if (res.error) throw res.error;
+                  const copy = [...props.actionGroups];
+                  const agIndex = props.actionGroups.findIndex(
+                    (ag) => ag.id === actionGroup.id
+                  );
+                  copy.splice(agIndex, 1);
+                  props.setActionGroups(copy);
+                  const res = await supabase
+                    .from("action_groups")
+                    .delete()
+                    .match({ id: actionGroup.id });
+                  if (res.error) throw res.error;
                 }}
               />
             ))
@@ -135,11 +141,12 @@ function ActionsSection(props: {
     null
   );
   const [editActionGroup, setEditActionGroup] = React.useState<boolean>(false);
-    const [deleteActionGroup, setDeleteActionGroup] = React.useState<boolean>(false);
-    const [deleteActionIndex, setDeleteActionIndex] = React.useState<
+  const [deleteActionGroup, setDeleteActionGroup] =
+    React.useState<boolean>(false);
+  const [deleteActionIndex, setDeleteActionIndex] = React.useState<
     number | null
   >(null);
-    const [actions, setActions] = React.useState<Action[]>(
+  const [actions, setActions] = React.useState<Action[]>(
     props.actionGroupJoinActions.actions
   );
 
@@ -169,7 +176,7 @@ function ActionsSection(props: {
           if (!open) setDeleteActionIndex(null);
         }}
       />
-    <WarningModal
+      <WarningModal
         title={`Delete action group and all its actions: "${props.actionGroupJoinActions.name}"?`}
         description={
           "Are you sure you want to delete this action group and all its actions? Once you delete it you can't get it back. There's no undo button."
@@ -222,14 +229,13 @@ function ActionsSection(props: {
       >
         <div className="flex flex-col w-full">
           <div className="flex flex-row justify-between place-items-start">
-
-              <div
-                className={
-                  props.actionGroupJoinActions.actions.some((a) => a.active)
-                    ? ""
-                    : "opacity-60"
-                }
-              >
+            <div
+              className={
+                props.actionGroupJoinActions.actions.some((a) => a.active)
+                  ? ""
+                  : "opacity-60"
+              }
+            >
               {props.actionGroupJoinActions.actions.length > 0 && (
                 <Checkbox
                   checked={props.actionGroupJoinActions.actions.some(
@@ -258,8 +264,8 @@ function ActionsSection(props: {
                   }}
                   label={"Active"}
                 />
-                  )}
-              </div>
+              )}
+            </div>
 
             <FlyoutMenu
               items={[
