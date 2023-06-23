@@ -16,7 +16,7 @@ export function getNumRows(text: string, textWidth: number): number {
 export function parseKeyValues(
   keyValueText: string
 ): { key: string; value: string }[] {
-  console.log("Parsing key values from", keyValueText);
+  // console.log("Parsing key values from", keyValueText);
   return keyValueText.split("<br/>").map((line) => {
     const [key, ...value] = line.split(":");
     return { key: key.trim(), value: value.join(":").trim() };

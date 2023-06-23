@@ -37,18 +37,21 @@ export interface Database {
       action_groups: {
         Row: {
           created_at: string | null;
+          description: string;
           id: number;
           name: string;
           org_id: number | null;
         };
         Insert: {
           created_at?: string | null;
+          description?: string;
           id?: number;
           name?: string;
           org_id?: number | null;
         };
         Update: {
           created_at?: string | null;
+          description?: string;
           id?: number;
           name?: string;
           org_id?: number | null;

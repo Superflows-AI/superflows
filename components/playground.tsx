@@ -1,13 +1,48 @@
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
-import { Action } from "../lib/types";
+import React, {ReactNode, useCallback, useEffect, useState} from "react";
+import { Action, ActionGroupJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
 import SelectBox from "./selectBox";
 import { Api } from "../lib/swaggerTypes";
+import PlaygroundChatbot from "./playgroundChatbot";
+import { useProfile } from "./contextManagers/profile";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import {MockAction, pageActions} from "../lib/rcMock";
+
+const languageOptions: {id: string, name: "English" | "Espanol", icon: ReactNode}[] = [
+  { id: "EN", name: "English", icon: <img alt="US" className="h-4 mr-2" src={"us.jpg"} /> },
+  { id: "ES", name: "Espanol", icon: <img alt="Spain" className="h-4 mr-2" src={"spain.jpg"} /> },
+];
 
 export default function Playground() {
+  const supabase = useSupabaseClient();
+  const { profile } = useProfile();
   const [model, setModel] = useState("GPT4");
-  const [paths, setPaths] = useState<string[]>([]);
+  const [language, setLanguage] = useState("EN");
+  const [isError, setIsError] = useState(false);
+
+  // const [actionGroups, setActionGroupsJoinActions] = useState<
+  //   ActionGroupJoinActions[]
+  // >([]);
+  // const loadActions = useCallback(async () => {
+  //   const actionGroupRes = await supabase
+  //     .from("action_groups")
+  //     .select("*, actions(*)")
+  //     .eq("org_id", profile?.org_id);
+  //   if (actionGroupRes.error) {
+  //     setIsError(true);
+  //     throw actionGroupRes.error;
+  //   }
+  //   if (actionGroupRes.data === null) {
+  //     setIsError(true);
+  //     throw new Error("No data returned");
+  //   }
+  //   setActionGroupsJoinActions(actionGroupRes.data);
+  // }, [profile, supabase]);
+  // useEffect(() => {
+  //   if (!profile) return;
+  //   loadActions();
+  // }, [profile]);
 
   return (
     <>
@@ -18,45 +53,43 @@ export default function Playground() {
           <div className="mt-6">
             <h1 className="text-xl text-gray-50 pb-2">{""} Actions</h1>
             <div className="flex flex-col overflow-y-auto gap-y-3 px-1 py-2">
-              {/*{paths.map((path, idx) => (*/}
-              {/*  <Card*/}
-              {/*    key={idx}*/}
-              {/*    active={*/}
-              {/*      // !!props.activeActions.find((item) => item === action.name)*/}
-              {/*      true*/}
-              {/*    }*/}
-              {/*    handleStateChange={() => {}}*/}
-              {/*    //   if (*/}
-              {/*    //     !props.activeActions.find((item) => item === action.name)*/}
-              {/*    //   ) {*/}
-              {/*    //     props.setActiveActions([*/}
-              {/*    //       ...props.activeActions,*/}
-              {/*    //       action.name,*/}
-              {/*    //     ]);*/}
-              {/*    //   } else {*/}
-              {/*    //     props.setActiveActions(*/}
-              {/*    //       props.activeActions.filter(*/}
-              {/*    //         (item) => item !== action.name*/}
-              {/*    //       )*/}
-              {/*    //     );*/}
-              {/*    //   }*/}
-              {/*    // }}*/}
-              {/*    action={}*/}
-              {/*  />*/}
-              {/*))}*/}
+              {pageActions[0].actions.map((action, idx) => (
+                <Card
+                  key={idx}
+                  active={true}
+                  handleStateChange={() => {}}
+                  //   if (
+                  //     !props.activeActions.find((item) => item === action.name)
+                  //   ) {
+                  //     props.setActiveActions([
+                  //       ...props.activeActions,
+                  //       action.name,
+                  //     ]);
+                  //   } else {
+                  //     props.setActiveActions(
+                  //       props.activeActions.filter(
+                  //         (item) => item !== action.name
+                  //       )
+                  //     );
+                  //   }
+                  // }}
+                  action={action}
+                />
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* <main className="fixed inset-x-72 top-16 bottom-0">
+      <main className="fixed inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
-          pageActions={props.pageActions}
-          activeActions={props.activeActions}
-          page={page}
-          setPage={setPage}
+            pageActions={pageActions}
+            activeActions={pageActions[0].actions.map((action) => action.name)}
+            page={"RControl"}
+            setPage={() => {}}
+            language={languageOptions.find((item) => item.id === language)?.name ?? "English"}
         />
-      </main> */}
+      </main>
 
       {/* Right sidebar */}
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
@@ -65,10 +98,22 @@ export default function Playground() {
           <div className="mt-6">
             <SelectBox
               title="Model"
-              options={["GPT3.5", "GPT4"]}
+              options={[
+                { id: "GPT4", name: "GPT4" },
+                { id: "GPT3.5", name: "GPT3.5" },
+              ]}
               theme={"dark"}
               selected={model}
               setSelected={setModel}
+            />
+          </div>
+          <div className="">
+            <SelectBox
+              title="Language"
+              options={languageOptions}
+              theme={"dark"}
+              selected={language}
+              setSelected={setLanguage}
             />
           </div>
         </div>
@@ -79,15 +124,15 @@ export default function Playground() {
 
 function Card(props: {
   active: boolean;
-  handleStateChange: (action: Action) => void;
-  action: Action;
+  handleStateChange: (action: MockAction) => void;
+  action: MockAction;
 }) {
   return (
     <button
       onClick={() => props.handleStateChange(props.action)}
       className={classNames(
         props.active
-          ? "border-indigo-700 ring-2 ring-indigo-700"
+          ? "border-purple-700 ring-2 ring-purple-700"
           : "border-gray-700",
         "relative flex cursor-pointer rounded-lg border p-2.5 shadow-sm focus:outline-none text-left bg-gray-900 hover:bg-gray-950"
       )}
@@ -107,7 +152,7 @@ function Card(props: {
         <CheckCircleIcon
           className={classNames(
             !props.active ? "invisible" : "",
-            "h-5 w-5 text-indigo-700"
+            "h-5 w-5 text-purple-700"
           )}
           aria-hidden="true"
         />

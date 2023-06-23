@@ -1,0 +1,897 @@
+[
+  {
+    "id": 0,
+    "name": "Alvarez Fernando",
+    "email": "AlvarezFernando@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "Andrenia Jones",
+    "email": "AndreniaJones@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Audilio Martinez",
+    "email": "AudilioMartinez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Edmundo Gugliota",
+    "email": "EdmundoGugliota@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Eugenio Cruz",
+    "email": "EugenioCruz@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Ismael Martinez",
+    "email": "IsmaelMartinez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "subproject_type": "Water damage",
+            "work_type": "Plumbing",
+            "startDate": "",
+            "endDate": "",
+            "notes": [],
+            "emails": []
+          },
+          {
+            "type": "Mitigation",
+            "startDate": "",
+            "endDate": "",
+            "notes": [],
+            "emails": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Jones Reginald D",
+    "email": "Jones ReginaldD@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Katherine Velasco",
+    "email": "KatherineVelasco@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Luis Chicangana",
+    "email": "LuisChicangana@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Maria Navarro",
+    "email": "MariaNavarro@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Nancy Sanchez",
+    "email": "NancySanchez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Phillip Rosenberg",
+    "email": "PhillipRosenberg@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Sanchez-cruz Vidal",
+    "email": "Sanchez-cruzVidal@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Martha Martinez",
+    "email": "MarthaMartinez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "projects": [
+          {
+            "name": "",
+            "type": "claim",
+            "subprojects": [
+              {
+                "type": "Water damage",
+                "completed": false,
+                "works": [
+                  {
+                    "type": "Plumbing",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  },
+                  {
+                    "type": "Mitigation",
+                    "startDate": "",
+                    "endDate": "",
+                    "notes": [],
+                    "emails": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Nestor Alfaras",
+    "email": "NestorAlfaras@gmail.com",
+    "properties": [
+      {
+        "location": "3333 Pueblo St , Dallas, TX, 75212",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "completed": true,
+            "subproject_type": "Plumbing",
+            "dateTime": "2023t06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          }
+        ]
+      }
+    ]
+  },
+      {
+    "id": 15,
+    "name": "Daniel Solís Martínez",
+    "email": "Daniel SolísMartínez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim_completed": false,
+            "datetime": "2023-06-22T13t42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          }
+
+]
+                    }
+          ]
+},
+  {
+    "id": 16,
+    "name": "Nydia Cruz",
+    "email": "NydiaCruz@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Hurricane",
+            "subproject_type": "Tarp",
+            "claim completed": false,
+            "dateTime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work scheduled",
+            "project_type": "Hurricane",
+            "subproject_type": "Tarp",
+            "dateTime": "2023-06-21T13:42:15.253Z",
+            "contents": "Work scheduled 2023-06-25T09:30:00.000Z"
+          },
+          {
+            "event_type": "contract signed",
+            "project_type": "Hurricane",
+            "subproject_type": "Tarp",
+            "dateTime": "2023-06-19T13:42:15.253Z"
+          }
+    ]
+  }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Alvin Sanchez",
+    "email": "AlvinSanchez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+      "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "dateTime": "2023-06-22T13:42:15.253Z",
+            "contents":  "We have passed on to WekLaw"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "name": "Ricardo del Castillo",
+    "email": "Ricardo delCastillo@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Evelyn Carol",
+    "email": "EvelynCarol@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type":  "email",
+            "project_type":  "Water damage",
+            "subproject_type":  "Mitigation",
+            "datetime":  "2023-06-20T15:42:55.314Z",
+            "contents":  "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "name": "Brian Muñiz",
+    "email": "BrianMuñiz@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Paola Ordóñez",
+    "email": "PaolaOrdóñez@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "name": "Reyna Garcia",
+    "email": "ReynaGarcia@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "name": "Hector Del Valle",
+    "email": "Hector DelValle@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Carol Adames",
+    "email": "CarolAdames@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Yadira Lugo",
+    "email": "YadiraLugo@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "name": "Luiz Marquesini",
+    "email": "LuizMarquesini@gmail.com",
+    "properties": [
+      {
+        "location": "Florida",
+        "recent_events": [
+          {
+            "event_type": "insurance note",
+            "project_type": "Water damage",
+            "subproject_type": "Plumbing",
+            "claim completed": false,
+            "datetime": "2023-06-22T13:42:15.253Z",
+            "contents": "We have passed on to WekLaw"
+          },
+          {
+            "event_type": "work completed",
+            "subproject_type": "Plumbing",
+            "datetime": "2023-06-21T17:22:17.634Z"
+          },
+          {
+            "event_type": "email",
+                  "project_type": "Water damage",
+                  "subproject_type": "Tarp",
+        "datetime": "2023-06-20T15:42:55.314Z",
+        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -3,7 +3,6 @@ import { SSE } from "sse.js";
 
 export default async function runSSE(
   endpoint: string,
-  supaAccessToken: string,
   payload: string,
   onEvent: (token: string, entireOutput: string) => void,
   onDone: (fullOutput: string) => void,
@@ -13,7 +12,6 @@ export default async function runSSE(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + supaAccessToken,
     },
     payload: payload,
   });

@@ -1,27 +1,27 @@
-import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  HandThumbDownIcon,
+  HandThumbUpIcon,
+  LightBulbIcon
+} from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import runSSE from "../lib/sse";
-import {Action, ActionGroupJoinActions} from "../lib/types";
 import { LoadingSpinner } from "./loadingspinner";
-import SelectBox from "./selectBox";
-import {
-  camelToCapitalizedWords,
-  classNames,
-  getNumRows,
-  parseKeyValues,
-  unpackAndCall,
-} from "../lib/utils";
-import { parseOutput } from "../lib/parsers/parsers";
+import {camelToCapitalizedWords, classNames, getNumRows, parseKeyValues, unpackAndCall} from "../lib/utils";
+import {ParsedOutput, parseOutput} from "../lib/parsers/parsers";
+import {MockAction, PageAction} from "../lib/rcMock";
+import Toggle from "./toggle";
 
-const BrandName = "Totango";
+const BrandName = "RControl";
 const BrandColour = "#ffffff";
-const BrandColourAction = "#146ef5";
+const BrandColourAction = "#5664d1";
 const BrandActionTextColour = "#ffffff";
 
 export const promptSuggestionButtons = [
-  "Who are our most active users in the last 30 days?",
-  "Get the European CRM companies with >500 employees",
-  "Which of our customers are using the new search feature?",
+  // "Who are our most active users in the last 30 days?",
+  // "Get the European CRM companies with >500 employees",
+  // "Which of our customers are using the new search feature?",
 ];
 
 interface ChatItem {
@@ -31,51 +31,70 @@ interface ChatItem {
 }
 
 export default function PlaygroundChatbot(props: {
-  pageActions: ActionGroupJoinActions[];
+  pageActions: PageAction[];
   activeActions: string[];
   page: string;
   setPage: (page: string) => void;
+  language: "English" | "Espanol";
 }) {
-  // const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
+  // This is a hack to prevent the effect from running twice in development
+  // It's because React strict mode runs in development, which renders everything
+  // twice to check for bugs/side effects
+  const didRunEffect = useRef(false);
 
   const ref = useRef(null);
-  const [visualChatContents, setVisualChatContents] = useState<ChatItem[]>([]);
-  const [userText, setUserText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [responseNum, setResponseNum] = useState(0);
+  const [devChatContents, setDevChatContents] = useState<ChatItem[]>([
+    // {
+    //   role: "user",
+    //   content: "Hi",
+    // },{
+    //   role: "assistant",
+    //   content: "Reasoning: You're a muppet. No you're not. Maybe you are. Stop throwing food for crows.\n\nPlan:\n- You should stop being a muppet.\n\nTell user: You are wonderful.\n\nCompleted: true",
+    // },
+  ]);
+  const [userText, setUserText] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [devMode, setDevMode] = useState<boolean>(true);
+  const [responseNum, setResponseNum] = useState<number>(0);
 
   const [gptPageName, setGptPageName] = useState(props.page);
-  const [killSwitchClicked, setKillSwitchClicked] = useState(false);
+  const [killSwitchClicked, setKillSwitchClicked] = useState<boolean>(false);
+  useEffect(() => {
+    if (killSwitchClicked) {
+      didRunEffect.current = false;
+      setLoading(false);
+    }
+  }, [killSwitchClicked]);
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[], activeActions: string[]) => {
       const chatCopy = [...chat];
       chat.push({ role: "assistant", content: "" });
-      let filteredPageActions: ActionGroupJoinActions[] = props.pageActions.map(
+      let filteredPageActions: PageAction[] = props.pageActions.map(
         (pageAction) => {
-          let filteredActions: Action[] = pageAction.actions.filter(
+          let filteredActions: MockAction[] = pageAction.actions.filter(
             (action) => {
               return activeActions.includes(action.name);
             }
           );
-          let filteredPageAction: ActionGroupJoinActions = {
+          let filteredPageAction: PageAction = {
             ...pageAction,
             actions: filteredActions,
           };
           return filteredPageAction;
         }
       );
+      console.log("filteredPageActions", filteredPageActions);
       await runSSE(
-        "api/call-openai",
-        "an access token",
+        "/api/call-openai",
         JSON.stringify({
           userCopilotMessages: chatCopy,
           pageActions: filteredPageActions,
           currentPageName: gptPageName,
+          language: props.language,
         }),
         (text: string, fullOutput: string) => {
-          if (killSwitchClicked) return;
-          setVisualChatContents((prev) => [
+          setDevChatContents((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: "assistant", content: fullOutput + text },
           ]);
@@ -85,102 +104,83 @@ export default function PlaygroundChatbot(props: {
           );
         },
         async (fullOutput: string) => {
-          if (killSwitchClicked) return;
-          setVisualChatContents((prev) => [
+          setDevChatContents((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: "assistant", content: fullOutput },
           ]);
-
           const output = parseOutput(fullOutput);
           output.commands.forEach((command) => {
             console.log("command", command);
-            const thisPageActions = props.pageActions.find(
-              // (pageAction) => pageAction.pageName === gptPageName
-                // TODO: Fix
-              (pageAction) => true
-            );
-            if (!thisPageActions)
-              throw Error("GPTPageName is incorrect: " + gptPageName);
+            const thisPageActions = props.pageActions.find((pageAction) => pageAction.pageName === gptPageName);
+            if (!thisPageActions) throw Error("GPTPageName is incorrect: " + gptPageName);
             if (command.name === "navigateTo") {
               console.log("navigatingTo", command.args.pageName);
               setGptPageName(command.args.pageName);
               props.setPage(command.args.pageName);
-              setVisualChatContents((prev) => {
+              setDevChatContents((prev) => {
                 if (prev[prev.length - 1].role === "function") {
                   const prevFuncMessage = prev[prev.length - 1];
                   return [
-                    ...prev.slice(0, prev.length - 1),
-                    {
-                      role: "function",
-                      name: prevFuncMessage.name + "_" + command.name,
-                      content:
-                        prevFuncMessage.content +
-                        "\n\n" +
-                        "Navigated to " +
-                        command.args.pageName,
-                    },
-                  ];
+                  ...prev.slice(0, prev.length - 1),
+                  {
+                    role: "function",
+                    name: prevFuncMessage.name + "_" + command.name,
+                    content: prevFuncMessage.content + "\n\n" + "Navigated to " + command.args.pageName
+                  },
+                ]
                 }
                 // SyntaxError: Expected ',' or '}' after property value in JSON at position 22
                 return [
                   ...prev,
-                  {
-                    role: "function",
-                    name: command.name,
-                    content: "Navigated to " + command.args.pageName,
-                  },
+                  {role: "function", name: command.name, content: "Navigated to " + command.args.pageName},
                 ];
               });
               return;
             }
-            const commandAction = thisPageActions.actions.find(
-              (action) => action.name === command.name
-            );
-            if (!commandAction)
-              throw Error("Command name is incorrect: " + command.name);
+            const commandAction = thisPageActions.actions.find((action) => action.name === command.name);
+            if (!commandAction) throw Error("Command name is incorrect: " + command.name);
             console.log("commandAction", commandAction);
             console.log("command.args", command.args);
-            // const out = unpackAndCall(commandAction.func, command.args);
-            // TODO: Fix
-            const out = unpackAndCall(() => {}, command.args);
+            const out = unpackAndCall(commandAction.func, command.args);
             console.log("out from calling function", out);
             if (out) {
-              setVisualChatContents((prev) => {
+              setDevChatContents((prev) => {
                 if (prev[prev.length - 1].role === "function") {
                   const prevFuncMessage = prev[prev.length - 1];
                   return [
-                    ...prev.slice(0, prev.length - 1),
-                    {
-                      role: "function",
-                      name: prevFuncMessage.name + "_" + command.name,
-                      content: prevFuncMessage.content + "\n\n" + out,
-                    },
-                  ];
+                  ...prev.slice(0, prev.length - 1),
+                  {
+                    role: "function",
+                    name: prevFuncMessage.name + "_" + command.name,
+                    content: prevFuncMessage.content + "\n\n" + out
+                  },
+                ]
                 }
                 return [
                   ...prev,
-                  { role: "function", name: command.name, content: out },
+                  {role: "function", name: command.name, content: out},
                 ];
               });
             }
-            if (command.name === "createSegment") {
-              setGptPageName("Segment");
-              props.setPage("Segment");
-            }
-          });
+          })
           setLoading(false);
-          setTimeout(() => {
-            if (!output.completed) {
-              console.log("Running again - not terminating!");
-              setLoading(true);
-            } else {
-              console.log("Terminating!");
-              setVisualChatContents((prev) => [
-                ...prev,
-                { role: "assistant", content: "<button>Confirm</button>" },
-              ]);
-            }
-          }, 250);
+          setTimeout(
+              () => {
+                if (output.completed === false) {
+                  console.log("Running again - not terminating!")
+                  setLoading(true);
+                  didRunEffect.current = false;
+                } else {
+                  console.log("Terminating!")
+                  if (output.completed === true) {
+                    setDevChatContents((prev) => [
+                      ...prev,
+                      { role: "assistant", content: "<button>Confirm</button>"},
+                    ]);
+                  }
+                }
+                },
+              250);
         },
         async (e: any) => {
           setLoading(false);
@@ -188,21 +188,13 @@ export default function PlaygroundChatbot(props: {
         }
       );
     },
-    [
-      setVisualChatContents,
-      responseNum,
-      setResponseNum,
-      gptPageName,
-      props.pageActions,
-      props.page,
-      setGptPageName,
-      killSwitchClicked,
-    ]
+    [setDevChatContents, responseNum, setResponseNum, gptPageName, props.pageActions, props.page, setGptPageName, killSwitchClicked, didRunEffect, props.language]
   );
 
   useEffect(() => {
-    if (loading) {
-      addTextToChat(visualChatContents, props.activeActions);
+    if (loading && !didRunEffect.current) {
+      didRunEffect.current = true;
+      addTextToChat(devChatContents, props.activeActions);
     }
   }, [loading]);
 
@@ -211,7 +203,7 @@ export default function PlaygroundChatbot(props: {
     if (ele) {
       ele.scrollTop = ele.scrollHeight;
     }
-  }, [visualChatContents]);
+  }, [devChatContents]);
 
   return (
     <div className="flex h-full flex-1 flex-col divide-y divide-gray-200 bg-gray-50">
@@ -224,18 +216,25 @@ export default function PlaygroundChatbot(props: {
         style={{ backgroundColor: BrandColour }}
       >
         <div className="flex flex-row place-items-center justify-between">
-          <div className="flex flex-row gap-x-2 place-items-center w-48">
-            <SelectBox
-              title="Page:"
-              // TODO: Fix
-              // options={props.pageActions.map((p) => p.pageName)}
-              options={props.pageActions.map((p) => p.name)}
-              theme={"light"}
-              selected={props.page}
-              setSelected={(selected: string) => {
-                props.setPage(selected);
-                setGptPageName(selected);
-              }}
+          {/*<div className="flex flex-row gap-x-2 place-items-center w-48">*/}
+          {/*  <SelectBox*/}
+          {/*    title="Page:"*/}
+          {/*    options={props.pageActions.map((p) => p.pageName)}*/}
+          {/*    theme={"light"}*/}
+          {/*    selected={props.page}*/}
+          {/*    setSelected={(selected: string) => {*/}
+          {/*      props.setPage(selected);*/}
+          {/*      setGptPageName(selected);*/}
+          {/*    }}*/}
+          {/*  />*/}
+          {/*</div>*/}
+          <div className="flex flex-col place-items-center gap-y-1 text-sm font-bold">
+            Developer mode
+            <Toggle
+              sr={"Developer Mode"}
+              enabled={devMode}
+              setEnabled={setDevMode}
+              size={"sm"}
             />
           </div>
           <h1
@@ -252,11 +251,10 @@ export default function PlaygroundChatbot(props: {
                 "border-gray-300 hover:border-gray-400 text-gray-700"
               )}
               onClick={() => {
-                setVisualChatContents([]);
+                setDevChatContents([]);
                 // Set GPT page to initial page
-                // TODO: Fix
-                // setGptPageName(props.pageActions[0].pageName);
-                // props.setPage(props.pageActions[0].pageName);
+                setGptPageName(props.pageActions[0].pageName);
+                props.setPage(props.pageActions[0].pageName);
               }}
             >
               <ArrowPathIcon className="h-5 w-5" /> Clear chat
@@ -270,10 +268,13 @@ export default function PlaygroundChatbot(props: {
         id={"scrollable-chat-contents"}
       >
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
-          {visualChatContents.map((chatItem, idx) => (
-            <ChatItem chatItem={chatItem} key={idx} />
-          ))}
-          {visualChatContents.length === 0 && (
+          {devChatContents.map((chatItem, idx) => {
+            if (devMode || chatItem.role !== "assistant") return <DevChatItem chatItem={chatItem} key={idx}/>;
+            else {
+              return <UserChatItem chatItem={chatItem} key={idx} />;
+            }
+        })}
+          {devChatContents.length === 0 && promptSuggestionButtons.length > 0 && (
             <div className="py-4 px-1.5">
               <h2 className="ml-2 font-medium">Suggestions</h2>
               <div className="mt-1 flex flex-col gap-y-2 place-items-baseline">
@@ -282,8 +283,8 @@ export default function PlaygroundChatbot(props: {
                     key={text}
                     className="text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
                     onClick={() => {
-                      const chatcopy = [...visualChatContents];
-                      setVisualChatContents([
+                      const chatcopy = [...devChatContents];
+                      setDevChatContents([
                         ...chatcopy,
                         { role: "user", content: text },
                       ]);
@@ -311,7 +312,7 @@ export default function PlaygroundChatbot(props: {
             if (e.key === "Enter") {
               e.preventDefault();
               if (userText.length > 5) {
-                setVisualChatContents((prev) => [
+                setDevChatContents((prev) => [
                   ...prev,
                   { role: "user", content: userText },
                 ]);
@@ -321,17 +322,13 @@ export default function PlaygroundChatbot(props: {
             }
           }}
         />
-        <div className="flex flex-shrink-0 w-full justify-end px-4 pb-4 pt-2">
-          {loading && (
-            <button
-              className={
-                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
-              }
-              onClick={() => setKillSwitchClicked(true)}
-            >
-              Cancel
-            </button>
-          )}
+        <div className="flex flex-shrink-0 w-full justify-end px-1 pb-4 pt-2">
+          {loading && <button
+            className={"flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"}
+            onClick={() => setKillSwitchClicked(true)}
+          >
+            Cancel
+          </button>}
           <button
             type="submit"
             className={classNames(
@@ -342,7 +339,7 @@ export default function PlaygroundChatbot(props: {
             )}
             style={{ backgroundColor: BrandColourAction }}
             onClick={() => {
-              setVisualChatContents((prev) => [
+              setDevChatContents((prev) => [
                 ...prev,
                 { role: "user", content: userText },
               ]);
@@ -360,10 +357,12 @@ export default function PlaygroundChatbot(props: {
 }
 
 const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;
+let confirmRegex = /<button>Confirm<\/button>/;
 let buttonRegex = /<button>(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
-function ChatItem(props: { chatItem: ChatItem }) {
+
+function DevChatItem(props: { chatItem: ChatItem }) {
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
@@ -390,13 +389,42 @@ function ChatItem(props: { chatItem: ChatItem }) {
       )}
     >
       <p className="text-xs text-gray-600 mb-1">
-        {props.chatItem.role === "assistant"
-          ? BrandName + " AI"
-          : props.chatItem.role === "function"
-          ? "Function called"
-          : "You"}
+        {props.chatItem.role === "assistant" ? BrandName + " AI" : props.chatItem.role === "function" ? "Function called" :"You"}
       </p>
       {matches.map((text, idx) => {
+        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+          return (
+              <div
+                  key={idx}
+                  className="my-5 w-full flex flex-col place-items-center gap-y-2"
+              >
+                Did this response answer your question?
+                <div className="flex flex-row gap-x-4">
+                  <button
+                      onClick={() => setSaveSuccessfulFeedback(true)}
+                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
+                  >
+                    <HandThumbDownIcon className="h-5 w-5"/>
+                    No
+                  </button>
+                  <button
+                      onClick={() => setSaveSuccessfulFeedback(true)}
+                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
+                  >
+                    <HandThumbUpIcon className="h-5 w-5"/>
+                    Yes
+                  </button>
+                </div>
+                <div className={classNames(
+                    "flex flex-row place-items-center gap-x-1",
+                saveSuccessfulFeedback ? "visible" : "invisible"
+                )}>
+                  <CheckCircleIcon className="h-5 w-5 text-green-500"/>
+                  <div className="text-sm">Thanks for your feedback!</div>
+                </div>
+              </div>
+          );
+        }
         const buttonMatches = buttonRegex.exec(text);
         if (buttonMatches && buttonMatches.length > 0) {
           return (
@@ -463,6 +491,118 @@ function Table(props: { chatKeyValueText: string }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function UserChatItem(props: { chatItem: ChatItem; }) {
+  const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
+  useEffect(() => {
+    if (saveSuccessfulFeedback) {
+      setTimeout(() => {
+        setSaveSuccessfulFeedback(false);
+      }, 3000);
+    }
+  }, [saveSuccessfulFeedback]);
+  let match;
+  let matches = [];
+  while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
+    if (match[1]) matches.push(match[1]);
+    if (match[2]) matches.push(match[2]);
+    if (match[3]) matches.push(match[3].trim());
+  }
+  const outputObj = parseOutput(props.chatItem.content);
+  // TODO: if it's a function call, hide it from the user
+  return (
+    <div className="py-4 px-1.5 rounded flex flex-col bg-gray-200 text-left place-items-baseline">
+      <p className="text-xs text-gray-600 mb-1">
+        {BrandName + " AI"}
+      </p>
+      {matches.map((text, idx) => {
+        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+          return (
+              <div
+                  key={idx}
+                  className="my-5 w-full flex flex-col place-items-center gap-y-2"
+              >
+                Did this response answer your question?
+                <div className="flex flex-row gap-x-4">
+                  <button
+                      onClick={() => setSaveSuccessfulFeedback(true)}
+                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
+                  >
+                    <HandThumbDownIcon className="h-5 w-5"/>
+                    No
+                  </button>
+                  <button
+                      onClick={() => setSaveSuccessfulFeedback(true)}
+                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
+                  >
+                    <HandThumbUpIcon className="h-5 w-5"/>
+                    Yes
+                  </button>
+                </div>
+                <div className={classNames(
+                    "flex flex-row place-items-center gap-x-1",
+                saveSuccessfulFeedback ? "visible" : "invisible"
+                )}>
+                  <CheckCircleIcon className="h-5 w-5 text-green-500"/>
+                  <div className="text-sm">Thanks for your feedback!</div>
+                </div>
+              </div>
+          );
+        }
+        const buttonMatches = buttonRegex.exec(text);
+        if (buttonMatches && buttonMatches.length > 0) {
+          return (
+            <div
+              key={idx}
+              className="my-5 w-full flex flex-col place-items-center gap-y-2"
+            >
+              <button
+                onClick={() => setSaveSuccessfulFeedback(true)}
+                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2`}
+                style={{
+                  backgroundColor: BrandColourAction,
+                  color: BrandActionTextColour,
+                  // @ts-ignore
+                  "--tw-ring-color": BrandColourAction,
+                }}
+              >
+                {buttonMatches[1].trim()}
+              </button>
+              <div className="flex flex-row place-items-center gap-x-1">
+                {saveSuccessfulFeedback && (
+                  <>
+                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                    <div className="text-sm">Successful!</div>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        }
+        const tableMatches = tableRegex.exec(text);
+        if (tableMatches && tableMatches.length > 0) {
+          return <Table chatKeyValueText={tableMatches[1]} key={idx} />;
+        }
+        return (
+          <>
+            <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
+              <p className="flex flex-row gap-x-1.5 text-yellow-800"><LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts</p>
+              <p className="mt-1 text-little whitespace-pre-line text-gray-700">
+                {outputObj.reasoning}
+              </p>
+            </div>
+            {outputObj.tellUser && <p
+                key={idx}
+                className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line"
+            >
+              {outputObj.tellUser}
+            </p>}
+          </>
+        );
+      })}
     </div>
   );
 }
