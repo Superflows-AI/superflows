@@ -3,14 +3,20 @@ import {
   CheckCircleIcon,
   HandThumbDownIcon,
   HandThumbUpIcon,
-  LightBulbIcon
+  LightBulbIcon,
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import runSSE from "../lib/sse";
 import { LoadingSpinner } from "./loadingspinner";
-import {camelToCapitalizedWords, classNames, getNumRows, parseKeyValues, unpackAndCall} from "../lib/utils";
-import {ParsedOutput, parseOutput} from "../lib/parsers/parsers";
-import {MockAction, PageAction} from "../lib/rcMock";
+import {
+  camelToCapitalizedWords,
+  classNames,
+  getNumRows,
+  parseKeyValues,
+  unpackAndCall,
+} from "../lib/utils";
+import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
+import { MockAction, PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
 
 const BrandName = "RControl";
@@ -19,9 +25,9 @@ const BrandColourAction = "#5664d1";
 const BrandActionTextColour = "#ffffff";
 
 export const promptSuggestionButtons = [
-  // "Who are our most active users in the last 30 days?",
-  // "Get the European CRM companies with >500 employees",
-  // "Which of our customers are using the new search feature?",
+  "When is Mrs. Carol's mitigation scheduled for?",
+  "Necesitamos saber si ya el caso de la señora Carol Adames ya se pasó a WekLaw",
+  "Who can I ask about the status of Mr. Luiz Marquesini who signed on August 30, 2022?",
 ];
 
 interface ChatItem {
@@ -111,8 +117,11 @@ export default function PlaygroundChatbot(props: {
           const output = parseOutput(fullOutput);
           output.commands.forEach((command) => {
             console.log("command", command);
-            const thisPageActions = props.pageActions.find((pageAction) => pageAction.pageName === gptPageName);
-            if (!thisPageActions) throw Error("GPTPageName is incorrect: " + gptPageName);
+            const thisPageActions = props.pageActions.find(
+              (pageAction) => pageAction.pageName === gptPageName
+            );
+            if (!thisPageActions)
+              throw Error("GPTPageName is incorrect: " + gptPageName);
             if (command.name === "navigateTo") {
               console.log("navigatingTo", command.args.pageName);
               setGptPageName(command.args.pageName);
@@ -121,24 +130,35 @@ export default function PlaygroundChatbot(props: {
                 if (prev[prev.length - 1].role === "function") {
                   const prevFuncMessage = prev[prev.length - 1];
                   return [
-                  ...prev.slice(0, prev.length - 1),
-                  {
-                    role: "function",
-                    name: prevFuncMessage.name + "_" + command.name,
-                    content: prevFuncMessage.content + "\n\n" + "Navigated to " + command.args.pageName
-                  },
-                ]
+                    ...prev.slice(0, prev.length - 1),
+                    {
+                      role: "function",
+                      name: prevFuncMessage.name + "_" + command.name,
+                      content:
+                        prevFuncMessage.content +
+                        "\n\n" +
+                        "Navigated to " +
+                        command.args.pageName,
+                    },
+                  ];
                 }
                 // SyntaxError: Expected ',' or '}' after property value in JSON at position 22
                 return [
                   ...prev,
-                  {role: "function", name: command.name, content: "Navigated to " + command.args.pageName},
+                  {
+                    role: "function",
+                    name: command.name,
+                    content: "Navigated to " + command.args.pageName,
+                  },
                 ];
               });
               return;
             }
-            const commandAction = thisPageActions.actions.find((action) => action.name === command.name);
-            if (!commandAction) throw Error("Command name is incorrect: " + command.name);
+            const commandAction = thisPageActions.actions.find(
+              (action) => action.name === command.name
+            );
+            if (!commandAction)
+              throw Error("Command name is incorrect: " + command.name);
             console.log("commandAction", commandAction);
             console.log("command.args", command.args);
             const out = unpackAndCall(commandAction.func, command.args);
@@ -148,39 +168,37 @@ export default function PlaygroundChatbot(props: {
                 if (prev[prev.length - 1].role === "function") {
                   const prevFuncMessage = prev[prev.length - 1];
                   return [
-                  ...prev.slice(0, prev.length - 1),
-                  {
-                    role: "function",
-                    name: prevFuncMessage.name + "_" + command.name,
-                    content: prevFuncMessage.content + "\n\n" + out
-                  },
-                ]
+                    ...prev.slice(0, prev.length - 1),
+                    {
+                      role: "function",
+                      name: prevFuncMessage.name + "_" + command.name,
+                      content: prevFuncMessage.content + "\n\n" + out,
+                    },
+                  ];
                 }
                 return [
                   ...prev,
-                  {role: "function", name: command.name, content: out},
+                  { role: "function", name: command.name, content: out },
                 ];
               });
             }
-          })
+          });
           setLoading(false);
-          setTimeout(
-              () => {
-                if (output.completed === false) {
-                  console.log("Running again - not terminating!")
-                  setLoading(true);
-                  didRunEffect.current = false;
-                } else {
-                  console.log("Terminating!")
-                  if (output.completed === true) {
-                    setDevChatContents((prev) => [
-                      ...prev,
-                      { role: "assistant", content: "<button>Confirm</button>"},
-                    ]);
-                  }
-                }
-                },
-              250);
+          setTimeout(() => {
+            if (output.completed === false) {
+              console.log("Running again - not terminating!");
+              setLoading(true);
+              didRunEffect.current = false;
+            } else {
+              console.log("Terminating!");
+              if (output.completed === true) {
+                setDevChatContents((prev) => [
+                  ...prev,
+                  { role: "assistant", content: "<button>Confirm</button>" },
+                ]);
+              }
+            }
+          }, 250);
         },
         async (e: any) => {
           setLoading(false);
@@ -188,7 +206,18 @@ export default function PlaygroundChatbot(props: {
         }
       );
     },
-    [setDevChatContents, responseNum, setResponseNum, gptPageName, props.pageActions, props.page, setGptPageName, killSwitchClicked, didRunEffect, props.language]
+    [
+      setDevChatContents,
+      responseNum,
+      setResponseNum,
+      gptPageName,
+      props.pageActions,
+      props.page,
+      setGptPageName,
+      killSwitchClicked,
+      didRunEffect,
+      props.language,
+    ]
   );
 
   useEffect(() => {
@@ -269,34 +298,36 @@ export default function PlaygroundChatbot(props: {
       >
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
-            if (devMode || chatItem.role !== "assistant") return <DevChatItem chatItem={chatItem} key={idx}/>;
+            if (devMode || chatItem.role !== "assistant")
+              return <DevChatItem chatItem={chatItem} key={idx} />;
             else {
               return <UserChatItem chatItem={chatItem} key={idx} />;
             }
-        })}
-          {devChatContents.length === 0 && promptSuggestionButtons.length > 0 && (
-            <div className="py-4 px-1.5">
-              <h2 className="ml-2 font-medium">Suggestions</h2>
-              <div className="mt-1 flex flex-col gap-y-2 place-items-baseline">
-                {promptSuggestionButtons.map((text) => (
-                  <button
-                    key={text}
-                    className="text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
-                    onClick={() => {
-                      const chatcopy = [...devChatContents];
-                      setDevChatContents([
-                        ...chatcopy,
-                        { role: "user", content: text },
-                      ]);
-                      setLoading(true);
-                    }}
-                  >
-                    {text}
-                  </button>
-                ))}
+          })}
+          {devChatContents.length === 0 &&
+            promptSuggestionButtons.length > 0 && (
+              <div className="py-4 px-1.5">
+                <h2 className="ml-2 font-medium">Suggestions</h2>
+                <div className="mt-1 flex flex-col gap-y-2 place-items-baseline">
+                  {promptSuggestionButtons.map((text) => (
+                    <button
+                      key={text}
+                      className="text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
+                      onClick={() => {
+                        const chatcopy = [...devChatContents];
+                        setDevChatContents([
+                          ...chatcopy,
+                          { role: "user", content: text },
+                        ]);
+                        setLoading(true);
+                      }}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
       {/* Textbox user types into */}
@@ -323,12 +354,16 @@ export default function PlaygroundChatbot(props: {
           }}
         />
         <div className="flex flex-shrink-0 w-full justify-end px-1 pb-4 pt-2">
-          {loading && <button
-            className={"flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"}
-            onClick={() => setKillSwitchClicked(true)}
-          >
-            Cancel
-          </button>}
+          {loading && (
+            <button
+              className={
+                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
+              }
+              onClick={() => setKillSwitchClicked(true)}
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="submit"
             className={classNames(
@@ -361,7 +396,6 @@ let confirmRegex = /<button>Confirm<\/button>/;
 let buttonRegex = /<button>(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
-
 function DevChatItem(props: { chatItem: ChatItem }) {
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
@@ -389,40 +423,46 @@ function DevChatItem(props: { chatItem: ChatItem }) {
       )}
     >
       <p className="text-xs text-gray-600 mb-1">
-        {props.chatItem.role === "assistant" ? BrandName + " AI" : props.chatItem.role === "function" ? "Function called" :"You"}
+        {props.chatItem.role === "assistant"
+          ? BrandName + " AI"
+          : props.chatItem.role === "function"
+          ? "Function called"
+          : "You"}
       </p>
       {matches.map((text, idx) => {
         if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
           return (
-              <div
-                  key={idx}
-                  className="my-5 w-full flex flex-col place-items-center gap-y-2"
-              >
-                Did this response answer your question?
-                <div className="flex flex-row gap-x-4">
-                  <button
-                      onClick={() => setSaveSuccessfulFeedback(true)}
-                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
-                  >
-                    <HandThumbDownIcon className="h-5 w-5"/>
-                    No
-                  </button>
-                  <button
-                      onClick={() => setSaveSuccessfulFeedback(true)}
-                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
-                  >
-                    <HandThumbUpIcon className="h-5 w-5"/>
-                    Yes
-                  </button>
-                </div>
-                <div className={classNames(
-                    "flex flex-row place-items-center gap-x-1",
-                saveSuccessfulFeedback ? "visible" : "invisible"
-                )}>
-                  <CheckCircleIcon className="h-5 w-5 text-green-500"/>
-                  <div className="text-sm">Thanks for your feedback!</div>
-                </div>
+            <div
+              key={idx}
+              className="my-5 w-full flex flex-col place-items-center gap-y-2"
+            >
+              Did this response answer your question?
+              <div className="flex flex-row gap-x-4">
+                <button
+                  onClick={() => setSaveSuccessfulFeedback(true)}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
+                >
+                  <HandThumbDownIcon className="h-5 w-5" />
+                  No
+                </button>
+                <button
+                  onClick={() => setSaveSuccessfulFeedback(true)}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
+                >
+                  <HandThumbUpIcon className="h-5 w-5" />
+                  Yes
+                </button>
               </div>
+              <div
+                className={classNames(
+                  "flex flex-row place-items-center gap-x-1",
+                  saveSuccessfulFeedback ? "visible" : "invisible"
+                )}
+              >
+                <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                <div className="text-sm">Thanks for your feedback!</div>
+              </div>
+            </div>
           );
         }
         const buttonMatches = buttonRegex.exec(text);
@@ -495,7 +535,7 @@ function Table(props: { chatKeyValueText: string }) {
   );
 }
 
-function UserChatItem(props: { chatItem: ChatItem; }) {
+function UserChatItem(props: { chatItem: ChatItem }) {
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
@@ -515,41 +555,41 @@ function UserChatItem(props: { chatItem: ChatItem; }) {
   // TODO: if it's a function call, hide it from the user
   return (
     <div className="py-4 px-1.5 rounded flex flex-col bg-gray-200 text-left place-items-baseline">
-      <p className="text-xs text-gray-600 mb-1">
-        {BrandName + " AI"}
-      </p>
+      <p className="text-xs text-gray-600 mb-1">{BrandName + " AI"}</p>
       {matches.map((text, idx) => {
         if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
           return (
-              <div
-                  key={idx}
-                  className="my-5 w-full flex flex-col place-items-center gap-y-2"
-              >
-                Did this response answer your question?
-                <div className="flex flex-row gap-x-4">
-                  <button
-                      onClick={() => setSaveSuccessfulFeedback(true)}
-                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
-                  >
-                    <HandThumbDownIcon className="h-5 w-5"/>
-                    No
-                  </button>
-                  <button
-                      onClick={() => setSaveSuccessfulFeedback(true)}
-                      className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
-                  >
-                    <HandThumbUpIcon className="h-5 w-5"/>
-                    Yes
-                  </button>
-                </div>
-                <div className={classNames(
-                    "flex flex-row place-items-center gap-x-1",
-                saveSuccessfulFeedback ? "visible" : "invisible"
-                )}>
-                  <CheckCircleIcon className="h-5 w-5 text-green-500"/>
-                  <div className="text-sm">Thanks for your feedback!</div>
-                </div>
+            <div
+              key={idx}
+              className="my-5 w-full flex flex-col place-items-center gap-y-2"
+            >
+              Did this response answer your question?
+              <div className="flex flex-row gap-x-4">
+                <button
+                  onClick={() => setSaveSuccessfulFeedback(true)}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
+                >
+                  <HandThumbDownIcon className="h-5 w-5" />
+                  No
+                </button>
+                <button
+                  onClick={() => setSaveSuccessfulFeedback(true)}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
+                >
+                  <HandThumbUpIcon className="h-5 w-5" />
+                  Yes
+                </button>
               </div>
+              <div
+                className={classNames(
+                  "flex flex-row place-items-center gap-x-1",
+                  saveSuccessfulFeedback ? "visible" : "invisible"
+                )}
+              >
+                <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                <div className="text-sm">Thanks for your feedback!</div>
+              </div>
+            </div>
           );
         }
         const buttonMatches = buttonRegex.exec(text);
@@ -589,17 +629,21 @@ function UserChatItem(props: { chatItem: ChatItem; }) {
         return (
           <>
             <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
-              <p className="flex flex-row gap-x-1.5 text-yellow-800"><LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts</p>
+              <p className="flex flex-row gap-x-1.5 text-yellow-800">
+                <LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts
+              </p>
               <p className="mt-1 text-little whitespace-pre-line text-gray-700">
                 {outputObj.reasoning}
               </p>
             </div>
-            {outputObj.tellUser && <p
+            {outputObj.tellUser && (
+              <p
                 key={idx}
                 className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line"
-            >
-              {outputObj.tellUser}
-            </p>}
+              >
+                {outputObj.tellUser}
+              </p>
+            )}
           </>
         );
       })}
