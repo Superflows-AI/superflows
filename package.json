@@ -11,6 +11,7 @@
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
     "@headlessui/react": "^1.7.7",
+    "@sentry/nextjs": "^7.56.0",
     "@supabase/auth-helpers-nextjs": "^0.6.1",
     "@supabase/auth-helpers-react": "^0.3.1",
     "@supabase/supabase-js": "^2.25.0",
@@ -24,6 +25,7 @@
     "dotenv": "^16.0.3",
     "fuse.js": "^6.6.2",
     "next": "^13.4.2",
+    "posthog-js": "^1.68.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-markdown": "^8.0.7",
