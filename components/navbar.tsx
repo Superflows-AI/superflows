@@ -12,8 +12,8 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 const navigation = [
   { name: "Playground", href: "/" },
   { name: "Actions", href: "/actions" },
-  { name: "Evaluation", href: "/team" },
   { name: "Team", href: "/team" },
+  { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
 export function Navbar(props: { current: string }) {

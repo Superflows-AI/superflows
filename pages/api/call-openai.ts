@@ -13,6 +13,8 @@ export const config = {
   runtime: "edge",
 };
 
+// TODO: Add zod
+
 export default async function handler(req: NextRequest): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(undefined, { status: 200 });
@@ -37,7 +39,12 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const chatGptPrompt: ChatGPTMessage[] = getMessages(
     requestData.userCopilotMessages ?? [],
     requestData.pageActions,
-    requestData.currentPageName
+    requestData.currentPageName,
+    {
+        name: "Restoration Control CRM",
+      description: "Restoration Control is a company that handles water damage, fire damage, mold remediation, and other restoration services. You are a chatbot for it's internal CRM, used by its salespeople and other employees."
+      },
+    requestData.language
   );
   console.log("chatGptPrompt", chatGptPrompt[0].content);
   // throw Error()

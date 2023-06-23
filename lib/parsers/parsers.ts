@@ -96,6 +96,9 @@
 // // }
 //
 
+import {Simulate} from "react-dom/test-utils";
+import input = Simulate.input;
+
 export interface FunctionCall {
   name: string;
   args: { [key: string]: any };
@@ -104,8 +107,9 @@ export interface FunctionCall {
 export interface ParsedOutput {
   reasoning: string;
   plan: string;
+  tellUser: string;
   commands: FunctionCall[];
-  completed: boolean;
+  completed: boolean | null;
 }
 
 function getSectionText(
@@ -116,12 +120,12 @@ function getSectionText(
   const sectionIndex = inputStr.indexOf(sectionName + ":");
   const nextSectionIdx = inputStr.indexOf(nextSectionName + ":");
 
-  if (
-    sectionIndex === -1 ||
-    nextSectionIdx === -1 ||
-    sectionIndex > nextSectionIdx
-  ) {
-    return "Invalid input string";
+  if (sectionIndex === -1 || sectionIndex > nextSectionIdx) {
+    return "Invalid input string: " + inputStr;
+  }
+
+  if (nextSectionIdx === -1) {
+    return inputStr.slice(sectionIndex + sectionName.length + 1).trim();
   }
 
   return inputStr
@@ -130,72 +134,42 @@ function getSectionText(
 }
 
 export function parseOutput(gptString: string): ParsedOutput {
-  const commandsText = getSectionText(gptString, "Commands", "Completed");
+  const planIn = gptString.toLowerCase().includes("plan:");
+  const tellUserIn = gptString.toLowerCase().includes("tell user:");
+  const commandsIn = gptString.toLowerCase().includes("commands:");
+  const completedIn = gptString.toLowerCase().includes("completed:");
+
   let commands: FunctionCall[] = [];
-  if (gptString.toLowerCase().includes("completed:")) {
+  if (commandsIn && completedIn) {
+    const commandsText = getSectionText(gptString, "Commands", "Completed");
     commandsText
       .split("\n")
       // Filter out comments & empty lines
       .filter(
-        (line: string) => !line.startsWith("# ") || line.trim().length === 0
+        (line: string) => !line.startsWith("# ") && line.trim().length > 0
       )
       .forEach((line: string) => {
         commands.push(parseFunctionCall(line));
       });
   }
 
-  let completed = false;
+  let completed: boolean | null = false;
   if (gptString.split("Completed: ").length > 1) {
-    completed = gptString
-      .split("Completed: ")[1]
-      .trim()
+    const completedString = gptString
       .toLowerCase()
-      .startsWith("true");
+      .split("completed: ")[1]
+      .trim();
+    completed = completedString.startsWith("true") || (completedString.startsWith("question") ? null : false)
   }
+
   return {
-    reasoning: getSectionText(gptString, "Reasoning", "Plan"),
-    plan: getSectionText(gptString, "Plan", "Commands"),
+    reasoning: getSectionText(gptString, "Reasoning",  planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"),
+    plan: planIn ? getSectionText(gptString, "Plan", tellUserIn ? "Tell user" : "Commands") : "",
+    tellUser: tellUserIn ? getSectionText(gptString, "Tell user",  commandsIn ? "Commands" : "Completed") : "",
     commands,
     completed,
   };
 }
-
-// function parseFunctionCall(text: string) {
-// function parseFunctionCall(text) {
-//   const functionCallRegex = /(\w+)\(([^)]+)\)/;
-//   const argumentRegex = /(\w+)=([^,]+)/g;
-//
-//   const functionCallMatch = text.match(functionCallRegex);
-//   if (!functionCallMatch) {
-//     throw new Error('Invalid function call format' + text);
-//   }
-//
-//   const name = functionCallMatch[1];
-//   const argsText = functionCallMatch[2];
-//   let argMatch;
-//   const args = {};
-//
-//   while ((argMatch = argumentRegex.exec(argsText)) !== null) {
-//     const key = argMatch[1];
-//     let value;
-//
-//     if (/^\d+(\.\d+)?$/.test(argMatch[2])) {
-//       value = parseFloat(argMatch[2]);
-//     } else if (/^["'](.*)["']$/.test(argMatch[2])) {
-//       value = argMatch[2].slice(1, -1);
-//     } else if (/^(true|false)$/.test(argMatch[2])) {
-//       value = argMatch[2] === 'true';
-//      } else {
-//       value = argMatch[2];
-//     }
-//     args[key] = value;
-//   }
-//
-//   return { name, args };
-// }
-
-const argumentRegex = /(\w+)=({.*}?|[^,]+)/g;
-const dictionaryRegex = /{(.*?)}/g;
 
 function parseFunctionCall(text: string) {
   const functionCallRegex = /(\w+)\(([^)]+)\)/;

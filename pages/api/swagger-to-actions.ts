@@ -51,44 +51,53 @@ export default async function handler(
   }
   if (!dereferencedSwagger.paths) throw Error("No paths");
 
+  // We store actions in groups. This stores the action_groups id for the row with the name of the group
+  let groupNameToId: { [name: string]: number } = {};
+
   for (const [path, pathObj] of Object.entries(dereferencedSwagger.paths)) {
     if (pathObj === undefined) {
       continue;
     }
-    // This is used as the name of the action group - strip trailing slash and curly braces
-    const pathName = stripTrailingAndCurly(path);
-    const existingActionGroupResp = await supabase
-      .from("action_groups")
-      .select("*")
-      .eq("name", pathName);
-    if (existingActionGroupResp.error) throw existingActionGroupResp.error;
-    let actionGroupId: number;
-    if (
-      existingActionGroupResp.data === null ||
-      existingActionGroupResp.data.length === 0
-    ) {
-      const actionGroupResponse = await supabase
-        .from("action_groups")
-        .insert({ name: pathName, org_id: orgId })
-        .select();
-      if (actionGroupResponse.error) throw actionGroupResponse.error;
-      if (actionGroupResponse.data.length === 0) {
-        throw new Error("No action group created");
-      }
-      actionGroupId = actionGroupResponse.data[0].id;
-    } else {
-      actionGroupId = existingActionGroupResp.data[0].id;
-    }
     let actionInserts: Database["public"]["Tables"]["actions"]["Insert"][] = [];
 
-    Object.entries(pathObj).forEach(([method, methodObj]) => {
+    for (const [method, methodObj] of Object.entries(pathObj)) {
       if (typeof methodObj === "string") {
         console.log("Skipping methodObj because it's a string");
-        return;
+        continue;
       }
       if (Array.isArray(methodObj)) {
         console.log("Skipping methodObj because it's an array");
-        return;
+        continue;
+      }
+      const groupName = methodObj.tags?.[0] ?? stripTrailingAndCurly(path);
+      let actionGroupId: number;
+      if (groupName in groupNameToId) {
+        actionGroupId = groupNameToId[groupName];
+      } else {
+        // This is used as the name of the action group - strip trailing slash and curly braces
+        const existingActionGroupResp = await supabase
+          .from("action_groups")
+          .select("*")
+          .eq("name", groupName);
+        if (existingActionGroupResp.error) throw existingActionGroupResp.error;
+        if (
+          existingActionGroupResp.data === null ||
+          existingActionGroupResp.data.length === 0
+        ) {
+          // Add to action_groups table
+          const actionGroupResponse = await supabase
+            .from("action_groups")
+            .insert({ name: groupName, org_id: orgId })
+            .select();
+          if (actionGroupResponse.error) throw actionGroupResponse.error;
+          if (actionGroupResponse.data.length === 0) {
+            throw new Error("No action group created");
+          }
+          actionGroupId = actionGroupResponse.data[0].id;
+        } else {
+          actionGroupId = existingActionGroupResp.data[0].id;
+        }
+        groupNameToId[groupName] = actionGroupId;
       }
       actionInserts.push({
         name: method.toUpperCase() + " " + path,
@@ -106,8 +115,8 @@ export default async function handler(
         // @ts-ignore
         responses: methodObj?.responses ?? null,
       });
-    });
-    // Don't insert if already in database
+    }
+    // Don't insert if already in database (previously uploaded this swagger file)
     const actionResp = await supabase
       .from("actions")
       .select("*")

@@ -22,6 +22,7 @@
     "@uppy/progress-bar": "^3.0.2",
     "@uppy/react": "^3.1.2",
     "dotenv": "^16.0.3",
+    "fuse.js": "^6.6.2",
     "next": "^13.4.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",

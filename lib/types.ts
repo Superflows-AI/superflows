@@ -1,9 +1,10 @@
 import { Database } from "./database.types";
 
-export type ActionGroupJoinActions =
-  Database["public"]["Tables"]["action_groups"]["Row"] & {
-    actions: Action[];
-  };
+export type Action = Database["public"]["Tables"]["actions"]["Row"];
+
+export type ActionGroup = Database["public"]["Tables"]["action_groups"]["Row"];
+
+export type ActionGroupJoinActions = ActionGroup & { actions: Action[] };
 
 export interface Swagger {
   openapi: object;
@@ -40,7 +41,6 @@ interface Response {
   content: { [key: string]: object };
 }
 
-export type Action = Database["public"]["Tables"]["actions"]["Row"];
 // extends SwaggerPathMethod {
 //   route: string;
 //   method: "get" | "post" | "put" | "delete";

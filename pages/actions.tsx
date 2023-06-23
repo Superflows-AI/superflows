@@ -43,7 +43,7 @@ export function RepliesPage() {
   const { profile } = useProfile();
   const [isError, setIsError] = useState(false);
 
-  const [userPageActions, setActionGroupsJoinActions] = useState<
+  const [actionGroup, setActionGroupsJoinActions] = useState<
     ActionGroupJoinActions[]
   >([]);
   const loadActions = useCallback(async () => {
@@ -68,10 +68,10 @@ export function RepliesPage() {
 
   return (
     <div className={classNames("w-full relative h-full")}>
-      {userPageActions ? (
+      {actionGroup ? (
         <PageActionsSection
-          pageActions={userPageActions}
-          setActions={setActionGroupsJoinActions}
+          actionGroups={actionGroup}
+          setActionGroups={setActionGroupsJoinActions}
           loadActions={loadActions}
         />
       ) : !isError ? (
