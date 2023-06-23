@@ -54,7 +54,7 @@ export default function PlaygroundChatbot(props: {
   ]);
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [devMode, setDevMode] = useState<boolean>(true);
+  const [devMode, setDevMode] = useState<boolean>(false);
   const [responseNum, setResponseNum] = useState<number>(0);
 
   const [gptPageName, setGptPageName] = useState(props.page);

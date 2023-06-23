@@ -44,8 +44,8 @@ export function RepliesPage() {
   const [isError, setIsError] = useState(false);
 
   const [actionGroup, setActionGroupsJoinActions] = useState<
-    ActionGroupJoinActions[]
-  >([]);
+    ActionGroupJoinActions[] | undefined
+  >(undefined);
   const loadActions = useCallback(async () => {
     const actionGroupRes = await supabase
       .from("action_groups")
@@ -75,9 +75,9 @@ export function RepliesPage() {
           loadActions={loadActions}
         />
       ) : !isError ? (
-        <div className="flex flex-col gap-y-4 text-lg place-items-center justify-center h-full w-full text-gray-300">
+        <div className="flex flex-col gap-y-4 text-xl place-items-center justify-center h-full w-full text-gray-300 mt-40">
           <LoadingSpinner classes="h-20 w-20" />
-          Sprinkling magic dust...
+          Loading...
         </div>
       ) : (
         <div className="flex flex-col gap-y-4 text-lg place-items-center justify-center h-120 w-full">

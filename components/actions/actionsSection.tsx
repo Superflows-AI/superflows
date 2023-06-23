@@ -14,7 +14,7 @@ import EditActionGroupModal from "./editActionGroupModal";
 
 export default function PageActionsSection(props: {
   actionGroups: ActionGroupJoinActions[];
-  setActionGroups: Dispatch<SetStateAction<ActionGroupJoinActions[]>>;
+  setActionGroups: Dispatch<SetStateAction<ActionGroupJoinActions[] | undefined>>;
   loadActions: () => Promise<void>;
 }) {
   const supabase = useSupabaseClient();
