@@ -64,13 +64,7 @@ export default function PlaygroundChatbot(props: {
   const [responseNum, setResponseNum] = useState<number>(0);
 
   const [gptPageName, setGptPageName] = useState(props.page);
-  const [killSwitchClicked, setKillSwitchClicked] = useState<boolean>(false);
-  useEffect(() => {
-    if (killSwitchClicked) {
-      didRunEffect.current = false;
-      setLoading(false);
-    }
-  }, [killSwitchClicked]);
+  const killSwitchClicked = useRef(false);
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[], activeActions: string[]) => {
@@ -99,7 +93,7 @@ export default function PlaygroundChatbot(props: {
           currentPageName: gptPageName,
           language: props.language,
         }),
-        (text: string, fullOutput: string) => {
+        (text: string, fullOutput: string, eventSource) => {
           setDevChatContents((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: "assistant", content: fullOutput + text },
@@ -108,12 +102,21 @@ export default function PlaygroundChatbot(props: {
             "parsedOutput",
             JSON.stringify(parseOutput(fullOutput + text))
           );
+          if (killSwitchClicked.current) {
+            console.log("KILL SWITCH CLICKED");
+            setLoading(false);
+            didRunEffect.current = false;
+            killSwitchClicked.current = false;
+            eventSource.close();
+            return;
+          }
         },
         async (fullOutput: string) => {
           setDevChatContents((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: "assistant", content: fullOutput },
           ]);
+          setLoading(false);
           const output = parseOutput(fullOutput);
           output.commands.forEach((command) => {
             console.log("command", command);
@@ -183,7 +186,6 @@ export default function PlaygroundChatbot(props: {
               });
             }
           });
-          setLoading(false);
           setTimeout(() => {
             if (output.completed === false) {
               console.log("Running again - not terminating!");
@@ -191,6 +193,7 @@ export default function PlaygroundChatbot(props: {
               didRunEffect.current = false;
             } else {
               console.log("Terminating!");
+              setResponseNum((prev) => prev + 1);
               if (output.completed === true) {
                 setDevChatContents((prev) => [
                   ...prev,
@@ -359,7 +362,9 @@ export default function PlaygroundChatbot(props: {
               className={
                 "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
               }
-              onClick={() => setKillSwitchClicked(true)}
+              onClick={() => {
+                killSwitchClicked.current = true;
+              }}
             >
               Cancel
             </button>
@@ -380,6 +385,7 @@ export default function PlaygroundChatbot(props: {
               ]);
               setUserText("");
               setLoading(true);
+              killSwitchClicked.current = false;
             }}
           >
             {loading && <LoadingSpinner classes="h-4 w-4" />}
