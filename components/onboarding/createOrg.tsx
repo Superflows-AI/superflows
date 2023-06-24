@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useProfile } from "../contextManagers/profile";
-import {Simulate} from "react-dom/test-utils";
+import { Simulate } from "react-dom/test-utils";
 import load = Simulate.load;
-import {LoadingSpinner} from "../loadingspinner";
+import { LoadingSpinner } from "../loadingspinner";
 
 export default function CreateOrgScreen() {
   const [orgName, setOrgName] = useState<string>("");
@@ -42,7 +42,11 @@ export default function CreateOrgScreen() {
           if (refreshProfile) await refreshProfile();
         }}
       >
-          {loading ? <LoadingSpinner classes={"my-0.5 h-5 w-5"} /> : "Create Organization"}
+        {loading ? (
+          <LoadingSpinner classes={"my-0.5 h-5 w-5"} />
+        ) : (
+          "Create Organization"
+        )}
       </button>
       <div className="h-40" />
     </div>

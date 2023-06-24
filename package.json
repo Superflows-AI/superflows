@@ -32,6 +32,7 @@
     "sse.js": "^0.6.1",
     "supabase": "^1.68.6",
     "swagger-typescript-api": "^12.0.4",
+    "uuid": "^9.0.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -40,6 +41,7 @@
     "@types/node": "^18.11.3",
     "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "eslint": "^8.33.0",

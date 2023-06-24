@@ -8,14 +8,12 @@ import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useProfile } from "../components/contextManagers/profile";
 import SignInComponent from "../components/signIn";
 import { ActionGroupJoinActions } from "../lib/types";
+import Headers from "../components/headers";
 
 export default function App() {
   return (
     <>
-      <Head>
-        <title>Add an AI Assistant to your SaaS Platform | Superflows</title>
-        <link rel="icon" href="/favicon.png" />
-      </Head>
+      <Headers />
       <Dashboard />
     </>
   );

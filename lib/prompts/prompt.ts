@@ -14,7 +14,11 @@ export default function getMessages(
   const currentPage = pageActions.find((p) => p.pageName === currentPageName);
 
   if (!currentPage) {
-    throw new Error(`Page ${currentPageName} not found in pageActions ${JSON.stringify(pageActions)}`);
+    throw new Error(
+      `Page ${currentPageName} not found in pageActions ${JSON.stringify(
+        pageActions
+      )}`
+    );
   }
   let i = 1;
   let numberedActions = "";
@@ -71,7 +75,8 @@ Tell user: (optional) tell the user something. E.g. if you're answering a questi
 Commands: (optional)
 FUNCTION_NAME_1(PARAM_NAME_1=PARAM_VALUE_1, PARAM_NAME_2=PARAM_VALUE_2, ...)
 
-Completed: (true or false or question) set to true when the above commands, when executed, would achieve the task set by the user. Alternatively, if the task isn't possible and you need to ask a clarifying question, set to question. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!`},
-        ...userCopilotMessages
-    ]
+Completed: (true or false or question) set to true when the above commands, when executed, would achieve the task set by the user. Alternatively, if the task isn't possible and you need to ask a clarifying question, set to question. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!`,
+    },
+    ...userCopilotMessages,
+  ];
 }

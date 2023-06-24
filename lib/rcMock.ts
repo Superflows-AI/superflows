@@ -37,8 +37,7 @@ export const pageActions: PageAction[] = [
     actions: [
       {
         name: "searchCustomer",
-        description:
-          "Search for a customer by name",
+        description: "Search for a customer by name",
         parameters: {
           type: "object",
           properties: {
@@ -52,15 +51,16 @@ export const pageActions: PageAction[] = [
             return `No results for "${name}"`;
           }
           let output = "Search results:\n";
-            results.slice(0, 3).forEach((result) => {
-                output += `<table>Name: ${result.item.name}<br/>ID: ${result.item.id}</table>`
-            });
+          results.slice(0, 3).forEach((result) => {
+            output += `<table>Name: ${result.item.name}<br/>ID: ${result.item.id}</table>`;
+          });
           return output;
         },
       },
       {
         name: "getRecentInformation",
-        description: "Get all recent information about a customer, their property and any ongoing projects",
+        description:
+          "Get all recent information about a customer, their property and any ongoing projects",
         parameters: {
           type: "object",
           properties: {
@@ -74,7 +74,9 @@ export const pageActions: PageAction[] = [
           if ("recent_events" in customer.properties[0]) {
             let output = `${customer.name}'s recent information:\n`;
             customer.properties[0].recent_events.forEach((event) => {
-              output += `<table>${Object.entries(event).map(([key, value]) => key + ": " + value).join("<br/>")}</table>\n\n`
+              output += `<table>${Object.entries(event)
+                .map(([key, value]) => key + ": " + value)
+                .join("<br/>")}</table>\n\n`;
             });
             return output;
           } else {

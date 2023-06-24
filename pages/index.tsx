@@ -6,14 +6,12 @@ import React from "react";
 import SignInComponent from "../components/signIn";
 import { useProfile } from "../components/contextManagers/profile";
 import CreateOrgScreen from "../components/onboarding/createOrg";
+import Headers from "../components/headers";
 
 export default function App() {
   return (
     <>
-      <Head>
-        <title>Add an AI Assistant to your SaaS Platform | Superflows</title>
-        <link rel="icon" href="/favicon.png" />
-      </Head>
+      <Headers />
       <Dashboard />
     </>
   );

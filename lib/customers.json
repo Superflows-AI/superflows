@@ -539,7 +539,7 @@
       }
     ]
   },
-      {
+  {
     "id": 15,
     "name": "Daniel Solís Martínez",
     "email": "Daniel SolísMartínez@gmail.com",
@@ -555,11 +555,10 @@
             "datetime": "2023-06-22T13t42:15.253Z",
             "contents": "We have passed on to WekLaw"
           }
-
-]
-                    }
-          ]
-},
+        ]
+      }
+    ]
+  },
   {
     "id": 16,
     "name": "Nydia Cruz",
@@ -589,8 +588,8 @@
             "subproject_type": "Tarp",
             "dateTime": "2023-06-19T13:42:15.253Z"
           }
-    ]
-  }
+        ]
+      }
     ]
   },
   {
@@ -602,12 +601,12 @@
         "location": "Florida",
         "recent_events": [
           {
-      "event_type": "insurance note",
+            "event_type": "insurance note",
             "project_type": "Water damage",
             "subproject_type": "Plumbing",
             "claim completed": false,
             "dateTime": "2023-06-22T13:42:15.253Z",
-            "contents":  "We have passed on to WekLaw"
+            "contents": "We have passed on to WekLaw"
           }
         ]
       }
@@ -660,11 +659,11 @@
             "datetime": "2023-06-21T17:22:17.634Z"
           },
           {
-            "event_type":  "email",
-            "project_type":  "Water damage",
-            "subproject_type":  "Mitigation",
-            "datetime":  "2023-06-20T15:42:55.314Z",
-            "contents":  "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "event_type": "email",
+            "project_type": "Water damage",
+            "subproject_type": "Mitigation",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -693,10 +692,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -725,10 +724,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -757,10 +756,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -789,10 +788,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -821,10 +820,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -853,10 +852,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }
@@ -885,10 +884,10 @@
           },
           {
             "event_type": "email",
-                  "project_type": "Water damage",
-                  "subproject_type": "Tarp",
-        "datetime": "2023-06-20T15:42:55.314Z",
-        "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
+            "project_type": "Water damage",
+            "subproject_type": "Tarp",
+            "datetime": "2023-06-20T15:42:55.314Z",
+            "contents": "Hi, We'll be coming on Friday at 10am to pick up the tarp now the weather has subsided and the flood defences have been built. Best, Barry"
           }
         ]
       }

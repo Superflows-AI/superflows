@@ -41,9 +41,10 @@ export default async function handler(req: NextRequest): Promise<Response> {
     requestData.pageActions,
     requestData.currentPageName,
     {
-        name: "Restoration Control CRM",
-      description: "Restoration Control is a company that handles water damage, fire damage, mold remediation, and other restoration services. You are a chatbot for it's internal CRM, used by its salespeople and other employees."
-      },
+      name: "Restoration Control CRM",
+      description:
+        "Restoration Control is a company that handles water damage, fire damage, mold remediation, and other restoration services. You are a chatbot for it's internal CRM, used by its salespeople and other employees.",
+    },
     requestData.language
   );
   console.log("chatGptPrompt", chatGptPrompt[0].content);
