@@ -61,7 +61,7 @@ export default function PlaygroundChatbot(props: {
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
-  const [responseNum, setResponseNum] = useState<number>(0);
+  const [gptCallCount, setGptCallCount] = useState<number>(0);
 
   const [gptPageName, setGptPageName] = useState(props.page);
   const killSwitchClicked = useRef(false);
@@ -189,11 +189,26 @@ export default function PlaygroundChatbot(props: {
           setTimeout(() => {
             if (output.completed === false) {
               console.log("Running again - not terminating!");
-              setLoading(true);
               didRunEffect.current = false;
+              setGptCallCount((prev) => prev + 1);
+              if (gptCallCount >= 5) {
+                console.log("Terminating!");
+                setDevChatContents((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content:
+                      "Maximum number of GPT calls reached for 1 question. Terminating.",
+                  },
+                ]);
+                console.error(
+                  "Maximum number of GPT calls reached for 1 question. Terminating."
+                );
+                return;
+              }
+              setLoading(true);
             } else {
               console.log("Terminating!");
-              setResponseNum((prev) => prev + 1);
               if (output.completed === true) {
                 setDevChatContents((prev) => [
                   ...prev,
@@ -211,8 +226,8 @@ export default function PlaygroundChatbot(props: {
     },
     [
       setDevChatContents,
-      responseNum,
-      setResponseNum,
+      gptCallCount,
+      setGptCallCount,
       gptPageName,
       props.pageActions,
       props.page,
