@@ -1,5 +1,5 @@
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import React, {ReactNode, useCallback, useEffect, useState} from "react";
+import React, { ReactNode, useCallback, useEffect, useState } from "react";
 import { Action, ActionGroupJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
 import SelectBox from "./selectBox";
@@ -7,11 +7,23 @@ import { Api } from "../lib/swaggerTypes";
 import PlaygroundChatbot from "./playgroundChatbot";
 import { useProfile } from "./contextManagers/profile";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import {MockAction, pageActions} from "../lib/rcMock";
+import { MockAction, pageActions } from "../lib/rcMock";
 
-const languageOptions: {id: string, name: "English" | "Espanol", icon: ReactNode}[] = [
-  { id: "EN", name: "English", icon: <img alt="US" className="h-4 mr-2" src={"us.jpg"} /> },
-  { id: "ES", name: "Espanol", icon: <img alt="Spain" className="h-4 mr-2" src={"spain.jpg"} /> },
+const languageOptions: {
+  id: string;
+  name: "English" | "Espanol";
+  icon: ReactNode;
+}[] = [
+  {
+    id: "EN",
+    name: "English",
+    icon: <img alt="US" className="h-4 mr-2" src={"us.jpg"} />,
+  },
+  {
+    id: "ES",
+    name: "Espanol",
+    icon: <img alt="Spain" className="h-4 mr-2" src={"spain.jpg"} />,
+  },
 ];
 
 export default function Playground() {
@@ -83,11 +95,14 @@ export default function Playground() {
 
       <main className="fixed inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
-            pageActions={pageActions}
-            activeActions={pageActions[0].actions.map((action) => action.name)}
-            page={"RControl"}
-            setPage={() => {}}
-            language={languageOptions.find((item) => item.id === language)?.name ?? "English"}
+          pageActions={pageActions}
+          activeActions={pageActions[0].actions.map((action) => action.name)}
+          page={"RControl"}
+          setPage={() => {}}
+          language={
+            languageOptions.find((item) => item.id === language)?.name ??
+            "English"
+          }
         />
       </main>
 

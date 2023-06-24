@@ -12,7 +12,8 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 const navigation = [
   { name: "Playground", href: "/" },
   { name: "Actions", href: "/actions" },
-  { name: "Team", href: "/team" },
+  // { name: "Team", href: "/team" },
+  { name: "API", href: "/settings" },
   { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
@@ -57,13 +58,13 @@ export function Navbar(props: { current: string }) {
                 </div>
                 <div className="hidden md:block">
                   <div className="ml-4 flex items-center gap-x-4 md:ml-6">
-                    <button
-                      type="button"
-                      className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    >
-                      <span className="sr-only">View notifications</span>
-                      <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
-                    </button>
+                    {/*<button*/}
+                    {/*  type="button"*/}
+                    {/*  className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"*/}
+                    {/*>*/}
+                    {/*  <span className="sr-only">View notifications</span>*/}
+                    {/*  <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />*/}
+                    {/*</button>*/}
                     <button
                       type="button"
                       className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"

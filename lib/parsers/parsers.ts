@@ -96,7 +96,7 @@
 // // }
 //
 
-import {Simulate} from "react-dom/test-utils";
+import { Simulate } from "react-dom/test-utils";
 import input = Simulate.input;
 
 export interface FunctionCall {
@@ -159,13 +159,27 @@ export function parseOutput(gptString: string): ParsedOutput {
       .toLowerCase()
       .split("completed: ")[1]
       .trim();
-    completed = completedString.startsWith("true") || (completedString.startsWith("question") ? null : false)
+    completed =
+      completedString.startsWith("true") ||
+      (completedString.startsWith("question") ? null : false);
   }
 
   return {
-    reasoning: getSectionText(gptString, "Reasoning",  planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"),
-    plan: planIn ? getSectionText(gptString, "Plan", tellUserIn ? "Tell user" : "Commands") : "",
-    tellUser: tellUserIn ? getSectionText(gptString, "Tell user",  commandsIn ? "Commands" : "Completed") : "",
+    reasoning: getSectionText(
+      gptString,
+      "Reasoning",
+      planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"
+    ),
+    plan: planIn
+      ? getSectionText(gptString, "Plan", tellUserIn ? "Tell user" : "Commands")
+      : "",
+    tellUser: tellUserIn
+      ? getSectionText(
+          gptString,
+          "Tell user",
+          commandsIn ? "Commands" : "Completed"
+        )
+      : "",
     commands,
     completed,
   };
