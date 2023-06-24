@@ -4,7 +4,7 @@ import { SSE } from "sse.js";
 export default async function runSSE(
   endpoint: string,
   payload: string,
-  onEvent: (token: string, entireOutput: string) => void,
+  onEvent: (token: string, entireOutput: string, eventSource: SSE) => void,
   onDone: (fullOutput: string) => void,
   onError?: (e: any) => void
 ): Promise<void> {
@@ -35,7 +35,7 @@ export default async function runSSE(
     ] = completionResponse.choices;
 
     if (text && !role) {
-      onEvent(text, output);
+      onEvent(text, output, eventSource);
       output += text;
     }
   });
