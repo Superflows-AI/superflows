@@ -194,5 +194,5 @@ alter table "public"."actions" add constraint "actions_action_type_check" CHECK 
 alter table "public"."actions" validate constraint "actions_action_type_check";
 
 -- Ensure the request_method is valid
-alter table "public"."actions" add constraint "actions_request_method_check" CHECK ((request_method = ANY (ARRAY['get'::text, 'post'::text, 'put'::text, 'delete'::text, NULL]))) not valid;
+alter table "public"."actions" add constraint "actions_request_method_check" CHECK ((request_method = ANY (ARRAY['get'::text, 'post'::text, 'put'::text, 'delete'::text, 'patch'::text, NULL]))) not valid;
 alter table "public"."actions" validate constraint "actions_request_method_check";

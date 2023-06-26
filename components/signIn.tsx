@@ -65,7 +65,7 @@ export default function SignInComponent() {
                 Or, if you&apos;re new around here -{" "}
                 <button
                   onClick={() => setSignIn(false)}
-                  className="inline text-orange-600 hover:text-orange-500 hover:underline cursor-pointer"
+                  className="inline text-purple-600 hover:text-purple-500 hover:underline cursor-pointer"
                 >
                   sign up here
                 </button>
@@ -76,7 +76,7 @@ export default function SignInComponent() {
                 Already have an account?{" "}
                 <button
                   onClick={() => setSignIn(true)}
-                  className="inline text-orange-600 hover:text-orange-500 hover:underline cursor-pointer"
+                  className="inline text-purple-600 hover:text-purple-500 hover:underline cursor-pointer"
                 >
                   Sign in here
                 </button>
