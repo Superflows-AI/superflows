@@ -224,7 +224,12 @@ function ActionsSection(props: {
         />
       )}
       <div
-        className="relative shadow-2xl px-6 py-4 my-5 border border-gray-600 rounded-lg"
+        className={classNames(
+          "relative px-6 py-4 my-5 border border-gray-600 rounded-lg",
+          props.actionGroupJoinActions.actions.some((a) => a.active)
+            ? "shadow-xl"
+            : ""
+        )}
         id={props.actionGroupJoinActions.name}
       >
         <div className="flex flex-col w-full">
@@ -293,7 +298,7 @@ function ActionsSection(props: {
         </div>
         <h2
           className={classNames(
-            "font-bold text-2xl w-60",
+            "font-bold text-2xl",
             props.actionGroupJoinActions.actions.some((a) => a.active)
               ? "text-gray-200"
               : "text-gray-600"
