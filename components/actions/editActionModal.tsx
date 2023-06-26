@@ -118,18 +118,6 @@ export default function EditActionModal(props: {
 
       <div className="mt-10 mb-4 grid grid-cols-2 gap-x-6">
         <div className="relative">
-          {localAction.name.length > 30 && (
-            <div
-              className={classNames(
-                "absolute top-4 text-xs -right-10 z-10",
-                localAction.name.length === 40
-                  ? "text-red-500"
-                  : "text-gray-500"
-              )}
-            >
-              {localAction.name.length}/40
-            </div>
-          )}
           <div className="absolute top-3 right-3 z-10">
             <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full hover:bg-gray-50" />
             <div className={classNames("-top-8 left-12 w-64 popup")}>
@@ -270,8 +258,8 @@ export default function EditActionModal(props: {
           />
         </div>
         {/* PARAMETERS */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-center">
-          <div className="font-bold text-lg text-gray-100 w-40">
+        <div className="w-full px-32 flex flex-row justify-center place-items-start">
+          <div className="font-bold text-lg text-gray-100 mt-4 w-40">
             Parameters:
           </div>
           <div className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm bg-gray-850 rounded whitespace-pre-wrap text-gray-300">
@@ -279,17 +267,21 @@ export default function EditActionModal(props: {
           </div>
         </div>
         {/* REQUEST_BODY_CONTENTS */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-center">
-          <div className="font-bold text-lg text-gray-100 w-40">
-            Body Contents:
+        {localAction.request_body_contents && (
+          <div className="w-full px-32 flex flex-row justify-center place-items-start">
+            <div className="font-bold text-lg text-gray-100 w-40 mt-4">
+              Body Contents:
+            </div>
+            <div className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm bg-gray-850 rounded whitespace-pre-wrap text-gray-300">
+              {JSON.stringify(localAction.request_body_contents ?? {}, null, 2)}
+            </div>
           </div>
-          <div className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm bg-gray-850 rounded whitespace-pre-wrap text-gray-300">
-            {JSON.stringify(localAction.request_body_contents, null, 2) ?? "{}"}
-          </div>
-        </div>
+        )}
         {/* RESPONSES */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-center">
-          <div className="font-bold text-lg text-gray-100 w-40">Responses:</div>
+        <div className="w-full px-32 flex flex-row justify-center place-items-start">
+          <div className="font-bold text-lg text-gray-100 mt-4 w-40">
+            Responses:
+          </div>
           <div className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm bg-gray-850 rounded whitespace-pre-wrap text-gray-300">
             {JSON.stringify(localAction.responses ?? {}, null, 2)}
           </div>

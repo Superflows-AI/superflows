@@ -13,7 +13,7 @@ const uppy = new Uppy({
   allowMultipleUploadBatches: false,
   restrictions: {
     maxNumberOfFiles: 1,
-    maxFileSize: 10000000,
+    maxFileSize: 100_000_000,
     allowedFileTypes: ["application/json"],
   },
 });
