@@ -25,6 +25,7 @@
     "dotenv": "^16.0.3",
     "fuse.js": "^6.6.2",
     "next": "^13.4.2",
+    "pdfjs-dist": "^3.7.107",
     "posthog-js": "^1.68.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
