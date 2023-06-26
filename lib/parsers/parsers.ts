@@ -134,6 +134,7 @@ function getSectionText(
 }
 
 export function parseOutput(gptString: string): ParsedOutput {
+  const reasoningIn = gptString.toLowerCase().includes("reasoning:");
   const planIn = gptString.toLowerCase().includes("plan:");
   const tellUserIn = gptString.toLowerCase().includes("tell user:");
   const commandsIn = gptString.toLowerCase().includes("commands:");
@@ -164,12 +165,23 @@ export function parseOutput(gptString: string): ParsedOutput {
       (completedString.startsWith("question") ? null : false);
   }
 
-  return {
-    reasoning: getSectionText(
+  let reasoningText = "";
+  if (planIn || tellUserIn || commandsIn) {
+    reasoningText = getSectionText(
       gptString,
       "Reasoning",
       planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"
-    ),
+    );
+  } else if (reasoningIn) {
+    // Response streaming in, reasoning present, but no other sections yet
+    reasoningText = gptString.split("Reasoning:")[1].trim();
+  } else {
+    // Streaming in, reasoning word incomplete
+    reasoningText = "";
+  }
+
+  return {
+    reasoning: reasoningText,
     plan: planIn
       ? getSectionText(gptString, "Plan", tellUserIn ? "Tell user" : "Commands")
       : "",

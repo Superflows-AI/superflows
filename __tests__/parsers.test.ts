@@ -93,4 +93,17 @@ describe("Parsers", () => {
     expect(output.commands).toStrictEqual([]);
     expect(output.completed).toBe(null);
   });
+  it("should not output 'invalid input format:'", () => {
+    const output = parseOutput(
+      "Reasoning: The search results show multiple individuals with"
+    );
+    expect(output).toBeDefined();
+    expect(output.reasoning).toBe(
+      "The search results show multiple individuals with"
+    );
+    expect(output.plan).toBe("");
+    expect(output.tellUser).toBe("");
+    expect(output.commands).toStrictEqual([]);
+    expect(output.completed).toBe(false);
+  });
 });
