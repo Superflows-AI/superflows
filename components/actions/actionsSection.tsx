@@ -149,6 +149,7 @@ function ActionsSection(props: {
   const [actions, setActions] = React.useState<Action[]>(
     props.actionGroupJoinActions.actions
   );
+  const { profile } = useProfile();
 
   useEffect(() => {
     setActions(props.actionGroupJoinActions.actions);
@@ -205,11 +206,12 @@ function ActionsSection(props: {
       {editActionIndex !== null && (
         <EditActionModal
           action={actions[editActionIndex]}
-          setAction={(
+          setAction={async (
             newAction: Database["public"]["Tables"]["actions"]["Row"]
           ) => {
             actions[editActionIndex] = newAction;
             setActions(actions);
+            await supabase.from("actions").upsert(newAction);
             setEditActionIndex(null);
           }}
           close={() => {
@@ -406,6 +408,8 @@ function ActionsSection(props: {
                   action_group: props.actionGroupJoinActions.id,
                   name: "",
                   description: "",
+                  action_type: "http",
+                  org_id: profile?.org_id,
                 })
                 .select();
               if (resp.error) throw resp.error;
