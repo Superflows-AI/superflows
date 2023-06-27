@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Database } from "./database.types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -103,4 +104,52 @@ export function stripTrailingAndCurly(str: string) {
   str = str.replace(/\/\{[^}]*}/, "");
 
   return str;
+}
+
+export async function httpRequestFromAction(
+  action: Database["public"]["Tables"]["actions"]["Row"]
+): Promise<Response> {
+  if (!action.path) {
+    throw new Error("Path is not provided");
+  }
+
+  if (!action.request_method) {
+    throw new Error("Request method is not provided");
+  }
+
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
+
+  const requestOptions: RequestInit = {
+    method: action.request_method,
+    headers: headers,
+  };
+
+  if (action.request_method !== "GET" && action.request_body_contents) {
+    requestOptions.body = JSON.stringify(action.request_body_contents);
+  }
+
+  let url = action.path;
+
+  // TODO: accept array for JSON?
+  if (
+    typeof action.parameters === "object" &&
+    !Array.isArray(action.parameters)
+  ) {
+    const queryParams = new URLSearchParams();
+    for (const key in action.parameters) {
+      if (action.parameters[key] !== null) {
+        queryParams.set(key, String(action.parameters[key]));
+      }
+    }
+    url += `?${queryParams.toString()}`;
+  }
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+  }
+
+  return response;
 }
