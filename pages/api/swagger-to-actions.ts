@@ -141,7 +141,7 @@ export default async function handler(
       actionInserts.push({
         name: methodObj.operationId ?? method.toUpperCase() + " " + path,
         description: description,
-        active: true,
+        active: ["get", "post"].includes(method),
         org_id: orgId,
         action_group: actionGroupId,
         action_type: "http",
