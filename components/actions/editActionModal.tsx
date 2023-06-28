@@ -15,11 +15,9 @@ import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
-import JSONInput from "react-json-editor-ajrm";
-import locale from "react-json-editor-ajrm/locale/en";
 
 interface JsonTextBoxProps {
-  title: string;
+  title: "parameters" | "responses" | "request_body_contents";
   text: string;
   setText: (text: string) => void;
   validJSON: boolean;
@@ -31,7 +29,7 @@ interface TextAreaState {
   text: string;
 }
 
-function isJsonString(str) {
+function isJsonString(str: string) {
   try {
     JSON.parse(str);
   } catch (e) {
