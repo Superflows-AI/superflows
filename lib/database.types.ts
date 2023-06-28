@@ -126,6 +126,77 @@ export interface Database {
           }
         ];
       };
+      chat_messages: {
+        Row: {
+          content: string;
+          conversation_id: number;
+          conversation_index: number;
+          created_at: string;
+          id: number;
+          name: string | null;
+          org_id: number;
+          role: string;
+        };
+        Insert: {
+          content: string;
+          conversation_id: number;
+          conversation_index: number;
+          created_at?: string;
+          id?: number;
+          name?: string | null;
+          org_id: number;
+          role: string;
+        };
+        Update: {
+          content?: string;
+          conversation_id?: number;
+          conversation_index?: number;
+          created_at?: string;
+          id?: number;
+          name?: string | null;
+          org_id?: number;
+          role?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_messages_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      conversations: {
+        Row: {
+          created_at: string;
+          id: number;
+          org_id: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          org_id: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "conversations_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       organizations: {
         Row: {
           api_key: string;

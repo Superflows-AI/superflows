@@ -6,19 +6,14 @@ import {
   LightBulbIcon,
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
-import runSSE from "../lib/sse";
 import { LoadingSpinner } from "./loadingspinner";
-import {
-  camelToCapitalizedWords,
-  classNames,
-  getNumRows,
-  parseKeyValues,
-  unpackAndCall,
-} from "../lib/utils";
+import { classNames, getNumRows, parseKeyValues } from "../lib/utils";
 import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
 import { MockAction, PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
 import { useProfile } from "./contextManagers/profile";
+import { StreamingStep } from "../pages/api/v1/answers";
+import { Json } from "../lib/database.types";
 
 const BrandName = "RControl";
 const BrandColour = "#ffffff";
@@ -37,6 +32,10 @@ interface ChatItem {
   content: string;
 }
 
+export type Step =
+  | ({ id: number; role: "assistant" } & ParsedOutput)
+  | { id: number; role: "function"; name: string; result: Json };
+
 export default function PlaygroundChatbot(props: {
   pageActions: PageAction[];
   activeActions: string[];
@@ -52,6 +51,7 @@ export default function PlaygroundChatbot(props: {
   const { profile } = useProfile();
 
   const ref = useRef(null);
+  const [conversationId, setConversationId] = useState<number | null>(null);
   const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -66,6 +66,9 @@ export default function PlaygroundChatbot(props: {
         { role: "assistant", content: "" } as ChatItem,
       ];
       setDevChatContents(copy);
+      if (loading || alreadyRunning.current) return;
+      alreadyRunning.current = true;
+      setLoading(true);
       const response = await fetch("/api/v1/answers", {
         method: "POST",
         headers: {
@@ -73,13 +76,16 @@ export default function PlaygroundChatbot(props: {
           Authorization: `Bearer ${profile!.organizations!.api_key}`,
         },
         body: JSON.stringify({
-          messages: chat,
+          user_input: chat[chat.length - 1].content,
+          conversation_id: conversationId,
           language: props.language,
+          stream: true,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(response.statusText);
+        const responseJson = await response.json();
+        throw new Error(responseJson.error);
       }
 
       const data = response.body;
@@ -88,36 +94,41 @@ export default function PlaygroundChatbot(props: {
       const reader = data.getReader();
       const decoder = new TextDecoder();
       let done = false;
+      let outputText = "";
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading || killSwitchClicked.current;
         const chunkValue = decoder.decode(value);
         try {
-          // TODO: Far from perfect. Ticket in Jira to fix this
-          // This allows multiple curly brackets in the string e.g. "{a: b}{c: d}"
-          chunkValue.split("{").forEach((chunkOfChunk) => {
-            if (chunkOfChunk.length === 0) return;
-            const data = JSON.parse("{" + chunkOfChunk);
-            console.log("Dev chat contents", devChatContents);
-            console.log(devChatContents.length - 1);
-            if (
-              !devChatContents[devChatContents.length - 1].content.endsWith(
-                data.text
-              )
-            ) {
-              setDevChatContents((prev) => {
-                const copy = [...devChatContents];
-                copy[copy.length - 1].content += data.text;
-                return copy;
-              });
-            }
-          });
+          // Can be multiple chunks in one chunk, separated by "data:"
+          // .slice(5) removes the "data:" at the start of the string
+          console.log("My chunk", chunkValue);
+          chunkValue
+            .slice(5)
+            .split("data:")
+            .forEach((chunkOfChunk) => {
+              if (chunkOfChunk.length === 0) return;
+              const data = JSON.parse(chunkOfChunk) as StreamingStep;
+              if (conversationId === null) setConversationId(data.id);
+              // Checks if we need to add a new step to the output array
+              if (data.role === "assistant") outputText += data.content;
+              else
+                outputText +=
+                  data.name +
+                  " output:\n" +
+                  JSON.stringify(data.content) +
+                  "\n";
+              setDevChatContents([
+                ...chat,
+                { role: "assistant", content: outputText },
+              ]);
+            });
         } catch (e) {
           console.error(e);
         }
-        console.log("chunkValue", chunkValue);
       }
+      // TODO: Deal with confirmation
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
@@ -132,13 +143,6 @@ export default function PlaygroundChatbot(props: {
       props.language,
     ]
   );
-
-  useEffect(() => {
-    if (loading && !alreadyRunning.current) {
-      alreadyRunning.current = true;
-      addTextToChat(devChatContents);
-    }
-  }, [loading]);
 
   useEffect(() => {
     const ele = document.getElementById("scrollable-chat-contents");
@@ -227,12 +231,10 @@ export default function PlaygroundChatbot(props: {
                       key={text}
                       className="text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
                       onClick={() => {
-                        const chatcopy = [...devChatContents];
-                        setDevChatContents([
-                          ...chatcopy,
+                        addTextToChat([
+                          ...devChatContents,
                           { role: "user", content: text },
                         ]);
-                        setLoading(true);
                       }}
                     >
                       {text}
@@ -305,6 +307,40 @@ export default function PlaygroundChatbot(props: {
       </div>
     </div>
   );
+}
+
+function fromStepToGPTMessages(steps: Step[]): ChatItem[] {
+  return steps.map((step) => {
+    if (step.role === "assistant") {
+      const commandsString =
+        "Commands:\n" +
+        step.commands
+          .map((command) => {
+            const argsString = Object.entries(command.args)
+              .map(([argName, argValue]) => argName + "=" + argValue)
+              .join(", ");
+            return `${command.name}(${argsString})`;
+          })
+          .join("\n");
+      const completedString =
+        step.completed === null ? "question" : step.completed;
+      const tellUserString = step.tellUser
+        ? "Tell user: " + step.tellUser + "\n\n"
+        : "";
+      return {
+        role: step.role,
+        content: `Reasoning: ${step.reasoning}\n\nPlan: ${step.plan}\n\n${tellUserString}${commandsString}Completed: ${completedString}\n\n`,
+      };
+    } else {
+      return {
+        role: step.role,
+        name: step.name,
+        content: `Function: ${step.name}\n\nResult: ${JSON.stringify(
+          step.result
+        )}\n\n`,
+      };
+    }
+  });
 }
 
 const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;

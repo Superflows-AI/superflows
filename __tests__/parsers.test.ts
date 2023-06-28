@@ -117,20 +117,25 @@ data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.c
 
 `;
     const output = parseGPTStreamedData(testStr);
-    expect(output).toBe("Hello");
+    expect(output).toStrictEqual(["Hello"]);
   });
   it("Exclamation mark", () => {
     const exStr = `data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
 
 `;
     const output = parseGPTStreamedData(exStr);
-    expect(output).toBe("!");
+    expect(output).toStrictEqual(["!"]);
   });
   it("Done", () => {
-    const exStr = `data: [DONE]
-
-`;
+    const exStr = `data: [DONE]`;
     const output = parseGPTStreamedData(exStr);
-    expect(output).toBe("[DONE]");
+    expect(output).toStrictEqual(["[DONE]"]);
+  });
+  it("Done", () => {
+    const exStr = `data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"content":"."},"finish_reason":null}]}
+
+data: [DONE]`;
+    const output = parseGPTStreamedData(exStr);
+    expect(output).toStrictEqual([".", "[DONE]"]);
   });
 });

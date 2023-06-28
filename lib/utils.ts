@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Database } from "./database.types";
+import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -109,7 +110,7 @@ export async function httpRequestFromAction(
   action: Database["public"]["Tables"]["actions"]["Row"],
   parameters: Record<string, unknown>,
   userApiKey?: string
-): Promise<Record<string, any>> {
+): Promise<Record<string, any> | any[]> {
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -131,10 +132,19 @@ export async function httpRequestFromAction(
 
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
-    const bodyArray: { [key: string]: any }[] = Object.entries(
-      action.request_body_contents["application/json"].schema.properties
-    ).map(([name, property]) => {
-      // TODO: Remove readonly attributes from prompts
+    const reqBodyContents =
+      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
+    if (!("application/json" in reqBodyContents)) {
+      throw new Error(
+        "Only application/json request body contents are supported for now"
+      );
+    }
+    const applicationJson = reqBodyContents[
+      "application/json"
+    ] as OpenAPIV3.MediaTypeObject;
+    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
+    const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
+    const bodyArray = Object.entries(properties).map(([name, property]) => {
       // Throw out readonly attributes
       if (property.readOnly) return undefined;
       if (parameters[name]) {
@@ -144,8 +154,7 @@ export async function httpRequestFromAction(
     const body = Object.assign({}, ...bodyArray);
 
     // Check all required params are present
-    const required =
-      action.request_body_contents["application/json"].schema.required;
+    const required = schema.required ?? [];
     required.forEach((key: string) => {
       if (!body[key]) {
         throw new Error(`Required parameter "${key}" is not provided`);
@@ -160,11 +169,14 @@ export async function httpRequestFromAction(
   // TODO: accept array for JSON? Is this even possible? (not needed right now)
   // Set parameters
   if (
+    action.parameters &&
     typeof action.parameters === "object" &&
-    !Array.isArray(action.parameters)
+    Array.isArray(action.parameters)
   ) {
     const queryParams = new URLSearchParams();
-    for (const param of action.parameters) {
+    const actionParameters =
+      action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
+    for (const param of actionParameters) {
       if (param.required && !parameters[param.name]) {
         throw new Error(
           `Parameter "${param.name}" in ${param.in} is not provided by LLM`
@@ -173,11 +185,11 @@ export async function httpRequestFromAction(
       if (param.in === "path") {
         url = url.replace(`{${param.name}}`, String(parameters[param.name]));
       } else if (parameters.in === "query") {
-        queryParams.set(param, String(parameters[param]));
+        queryParams.set(param.name, String(parameters[param.name]));
       } else if (parameters.in === "header") {
-        headers.set(param, String(parameters[param]));
+        headers.set(param.name, String(parameters[param.name]));
       } else if (parameters.in === "cookie") {
-        headers.set("Cookie", `${param}=${String(parameters[param])}`);
+        headers.set("Cookie", `${param}=${String(parameters[param.name])}`);
       } else {
         throw new Error(
           `Parameter "${param.name}" has invalid location: ${param.in}`
@@ -204,7 +216,7 @@ export function convertToRenderable(
       typeof functionOutput[0] === "object" &&
       !Array.isArray(functionOutput[0])
     ) {
-      // [{a,b}, {a,b}]
+      // Format: [{a,b}, {a,b}]
       functionOutput.forEach((item) => {
         output += "<table>";
         Object.entries(item).forEach(([key, value]) => {
@@ -213,7 +225,7 @@ export function convertToRenderable(
         output += "</table>";
       });
     } else {
-      // [x, y, z]
+      // Format: [x, y, z]
       output += "<table>";
       functionOutput.forEach((val) => {
         output += `Value: ${camelToCapitalizedWords(val)}<br/>`;
@@ -221,11 +233,11 @@ export function convertToRenderable(
       output += "</table>";
     }
   } else {
-    // {data: {a, b}}
+    // Format: {data: {a, b}}
     if ("data" in functionOutput) {
       functionOutput = functionOutput.data;
     }
-    // {a, b}
+    // Format: {a, b}
     output += "<table>";
     Object.entries(functionOutput).forEach(([key, value]) => {
       output += `${camelToCapitalizedWords(key)}: ${value}<br/>`;
