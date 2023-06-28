@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Database } from "../database.types";
-import { ActionGroupJoinActions } from "../types";
+import { ActionGroupJoinActions, ConversationsJoinMessages } from "../types";
+import { ChatGPTMessage } from "../models";
 
 export async function getOrgFromToken(
   req: NextRequest
@@ -54,5 +55,39 @@ export async function getActiveActionGroupsAndActions(
   );
   const jsonResponse = await authRequestResult.json();
   if (jsonResponse.error) throw new Error(jsonResponse.error.message);
+  return jsonResponse;
+}
+
+export async function getConversation(
+  conversationId: number
+): Promise<ChatGPTMessage[] | undefined> {
+  // Below gets the action groups and actions that are active
+  let authRequestResult = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/conversations?select=*%2Cchat_messages%28*%29&conversations.id=eq.${conversationId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
+        APIKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      },
+    }
+  );
+  const jsonResponse = await authRequestResult.json();
+  if (jsonResponse.error) throw new Error(jsonResponse.error.message);
+  if (jsonResponse && jsonResponse.length > 0) {
+    (jsonResponse as ConversationsJoinMessages).chat_messages
+      .sort((m1, m2) => m1.conversation_index - m2.conversation_index)
+      .map((m) =>
+        m.role !== "function"
+          ? {
+              role: m.role,
+              content: m.content,
+            }
+          : {
+              role: m.role,
+              content: m.content,
+              name: m.name,
+            }
+      );
+  }
   return jsonResponse;
 }
