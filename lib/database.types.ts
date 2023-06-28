@@ -128,17 +128,23 @@ export interface Database {
       };
       organizations: {
         Row: {
+          api_key: string;
           created_at: string | null;
+          description: string;
           id: number;
           name: string;
         };
         Insert: {
+          api_key?: string;
           created_at?: string | null;
+          description?: string;
           id?: number;
           name?: string;
         };
         Update: {
+          api_key?: string;
           created_at?: string | null;
+          description?: string;
           id?: number;
           name?: string;
         };

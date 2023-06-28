@@ -18,6 +18,7 @@ import {
 import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
 import { MockAction, PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
+import { useProfile } from "./contextManagers/profile";
 
 const BrandName = "RControl";
 const BrandColour = "#ffffff";
@@ -46,202 +47,93 @@ export default function PlaygroundChatbot(props: {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
   // twice to check for bugs/side effects
-  const didRunEffect = useRef(false);
+  const alreadyRunning = useRef(false);
+
+  const { profile } = useProfile();
 
   const ref = useRef(null);
-  const [devChatContents, setDevChatContents] = useState<ChatItem[]>([
-    // {
-    //   role: "user",
-    //   content: "Hi",
-    // },{
-    //   role: "assistant",
-    //   content: "Reasoning: You're a muppet. No you're not. Maybe you are. Stop throwing food for crows.\n\nPlan:\n- You should stop being a muppet.\n\nTell user: You are wonderful.\n\nCompleted: true",
-    // },
-  ]);
+  const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
-  const [gptCallCount, setGptCallCount] = useState<number>(0);
 
-  const [gptPageName, setGptPageName] = useState(props.page);
   const killSwitchClicked = useRef(false);
 
   const addTextToChat = useCallback(
-    async (chat: ChatItem[], activeActions: string[]) => {
-      const chatCopy = [...chat];
-      chat.push({ role: "assistant", content: "" });
-      let filteredPageActions: PageAction[] = props.pageActions.map(
-        (pageAction) => {
-          let filteredActions: MockAction[] = pageAction.actions.filter(
-            (action) => {
-              return activeActions.includes(action.name);
-            }
-          );
-          let filteredPageAction: PageAction = {
-            ...pageAction,
-            actions: filteredActions,
-          };
-          return filteredPageAction;
-        }
-      );
-      console.log("filteredPageActions", filteredPageActions);
-      await runSSE(
-        "/api/call-openai",
-        JSON.stringify({
-          userCopilotMessages: chatCopy,
-          pageActions: filteredPageActions,
-          currentPageName: gptPageName,
+    async (chat: ChatItem[]) => {
+      const copy = [...devChatContents, { role: "assistant", content: "" }];
+      setDevChatContents(copy);
+      const response = await fetch("/api/v1/answers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${profile!.organizations!.api_key}`,
+        },
+        body: JSON.stringify({
+          messages: chat,
           language: props.language,
         }),
-        (text: string, fullOutput: string, eventSource) => {
-          setDevChatContents((prev) => [
-            ...prev.slice(0, prev.length - 1),
-            { role: "assistant", content: fullOutput + text },
-          ]);
-          console.log(
-            "parsedOutput",
-            JSON.stringify(parseOutput(fullOutput + text))
-          );
-          if (killSwitchClicked.current) {
-            console.log("KILL SWITCH CLICKED");
-            setLoading(false);
-            didRunEffect.current = false;
-            killSwitchClicked.current = false;
-            eventSource.close();
-            return;
-          }
-        },
-        async (fullOutput: string) => {
-          setDevChatContents((prev) => [
-            ...prev.slice(0, prev.length - 1),
-            { role: "assistant", content: fullOutput },
-          ]);
-          setLoading(false);
-          const output = parseOutput(fullOutput);
-          output.commands.forEach((command) => {
-            console.log("command", command);
-            const thisPageActions = props.pageActions.find(
-              (pageAction) => pageAction.pageName === gptPageName
-            );
-            if (!thisPageActions)
-              throw Error("GPTPageName is incorrect: " + gptPageName);
-            if (command.name === "navigateTo") {
-              console.log("navigatingTo", command.args.pageName);
-              setGptPageName(command.args.pageName);
-              props.setPage(command.args.pageName);
+      });
+
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+
+      const data = response.body;
+      if (!data) return;
+
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading || killSwitchClicked.current;
+        const chunkValue = decoder.decode(value);
+        try {
+          // TODO: Far from perfect. Ticket in Jira to fix this
+          // This allows multiple curly brackets in the string e.g. "{a: b}{c: d}"
+          chunkValue.split("{").forEach((chunkOfChunk) => {
+            if (chunkOfChunk.length === 0) return;
+            const data = JSON.parse("{" + chunkOfChunk);
+            console.log("Dev chat contents", devChatContents);
+            console.log(devChatContents.length - 1);
+            if (
+              !devChatContents[devChatContents.length - 1].content.endsWith(
+                data.text
+              )
+            ) {
               setDevChatContents((prev) => {
-                if (prev[prev.length - 1].role === "function") {
-                  const prevFuncMessage = prev[prev.length - 1];
-                  return [
-                    ...prev.slice(0, prev.length - 1),
-                    {
-                      role: "function",
-                      name: prevFuncMessage.name + "_" + command.name,
-                      content:
-                        prevFuncMessage.content +
-                        "\n\n" +
-                        "Navigated to " +
-                        command.args.pageName,
-                    },
-                  ];
-                }
-                // SyntaxError: Expected ',' or '}' after property value in JSON at position 22
-                return [
-                  ...prev,
-                  {
-                    role: "function",
-                    name: command.name,
-                    content: "Navigated to " + command.args.pageName,
-                  },
-                ];
-              });
-              return;
-            }
-            const commandAction = thisPageActions.actions.find(
-              (action) => action.name === command.name
-            );
-            if (!commandAction)
-              throw Error("Command name is incorrect: " + command.name);
-            console.log("commandAction", commandAction);
-            console.log("command.args", command.args);
-            const out = unpackAndCall(commandAction.func, command.args);
-            console.log("out from calling function", out);
-            if (out) {
-              setDevChatContents((prev) => {
-                if (prev[prev.length - 1].role === "function") {
-                  const prevFuncMessage = prev[prev.length - 1];
-                  return [
-                    ...prev.slice(0, prev.length - 1),
-                    {
-                      role: "function",
-                      name: prevFuncMessage.name + "_" + command.name,
-                      content: prevFuncMessage.content + "\n\n" + out,
-                    },
-                  ];
-                }
-                return [
-                  ...prev,
-                  { role: "function", name: command.name, content: out },
-                ];
+                const copy = [...devChatContents];
+                copy[copy.length - 1].content += data.text;
+                copy;
               });
             }
           });
-          setTimeout(() => {
-            if (output.completed === false) {
-              console.log("Running again - not terminating!");
-              didRunEffect.current = false;
-              setGptCallCount((prev) => prev + 1);
-              if (gptCallCount >= 5) {
-                console.log("Terminating!");
-                setDevChatContents((prev) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content:
-                      "Maximum number of GPT calls reached for 1 question. Terminating.",
-                  },
-                ]);
-                console.error(
-                  "Maximum number of GPT calls reached for 1 question. Terminating."
-                );
-                return;
-              }
-              setLoading(true);
-            } else {
-              console.log("Terminating!");
-              if (output.completed === true) {
-                setDevChatContents((prev) => [
-                  ...prev,
-                  { role: "assistant", content: "<button>Confirm</button>" },
-                ]);
-              }
-            }
-          }, 250);
-        },
-        async (e: any) => {
-          setLoading(false);
-          console.log(e);
+        } catch (e) {
+          console.error(e);
         }
-      );
+        console.log("chunkValue", chunkValue);
+      }
+      setLoading(false);
+      alreadyRunning.current = false;
+      killSwitchClicked.current = false;
     },
     [
+      profile,
+      setLoading,
+      devChatContents,
       setDevChatContents,
-      gptCallCount,
-      setGptCallCount,
-      gptPageName,
-      props.pageActions,
-      props.page,
-      setGptPageName,
       killSwitchClicked,
-      didRunEffect,
+      alreadyRunning,
       props.language,
     ]
   );
 
   useEffect(() => {
-    if (loading && !didRunEffect.current) {
-      didRunEffect.current = true;
-      addTextToChat(devChatContents, props.activeActions);
+    if (loading && !alreadyRunning.current) {
+      alreadyRunning.current = true;
+      addTextToChat(devChatContents);
     }
   }, [loading]);
 
@@ -300,8 +192,8 @@ export default function PlaygroundChatbot(props: {
               onClick={() => {
                 setDevChatContents([]);
                 // Set GPT page to initial page
-                setGptPageName(props.pageActions[0].pageName);
-                props.setPage(props.pageActions[0].pageName);
+                // setGptPageName(props.pageActions[0].pageName);
+                // props.setPage(props.pageActions[0].pageName);
               }}
             >
               <ArrowPathIcon className="h-5 w-5" /> Clear chat

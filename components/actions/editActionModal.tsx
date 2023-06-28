@@ -90,6 +90,10 @@ const allRequestMethods: SelectBoxOption[] = [
     id: "delete",
     name: "DELETE",
   },
+  {
+    id: "patch",
+    name: "PATCH",
+  },
 ];
 export default function EditActionModal(props: {
   action: Action;

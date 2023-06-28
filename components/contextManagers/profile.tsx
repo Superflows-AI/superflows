@@ -8,7 +8,9 @@ import React, {
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 
-type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
+  organizations: Database["public"]["Tables"]["organizations"]["Row"] | null;
+};
 
 const ProfileContext = createContext<{
   profile: ProfilesRow | null;
@@ -26,7 +28,7 @@ export function ProfileContextProvider(props: {
     if (props.disabled) return;
     const { data, error } = await props.supabase
       .from("profiles")
-      .select("*")
+      .select("*, organizations(*)")
       .single();
     if (error) throw Error(error.message);
     console.log("data", data);
