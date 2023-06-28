@@ -10,7 +10,7 @@ import {
   EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import classNames from "classnames";
-import { generateApiKey, hash } from "../lib/apiKey";
+import { generateApiKey } from "../lib/apiKey";
 import WarningModal from "../components/warningModal";
 
 export default function App() {
