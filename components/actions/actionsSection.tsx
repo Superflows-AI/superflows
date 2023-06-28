@@ -415,7 +415,6 @@ function ActionsSection(props: {
                   org_id: profile?.org_id,
                 })
                 .select();
-
               if (resp.error) throw resp.error;
               if (resp.data.length !== 1)
                 throw new Error("Expected 1 row to be inserted");

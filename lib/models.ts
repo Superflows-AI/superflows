@@ -1,7 +1,13 @@
-export interface ChatGPTMessage {
-  role: "system" | "user" | "assistant" | "function";
-  content: string;
-}
+export type ChatGPTMessage =
+  | {
+      role: "system" | "user" | "assistant";
+      content: string;
+    }
+  | {
+      role: "function";
+      content: string;
+      name: string;
+    };
 
 export interface ChatGPTResponse {
   id: string;
