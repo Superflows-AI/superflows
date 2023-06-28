@@ -36,7 +36,7 @@ function Dashboard() {
       if (profile) {
         const res = await supabase
           .from("organizations")
-          .select("hashed_api_key")
+          .select("api_key")
           .eq("id", profile?.org_id);
         if (res.error) throw res.error;
         if (res.data[0]) {
@@ -67,7 +67,7 @@ function Dashboard() {
           setToken(key);
           const res = await supabase
             .from("organizations")
-            .update({ hashed_api_key: hash(key) })
+            .update({ api_key: key })
             .eq("id", profile?.org_id);
           if (res.error) throw res.error;
         }}
@@ -126,7 +126,7 @@ function Dashboard() {
                       setToken(key);
                       const res = await supabase
                         .from("organizations")
-                        .update({ hashed_api_key: hash(key) })
+                        .update({ api_key: key })
                         .eq("id", profile?.org_id);
                       if (res.error) throw res.error;
                     }

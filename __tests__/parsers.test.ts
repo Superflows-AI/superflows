@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
-import { parseOutput } from "../lib/parsers/parsers";
+import { parseGPTStreamedData, parseOutput } from "../lib/parsers/parsers";
 
-describe("Parsers", () => {
+describe("Parse output", () => {
   it("should not error", () => {
     const output = parseOutput(
       "Reasoning: We have successfully retrieved the recent information about Mr. Daniel Solís Martínez's case. The most recent event is an insurance note related to water damage from a plumbing issue. The claim has not yet been completed and the case has been passed on to WekLaw.\n" +
@@ -105,5 +105,32 @@ describe("Parsers", () => {
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
     expect(output.completed).toBe(false);
+  });
+});
+
+describe("Parse GPT Streaming output", () => {
+  it("First streamed response", () => {
+    const testStr = `data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+
+`;
+    const output = parseGPTStreamedData(testStr);
+    expect(output).toBe("Hello");
+  });
+  it("Exclamation mark", () => {
+    const exStr = `data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
+
+`;
+    const output = parseGPTStreamedData(exStr);
+    expect(output).toBe("!");
+  });
+  it("Done", () => {
+    const exStr = `data: [DONE]
+
+`;
+    const output = parseGPTStreamedData(exStr);
+    expect(output).toBe("[DONE]");
   });
 });
