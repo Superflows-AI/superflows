@@ -70,7 +70,6 @@ export function unpackAndCall<Args extends object>(
   }
 ): any {
   if (!func) return "";
-  // export function unpackAndCall(func, obj) {
   // Get the names of the function parameters
   // @ts-ignore
   const paramNames = func
@@ -107,39 +106,82 @@ export function stripTrailingAndCurly(str: string) {
 }
 
 export async function httpRequestFromAction(
-  action: Database["public"]["Tables"]["actions"]["Row"]
-): Promise<Response> {
+  action: Database["public"]["Tables"]["actions"]["Row"],
+  parameters: Record<string, unknown>,
+  userApiKey?: string
+): Promise<Record<string, any>> {
   if (!action.path) {
     throw new Error("Path is not provided");
   }
-
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
 
   const headers = new Headers();
+  // TODO: Only application/json supported for now(!!)
   headers.set("Content-Type", "application/json");
+  if (userApiKey) {
+    headers.set("Authorization", `Bearer ${userApiKey}`);
+  }
 
   const requestOptions: RequestInit = {
     method: action.request_method,
     headers: headers,
   };
 
+  // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
-    requestOptions.body = JSON.stringify(action.request_body_contents);
+    const bodyArray: { [key: string]: any }[] = Object.entries(
+      action.request_body_contents["application/json"].schema.properties
+    ).map(([name, property]) => {
+      // TODO: Remove readonly attributes from prompts
+      // Throw out readonly attributes
+      if (property.readOnly) return undefined;
+      if (parameters[name]) {
+        return { [name]: parameters[name] };
+      }
+    });
+    const body = Object.assign({}, ...bodyArray);
+
+    // Check all required params are present
+    const required =
+      action.request_body_contents["application/json"].schema.required;
+    required.forEach((key: string) => {
+      if (!body[key]) {
+        throw new Error(`Required parameter "${key}" is not provided`);
+      }
+    });
+
+    requestOptions.body = JSON.stringify(body);
   }
 
   let url = action.path;
 
-  // TODO: accept array for JSON?
+  // TODO: accept array for JSON? Is this even possible? (not needed right now)
+  // Set parameters
   if (
     typeof action.parameters === "object" &&
     !Array.isArray(action.parameters)
   ) {
     const queryParams = new URLSearchParams();
-    for (const key in action.parameters) {
-      if (action.parameters[key] !== null) {
-        queryParams.set(key, String(action.parameters[key]));
+    for (const param of action.parameters) {
+      if (param.required && !parameters[param.name]) {
+        throw new Error(
+          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
+        );
+      }
+      if (param.in === "path") {
+        url = url.replace(`{${param.name}}`, String(parameters[param.name]));
+      } else if (parameters.in === "query") {
+        queryParams.set(param, String(parameters[param]));
+      } else if (parameters.in === "header") {
+        headers.set(param, String(parameters[param]));
+      } else if (parameters.in === "cookie") {
+        headers.set("Cookie", `${param}=${String(parameters[param])}`);
+      } else {
+        throw new Error(
+          `Parameter "${param.name}" has invalid location: ${param.in}`
+        );
       }
     }
     url += `?${queryParams.toString()}`;
@@ -150,6 +192,45 @@ export async function httpRequestFromAction(
   if (!response.ok) {
     throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
   }
+  return await response.json();
+}
 
-  return response;
+export function convertToRenderable(
+  functionOutput: Record<string, any> | any[]
+): string {
+  let output = "";
+  if (Array.isArray(functionOutput)) {
+    if (
+      typeof functionOutput[0] === "object" &&
+      !Array.isArray(functionOutput[0])
+    ) {
+      // [{a,b}, {a,b}]
+      functionOutput.forEach((item) => {
+        output += "<table>";
+        Object.entries(item).forEach(([key, value]) => {
+          output += `${camelToCapitalizedWords(key)}: ${value}<br/>`;
+        });
+        output += "</table>";
+      });
+    } else {
+      // [x, y, z]
+      output += "<table>";
+      functionOutput.forEach((val) => {
+        output += `Value: ${camelToCapitalizedWords(val)}<br/>`;
+      });
+      output += "</table>";
+    }
+  } else {
+    // {data: {a, b}}
+    if ("data" in functionOutput) {
+      functionOutput = functionOutput.data;
+    }
+    // {a, b}
+    output += "<table>";
+    Object.entries(functionOutput).forEach(([key, value]) => {
+      output += `${camelToCapitalizedWords(key)}: ${value}<br/>`;
+    });
+    output += "</table>";
+  }
+  return output;
 }

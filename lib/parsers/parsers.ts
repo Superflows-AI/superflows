@@ -197,6 +197,20 @@ export function parseOutput(gptString: string): ParsedOutput {
   };
 }
 
+export function getLastSectionName(gptString: string): string {
+  if (gptString.toLowerCase().includes("completed:")) {
+    return "completed";
+  } else if (gptString.toLowerCase().includes("commands:")) {
+    return "commands";
+  } else if (gptString.toLowerCase().includes("tell user:")) {
+    return "tell user";
+  } else if (gptString.toLowerCase().includes("plan:")) {
+    return "plan";
+  } else {
+    return "reasoning";
+  }
+}
+
 function parseFunctionCall(text: string) {
   const functionCallRegex = /(\w+)\(([^)]+)\)/;
   const argumentRegex = /(\w+)=({.*}?|[^,]+)/g;
@@ -232,4 +246,18 @@ function parseFunctionCall(text: string) {
   }
 
   return { name, args };
+}
+
+export function parseGPTStreamedData(gptOutString: string): string {
+  if (gptOutString.startsWith("data: [DONE]")) {
+    return "[DONE]";
+  }
+  return gptOutString
+    .split("data: ")
+    .filter((l: string) => l.trim())
+    .map((line: string) => {
+      return JSON.parse(line.trim()).choices[0].delta.content;
+    })
+    .filter((l: string) => l)
+    .join("");
 }

@@ -66,7 +66,7 @@ export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
 export async function streamOpenAIResponse(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {}
-): Promise<ReadableStream | null> {
+): Promise<ReadableStream | { message: string; status: number } | null> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   const options = {
     method: "POST",
@@ -92,18 +92,16 @@ export async function streamOpenAIResponse(
 
   if (response.status === 429) {
     // Throwing an error triggers exponential backoff retry
-    console.error(
+    throw new Error(
       `OpenAI API rate limit exceeded. Full error: ${JSON.stringify(
         await response.json()
       )}`
     );
-    return null;
   }
   if (!response.ok) {
-    console.error(
-      `Error from ChatGPT: ${JSON.stringify((await response.json()).error)}`
-    );
-    return null;
+    const error = await response.json();
+    console.error(`Error from ChatGPT: ${JSON.stringify(error.error)}`);
+    return { message: error.error, status: response.status };
   }
 
   return response.body;

@@ -55,6 +55,18 @@ export default async function handler(req: NextRequest): Promise<Response> {
     [chatGptPrompt, completionOptions],
     3
   );
+  if (!(response instanceof ReadableStream)) {
+    return new Response(
+      JSON.stringify({
+        error: "Error streaming response from OpenAI",
+        message: response?.message,
+      }),
+      {
+        status: response?.status ?? 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   // Proxy the streamed SSE response from OpenAI
   return new Response(response, {

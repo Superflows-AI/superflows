@@ -14,3 +14,4 @@ styles/globals.css
 local/
 pages/api/local/
 supabase/.temp/
+__tests__/testData/

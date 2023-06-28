@@ -60,6 +60,8 @@ export default function App({
   return (
     <ProfileContextProvider
       supabase={supabase}
+      // disabled={true}
+      // TODO: Revert this!
       disabled={!!pageProps.initialSession}
     >
       <SessionContextProvider
