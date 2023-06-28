@@ -165,11 +165,16 @@ function ActionsSection(props: {
         description={
           "Are you sure you want to delete this action? Once you delete it you can't get it back. There's no undo button."
         }
-        action={() => {
+        action={async () => {
           let examplesCopy = [...actions];
           examplesCopy.splice(deleteActionIndex!, 1);
           setActions(examplesCopy);
+
           setDeleteActionIndex(null);
+          await supabase
+            .from("actions")
+            .delete()
+            .match({ id: actions[deleteActionIndex!].id });
         }}
         open={deleteActionIndex !== null}
         setOpen={(open: boolean) => {
@@ -335,10 +340,8 @@ function ActionsSection(props: {
             >
               <div
                 onClick={async () => {
-                  // TODO: Old version - edit on click
-                  // setEditActionIndex(index);
-                  // TODO: New version - enable/disable on click
                   const newActionGroup = { ...props.actionGroupJoinActions };
+
                   newActionGroup.actions[index].active =
                     !newActionGroup.actions[index].active;
                   props.setActionGroup(newActionGroup);
@@ -382,13 +385,13 @@ function ActionsSection(props: {
                   }
                   items={[
                     {
-                      name: "Edit group",
+                      name: "Edit action",
                       onClick: () => {
                         setEditActionIndex(index);
                       },
                     },
                     {
-                      name: "Delete group",
+                      name: "Delete action",
                       onClick: () => {
                         setDeleteActionIndex(index);
                       },
@@ -405,16 +408,25 @@ function ActionsSection(props: {
                 .from("actions")
                 .insert({
                   action_group: props.actionGroupJoinActions.id,
-                  name: "",
+                  name: "New action",
                   description: "",
                   action_type: "http",
+                  active: true,
                   org_id: profile?.org_id,
                 })
                 .select();
+
               if (resp.error) throw resp.error;
               if (resp.data.length !== 1)
                 throw new Error("Expected 1 row to be inserted");
               setActions([...actions, resp.data[0]]);
+              props.setActionGroup({
+                ...props.actionGroupJoinActions,
+                actions: [
+                  ...props.actionGroupJoinActions.actions,
+                  resp.data[0],
+                ],
+              });
               setEditActionIndex(exampleLen);
             }}
             className=" hover:bg-gray-600 rounded-lg cursor-pointer flex flex-col justify-center items-center py-2.5"

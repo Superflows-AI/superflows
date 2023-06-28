@@ -1,14 +1,13 @@
-import Head from "next/head";
-import React, { useCallback, useEffect, useState } from "react";
-import { Navbar } from "../components/navbar";
-import { LoadingSpinner } from "../components/loadingspinner";
-import { classNames } from "../lib/utils";
-import PageActionsSection from "../components/actions/actionsSection";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useCallback, useEffect, useState } from "react";
+import PageActionsSection from "../components/actions/actionsSection";
 import { useProfile } from "../components/contextManagers/profile";
-import SignInComponent from "../components/signIn";
-import { ActionGroupJoinActions } from "../lib/types";
 import Headers from "../components/headers";
+import { LoadingSpinner } from "../components/loadingspinner";
+import { Navbar } from "../components/navbar";
+import SignInComponent from "../components/signIn";
+import { Action, ActionGroupJoinActions } from "../lib/types";
+import { classNames } from "../lib/utils";
 
 export default function App() {
   return (
@@ -48,7 +47,16 @@ export function RepliesPage() {
     const actionGroupRes = await supabase
       .from("action_groups")
       .select("*, actions(*)")
+      .order("id", { ascending: true })
       .eq("org_id", profile?.org_id);
+
+    // if you don't sort the actions get shuffled around on the page each time
+    actionGroupRes.data?.forEach((actionGroup) => {
+      actionGroup.actions.sort((a: Action, b: Action) => {
+        return a.name.localeCompare(b.name);
+      });
+    });
+
     if (actionGroupRes.error) {
       setIsError(true);
       throw actionGroupRes.error;
