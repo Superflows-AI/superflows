@@ -48,8 +48,7 @@ export default function PageActionsSection(props: {
                   const res = await supabase
                     .from("action_groups")
                     .insert({
-                      name: "New",
-                      // description: "New",
+                      name: "New Action Group",
                       org_id: profile.org_id,
                     })
                     .select("*");
@@ -65,7 +64,7 @@ export default function PageActionsSection(props: {
                   props.setActionGroups(newActionGroups);
                 }}
               >
-                <PlusIcon className="text-gray-200 w-5 h-5" /> Add
+                <PlusIcon className="text-gray-200 w-5 h-5" /> Add action group
               </button>
             )}
             <button
@@ -277,11 +276,11 @@ function ActionsSection(props: {
             <FlyoutMenu
               items={[
                 {
-                  name: "Edit",
+                  name: "Edit Group",
                   onClick: () => setEditActionGroup(true),
                 },
                 {
-                  name: "Delete",
+                  name: "Delete Group",
                   onClick: () => {
                     setDeleteActionGroup(true);
                   },
@@ -383,13 +382,13 @@ function ActionsSection(props: {
                   }
                   items={[
                     {
-                      name: "Edit",
+                      name: "Edit group",
                       onClick: () => {
                         setEditActionIndex(index);
                       },
                     },
                     {
-                      name: "Delete",
+                      name: "Delete group",
                       onClick: () => {
                         setDeleteActionIndex(index);
                       },
@@ -424,7 +423,7 @@ function ActionsSection(props: {
               <PlusIcon className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="mt-1 text-sm select-none font-medium text-gray-200">
-              Add new
+              New action
             </div>
           </li>
         </ul>
