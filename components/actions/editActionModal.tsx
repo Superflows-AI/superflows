@@ -207,8 +207,6 @@ export default function EditActionModal(props: {
   );
   const [bodyValidJSON, setBodyValidJSON] = React.useState<boolean>(true);
 
-  console.log("localAction", localAction);
-
   return (
     <Modal open={!!props.action} setOpen={props.close} classNames={"max-w-4xl"}>
       <div className="flex flex-row justify-between">
