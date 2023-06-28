@@ -30,7 +30,7 @@ export function ProfileContextProvider(props: {
       .from("profiles")
       .select("*, organizations(*)")
       .single();
-    if (error) throw Error(error.message);
+    if (error) console.error(error.message);
     console.log("data", data);
     setProfile(data);
   }, [props.disabled, setProfile, props.supabase]);
