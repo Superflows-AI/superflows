@@ -9,12 +9,108 @@ import {
   PencilSquareIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
-import React, { useRef } from "react";
+import React, { Component, useRef } from "react";
 import { Action } from "../../lib/types";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
+import JSONInput from "react-json-editor-ajrm";
+import locale from "react-json-editor-ajrm/locale/en";
+
+interface JsonTextBoxProps {
+  title: string;
+  text: string;
+  setText: (text: string) => void;
+  validJSON: boolean;
+  setValidJSON: (valid: boolean) => void;
+  action: Action;
+  setLocalAction: (action: Action) => void;
+}
+interface TextAreaState {
+  text: string;
+}
+
+function isJsonString(str) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
+class TextArea extends Component<JsonTextBoxProps, TextAreaState> {
+  constructor(props: JsonTextBoxProps) {
+    super(props);
+  }
+  // @ts-ignore
+  autoGrow = (element) => {
+    element.target.style.height = "5px";
+    element.target.style.height = element.target.scrollHeight + "px";
+  };
+
+  render() {
+    return (
+      <textarea
+        style={{
+          resize: "none",
+          overflow: "hidden",
+          minHeight: "50px",
+          maxHeight: "10000000px",
+        }}
+        className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded text-black whitespace-pre-wrap"
+        onChange={(e) => {
+          this.props.setText(e.target.value);
+        }}
+        onClick={this.autoGrow}
+        value={
+          // TODO: make pretty
+          // isJsonString(this.state.text)
+          //   ? JSON.stringify(this.state.text, null, 2)
+          //   : this.state.text
+          this.props.text
+        }
+        onBlur={(e) => {
+          if (e.target.value === "") {
+            this.props.setText("{}");
+            e.target.value = "{}";
+          }
+          try {
+            const newAction = this.props.action;
+            newAction[this.props.title] = JSON.parse(e.target.value);
+            this.props.setLocalAction(newAction);
+            this.props.setValidJSON(true);
+          } catch (error) {
+            this.props.setValidJSON(false);
+          }
+        }}
+      />
+    );
+  }
+}
+
+function JsonTextBox(props: JsonTextBoxProps) {
+  return (
+    <>
+      <div className="w-full px-32 flex flex-row justify-between place-items-start overflow-hidden resize-y">
+        <div className="font-bold text-lg text-gray-100 mt-4 w-40">
+          {props.title.charAt(0).toUpperCase() +
+            props.title.slice(1).replace(/_/g, " ")}
+        </div>
+        <TextArea {...props} />
+      </div>
+      <div
+        className={classNames(
+          "px-32 text-red-500 -mt-10",
+          props.validJSON ? "invisible" : "visible"
+        )}
+      >
+        Invalid JSON
+      </div>
+    </>
+  );
+}
 
 const allActionTypes: SelectBoxOption[] = [
   {
@@ -94,13 +190,24 @@ export default function EditActionModal(props: {
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
   const [localAction, setLocalAction] = React.useState<Action>(props.action);
 
-  const [parameterBox, setParameterBox] = React.useState<string>("{}");
+  const [parameterBox, setParameterBox] = React.useState<string>(
+    JSON.stringify(localAction.parameters)
+  );
   const [parametersValidJSON, setParameterValidJSON] =
     React.useState<boolean>(true);
 
-  const [responsesBox, setResponsesBox] = React.useState<string>("{}");
+  const [responsesBox, setResponsesBox] = React.useState<string>(
+    JSON.stringify(localAction.responses)
+  );
   const [responsesValidJSON, setResponsesValidJSON] =
     React.useState<boolean>(true);
+
+  const [bodyBox, setBodyBox] = React.useState<string>(
+    JSON.stringify(localAction.request_body_contents)
+  );
+  const [bodyValidJSON, setBodyValidJSON] = React.useState<boolean>(true);
+
+  console.log("localAction", localAction);
 
   return (
     <Modal open={!!props.action} setOpen={props.close} classNames={"max-w-4xl"}>
@@ -260,84 +367,37 @@ export default function EditActionModal(props: {
           />
         </div>
         {/* PARAMETERS */}
-        <div className="w-full px-32 flex flex-row justify-between place-items-start overflow-visible ">
-          <div className="font-bold text-lg text-gray-100 mt-4 w-40">
-            Parameters:
-          </div>
-          <textarea
-            className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded whitespace-pre-wrap text-black"
-            onChange={(e) => {
-              setParameterBox(e.target.value);
-            }}
-            onBlur={(e) => {
-              if (e.target.value === "") {
-                setParameterBox("{}");
-                e.target.value = "{}";
-              }
-              try {
-                const newParams = JSON.parse(e.target.value);
-                setLocalAction({ ...localAction, parameters: newParams });
-                setParameterValidJSON(true);
-              } catch (error) {
-                setParameterValidJSON(false);
-              }
-            }}
-            value={parameterBox}
-          ></textarea>
-        </div>
-        <div
-          className={classNames(
-            "px-32 text-red-500 -mt-10",
-            parametersValidJSON ? "invisible" : "visible"
-          )}
-        >
-          Invalid JSON
-        </div>
+        <JsonTextBox
+          title={"parameters"}
+          text={parameterBox}
+          setText={setParameterBox}
+          validJSON={parametersValidJSON}
+          setValidJSON={setParameterValidJSON}
+          action={localAction}
+          setLocalAction={setLocalAction}
+        />
+
         {/* REQUEST_BODY_CONTENTS */}
-        {localAction.request_body_contents && (
-          <div className="w-full px-32 flex flex-row justify-center place-items-start">
-            <div className="font-bold text-lg text-gray-100 w-40 mt-4">
-              Body Contents:
-            </div>
-            <div className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm bg-gray-850 rounded whitespace-pre-wrap text-gray-300">
-              {JSON.stringify(localAction.request_body_contents ?? {}, null, 2)}
-            </div>
-          </div>
-        )}
+        <JsonTextBox
+          title={"request_body_contents"}
+          text={bodyBox}
+          setText={setBodyBox}
+          validJSON={bodyValidJSON}
+          setValidJSON={setBodyValidJSON}
+          action={localAction}
+          setLocalAction={setLocalAction}
+        />
+
         {/* RESPONSES */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-start">
-          <div className="font-bold text-lg text-gray-100 mt-4 w-40">
-            Responses:
-          </div>
-          <textarea
-            className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded whitespace-pre-wrap text-black"
-            onChange={(e) => {
-              setResponsesBox(e.target.value);
-            }}
-            onBlur={(e) => {
-              if (e.target.value === "") {
-                setResponsesBox("{}");
-                e.target.value = "{}";
-              }
-              try {
-                const newParams = JSON.parse(e.target.value);
-                setLocalAction({ ...localAction, responses: newParams });
-                setResponsesValidJSON(true);
-              } catch (error) {
-                setResponsesValidJSON(false);
-              }
-            }}
-            value={responsesBox}
-          ></textarea>
-        </div>
-        <div
-          className={classNames(
-            "px-32 text-red-500 -mt-10",
-            responsesValidJSON ? "invisible" : "visible"
-          )}
-        >
-          Invalid JSON
-        </div>
+        <JsonTextBox
+          title={"responses"}
+          text={responsesBox}
+          setText={setResponsesBox}
+          validJSON={responsesValidJSON}
+          setValidJSON={setResponsesValidJSON}
+          action={localAction}
+          setLocalAction={setLocalAction}
+        />
       </div>
 
       <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
@@ -352,6 +412,7 @@ export default function EditActionModal(props: {
           onClick={(event) => {
             event.preventDefault();
             if (localAction.name !== "") {
+              console.log("saving action", localAction);
               props.setAction(localAction);
               props.close();
             } else setInvalid(true);
