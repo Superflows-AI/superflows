@@ -4,9 +4,9 @@ Superflows adds a Copilot to your SaaS product to help your users get the most o
 
 ## Status
 
-[-] **Alpha**: Not ready for use on production systems.
-[ ] **Beta**: Ready for use on production systems, but not yet considered stable.
-[ ] **Stable**: Ready for use on production systems.
+- [x] **Alpha**: Not ready for use on production systems.
+- [ ] **Beta**: Ready for use on production systems, but not yet considered stable.
+- [ ] **Stable**: Ready for use on production systems.
 
 ## Installation
 
