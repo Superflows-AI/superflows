@@ -109,8 +109,7 @@ export default function Playground() {
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
-          <div className="mt-6"></div>
-          <div className="">
+          <div className="mt-6">
             <SelectBox
               title="Language"
               options={languageOptions}
