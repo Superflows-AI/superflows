@@ -19,6 +19,7 @@ import {
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
+import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 
 interface JsonTextBoxProps {
   title: "parameters" | "responses" | "request_body_contents";
@@ -29,57 +30,6 @@ interface JsonTextBoxProps {
   action: Action;
   setLocalAction: (action: Action) => void;
 }
-interface TextAreaState {
-  text: string;
-}
-
-class TextArea extends Component<JsonTextBoxProps, TextAreaState> {
-  constructor(props: JsonTextBoxProps) {
-    super(props);
-  }
-  // @ts-ignore
-  autoGrow = (element) => {
-    element.target.style.height = "5px";
-    element.target.style.height = element.target.scrollHeight + "px";
-  };
-
-  render() {
-    return (
-      <textarea
-        style={{
-          resize: "none",
-          overflow: "hidden",
-          minHeight: "50px",
-          maxHeight: "10000000px",
-        }}
-        className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded text-black whitespace-pre-wrap"
-        onChange={(e) => {
-          this.props.setText(e.target.value);
-        }}
-        onClick={this.autoGrow}
-        value={
-          isJsonString(this.props.text)
-            ? JSON.stringify(JSON.parse(this.props.text), undefined, 2)
-            : this.props.text
-        }
-        onBlur={(e) => {
-          if (e.target.value === "") {
-            this.props.setText("{}");
-            e.target.value = "{}";
-          }
-          try {
-            const newAction = this.props.action;
-            newAction[this.props.title] = JSON.parse(e.target.value);
-            this.props.setLocalAction(newAction);
-            this.props.setValidJSON(true);
-          } catch (error) {
-            this.props.setValidJSON(false);
-          }
-        }}
-      />
-    );
-  }
-}
 
 function JsonTextBox(props: JsonTextBoxProps) {
   return (
@@ -89,7 +39,29 @@ function JsonTextBox(props: JsonTextBoxProps) {
           {props.title.charAt(0).toUpperCase() +
             props.title.slice(1).replace(/_/g, " ")}
         </div>
-        <TextArea {...props} />
+        <AutoGrowingTextArea
+          className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded text-black whitespace-pre-wrap resize-none overflow-hidden"
+          onChange={(e) => {
+            props.setText(e.target.value);
+          }}
+          value={
+            isJsonString(props.text)
+              ? JSON.stringify(JSON.parse(props.text), undefined, 2)
+              : props.text
+          }
+          placeholder={"{}"}
+          onBlur={(e) => {
+            try {
+              const newAction = props.action;
+              newAction[props.title] = JSON.parse(e.target.value);
+              props.setLocalAction(newAction);
+              props.setValidJSON(true);
+            } catch (error) {
+              props.setValidJSON(false);
+            }
+          }}
+          minHeight={80}
+        />
       </div>
       <div
         className={classNames(
@@ -237,10 +209,14 @@ export default function EditActionModal(props: {
             label={"Name"}
             value={localAction.name ?? ""}
             onChange={(e) => {
+              const newName = e.target.value.slice(0, 60);
               setLocalAction({
                 ...localAction,
-                name: e.target.value.slice(0, 40),
+                name: newName,
               });
+              if (isAlphaNumericUnderscore(newName) && newName.length > 0) {
+                setNameValid(true);
+              }
             }}
             onBlur={
               isAlphaNumericUnderscore(localAction.name) &&
@@ -249,11 +225,15 @@ export default function EditActionModal(props: {
                 : () => setNameValid(false)
             }
           />
-          {!nameValid && (
-            <div className="text-red-600 w-full text-center">
-              Must only contain letters, numbers, and underscores
-            </div>
-          )}
+
+          <div
+            className={classNames(
+              "text-red-600 mt-0.5 w-full text-center text-sm",
+              nameValid ? "invisible" : "visible"
+            )}
+          >
+            Must only contain letters, numbers, and underscores
+          </div>
         </div>
         <SelectBox
           options={allActionTypes}

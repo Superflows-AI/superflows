@@ -408,7 +408,7 @@ function ActionsSection(props: {
                 .from("actions")
                 .insert({
                   action_group: props.actionGroupJoinActions.id,
-                  name: "New action",
+                  name: "new_action",
                   description: "",
                   action_type: "http",
                   active: true,
