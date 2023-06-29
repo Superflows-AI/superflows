@@ -1,13 +1,13 @@
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import React, { ReactNode, useCallback, useEffect, useState } from "react";
-import { Action, ActionGroupJoinActions } from "../lib/types";
-import { classNames } from "../lib/utils";
-import SelectBox from "./selectBox";
-import { Api } from "../lib/swaggerTypes";
-import PlaygroundChatbot from "./playgroundChatbot";
-import { useProfile } from "./contextManagers/profile";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { MockAction, pageActions } from "../lib/rcMock";
+import { ReactNode, useEffect, useState } from "react";
+import { MockAction } from "../lib/rcMock";
+import { Organization } from "../lib/types";
+import { classNames } from "../lib/utils";
+import { useProfile } from "./contextManagers/profile";
+import PlaygroundChatbot from "./playgroundChatbot";
+import SelectBox from "./selectBox";
+import { set } from "zod";
 
 const languageOptions: {
   id: string;
@@ -28,81 +28,45 @@ const languageOptions: {
 
 export default function Playground() {
   const supabase = useSupabaseClient();
-  const { profile } = useProfile();
   const [language, setLanguage] = useState("EN");
-  const [isError, setIsError] = useState(false);
   const [userApiKey, setUserApiKey] = useState("");
+
+  const profile = useProfile();
+  const [organization, setOrganization] = useState<Organization>();
+  const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
     localStorage.getItem("userApiKey") &&
       setUserApiKey(localStorage.getItem("userApiKey") as string);
   }, []);
 
-  // const [actionGroups, setActionGroupsJoinActions] = useState<
-  //   ActionGroupJoinActions[]
-  // >([]);
-  // const loadActions = useCallback(async () => {
-  //   const actionGroupRes = await supabase
-  //     .from("action_groups")
-  //     .select("*, actions(*)")
-  //     .eq("org_id", profile?.org_id);
-  //   if (actionGroupRes.error) {
-  //     setIsError(true);
-  //     throw actionGroupRes.error;
-  //   }
-  //   if (actionGroupRes.data === null) {
-  //     setIsError(true);
-  //     throw new Error("No data returned");
-  //   }
-  //   setActionGroupsJoinActions(actionGroupRes.data);
-  // }, [profile, supabase]);
-  // useEffect(() => {
-  //   if (!profile) return;
-  //   loadActions();
-  // }, [profile]);
+  useEffect(() => {
+    (async () => {
+      if (profile) {
+        const res = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("id", profile?.org_id)
+          .single();
+        if (res.error) throw res.error;
+        if (res.data[0]) {
+          setOrganization(res.data[0]);
+        }
+
+        const res2 = await supabase
+          .from("actions")
+          .select("*")
+          .eq("org_id", profile?.org_id);
+        if (res2.error) throw res2.error;
+        setNumActions(res2.data.length);
+      }
+    })();
+  }, [profile]);
 
   return (
     <>
-      {/* Left sidebar */}
-      {/*<div className="fixed bottom-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">*/}
-      {/* Sidebar component, swap this element with another sidebar if you like */}
-      {/*<div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-r border-gray-700 px-6 pb-4">*/}
-      {/*    <div className="mt-6">*/}
-      {/*      <h1 className="text-xl text-gray-50 pb-2">{""} Actions</h1>*/}
-      {/*      <div className="flex flex-col overflow-y-auto gap-y-3 px-1 py-2">*/}
-      {/*        {pageActions[0].actions.map((action, idx) => (*/}
-      {/*          <Card*/}
-      {/*            key={idx}*/}
-      {/*            active={true}*/}
-      {/*            handleStateChange={() => {}}*/}
-      {/*            //   if (*/}
-      {/*            //     !props.activeActions.find((item) => item === action.name)*/}
-      {/*            //   ) {*/}
-      {/*            //     props.setActiveActions([*/}
-      {/*            //       ...props.activeActions,*/}
-      {/*            //       action.name,*/}
-      {/*            //     ]);*/}
-      {/*            //   } else {*/}
-      {/*            //     props.setActiveActions(*/}
-      {/*            //       props.activeActions.filter(*/}
-      {/*            //         (item) => item !== action.name*/}
-      {/*            //       )*/}
-      {/*            //     );*/}
-      {/*            //   }*/}
-      {/*            // }}*/}
-      {/*            action={action}*/}
-      {/*          />*/}
-      {/*        ))}*/}
-      {/*      </div>*/}
-      {/*    </div>*/}
-      {/*  </div>*/}
-      {/*</div>*/}
-
-      {/*<main className="fixed inset-x-72 top-16 bottom-0">*/}
       <main className="fixed left-0 right-72 top-16 bottom-0">
         <PlaygroundChatbot
-          pageActions={pageActions}
-          activeActions={pageActions[0].actions.map((action) => action.name)}
           page={"RControl"}
           setPage={() => {}}
           language={
@@ -110,12 +74,12 @@ export default function Playground() {
             "English"
           }
           userApiKey={userApiKey}
+          submitReady={
+            (numActions > 0 && organization?.api_key?.length > 0) ?? false
+          }
         />
       </main>
-
-      {/* Right sidebar */}
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
-        {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
           <div className="mt-6">
             <SelectBox
