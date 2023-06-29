@@ -143,7 +143,7 @@ export default async function handler(
           methodObj.operationId ??
           requestToFunctionName(method, methodObj, path),
         description: description,
-        active: ["get", "post"].includes(method),
+        active: ["get"].includes(method),
         org_id: orgId,
         action_group: actionGroupId,
         action_type: "http",
