@@ -32,6 +32,7 @@ export default function Playground() {
   const [model, setModel] = useState("GPT4");
   const [language, setLanguage] = useState("EN");
   const [isError, setIsError] = useState(false);
+  const [userApiKey, setUserApiKey] = useState("");
 
   // const [actionGroups, setActionGroupsJoinActions] = useState<
   //   ActionGroupJoinActions[]
@@ -59,41 +60,42 @@ export default function Playground() {
   return (
     <>
       {/* Left sidebar */}
-      <div className="fixed bottom-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
-        {/* Sidebar component, swap this element with another sidebar if you like */}
-        <div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-r border-gray-700 px-6 pb-4">
-          <div className="mt-6">
-            <h1 className="text-xl text-gray-50 pb-2">{""} Actions</h1>
-            <div className="flex flex-col overflow-y-auto gap-y-3 px-1 py-2">
-              {pageActions[0].actions.map((action, idx) => (
-                <Card
-                  key={idx}
-                  active={true}
-                  handleStateChange={() => {}}
-                  //   if (
-                  //     !props.activeActions.find((item) => item === action.name)
-                  //   ) {
-                  //     props.setActiveActions([
-                  //       ...props.activeActions,
-                  //       action.name,
-                  //     ]);
-                  //   } else {
-                  //     props.setActiveActions(
-                  //       props.activeActions.filter(
-                  //         (item) => item !== action.name
-                  //       )
-                  //     );
-                  //   }
-                  // }}
-                  action={action}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/*<div className="fixed bottom-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">*/}
+      {/* Sidebar component, swap this element with another sidebar if you like */}
+      {/*<div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-r border-gray-700 px-6 pb-4">*/}
+      {/*    <div className="mt-6">*/}
+      {/*      <h1 className="text-xl text-gray-50 pb-2">{""} Actions</h1>*/}
+      {/*      <div className="flex flex-col overflow-y-auto gap-y-3 px-1 py-2">*/}
+      {/*        {pageActions[0].actions.map((action, idx) => (*/}
+      {/*          <Card*/}
+      {/*            key={idx}*/}
+      {/*            active={true}*/}
+      {/*            handleStateChange={() => {}}*/}
+      {/*            //   if (*/}
+      {/*            //     !props.activeActions.find((item) => item === action.name)*/}
+      {/*            //   ) {*/}
+      {/*            //     props.setActiveActions([*/}
+      {/*            //       ...props.activeActions,*/}
+      {/*            //       action.name,*/}
+      {/*            //     ]);*/}
+      {/*            //   } else {*/}
+      {/*            //     props.setActiveActions(*/}
+      {/*            //       props.activeActions.filter(*/}
+      {/*            //         (item) => item !== action.name*/}
+      {/*            //       )*/}
+      {/*            //     );*/}
+      {/*            //   }*/}
+      {/*            // }}*/}
+      {/*            action={action}*/}
+      {/*          />*/}
+      {/*        ))}*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
+      {/*</div>*/}
 
-      <main className="fixed inset-x-72 top-16 bottom-0">
+      {/*<main className="fixed inset-x-72 top-16 bottom-0">*/}
+      <main className="fixed left-0 right-72 top-16 bottom-0">
         <PlaygroundChatbot
           pageActions={pageActions}
           activeActions={pageActions[0].actions.map((action) => action.name)}
@@ -103,13 +105,14 @@ export default function Playground() {
             languageOptions.find((item) => item.id === language)?.name ??
             "English"
           }
+          userApiKey={userApiKey}
         />
       </main>
 
       {/* Right sidebar */}
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
         {/* Sidebar component, swap this element with another sidebar if you like */}
-        <div className="bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
+        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
           <div className="mt-6">
             <SelectBox
               title="Model"
@@ -131,6 +134,20 @@ export default function Playground() {
               setSelected={setLanguage}
             />
           </div>
+        </div>
+        <div className="fixed bottom-0 right-0 w-72 bg-gray-900 py-6 px-4">
+          <h2 className="text-gray-100 text-little font-semibold">
+            Your API Key
+          </h2>
+          <p className="text-gray-400 text-sm">
+            To call your API, we might need an API key. This is passed in the
+            Authorization header.
+          </p>
+          <input
+            className="rounded mt-2 px-2 py-1"
+            value={userApiKey}
+            onChange={(e) => setUserApiKey(e.target.value)}
+          />
         </div>
       </div>
     </>
