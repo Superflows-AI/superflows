@@ -53,7 +53,7 @@ export function parseOutput(gptString: string): ParsedOutput {
       });
   }
 
-  let completed: boolean | null = false;
+  let completed: boolean | null = null;
   if (gptString.split("Completed: ").length > 1) {
     const completedString = gptString
       .toLowerCase()

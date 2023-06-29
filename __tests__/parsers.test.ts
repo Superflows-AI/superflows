@@ -22,7 +22,7 @@ describe("Parse output", () => {
     );
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(false);
+    expect(output.completed).toBe(null);
   });
   it("should not error including tell user", () => {
     const output = parseOutput(
@@ -48,7 +48,7 @@ describe("Parse output", () => {
       "Could you please provide more information? Who is the customer we need to schedule a trap for and what type of trap are we talking about?"
     );
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(false);
+    expect(output.completed).toBe(null);
   });
   it("should not error no plan, no commands", () => {
     const output = parseOutput(
@@ -104,7 +104,7 @@ describe("Parse output", () => {
     expect(output.plan).toBe("");
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(false);
+    expect(output.completed).toBe(null);
   });
 });
 
