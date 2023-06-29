@@ -27,12 +27,12 @@ export function Navbar(props: { current: string }) {
       <div className="fixed top-0 inset-x-0 border-b border-gray-700 z-10">
         <Disclosure as="nav" className="bg-gray-800">
           <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <button
-              className={"fixed top-2 left-2 hover:bg-gray-700 rounded-md p-2"}
-              onClick={() => setOpen(true)}
-            >
-              <SparklesIcon className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
+            {/*<button*/}
+            {/*  className={"fixed top-2 left-2 hover:bg-gray-700 rounded-md p-2"}*/}
+            {/*  onClick={() => setOpen(true)}*/}
+            {/*>*/}
+            {/*  <SparklesIcon className="h-6 w-6 text-white" aria-hidden="true" />*/}
+            {/*</button>*/}
             <div className="">
               <div className="flex h-16 items-center justify-between px-4 sm:px-0">
                 <div className="flex items-center">
