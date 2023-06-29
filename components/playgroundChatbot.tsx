@@ -7,7 +7,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingSpinner } from "./loadingspinner";
-import { classNames, getNumRows, parseKeyValues } from "../lib/utils";
+import {
+  classNames,
+  convertToRenderable,
+  getNumRows,
+  parseKeyValues,
+} from "../lib/utils";
 import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
 import { PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
@@ -26,7 +31,7 @@ export const promptSuggestionButtons = [
 ];
 
 interface ChatItem {
-  role: "user" | "assistant" | "function";
+  role: "user" | "assistant" | "function" | "debug" | "error";
   name?: string;
   content: string;
 }
@@ -60,11 +65,7 @@ export default function PlaygroundChatbot(props: {
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
-      const copy = [
-        ...devChatContents,
-        { role: "assistant", content: "" } as ChatItem,
-      ];
-      setDevChatContents(copy);
+      setDevChatContents(chat);
       if (loading || alreadyRunning.current) return;
       alreadyRunning.current = true;
       setLoading(true);
@@ -94,7 +95,7 @@ export default function PlaygroundChatbot(props: {
       const reader = data.getReader();
       const decoder = new TextDecoder();
       let done = false;
-      let outputText = "";
+      let outputMessages = [{ role: "assistant", content: "" }] as ChatItem[];
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -111,11 +112,18 @@ export default function PlaygroundChatbot(props: {
               if (chunkOfChunk.length === 0) return;
               const data = JSON.parse(chunkOfChunk) as StreamingStep;
               if (conversationId === null) setConversationId(data.id);
-              outputText += data.content;
-              setDevChatContents([
-                ...chat,
-                { role: "assistant", content: outputText },
-              ]);
+              if (
+                data.role !== outputMessages[outputMessages.length - 1]?.role
+              ) {
+                outputMessages.push({
+                  role: data.role,
+                  content: data.content,
+                });
+              } else {
+                outputMessages[outputMessages.length - 1].content +=
+                  data.content;
+              }
+              setDevChatContents([...chat, ...outputMessages]);
             });
         } catch (e) {
           console.error(e);
@@ -207,9 +215,36 @@ export default function PlaygroundChatbot(props: {
       >
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
-            if (devMode || chatItem.role !== "assistant")
+            if (devMode || chatItem.role === "user")
               return <DevChatItem chatItem={chatItem} key={idx} />;
             else {
+              if (["debug", "error"].includes(chatItem.role)) return <></>;
+              if ("function" === chatItem.role) {
+                let contentString = "";
+                const functionJsonResponse = JSON.parse(chatItem.content);
+                if (
+                  Array.isArray(functionJsonResponse) &&
+                  functionJsonResponse.length === 0
+                ) {
+                  contentString = "No results found.";
+                } else if (
+                  typeof functionJsonResponse === "object" &&
+                  Object.entries(functionJsonResponse).length === 0
+                ) {
+                  contentString = "No results found.";
+                } else {
+                  contentString =
+                    chatItem.name +
+                    "called:\n" +
+                    convertToRenderable(functionJsonResponse);
+                }
+                return (
+                  <DevChatItem
+                    chatItem={{ ...chatItem, content: contentString }}
+                    key={idx}
+                  />
+                );
+              }
               return <UserChatItem chatItem={chatItem} key={idx} />;
             }
           })}
@@ -365,7 +400,14 @@ function DevChatItem(props: { chatItem: ChatItem }) {
         "py-4 px-1.5 rounded flex flex-col",
         props.chatItem.role === "user"
           ? "bg-gray-100 text-right place-items-end"
-          : "bg-gray-200 text-left place-items-baseline"
+          : "bg-gray-200 text-left place-items-baseline",
+        props.chatItem.role === "error"
+          ? "bg-red-200"
+          : props.chatItem.role === "debug"
+          ? "bg-green-100"
+          : props.chatItem.role === "function"
+          ? "bg-purple-100"
+          : ""
       )}
     >
       <p className="text-xs text-gray-600 mb-1">
@@ -373,7 +415,13 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           ? profile?.organizations?.name + " AI"
           : props.chatItem.role === "function"
           ? "Function called"
-          : "You"}
+          : props.chatItem.role === "user"
+          ? "You"
+          : props.chatItem.role === "debug"
+          ? "Debug"
+          : props.chatItem.role === "error"
+          ? "Error"
+          : "Unknown"}
       </p>
       {matches.map((text, idx) => {
         if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
@@ -499,7 +547,6 @@ function UserChatItem(props: { chatItem: ChatItem }) {
     if (match[3]) matches.push(match[3].trim());
   }
   const outputObj = parseOutput(props.chatItem.content);
-  // TODO: if it's a function call, hide it from the user
   return (
     <div className="py-4 px-1.5 rounded flex flex-col bg-gray-200 text-left place-items-baseline">
       <p className="text-xs text-gray-600 mb-1">
