@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Database } from "./database.types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import { StreamingStep } from "../pages/api/v1/answers";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -106,107 +107,6 @@ export function stripTrailingAndCurly(str: string) {
   return str;
 }
 
-export async function httpRequestFromAction(
-  action: Database["public"]["Tables"]["actions"]["Row"],
-  parameters: Record<string, unknown>,
-  userApiKey?: string
-): Promise<Record<string, any> | any[]> {
-  if (!action.path) {
-    throw new Error("Path is not provided");
-  }
-  if (!action.request_method) {
-    throw new Error("Request method is not provided");
-  }
-
-  const headers = new Headers();
-  // TODO: Only application/json supported for now(!!)
-  headers.set("Content-Type", "application/json");
-  if (userApiKey) {
-    headers.set("Authorization", `Bearer ${userApiKey}`);
-  }
-
-  const requestOptions: RequestInit = {
-    method: action.request_method,
-    headers: headers,
-  };
-
-  // Request body
-  if (action.request_method !== "GET" && action.request_body_contents) {
-    const reqBodyContents =
-      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
-    if (!("application/json" in reqBodyContents)) {
-      throw new Error(
-        "Only application/json request body contents are supported for now"
-      );
-    }
-    const applicationJson = reqBodyContents[
-      "application/json"
-    ] as OpenAPIV3.MediaTypeObject;
-    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-    const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
-    const bodyArray = Object.entries(properties).map(([name, property]) => {
-      // Throw out readonly attributes
-      if (property.readOnly) return undefined;
-      if (parameters[name]) {
-        return { [name]: parameters[name] };
-      }
-    });
-    const body = Object.assign({}, ...bodyArray);
-
-    // Check all required params are present
-    const required = schema.required ?? [];
-    required.forEach((key: string) => {
-      if (!body[key]) {
-        throw new Error(`Required parameter "${key}" is not provided`);
-      }
-    });
-
-    requestOptions.body = JSON.stringify(body);
-  }
-
-  let url = action.path;
-
-  // TODO: accept array for JSON? Is this even possible? (not needed right now)
-  // Set parameters
-  if (
-    action.parameters &&
-    typeof action.parameters === "object" &&
-    Array.isArray(action.parameters)
-  ) {
-    const queryParams = new URLSearchParams();
-    const actionParameters =
-      action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
-    for (const param of actionParameters) {
-      if (param.required && !parameters[param.name]) {
-        throw new Error(
-          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
-        );
-      }
-      if (param.in === "path") {
-        url = url.replace(`{${param.name}}`, String(parameters[param.name]));
-      } else if (parameters.in === "query") {
-        queryParams.set(param.name, String(parameters[param.name]));
-      } else if (parameters.in === "header") {
-        headers.set(param.name, String(parameters[param.name]));
-      } else if (parameters.in === "cookie") {
-        headers.set("Cookie", `${param}=${String(parameters[param.name])}`);
-      } else {
-        throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`
-        );
-      }
-    }
-    url += `?${queryParams.toString()}`;
-  }
-
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-  }
-  return await response.json();
-}
-
 export function convertToRenderable(
   functionOutput: Record<string, any> | any[]
 ): string {
@@ -220,7 +120,9 @@ export function convertToRenderable(
       functionOutput.forEach((item) => {
         output += "<table>";
         Object.entries(item).forEach(([key, value]) => {
-          output += `${camelToCapitalizedWords(key)}: ${value}<br/>`;
+          output += `${camelToCapitalizedWords(key)}: ${
+            typeof value === "object" ? JSON.stringify(value) : value
+          }<br/>`;
         });
         output += "</table>";
       });
@@ -240,7 +142,9 @@ export function convertToRenderable(
     // Format: {a, b}
     output += "<table>";
     Object.entries(functionOutput).forEach(([key, value]) => {
-      output += `${camelToCapitalizedWords(key)}: ${value}<br/>`;
+      output += `${camelToCapitalizedWords(key)}: ${
+        typeof value === "object" ? JSON.stringify(value) : value
+      }<br/>`;
     });
     output += "</table>";
   }

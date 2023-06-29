@@ -58,3 +58,4 @@ using ((auth.uid() IN ( SELECT profiles.id
    FROM profiles
   WHERE (profiles.org_id = chat_messages.org_id))));
 
+alter table "public"."organizations" add column "api_host" text not null default ''::text;
