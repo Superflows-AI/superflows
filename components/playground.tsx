@@ -29,7 +29,6 @@ const languageOptions: {
 export default function Playground() {
   const supabase = useSupabaseClient();
   const { profile } = useProfile();
-  const [model, setModel] = useState("GPT4");
   const [language, setLanguage] = useState("EN");
   const [isError, setIsError] = useState(false);
   const [userApiKey, setUserApiKey] = useState("");
@@ -119,18 +118,6 @@ export default function Playground() {
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
           <div className="mt-6">
-            <SelectBox
-              title="Model"
-              options={[
-                { id: "GPT4", name: "GPT4" },
-                { id: "GPT3.5", name: "GPT3.5" },
-              ]}
-              theme={"dark"}
-              selected={model}
-              setSelected={setModel}
-            />
-          </div>
-          <div className="">
             <SelectBox
               title="Language"
               options={languageOptions}
