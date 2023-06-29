@@ -11,19 +11,14 @@ import {
 } from "@heroicons/react/24/outline";
 import React, { Component, useRef } from "react";
 import { Action } from "../../lib/types";
-import { classNames } from "../../lib/utils";
+import {
+  classNames,
+  isJsonString,
+  isValidPythonFunctionName,
+} from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
-
-function isJsonString(str: string) {
-  try {
-    JSON.parse(str);
-  } catch (e) {
-    return false;
-  }
-  return true;
-}
 
 interface JsonTextBoxProps {
   title: "parameters" | "responses" | "request_body_contents";
@@ -183,7 +178,8 @@ export default function EditActionModal(props: {
   setAction: (action: Action) => void;
 }) {
   const saveRef = useRef(null);
-  const [invalid, setInvalid] = React.useState<boolean | null>(null);
+  const [nameValid, setNameValid] = React.useState<boolean | null>(null);
+
   const [localAction, setLocalAction] = React.useState<Action>(props.action);
 
   const [parameterBox, setParameterBox] = React.useState<string>(
@@ -231,14 +227,10 @@ export default function EditActionModal(props: {
           <FloatingLabelInput
             className={classNames(
               "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
-              invalid && localAction.name === ""
-                ? "ring-2 ring-offset-1 ring-red-500"
-                : ""
+              nameValid ? "" : "ring-2 ring-offset-1 ring-red-500"
             )}
             floatingClassName={
-              invalid && localAction.name === ""
-                ? "text-red-500 peer-focus:text-gray-400"
-                : ""
+              nameValid ? "" : "text-red-500 peer-focus:text-gray-400"
             }
             label={"Name"}
             value={localAction.name ?? ""}
@@ -248,10 +240,16 @@ export default function EditActionModal(props: {
                 name: e.target.value.slice(0, 40),
               });
             }}
+            onBlur={
+              isValidPythonFunctionName(localAction.name) &&
+              localAction.name.length > 0
+                ? () => setNameValid(true)
+                : () => setNameValid(false)
+            }
           />
-          {invalid && localAction.name === "" && (
+          {!nameValid && (
             <div className="text-red-600 w-full text-center">
-              Please enter a name.
+              Must be non-empty and valid Python function name.
             </div>
           )}
         </div>
@@ -325,7 +323,7 @@ export default function EditActionModal(props: {
             <input
               className={classNames(
                 "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 w-full py-2.5 rounded outline-0",
-                invalid && localAction.path === ""
+                nameValid && localAction.path === ""
                   ? "ring-2 ring-offset-1 ring-red-500"
                   : ""
               )}
@@ -337,7 +335,7 @@ export default function EditActionModal(props: {
                 });
               }}
             />
-            {invalid && localAction.path === "" && (
+            {nameValid && localAction.path === "" && (
               <div className="text-red-600 w-full text-center">
                 Please enter a valid path (absolute or relative).
               </div>
@@ -405,11 +403,11 @@ export default function EditActionModal(props: {
           )}
           onClick={(event) => {
             event.preventDefault();
-            if (localAction.name !== "") {
+            if (nameValid) {
               console.log("saving action", localAction);
               props.setAction(localAction);
               props.close();
-            } else setInvalid(true);
+            }
           }}
         >
           Save

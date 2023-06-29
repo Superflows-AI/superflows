@@ -234,3 +234,61 @@ export function convertToRenderable(
   }
   return output;
 }
+
+export function isValidPythonFunctionName(name: string): boolean {
+  const reservedKeywords = [
+    "False",
+    "None",
+    "True",
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
+  ];
+
+  if (reservedKeywords.includes(name)) {
+    return false;
+  }
+
+  // Must start with a letter or underscore (_)
+  // can be followed by any number of letters, numbers, or underscores (_)
+  const pattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
+  return pattern.test(name);
+}
+
+export function isJsonString(str: string) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
