@@ -41,6 +41,7 @@ export default function PlaygroundChatbot(props: {
   page: string;
   setPage: (page: string) => void;
   language: "English" | "Espanol";
+  userApiKey: string;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -49,7 +50,6 @@ export default function PlaygroundChatbot(props: {
 
   const { profile } = useProfile();
 
-  const ref = useRef(null);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
   const [userText, setUserText] = useState<string>("");
@@ -78,6 +78,7 @@ export default function PlaygroundChatbot(props: {
           user_input: chat[chat.length - 1].content,
           conversation_id: conversationId,
           language: props.language,
+          user_api_key: props.userApiKey,
           stream: true,
         }),
       });
@@ -145,7 +146,7 @@ export default function PlaygroundChatbot(props: {
   }, [devChatContents]);
 
   return (
-    <div className="flex h-full flex-1 flex-col divide-y divide-gray-200 bg-gray-50">
+    <div className="flex w-full h-full flex-1 flex-col divide-y divide-gray-200 bg-gray-50">
       {/* Header */}
       <div
         className={classNames(
@@ -238,12 +239,13 @@ export default function PlaygroundChatbot(props: {
       </div>
       {/* Textbox user types into */}
       <div className="flex flex-col pt-4 px-16">
-        <textarea
-          ref={ref}
-          className="text-sm resize-none mx-1 rounded py-2 border-gray-300 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 placeholder:text-gray-400"
+        <AutoGrowingTextArea
+          className={classNames(
+            "text-sm resize-none mx-1 rounded py-2 border-gray-300 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 placeholder:text-gray-400",
+            userText.length > 300 ? "overflow-auto-y" : "overflow-hidden"
+          )}
           placeholder={"Send a message"}
           value={userText}
-          rows={Math.min(getNumRows(userText, 125), 10)}
           onChange={(e) => setUserText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -595,5 +597,36 @@ function UserChatItem(props: { chatItem: ChatItem }) {
         );
       })}
     </div>
+  );
+}
+
+function AutoGrowingTextArea(props: {
+  className: string;
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  maxHeight?: number;
+}) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (ref.current === null) return;
+    // @ts-ignore
+    ref.current.style.height = "5px";
+
+    let maxH = props.maxHeight ?? 500;
+    // @ts-ignore
+    ref.current.style.height = Math.min(ref.current.scrollHeight, maxH) + "px";
+  }, [ref.current, props.value]);
+
+  return (
+    <textarea
+      ref={ref}
+      className={props.className}
+      value={props.value}
+      onChange={props.onChange}
+      onKeyDown={props.onKeyDown}
+    />
   );
 }
