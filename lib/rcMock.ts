@@ -1,5 +1,5 @@
 import Fuse from "fuse.js";
-import customers from "./customers.json";
+import customers from "../pages/api/v1/Customers/customers.json";
 
 export interface ActionProperties {
   type: string;

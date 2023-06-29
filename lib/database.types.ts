@@ -199,6 +199,7 @@ export interface Database {
       };
       organizations: {
         Row: {
+          api_host: string;
           api_key: string;
           created_at: string | null;
           description: string;
@@ -206,6 +207,7 @@ export interface Database {
           name: string;
         };
         Insert: {
+          api_host?: string;
           api_key?: string;
           created_at?: string | null;
           description?: string;
@@ -213,6 +215,7 @@ export interface Database {
           name?: string;
         };
         Update: {
+          api_host?: string;
           api_key?: string;
           created_at?: string | null;
           description?: string;

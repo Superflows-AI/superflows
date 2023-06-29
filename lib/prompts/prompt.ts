@@ -28,7 +28,11 @@ export default function getMessages(
     .join("");
   let i = 1;
   let numberedActions = "";
-  console.log("currentPage.actions", currentPage);
+  if (availablePages.length > 0) {
+    i++;
+    numberedActions += `1. navigateTo: This will navigate you to another page. This enables you to use functions that are available on that page. Available pages (in format "- 'page-name': description") are: ${availablePages}. PARAMETERS: - pageName (string): The name of the page you want to navigate to. REQUIRED\n`;
+  }
+  // console.log("currentPage.actions", currentPage);
   currentPage.actions.forEach((action) => {
     let paramString = "";
     // TODO: FIX THIS WHOLE SECTION!!
@@ -89,7 +93,6 @@ You are currently on the ${currentPageName} page. The functions available are de
 
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
-1. navigateTo: This will navigate you to another page. This enables you to use functions that are available on that page. Available pages (in format "- 'page-name': description") are: ${availablePages}. PARAMETERS: - pageName (string): The name of the page you want to navigate to. REQUIRED
 ${numberedActions}
 
 If you need to use the output of a previous command for a command, simply stop outputting commands and set "Completed: false" - you will be asked once the function has returned for your next step.
