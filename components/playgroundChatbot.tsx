@@ -61,7 +61,10 @@ export default function PlaygroundChatbot(props: {
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
-      const copy = [...devChatContents, { role: "assistant", content: "" }];
+      const copy = [
+        ...devChatContents,
+        { role: "assistant", content: "" } as ChatItem,
+      ];
       setDevChatContents(copy);
       const response = await fetch("/api/v1/answers", {
         method: "POST",
@@ -106,7 +109,7 @@ export default function PlaygroundChatbot(props: {
               setDevChatContents((prev) => {
                 const copy = [...devChatContents];
                 copy[copy.length - 1].content += data.text;
-                copy;
+                return copy;
               });
             }
           });
