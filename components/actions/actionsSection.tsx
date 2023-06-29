@@ -385,13 +385,13 @@ function ActionsSection(props: {
                   }
                   items={[
                     {
-                      name: "Edit action",
+                      name: "Edit",
                       onClick: () => {
                         setEditActionIndex(index);
                       },
                     },
                     {
-                      name: "Delete action",
+                      name: "Delete",
                       onClick: () => {
                         setDeleteActionIndex(index);
                       },
@@ -435,7 +435,7 @@ function ActionsSection(props: {
               <PlusIcon className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="mt-1 text-sm select-none font-medium text-gray-200">
-              New action
+              Add new
             </div>
           </li>
         </ul>
