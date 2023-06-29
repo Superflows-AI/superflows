@@ -2,12 +2,11 @@ import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { ReactNode, useEffect, useState } from "react";
 import { MockAction } from "../lib/rcMock";
-import { Organization } from "../lib/types";
+import { Action } from "../lib/types";
 import { classNames } from "../lib/utils";
 import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
 import SelectBox from "./selectBox";
-import { set } from "zod";
 
 const languageOptions: {
   id: string;
@@ -31,8 +30,8 @@ export default function Playground() {
   const [language, setLanguage] = useState("EN");
   const [userApiKey, setUserApiKey] = useState("");
 
-  const profile = useProfile();
-  const [organization, setOrganization] = useState<Organization>();
+  const { profile } = useProfile();
+  const [orgApiHostDefined, setOrgApiHostDefined] = useState<boolean>(false);
   const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
@@ -46,19 +45,20 @@ export default function Playground() {
         const res = await supabase
           .from("organizations")
           .select("*")
-          .eq("id", profile?.org_id)
-          .single();
+          .eq("id", profile.org_id);
         if (res.error) throw res.error;
         if (res.data[0]) {
-          setOrganization(res.data[0]);
+          setOrgApiHostDefined(res.data[0].api_host.length > 0);
         }
 
         const res2 = await supabase
           .from("actions")
           .select("*")
-          .eq("org_id", profile?.org_id);
+          .eq("org_id", profile.org_id);
         if (res2.error) throw res2.error;
-        setNumActions(res2.data.length);
+        setNumActions(
+          res2.data.filter((action: Action) => action.active).length
+        );
       }
     })();
   }, [profile]);
@@ -74,9 +74,7 @@ export default function Playground() {
             "English"
           }
           userApiKey={userApiKey}
-          submitReady={
-            (numActions > 0 && organization?.api_key?.length > 0) ?? false
-          }
+          submitReady={numActions > 0 && orgApiHostDefined}
         />
       </main>
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">
