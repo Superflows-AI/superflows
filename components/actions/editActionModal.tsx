@@ -84,7 +84,7 @@ class TextArea extends Component<JsonTextBoxProps, TextAreaState> {
 function JsonTextBox(props: JsonTextBoxProps) {
   return (
     <>
-      <div className="w-full px-32 flex flex-row justify-between place-items-start overflow-hidden resize-y">
+      <div className="w-full px-32 flex flex-row justify-between place-items-start overflow-hidden">
         <div className="font-bold text-lg text-gray-100 mt-4 w-40">
           {props.title.charAt(0).toUpperCase() +
             props.title.slice(1).replace(/_/g, " ")}
