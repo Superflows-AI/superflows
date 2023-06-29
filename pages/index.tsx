@@ -41,7 +41,7 @@ function Dashboard() {
         if (refreshProfile) refreshProfile();
       }
     })();
-  }, [refreshProfile, supabase]);
+  }, [session, refreshProfile, supabase]);
 
   return !session ? (
     !isDev ? (
