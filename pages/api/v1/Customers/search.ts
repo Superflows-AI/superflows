@@ -44,7 +44,9 @@ export default async function handler(req: NextRequest) {
   // }
   const queryParams = req.url.split("?")[1];
   const name = queryParams.split("=")[1];
-  const results = fuse.search(name);
+  const results = fuse
+    .search(name)
+    .map((r) => ({ name: r.item.name, id: r.item.id }));
 
   return new Response(JSON.stringify(results.slice(0, 5)), {
     headers: { "Content-Type": "application/json; charset=utf-8" },

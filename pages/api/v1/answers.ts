@@ -210,7 +210,7 @@ export default async function handler(req: NextRequest) {
 
 type StreamingStepInput =
   | { role: "assistant" | "error" | "debug"; content: string }
-  | { role: "function"; name: string; content: Json };
+  | { role: "function"; name: string; content: string };
 export type StreamingStep = StreamingStepInput & { id: number };
 
 async function Angela( // Good ol' Angela
@@ -227,6 +227,10 @@ async function Angela( // Good ol' Angela
   let nonSystemMessages = [...previousMessages];
 
   function streamInfo(step: StreamingStepInput) {
+    // const stepCopy = {...step};
+    // if (["debug", "function", "error"].includes(step.role)) {
+    //   stepCopy.content = `\n\n${SPLITTER}\n${step.role}\n` + step.content + `\n\n${SPLITTER}\n\n`;
+    // }
     controller.enqueue(
       encoder.encode(
         "data:" +
@@ -265,7 +269,7 @@ async function Angela( // Good ol' Angela
       if (res === null || "message" in res) {
         streamInfo({
           role: "error",
-          content: "\n\nERROR\nOpenAI API call failed",
+          content: "OpenAI API call failed",
         });
         return nonSystemMessages;
       }
@@ -307,10 +311,7 @@ async function Angela( // Good ol' Angela
           streamInfo({
             role: "function",
             name: command.name,
-            content:
-              "\n\nFUNCTION-START\nNavigated to " +
-              command.args.pageName +
-              "\nFUNCTION-END\n",
+            content: "Navigated to " + command.args.pageName,
           });
           nonSystemMessages.push({
             role: "function",
@@ -337,10 +338,7 @@ async function Angela( // Good ol' Angela
         streamInfo({
           role: "function",
           name: command.name,
-          content:
-            "\n\nFUNCTION-START\n" +
-            JSON.stringify(out, null, 2) +
-            "\n\nFUNCTION-END\n",
+          content: JSON.stringify(out, null, 2),
         });
         nonSystemMessages.push({
           role: "function",
@@ -356,7 +354,7 @@ async function Angela( // Good ol' Angela
       if (numOpenAIRequests >= 5) {
         streamInfo({
           role: "error",
-          content: "\n\nERROR\nOpenAI API call limit reached",
+          content: "OpenAI API call limit reached",
         });
         return nonSystemMessages;
       }
@@ -365,7 +363,7 @@ async function Angela( // Good ol' Angela
     console.error(e);
     streamInfo({
       role: "error",
-      content: "\n\nERROR\n" + (e?.toString() ?? "Internal server error"),
+      content: e?.toString() ?? "Internal server error",
     });
     return nonSystemMessages;
   }
@@ -480,7 +478,7 @@ export async function httpRequestFromAction(
   console.log(logMessage);
   stream({
     role: "debug",
-    content: "\n\nDEBUG-START\n" + logMessage + "\n\nDEBUG-END",
+    content: logMessage,
   });
   const response = await fetch(url, requestOptions);
 
