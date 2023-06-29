@@ -17,7 +17,11 @@ import {
   getConversation,
   getOrgFromToken,
 } from "../../../lib/edge-runtime/utils";
-import { ActionGroupJoinActions, Organization } from "../../../lib/types";
+import {
+  Action,
+  ActionGroupJoinActions,
+  Organization,
+} from "../../../lib/types";
 import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import { Database, Json } from "../../../lib/database.types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
@@ -369,7 +373,7 @@ async function Angela( // Good ol' Angela
 }
 
 export async function httpRequestFromAction(
-  action: Database["public"]["Tables"]["actions"]["Row"],
+  action: Action,
   parameters: Record<string, unknown>,
   apiHost: string,
   stream: (stepInfo: StreamingStepInput) => void,
