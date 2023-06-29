@@ -41,12 +41,11 @@ export type Step =
   | { id: number; role: "function"; name: string; result: Json };
 
 export default function PlaygroundChatbot(props: {
-  pageActions: PageAction[];
-  activeActions: string[];
   page: string;
   setPage: (page: string) => void;
   language: "English" | "Espanol";
   userApiKey: string;
+  submitReady: boolean;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -164,18 +163,6 @@ export default function PlaygroundChatbot(props: {
         style={{ backgroundColor: BrandColour }}
       >
         <div className="flex flex-row place-items-center justify-between">
-          {/*<div className="flex flex-row gap-x-2 place-items-center w-48">*/}
-          {/*  <SelectBox*/}
-          {/*    title="Page:"*/}
-          {/*    options={props.pageActions.map((p) => p.pageName)}*/}
-          {/*    theme={"light"}*/}
-          {/*    selected={props.page}*/}
-          {/*    setSelected={(selected: string) => {*/}
-          {/*      props.setPage(selected);*/}
-          {/*      setGptPageName(selected);*/}
-          {/*    }}*/}
-          {/*  />*/}
-          {/*</div>*/}
           <div className="flex flex-col place-items-center gap-y-1 text-sm font-bold">
             Developer mode
             <Toggle
