@@ -245,12 +245,17 @@ export default function PlaygroundChatbot(props: {
                   {promptSuggestionButtons.map((text) => (
                     <button
                       key={text}
-                      className="text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
+                      className={classNames(
+                        "text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md",
+                        props.submitReady ? "" : "cursor-not-allowed"
+                      )}
                       onClick={() => {
-                        addTextToChat([
-                          ...devChatContents,
-                          { role: "user", content: text },
-                        ]);
+                        if (props.submitReady) {
+                          addTextToChat([
+                            ...devChatContents,
+                            { role: "user", content: text },
+                          ]);
+                        }
                       }}
                     >
                       {text}
