@@ -62,6 +62,8 @@ export default function PlaygroundChatbot(props: {
 
   const killSwitchClicked = useRef(false);
 
+  const submitButtonClickable = props.submitReady && userText.length > 0;
+
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
       setDevChatContents(chat);
@@ -297,22 +299,34 @@ export default function PlaygroundChatbot(props: {
               Cancel
             </button>
           )}
+          <p
+            className={classNames(
+              "flex flex-row gap-x-1 mr-10 text-red-500 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold  shadow-sm",
+              props.submitReady ? "invisible" : "visible"
+            )}
+          >
+            {
+              "You need to enter your organisation's API host (in the API tab) and create some actions (in the Actions tab) before submitting."
+            }
+          </p>
           <button
             type="submit"
             className={classNames(
               "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
-              loading
+              loading || !submitButtonClickable
                 ? "bg-gray-500 cursor-not-allowed"
                 : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500`
             )}
             style={{ backgroundColor: BrandColourAction }}
             onClick={() => {
-              addTextToChat([
-                ...devChatContents,
-                { role: "user", content: userText },
-              ]);
-              setUserText("");
-              killSwitchClicked.current = false;
+              if (!loading && submitButtonClickable) {
+                addTextToChat([
+                  ...devChatContents,
+                  { role: "user", content: userText },
+                ]);
+                setUserText("");
+                killSwitchClicked.current = false;
+              }
             }}
           >
             {loading && <LoadingSpinner classes="h-4 w-4" />}
