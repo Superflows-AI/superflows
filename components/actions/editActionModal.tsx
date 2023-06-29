@@ -178,7 +178,9 @@ export default function EditActionModal(props: {
   setAction: (action: Action) => void;
 }) {
   const saveRef = useRef(null);
-  const [nameValid, setNameValid] = React.useState<boolean | null>(null);
+  const [nameValid, setNameValid] = React.useState<boolean>(
+    props.action.name.length > 0 && isValidPythonFunctionName(props.action.name)
+  );
 
   const [localAction, setLocalAction] = React.useState<Action>(props.action);
 
