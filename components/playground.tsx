@@ -34,6 +34,11 @@ export default function Playground() {
   const [isError, setIsError] = useState(false);
   const [userApiKey, setUserApiKey] = useState("");
 
+  useEffect(() => {
+    localStorage.getItem("userApiKey") &&
+      setUserApiKey(localStorage.getItem("userApiKey") as string);
+  }, []);
+
   // const [actionGroups, setActionGroupsJoinActions] = useState<
   //   ActionGroupJoinActions[]
   // >([]);
@@ -147,6 +152,9 @@ export default function Playground() {
             className="rounded mt-2 px-2 py-1"
             value={userApiKey}
             onChange={(e) => setUserApiKey(e.target.value)}
+            onBlur={() => {
+              localStorage.setItem("userApiKey", userApiKey);
+            }}
           />
         </div>
       </div>
