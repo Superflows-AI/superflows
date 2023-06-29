@@ -16,6 +16,15 @@ import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
 
+function isJsonString(str: string) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
 interface JsonTextBoxProps {
   title: "parameters" | "responses" | "request_body_contents";
   text: string;
@@ -27,15 +36,6 @@ interface JsonTextBoxProps {
 }
 interface TextAreaState {
   text: string;
-}
-
-function isJsonString(str: string) {
-  try {
-    JSON.parse(str);
-  } catch (e) {
-    return false;
-  }
-  return true;
 }
 
 class TextArea extends Component<JsonTextBoxProps, TextAreaState> {
@@ -63,11 +63,9 @@ class TextArea extends Component<JsonTextBoxProps, TextAreaState> {
         }}
         onClick={this.autoGrow}
         value={
-          // TODO: make pretty
-          // isJsonString(this.state.text)
-          //   ? JSON.stringify(this.state.text, null, 2)
-          //   : this.state.text
-          this.props.text
+          isJsonString(this.props.text)
+            ? JSON.stringify(JSON.parse(this.props.text), undefined, 2)
+            : this.props.text
         }
         onBlur={(e) => {
           if (e.target.value === "") {
