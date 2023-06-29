@@ -390,6 +390,7 @@ export async function httpRequestFromAction(
   const headers: Record<string, string> = {};
   // TODO: Only application/json supported for now(!!)
   headers["Content-Type"] = "application/json";
+  headers["Accept"] = "application/json";
   if (userApiKey) {
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
