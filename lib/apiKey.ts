@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from "uuid";
-import crypto from "crypto";
 
 export function generateApiKey(): string {
   /**
@@ -9,7 +8,3 @@ export function generateApiKey(): string {
   //
   return "sfk-" + uuidv4();
 }
-
-// export function hash(apiKey: string) {
-//   return crypto.createHash("sha256").update(apiKey).digest("hex");
-// }

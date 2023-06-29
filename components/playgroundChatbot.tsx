@@ -9,13 +9,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingSpinner } from "./loadingspinner";
 import { classNames, getNumRows, parseKeyValues } from "../lib/utils";
 import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
-import { MockAction, PageAction } from "../lib/rcMock";
+import { PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
 import { useProfile } from "./contextManagers/profile";
 import { StreamingStep } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
 
-const BrandName = "RControl";
 const BrandColour = "#ffffff";
 const BrandColourAction = "#5664d1";
 const BrandActionTextColour = "#ffffff";
@@ -111,14 +110,7 @@ export default function PlaygroundChatbot(props: {
               if (chunkOfChunk.length === 0) return;
               const data = JSON.parse(chunkOfChunk) as StreamingStep;
               if (conversationId === null) setConversationId(data.id);
-              // Checks if we need to add a new step to the output array
-              if (data.role === "assistant") outputText += data.content;
-              else
-                outputText +=
-                  data.name +
-                  " output:\n" +
-                  JSON.stringify(data.content) +
-                  "\n";
+              outputText += data.content;
               setDevChatContents([
                 ...chat,
                 { role: "assistant", content: outputText },
@@ -128,18 +120,19 @@ export default function PlaygroundChatbot(props: {
           console.error(e);
         }
       }
-      // TODO: Deal with confirmation
+      // TODO: Deal with confirmation step
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
     },
     [
       profile,
+      loading,
       setLoading,
       devChatContents,
       setDevChatContents,
-      killSwitchClicked,
-      alreadyRunning,
+      killSwitchClicked.current,
+      alreadyRunning.current,
       props.language,
     ]
   );
@@ -188,7 +181,7 @@ export default function PlaygroundChatbot(props: {
               "ml-4 block text-2xl font-semibold leading-6"
             )}
           >
-            {BrandName} AI
+            {profile?.organizations?.name} AI
           </h1>
           <div className="flex flex-row justify-end w-48">
             <button
@@ -198,9 +191,7 @@ export default function PlaygroundChatbot(props: {
               )}
               onClick={() => {
                 setDevChatContents([]);
-                // Set GPT page to initial page
-                // setGptPageName(props.pageActions[0].pageName);
-                // props.setPage(props.pageActions[0].pageName);
+                setConversationId(null);
               }}
             >
               <ArrowPathIcon className="h-5 w-5" /> Clear chat
@@ -258,12 +249,11 @@ export default function PlaygroundChatbot(props: {
             if (e.key === "Enter") {
               e.preventDefault();
               if (userText.length > 5) {
-                setDevChatContents((prev) => [
-                  ...prev,
+                addTextToChat([
+                  ...devChatContents,
                   { role: "user", content: userText },
                 ]);
                 setUserText("");
-                setLoading(true);
               }
             }
           }}
@@ -276,6 +266,8 @@ export default function PlaygroundChatbot(props: {
               }
               onClick={() => {
                 killSwitchClicked.current = true;
+                alreadyRunning.current = false;
+                setLoading(false);
               }}
             >
               Cancel
@@ -291,12 +283,11 @@ export default function PlaygroundChatbot(props: {
             )}
             style={{ backgroundColor: BrandColourAction }}
             onClick={() => {
-              setDevChatContents((prev) => [
-                ...prev,
+              addTextToChat([
+                ...devChatContents,
                 { role: "user", content: userText },
               ]);
               setUserText("");
-              setLoading(true);
               killSwitchClicked.current = false;
             }}
           >
@@ -349,6 +340,7 @@ let buttonRegex = /<button>(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
 function DevChatItem(props: { chatItem: ChatItem }) {
+  const { profile } = useProfile();
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
@@ -376,7 +368,7 @@ function DevChatItem(props: { chatItem: ChatItem }) {
     >
       <p className="text-xs text-gray-600 mb-1">
         {props.chatItem.role === "assistant"
-          ? BrandName + " AI"
+          ? profile?.organizations?.name + " AI"
           : props.chatItem.role === "function"
           ? "Function called"
           : "You"}
@@ -488,6 +480,7 @@ function Table(props: { chatKeyValueText: string }) {
 }
 
 function UserChatItem(props: { chatItem: ChatItem }) {
+  const { profile } = useProfile();
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
@@ -507,7 +500,9 @@ function UserChatItem(props: { chatItem: ChatItem }) {
   // TODO: if it's a function call, hide it from the user
   return (
     <div className="py-4 px-1.5 rounded flex flex-col bg-gray-200 text-left place-items-baseline">
-      <p className="text-xs text-gray-600 mb-1">{BrandName + " AI"}</p>
+      <p className="text-xs text-gray-600 mb-1">
+        {profile?.organizations?.name + " AI"}
+      </p>
       {matches.map((text, idx) => {
         if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
           return (
