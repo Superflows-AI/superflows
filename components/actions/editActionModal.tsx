@@ -13,8 +13,8 @@ import React, { Component, useRef } from "react";
 import { Action } from "../../lib/types";
 import {
   classNames,
+  isAlphaNumericUnderscore,
   isJsonString,
-  isValidPythonFunctionName,
 } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
@@ -179,7 +179,7 @@ export default function EditActionModal(props: {
 }) {
   const saveRef = useRef(null);
   const [nameValid, setNameValid] = React.useState<boolean>(
-    props.action.name.length > 0 && isValidPythonFunctionName(props.action.name)
+    props.action.name.length > 0 && isAlphaNumericUnderscore(props.action.name)
   );
 
   const [localAction, setLocalAction] = React.useState<Action>(props.action);
@@ -243,7 +243,7 @@ export default function EditActionModal(props: {
               });
             }}
             onBlur={
-              isValidPythonFunctionName(localAction.name) &&
+              isAlphaNumericUnderscore(localAction.name) &&
               localAction.name.length > 0
                 ? () => setNameValid(true)
                 : () => setNameValid(false)
@@ -251,7 +251,7 @@ export default function EditActionModal(props: {
           />
           {!nameValid && (
             <div className="text-red-600 w-full text-center">
-              Must be non-empty and valid Python function name.
+              Must only contain letters, numbers, and underscores
             </div>
           )}
         </div>
