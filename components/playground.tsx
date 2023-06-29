@@ -31,7 +31,6 @@ export default function Playground() {
   const [userApiKey, setUserApiKey] = useState("");
 
   const { profile } = useProfile();
-  const [orgApiHostDefined, setOrgApiHostDefined] = useState<boolean>(false);
   const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
@@ -42,15 +41,6 @@ export default function Playground() {
   useEffect(() => {
     (async () => {
       if (profile) {
-        const res = await supabase
-          .from("organizations")
-          .select("*")
-          .eq("id", profile.org_id);
-        if (res.error) throw res.error;
-        if (res.data[0]) {
-          setOrgApiHostDefined(res.data[0].api_host.length > 0);
-        }
-
         const res2 = await supabase
           .from("actions")
           .select("*")
@@ -74,7 +64,11 @@ export default function Playground() {
             "English"
           }
           userApiKey={userApiKey}
-          submitReady={numActions > 0 && orgApiHostDefined}
+          submitReady={
+            numActions > 0 &&
+            !!profile?.organizations?.api_host &&
+            profile?.organizations?.api_host.length > 0
+          }
         />
       </main>
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-72 flex-col border-t border-gray-700">

@@ -19,6 +19,7 @@ import Toggle from "./toggle";
 import { useProfile } from "./contextManagers/profile";
 import { StreamingStep } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
+import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 
 const BrandColour = "#ffffff";
 const BrandColourAction = "#5664d1";
@@ -62,7 +63,7 @@ export default function PlaygroundChatbot(props: {
 
   const killSwitchClicked = useRef(false);
 
-  const submitButtonClickable = props.submitReady && userText.length > 0;
+  const submitButtonClickable = props.submitReady && userText.length > 3;
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
@@ -199,7 +200,7 @@ export default function PlaygroundChatbot(props: {
       </div>
       {/* Scrollable chat window */}
       <div
-        className="flex-1 overflow-y-auto h-full flex flex-col pb-1 px-16"
+        className="flex-1 overflow-y-auto h-full flex flex-col pb-1 px-32"
         id={"scrollable-chat-contents"}
       >
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
@@ -267,7 +268,7 @@ export default function PlaygroundChatbot(props: {
         </div>
       </div>
       {/* Textbox user types into */}
-      <div className="flex flex-col pt-4 px-16">
+      <div className="flex flex-col pt-4 px-32">
         <AutoGrowingTextArea
           className={classNames(
             "text-sm resize-none mx-1 rounded py-2 border-gray-300 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 placeholder:text-gray-400",
@@ -279,7 +280,7 @@ export default function PlaygroundChatbot(props: {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              if (userText.length > 5) {
+              if (submitButtonClickable) {
                 addTextToChat([
                   ...devChatContents,
                   { role: "user", content: userText },
@@ -290,6 +291,16 @@ export default function PlaygroundChatbot(props: {
           }}
         />
         <div className="flex flex-shrink-0 w-full justify-end px-1 pb-4 pt-2">
+          <p
+            className={classNames(
+              "flex flex-row gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
+              props.submitReady ? "invisible" : "visible"
+            )}
+          >
+            {
+              "You need to enter your organisation's API hostname (API tab) and create actions (Actions tab)."
+            }
+          </p>
           {loading && (
             <button
               className={
@@ -304,16 +315,6 @@ export default function PlaygroundChatbot(props: {
               Cancel
             </button>
           )}
-          <p
-            className={classNames(
-              "flex flex-row gap-x-1 mr-10 text-red-500 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold  shadow-sm",
-              props.submitReady ? "invisible" : "visible"
-            )}
-          >
-            {
-              "You need to enter your organisation's API host (in the API tab) and create some actions (in the Actions tab) before submitting."
-            }
-          </p>
           <button
             type="submit"
             className={classNames(
@@ -322,7 +323,6 @@ export default function PlaygroundChatbot(props: {
                 ? "bg-gray-500 cursor-not-allowed"
                 : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500`
             )}
-            style={{ backgroundColor: BrandColourAction }}
             onClick={() => {
               if (!loading && submitButtonClickable) {
                 addTextToChat([
@@ -650,36 +650,5 @@ function UserChatItem(props: { chatItem: ChatItem }) {
         );
       })}
     </div>
-  );
-}
-
-function AutoGrowingTextArea(props: {
-  className: string;
-  placeholder: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  maxHeight?: number;
-}) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (ref.current === null) return;
-    // @ts-ignore
-    ref.current.style.height = "5px";
-
-    let maxH = props.maxHeight ?? 500;
-    // @ts-ignore
-    ref.current.style.height = Math.min(ref.current.scrollHeight, maxH) + "px";
-  }, [ref.current, props.value]);
-
-  return (
-    <textarea
-      ref={ref}
-      className={props.className}
-      value={props.value}
-      onChange={props.onChange}
-      onKeyDown={props.onKeyDown}
-    />
   );
 }

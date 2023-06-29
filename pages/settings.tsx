@@ -123,7 +123,7 @@ function Dashboard() {
                         navigator.clipboard.writeText(token);
                         setCopyFeedback(true);
                       }}
-                      className="absolute right-1 top-0.5 border border-gray-500 rounded-md px-2 text-little text-gray-300 bg-purple-800 hover:bg-purple-700"
+                      className="absolute right-0.5 top-0.5 border border-gray-500 rounded-md px-2 text-little text-gray-300 bg-purple-800 hover:bg-purple-700"
                     >
                       {!copyFeedback ? "Copy" : "Copied!"}
                     </button>
