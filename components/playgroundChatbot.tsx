@@ -7,14 +7,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingSpinner } from "./loadingspinner";
-import {
-  classNames,
-  convertToRenderable,
-  getNumRows,
-  parseKeyValues,
-} from "../lib/utils";
+import { classNames, convertToRenderable, parseKeyValues } from "../lib/utils";
 import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
-import { PageAction } from "../lib/rcMock";
 import Toggle from "./toggle";
 import { useProfile } from "./contextManagers/profile";
 import { StreamingStep } from "../pages/api/v1/answers";
@@ -137,6 +131,7 @@ export default function PlaygroundChatbot(props: {
       killSwitchClicked.current = false;
     },
     [
+      props.userApiKey,
       profile,
       loading,
       setLoading,

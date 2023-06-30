@@ -303,7 +303,9 @@ async function Angela( // Good ol' Angela
           streamInfo({
             role: "function",
             name: command.name,
-            content: "Navigated to " + command.args.pageName,
+            content: JSON.stringify({
+              message: "Navigated to " + command.args.pageName,
+            }),
           });
           nonSystemMessages.push({
             role: "function",
