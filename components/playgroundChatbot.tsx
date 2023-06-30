@@ -247,16 +247,10 @@ export default function PlaygroundChatbot(props: {
                     <button
                       key={text}
                       className={classNames(
-                        "text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md",
-                        props.submitReady ? "" : "cursor-not-allowed"
+                        "text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
                       )}
                       onClick={() => {
-                        if (props.submitReady) {
-                          addTextToChat([
-                            ...devChatContents,
-                            { role: "user", content: text },
-                          ]);
-                        }
+                        setUserText(text);
                       }}
                     >
                       {text}
@@ -321,7 +315,7 @@ export default function PlaygroundChatbot(props: {
               "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
               loading || !submitButtonClickable
                 ? "bg-gray-500 cursor-not-allowed"
-                : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500`
+                : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 bg-purple-500`
             )}
             onClick={() => {
               if (!loading && submitButtonClickable) {
