@@ -12,9 +12,9 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 const navigation = [
   { name: "Playground", href: "/" },
   { name: "Actions", href: "/actions" },
-  // { name: "Team", href: "/team" },
   { name: "API", href: "/settings" },
-  { name: "Evaluation (coming soon)", href: "/team" },
+  { name: "Project", href: "/project" },
+  // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
 export function Navbar(props: { current: string }) {

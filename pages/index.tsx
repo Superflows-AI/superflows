@@ -26,7 +26,7 @@ function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      if (isDev) {
+      if (isDev && !session) {
         const res = await supabase.auth.signInWithPassword({
           email: "localuser@gmail.com",
           password: "password",

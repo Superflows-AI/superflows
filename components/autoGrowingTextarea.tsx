@@ -30,6 +30,7 @@ export function AutoGrowingTextArea(props: {
     <textarea
       ref={ref}
       className={props.className}
+      placeholder={props.placeholder}
       value={props.value}
       onChange={props.onChange}
       onKeyDown={props.onKeyDown ?? (() => {})}

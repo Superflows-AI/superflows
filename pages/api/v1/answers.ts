@@ -227,10 +227,6 @@ async function Angela( // Good ol' Angela
   let nonSystemMessages = [...previousMessages];
 
   function streamInfo(step: StreamingStepInput) {
-    // const stepCopy = {...step};
-    // if (["debug", "function", "error"].includes(step.role)) {
-    //   stepCopy.content = `\n\n${SPLITTER}\n${step.role}\n` + step.content + `\n\n${SPLITTER}\n\n`;
-    // }
     controller.enqueue(
       encoder.encode(
         "data:" +
@@ -253,11 +249,7 @@ async function Angela( // Good ol' Angela
         nonSystemMessages,
         actionGroupJoinActions,
         currentPageName,
-        {
-          name: "Restoration Control CRM",
-          description:
-            "Restoration Control is a company that handles water damage, fire damage, mold remediation, and other restoration services. You are a chatbot for it's internal CRM, used by its salespeople and other employees.",
-        },
+        org,
         reqData.language ?? "English"
       );
       console.log("ChatGPTPrompt", chatGptPrompt[0].content);
