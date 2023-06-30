@@ -61,6 +61,28 @@ function JsonTextBox(props: JsonTextBoxProps) {
             }
           }}
           minHeight={80}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              // How many spaces to insert when tab is pressed
+              const nSpaces = 2;
+              e.preventDefault();
+              const textarea = e.target as HTMLTextAreaElement;
+              const { selectionStart, selectionEnd, value } = textarea;
+              const before = value.substring(0, selectionStart);
+              const after = value.substring(selectionEnd);
+              if (e.shiftKey) {
+                if (before.endsWith(" ".repeat(nSpaces))) {
+                  textarea.value = before.slice(0, -2) + after;
+                  textarea.selectionStart = textarea.selectionEnd =
+                    before.length - nSpaces;
+                }
+              } else {
+                textarea.value = before + " ".repeat(nSpaces) + after;
+                textarea.selectionStart = textarea.selectionEnd =
+                  before.length + nSpaces;
+              }
+            }
+          }}
         />
       </div>
       <div
