@@ -19,8 +19,10 @@ export function AutoGrowingTextArea(props: {
 
     let maxH = props.maxHeight ?? 500;
     let minH = props.minHeight ?? 0;
+
     // @ts-ignore
     ref.current.style.height =
+      // @ts-ignore
       Math.max(Math.min(ref.current.scrollHeight, maxH), minH) + "px";
   }, [ref.current, props.value]);
 
