@@ -39,7 +39,7 @@ export default function CreateOrgScreen() {
           setLoading(false);
           if (res.status !== 200)
             throw new Error("Failed to create org: " + res.statusText);
-          if (refreshProfile) await refreshProfile();
+          await refreshProfile();
         }}
       >
         {loading ? (

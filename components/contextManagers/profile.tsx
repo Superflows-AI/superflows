@@ -14,8 +14,8 @@ type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
 
 const ProfileContext = createContext<{
   profile: ProfilesRow | null;
-  refreshProfile: null | (() => Promise<void>);
-}>({ profile: null, refreshProfile: null });
+  refreshProfile: () => Promise<void>;
+}>({ profile: null, refreshProfile: async () => {} });
 
 export function ProfileContextProvider(props: {
   children: JSX.Element;

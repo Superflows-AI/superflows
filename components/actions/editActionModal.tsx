@@ -9,7 +9,7 @@ import {
   PencilSquareIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
-import React, { Component, useRef } from "react";
+import React, { useRef } from "react";
 import { Action } from "../../lib/types";
 import {
   classNames,

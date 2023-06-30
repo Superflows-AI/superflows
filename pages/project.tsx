@@ -1,6 +1,4 @@
-import Head from "next/head";
-import React, { useEffect, useState } from "react";
-import ChatBotSlideover from "../components/chatBotSlideover";
+import React, { useState } from "react";
 import { Navbar } from "../components/navbar";
 import Headers from "../components/headers";
 import { AutoGrowingTextArea } from "../components/autoGrowingTextarea";
@@ -18,7 +16,7 @@ export default function App() {
 
 function Dashboard() {
   const supabase = useSupabaseClient();
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const [localName, setLocalName] = useState<string>(
     profile?.organizations?.name || ""
   );
@@ -56,6 +54,7 @@ function Dashboard() {
                     .update({ name: localName })
                     .eq("id", profile?.organizations?.id);
                   if (res.error) throw res.error;
+                  await refreshProfile();
                 }}
               />
               <div className="col-start-1 flex flex-col place-items-start pr-4">
@@ -86,6 +85,7 @@ function Dashboard() {
                     .update({ description: localDescription })
                     .eq("id", profile?.organizations?.id);
                   if (res.error) throw res.error;
+                  await refreshProfile();
                 }}
                 minHeight={80}
               />

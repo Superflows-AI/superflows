@@ -26,7 +26,7 @@ export default function App() {
 
 function Dashboard() {
   const session = useSession();
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const supabase = useSupabaseClient();
   const [token, setToken] = React.useState<string>("");
   const [showKey, setShowKey] = React.useState<boolean>(false);
@@ -177,6 +177,7 @@ function Dashboard() {
                       .update({ api_host: apiHost })
                       .eq("id", profile?.org_id);
                     if (res.error) throw res.error;
+                    await refreshProfile();
                     setApiHostSavedFeedback(!res.error);
                     setTimeout(() => {
                       setApiHostSavedFeedback(null);

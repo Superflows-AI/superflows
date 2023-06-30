@@ -38,7 +38,7 @@ function Dashboard() {
             options: { data: { full_name: "Local User" } },
           });
         }
-        if (refreshProfile) refreshProfile();
+        await refreshProfile();
       }
     })();
   }, [session, refreshProfile, supabase]);
