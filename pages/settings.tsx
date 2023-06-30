@@ -87,7 +87,7 @@ function Dashboard() {
         <Navbar current={"API"} />
         <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mt-12 bg-gray-850 rounded-md px-6 py-4">
-            <h2 className="text-lg text-gray-200">Project API key</h2>
+            <h2 className="text-xl text-gray-100">Project API key</h2>
             <p className="mt-1 text-gray-400">
               The Superflows API is secured behind a gateway which requires an
               API Key for every request.
@@ -145,7 +145,7 @@ function Dashboard() {
           </div>
 
           <div className="mt-6 bg-gray-850 rounded-md px-6 py-4">
-            <h2 className="text-lg text-gray-200">Your API host</h2>
+            <h2 className="text-xl text-gray-100">Your API host</h2>
             <p className="mt-1 text-gray-400">
               This is the url where your API is hosted.
               <br />

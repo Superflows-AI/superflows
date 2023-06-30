@@ -43,12 +43,11 @@ export default function Playground() {
       if (profile) {
         const res2 = await supabase
           .from("actions")
-          .select("*")
-          .eq("org_id", profile.org_id);
+          .select("*", { head: true, count: "exact" })
+          .eq("org_id", profile.org_id)
+          .is("active", true);
         if (res2.error) throw res2.error;
-        setNumActions(
-          res2.data.filter((action: Action) => action.active).length
-        );
+        setNumActions(res2.count ?? 0);
       }
     })();
   }, [profile]);
@@ -65,9 +64,10 @@ export default function Playground() {
           }
           userApiKey={userApiKey}
           submitReady={
-            numActions > 0 &&
-            !!profile?.organizations?.api_host &&
-            profile?.organizations?.api_host.length > 0
+            numActions > 0
+            // numActions > 0 &&
+            // !!profile?.organizations?.api_host &&
+            // profile?.organizations?.api_host.length > 0
           }
         />
       </main>
@@ -83,7 +83,7 @@ export default function Playground() {
             />
           </div>
         </div>
-        <div className="fixed bottom-0 right-0 w-72 bg-gray-900 py-6 px-4">
+        <div className="fixed bottom-0 right-0 w-72 bg-gray-900 py-4 px-4">
           <h2 className="text-gray-100 text-little font-semibold">
             Your API Key
           </h2>
@@ -99,6 +99,9 @@ export default function Playground() {
               localStorage.setItem("userApiKey", userApiKey);
             }}
           />
+          <p className="w-full text-center text-gray-300 mt-0.5 text-sm">
+            We never store this in our database.
+          </p>
         </div>
       </div>
     </>
