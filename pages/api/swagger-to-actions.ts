@@ -140,7 +140,7 @@ export default async function handler(
         : methodObj.description ?? methodObj.summary ?? "";
       actionInserts.push({
         name:
-          methodObj.operationId ??
+          methodObj.operationId?.toLowerCase().replaceAll(" ", "_") ??
           requestToFunctionName(method, methodObj, path),
         description: description,
         active: ["get"].includes(method),

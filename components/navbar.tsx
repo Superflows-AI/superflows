@@ -12,8 +12,8 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 const navigation = [
   { name: "Playground", href: "/" },
   { name: "Actions", href: "/actions" },
-  { name: "API", href: "/settings" },
   { name: "Project", href: "/project" },
+  { name: "API", href: "/settings" },
   // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 

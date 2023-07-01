@@ -35,7 +35,7 @@ function Dashboard() {
               The Superflows AI uses this to tailor the AI to your project.
             </p>
             <div className="w-full h-px mt-6 mb-8 bg-gray-700" />
-            <div className="grid grid-cols-4 gap-y-8 mt-4">
+            <div className="grid grid-cols-3 gap-y-12 mt-4">
               <div className="col-start-1 flex flex-col place-items-start pr-4">
                 <h2 className="text-lg text-gray-200">Name</h2>
                 <p className="text-gray-400 text-sm">
@@ -72,7 +72,7 @@ function Dashboard() {
               </div>
               <AutoGrowingTextArea
                 className={
-                  "col-span-3 resize-none overflow-hidden bg-gray-800 text-gray-300 rounded-md px-3 py-1.5 focus:ring-gray-200 focus:border-gray-900"
+                  "col-span-2 resize-none overflow-hidden bg-gray-800 text-gray-300 rounded-md px-3 py-1.5 focus:ring-gray-200 focus:border-gray-900"
                 }
                 placeholder={"Project description"}
                 value={localDescription}

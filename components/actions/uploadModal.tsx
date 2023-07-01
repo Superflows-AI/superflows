@@ -50,7 +50,6 @@ export default function UploadModal(props: {
       });
       setIsLoading(false);
       const resJson = await res.json();
-      console.log(resJson);
       if (res.status !== 200) {
         setError(resJson.message);
         uppy.removeFile(file.id);
