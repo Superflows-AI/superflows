@@ -205,6 +205,7 @@ export interface Database {
           description: string;
           id: number;
           name: string;
+          openai_usage: Json;
         };
         Insert: {
           api_host?: string;
@@ -213,6 +214,7 @@ export interface Database {
           description?: string;
           id?: number;
           name?: string;
+          openai_usage?: Json;
         };
         Update: {
           api_host?: string;
@@ -221,6 +223,7 @@ export interface Database {
           description?: string;
           id?: number;
           name?: string;
+          openai_usage?: Json;
         };
         Relationships: [];
       };

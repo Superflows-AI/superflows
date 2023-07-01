@@ -7,6 +7,7 @@ import {
   convertToRenderable,
   exponentialRetryWrapper,
   isValidBody,
+  openAiCost,
 } from "../../../lib/utils";
 import { z } from "zod";
 import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
@@ -161,7 +162,7 @@ export default async function handler(req: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         // Angela gets the answers for us
-        const allMessages = await Angela(
+        const { nonSystemMessages: allMessages, cost } = await Angela(
           controller,
           requestData,
           activeActions,
@@ -181,6 +182,25 @@ export default async function handler(req: NextRequest) {
           );
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
+
+        const { data, error } = await supabase
+          .from("organizations")
+          .select("openai_usage")
+          .eq("id", org!.id)
+          .single();
+        if (error) throw new Error(error.message);
+        if (!data.openai_usage) throw new Error("No usage found");
+        const usage = data.openai_usage as { [key: string]: number };
+        const todaysDate = new Date().toISOString().split("T")[0];
+        if (todaysDate in usage) {
+          usage[todaysDate] += cost;
+        } else {
+          usage[todaysDate] = cost;
+        }
+        await supabase
+          .from("organizations")
+          .update({ openai_usage: usage })
+          .eq("id", org!.id);
         controller.close();
       },
     });
@@ -220,7 +240,7 @@ async function Angela( // Good ol' Angela
   org: Organization,
   convoId: number,
   previousMessages: ChatGPTMessage[]
-): Promise<ChatGPTMessage[]> {
+): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -242,6 +262,7 @@ async function Angela( // Good ol' Angela
   let numOpenAIRequests = 0;
   // TODO: When changing away from page-based system, delete this
   let currentPageName = actionGroupJoinActions[0].name;
+  let cost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
@@ -253,6 +274,7 @@ async function Angela( // Good ol' Angela
         reqData.language ?? "English"
       );
       console.log("ChatGPTPrompt", chatGptPrompt[0].content);
+      cost += openAiCost(chatGptPrompt);
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
@@ -263,7 +285,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call failed",
         });
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
 
       // Stream response from OpenAI
@@ -341,7 +363,7 @@ async function Angela( // Good ol' Angela
         });
       }
       if (mostRecentParsedOutput.completed !== false) {
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
 
       numOpenAIRequests++;
@@ -350,7 +372,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call limit reached",
         });
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
     }
   } catch (e) {
@@ -359,9 +381,9 @@ async function Angela( // Good ol' Angela
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return nonSystemMessages;
+    return { nonSystemMessages, cost };
   }
-  return nonSystemMessages;
+  return { nonSystemMessages, cost };
 }
 
 export async function httpRequestFromAction(
