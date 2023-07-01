@@ -20,15 +20,18 @@ You need to be running a local version of [Supabase](https://supabase.io) to dev
 
 [Here are comprehensive instructions on using the Supabase CLI](https://supabase.com/docs/guides/cli)
 
+(note: if you have used Supabase in other projects before, you may have to `supabase stop` before running `supabase start`)
+
+
 **If using `npm`**
 
 ```bash
 npm install supabase --save-dev
 npx supabase start
 ```
-The 2nd command should give you an anon api key and a service_role key.
+The 2nd command should give you an `anon_api_key` and a `service_role` key.
 
-You'll need to enter these into the `.env` file. Check out `.env.example` for the format and variables needed.
+You'll need to enter these into the `.env` file. Check out `.env.example` for the format and variables required.
 
 Once you fill in `.env.example`, rename it `.env`.
 
@@ -40,4 +43,7 @@ make run
 
 (Alternatively, if you don't have `make`, use `npm run dev`)
 
-README
+## Using the API
+
+See the API spec [here](https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4).
+

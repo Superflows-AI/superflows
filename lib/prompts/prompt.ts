@@ -1,5 +1,6 @@
 import { ChatGPTMessage } from "../models";
 import { ActionGroupJoinActions } from "../types";
+import { OpenAPIV3_1 } from "openapi-types";
 
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
@@ -35,20 +36,18 @@ export default function getMessages(
   // console.log("currentPage.actions", currentPage);
   currentPage.actions.forEach((action) => {
     let paramString = "";
-    // TODO: FIX THIS WHOLE SECTION!!
     // For parameters
     if (action.parameters && Array.isArray(action.parameters)) {
       action.parameters.forEach((param) => {
-        param = param as {
-          name: string;
-          description: string;
-          required: boolean;
-          schema: { type: string };
-        };
-        // @ts-ignore
-        paramString += `\n- ${param.name} (${param.schema.type})${
-          param.description ? `: ${param.description}` : ""
-        }. ${param.required ? "REQUIRED" : ""}`;
+        const p = param as unknown as OpenAPIV3_1.ParameterObject;
+        const schema = p.schema as OpenAPIV3_1.SchemaObject;
+        const enums = schema.enum;
+        // TODO: Deal with very long enums better - right now we are just ignoring them
+        paramString += `\n- ${p.name} (${schema.type}${
+          enums && enums.length < 20 ? `: ${enums}` : ""
+        })${p.description ? `: ${p.description}` : ""}. ${
+          p.required ? "REQUIRED" : ""
+        }`;
       });
     }
     if (
@@ -92,7 +91,7 @@ The date today is 2023-06-15.
 You are currently on the ${currentPageName} page. The functions available are determined by the page you're on. Sometimes, to access a function, you will need to navigate to a new page to be able to see the function definition. In such cases, stop outputting commands when you navigate to the correct page.
 
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
-These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
+These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
 ${numberedActions}
 
 If you need to use the output of a previous command for a command, simply stop outputting commands and set "Completed: false" - you will be asked once the function has returned for your next step.

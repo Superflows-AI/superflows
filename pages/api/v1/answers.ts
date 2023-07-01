@@ -23,7 +23,7 @@ import {
   Organization,
 } from "../../../lib/types";
 import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { Database, Json } from "../../../lib/database.types";
+import { Database } from "../../../lib/database.types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export const config = {
@@ -87,16 +87,26 @@ export default async function handler(req: NextRequest) {
 
     // Validate that the request body is of the correct format
     const requestData = await req.json();
-    console.log("Turned to json!" + JSON.stringify(requestData));
     if (!isValidBody<AnswersType>(requestData, AnswersZod)) {
       return new Response(JSON.stringify({ message: "Invalid request body" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
+    // TODO: Add non-streaming API support (although the UX is 10x worse)
+    if (requestData.stream === false) {
+      return new Response(
+        JSON.stringify({
+          error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
+        }),
+        {
+          status: 501,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Get the past conversation from the DB
-    console.log("Getting past convo");
     let previousMessages: ChatGPTMessage[] = [];
     let conversationId: number;
     if (requestData.conversation_id) {
@@ -129,9 +139,10 @@ export default async function handler(req: NextRequest) {
       role: "user",
       content: requestData.user_input,
     };
-    console.log("Previous messages: " + JSON.stringify(previousMessages));
     previousMessages.push(newUserMessage);
-    console.log("Number of previous messages: " + previousMessages.length);
+    console.log(
+      "Number of previous messages in conversation: " + previousMessages.length
+    );
     const insertedChatMessagesRes = await supabase
       .from("chat_messages")
       .insert({
@@ -284,8 +295,6 @@ async function Angela( // Good ol' Angela
           }
           rawOutput += content;
           mostRecentParsedOutput = parseOutput(rawOutput);
-          // const lastSectionName = getLastSectionName(rawOutput);
-          // console.log("Raw output", rawOutput);
           streamInfo({
             role: "assistant",
             content,
@@ -430,7 +439,7 @@ export async function httpRequestFromAction(
 
   let url = apiHost + action.path;
 
-  // TODO: accept array for JSON? Is this even possible? (not needed right now)
+  // TODO: accept array for JSON?
   // Set parameters
   if (
     action.parameters &&
