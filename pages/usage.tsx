@@ -106,9 +106,9 @@ function Dashboard() {
         <Navbar current={"Usage"} />
         <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mt-12 bg-gray-850 rounded-md px-6 py-4">
-            <h1 className="text-xl text-gray-100">Openai api usage </h1>
+            <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
             <p className="text-gray-400 mt-2">
-              {`The total cost to call the openai api for your organization is $${
+              {`The total cost from the OpenAI API for your organization is $${
                 Math.round(sum * 100) / 100
               }`}
             </p>
