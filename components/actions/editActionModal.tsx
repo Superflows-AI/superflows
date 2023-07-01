@@ -61,6 +61,7 @@ function JsonTextBox(props: JsonTextBoxProps) {
             }
           }}
           minHeight={80}
+          maxHeight={999999}
           onKeyDown={(e) => {
             if (e.key === "Tab") {
               // How many spaces to insert when tab is pressed

@@ -372,7 +372,7 @@ function ActionsSection(props: {
                 <div className="flex flex-col select-none max-w-[calc(100%-3.75rem)]">
                   <p
                     className={classNames(
-                      "mt-1 truncate max-h-20 text-xs font-mono whitespace-pre-line",
+                      "truncate max-h-20 text-xs font-mono whitespace-pre-line",
                       action.active ? "text-gray-400" : "text-gray-500"
                     )}
                   >
@@ -380,7 +380,7 @@ function ActionsSection(props: {
                   </p>
                   <h3
                     className={classNames(
-                      "mt-1 font-medium whitespace-wrap break-words",
+                      "font-medium whitespace-wrap break-words",
                       action.active ? "text-gray-100" : "text-gray-400"
                     )}
                   >

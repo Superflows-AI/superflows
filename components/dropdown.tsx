@@ -17,7 +17,7 @@ export default function SelectBoxOptionDropdownWithCheckboxes(props: {
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
-        <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-gray-850 px-3 py-1.5 text-sm font-semibold text-gray-300 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-900">
+        <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-gray-850 px-3 py-1.5 text-sm font-medium text-gray-300 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-900">
           {props.title}
           <ChevronDownIcon
             className="-mr-1 h-5 w-5 text-gray-400"
@@ -39,7 +39,7 @@ export default function SelectBoxOptionDropdownWithCheckboxes(props: {
           static
           className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-gray-850 shadow-lg ring-1 ring-black border border-gray-600 ring-opacity-5 focus:outline-none"
         >
-          <div className="py-1">
+          <div className="py-1 divide-y divide-gray-800">
             {props.items.map((item) => (
               <Menu.Item key={item.id}>
                 <div

@@ -98,8 +98,9 @@ export default function PlaygroundChatbot(props: {
         done = doneReading || killSwitchClicked.current;
         const chunkValue = decoder.decode(value);
         try {
-          // Can be multiple chunks in one chunk, separated by "data:"
-          // .slice(5) removes the "data:" at the start of the string
+          // Can be multiple server-side chunks in one client-side chunk,
+          // separated by "data:". The .slice(5) removes the "data:" at
+          // the start of the string
           console.log("My chunk", chunkValue);
           chunkValue
             .slice(5)
@@ -125,7 +126,7 @@ export default function PlaygroundChatbot(props: {
           console.error(e);
         }
       }
-      // TODO: Deal with confirmation step
+      // TODO: Add a confirmation step when taking non-GET actions
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
@@ -203,9 +204,11 @@ export default function PlaygroundChatbot(props: {
             if (devMode || chatItem.role === "user")
               return <DevChatItem chatItem={chatItem} key={idx} />;
             else {
-              if (["debug", "error"].includes(chatItem.role)) return <></>;
-              if ("function" === chatItem.role) {
-                let contentString = "";
+              if (chatItem.role === "debug") return <></>;
+              else if (chatItem.role === "error") {
+                return <DevChatItem chatItem={chatItem} key={idx} />;
+              } else if (chatItem.role === "function") {
+                let contentString;
                 const functionJsonResponse = JSON.parse(chatItem.content);
                 if (
                   Array.isArray(functionJsonResponse) &&
@@ -279,15 +282,15 @@ export default function PlaygroundChatbot(props: {
             }
           }}
         />
-        <div className="flex flex-shrink-0 w-full justify-end px-1 pb-4 pt-2">
+        <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2">
           <p
             className={classNames(
-              "flex flex-row gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
+              "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
               props.submitReady ? "invisible" : "visible"
             )}
           >
             {
-              "You need to enter your organisation's API hostname (API tab) and create actions (Actions tab)."
+              "You need to add your API hostname (API tab) and actions (Actions tab)."
             }
           </p>
           {loading && (

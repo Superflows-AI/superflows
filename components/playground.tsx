@@ -64,10 +64,9 @@ export default function Playground() {
           }
           userApiKey={userApiKey}
           submitReady={
-            numActions > 0
-            // numActions > 0 &&
-            // !!profile?.organizations?.api_host &&
-            // profile?.organizations?.api_host.length > 0
+            numActions > 0 &&
+            !!profile?.organizations?.api_host &&
+            profile?.organizations?.api_host.length > 0
           }
         />
       </main>
