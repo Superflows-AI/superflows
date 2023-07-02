@@ -5,6 +5,7 @@ import { OpenAPIV3_1 } from "openapi-types";
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
   pageActions: ActionGroupJoinActions[],
+  userDescription: string | undefined,
   currentPageName: string,
   orgInfo: {
     name: string;
@@ -13,6 +14,11 @@ export default function getMessages(
   language: string
 ): ChatGPTMessage[] {
   const currentPage = pageActions.find((p) => p.name === currentPageName);
+
+  let userDescriptionSection = "";
+  if (userDescription) {
+    userDescriptionSection = `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`;
+  }
 
   if (!currentPage) {
     throw new Error(
@@ -58,17 +64,18 @@ export default function getMessages(
     ) {
       // @ts-ignore
       const properties = action.request_body_contents["application/json"].schema
-        .properties as {
-        [key: string]: { type: string; description?: string };
-      };
+        .properties as { [name: string]: OpenAPIV3_1.SchemaObject };
       // @ts-ignore
       const required = action.request_body_contents["application/json"].schema
         .required as string[];
-      // TODO: Enum's aren't supported
       Object.entries(properties).forEach(([key, value]) => {
-        paramString += `\n- ${key} (${value.type})${
-          value.description ? `: ${value.description}` : ""
-        } ${required.includes(key) ? "REQUIRED" : ""}`;
+        const enums = value.enum;
+        // TODO: Deal with very long enums better - right now we are just ignoring them
+        paramString += `\n- ${key} (${value.type}${
+          enums && enums.length < 20 ? `: ${enums}` : ""
+        })${value.description ? `: ${value.description}` : ""} ${
+          required.includes(key) ? "REQUIRED" : ""
+        }`;
       });
     }
 
@@ -80,13 +87,17 @@ export default function getMessages(
   return [
     {
       role: "system",
-      content: `You are ${orgInfo.name} chatbot AI. ${orgInfo.description} Your role is to be helpful to the user. Help them achieve tasks in ${orgInfo.name} by calling functions.
+      content: `You are ${orgInfo.name} chatbot AI. ${
+        orgInfo.description
+      } Your role is to be helpful to the user. Help them achieve tasks in ${
+        orgInfo.name
+      } by calling functions.
 
 Seek user assistance when necessary or more information is required.
 
 Do not instruct the user to perform actions. Instead, perform the actions yourself by calling functions in the "commands" output. Output commands in the order you want them to be performed.
-
-The date today is 2023-06-15.
+${userDescriptionSection}
+The date today is ${new Date().toISOString().split("T")[0]}.
 
 You are currently on the ${currentPageName} page. The functions available are determined by the page you're on. Sometimes, to access a function, you will need to navigate to a new page to be able to see the function definition. In such cases, stop outputting commands when you navigate to the correct page.
 

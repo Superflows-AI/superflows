@@ -36,6 +36,12 @@ export function Navbar(props: { current: string }) {
             <div className="">
               <div className="flex h-16 items-center justify-between px-4 sm:px-0">
                 <div className="flex items-center">
+                  <a
+                    className="-ml-20 text-xl text-white font-medium"
+                    href={"https://superflows.ai"}
+                  >
+                    Superflows
+                  </a>
                   <div className="ml-10 flex items-baseline space-x-4">
                     {navigation.map((item) => (
                       <Link
@@ -65,19 +71,21 @@ export function Navbar(props: { current: string }) {
                     {/*  <span className="sr-only">View notifications</span>*/}
                     {/*  <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />*/}
                     {/*</button>*/}
-                    <button
-                      type="button"
-                      className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                      onClick={async () => {
-                        await supabase.auth.signOut();
-                      }}
-                    >
-                      <span className="sr-only">Sign out</span>
-                      <ArrowRightOnRectangleIcon
-                        className="h-6 w-6"
-                        aria-hidden="true"
-                      />
-                    </button>
+                    {process.env.NODE_ENV !== "development" && (
+                      <button
+                        type="button"
+                        className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                        onClick={async () => {
+                          await supabase.auth.signOut();
+                        }}
+                      >
+                        <span className="sr-only">Sign out</span>
+                        <ArrowRightOnRectangleIcon
+                          className="h-6 w-6"
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
