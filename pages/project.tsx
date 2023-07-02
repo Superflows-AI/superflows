@@ -41,7 +41,6 @@ function Dashboard() {
                 <p className="text-gray-400 text-sm">
                   E.g. Stripe Developer Dashboard
                 </p>
-                {/*<p className="text-gray-400">E.g. Stripe is an API for </p>*/}
               </div>
               <input
                 className="bg-gray-800 text-lg text-gray-300 rounded-md px-3 py-1.5 border border-gray-500"
@@ -65,10 +64,9 @@ function Dashboard() {
                   <br />
                   <br />
                   E.g. Stripe is an API for payments. The dashboard is used by
-                  both developers and To create a payment link, you need to have
-                  a product id and a price id...
+                  developers. To create a payment link, you need to have a
+                  product id and a price id...
                 </p>
-                {/*<p className="text-gray-400">E.g. Stripe is an API for </p>*/}
               </div>
               <AutoGrowingTextArea
                 className={

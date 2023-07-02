@@ -14,16 +14,11 @@ import { useProfile } from "./contextManagers/profile";
 import { StreamingStep } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
 import { AutoGrowingTextArea } from "./autoGrowingTextarea";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 const BrandColour = "#ffffff";
 const BrandColourAction = "#5664d1";
 const BrandActionTextColour = "#ffffff";
-
-export const promptSuggestionButtons = [
-  "When is Mrs. Carol's mitigation scheduled for?",
-  "Necesitamos saber si ya el caso de la señora Carol Adames ya se pasó a WekLaw",
-  "Who can I ask about the status of Mr. Luiz Marquesini who signed on August 30, 2022?",
-];
 
 interface ChatItem {
   role: "user" | "assistant" | "function" | "debug" | "error";
@@ -41,6 +36,7 @@ export default function PlaygroundChatbot(props: {
   language: "English" | "Espanol";
   userApiKey: string;
   submitReady: boolean;
+  userDescription: string;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -48,6 +44,26 @@ export default function PlaygroundChatbot(props: {
   const alreadyRunning = useRef(false);
 
   const { profile } = useProfile();
+
+  // Get suggestions from past conversations in playground
+  const supabase = useSupabaseClient();
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  useEffect(() => {
+    (async () => {
+      const res = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("role", "user")
+        // This means it's the first message in a conversation
+        .eq("conversation_index", 0)
+        .limit(10);
+      if (res.error) throw res.error;
+      // Below gets the unique messages and then takes the first 3
+      setSuggestions(
+        [...new Set(res.data.map((message) => message.content))].slice(0, 3)
+      );
+    })();
+  }, []);
 
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
@@ -76,6 +92,7 @@ export default function PlaygroundChatbot(props: {
           conversation_id: conversationId,
           language: props.language,
           user_api_key: props.userApiKey,
+          user_description: props.userDescription,
           stream: true,
         }),
       });
@@ -134,6 +151,7 @@ export default function PlaygroundChatbot(props: {
     [
       props.userApiKey,
       profile,
+      props.userDescription,
       loading,
       setLoading,
       devChatContents,
@@ -196,7 +214,7 @@ export default function PlaygroundChatbot(props: {
       </div>
       {/* Scrollable chat window */}
       <div
-        className="flex-1 overflow-y-auto h-full flex flex-col pb-1 px-32"
+        className="flex-1 overflow-y-auto h-full flex flex-col pb-1 px-8 md:px-14 lg:px-20"
         id={"scrollable-chat-contents"}
       >
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
@@ -236,34 +254,33 @@ export default function PlaygroundChatbot(props: {
               return <UserChatItem chatItem={chatItem} key={idx} />;
             }
           })}
-          {devChatContents.length === 0 &&
-            promptSuggestionButtons.length > 0 && (
-              <div className="py-4 px-1.5">
-                <h2 className="ml-2 font-medium">Suggestions</h2>
-                <div className="mt-1 flex flex-col gap-y-2 place-items-baseline">
-                  {promptSuggestionButtons.map((text) => (
-                    <button
-                      key={text}
-                      className={classNames(
-                        "text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
-                      )}
-                      onClick={() => {
-                        setUserText(text);
-                      }}
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
+          {devChatContents.length === 0 && suggestions.length > 0 && (
+            <div className="py-4 px-1.5">
+              <h2 className="ml-2 font-medium">Suggestions</h2>
+              <div className="mt-1 flex flex-col gap-y-2 place-items-baseline">
+                {suggestions.map((text) => (
+                  <button
+                    key={text}
+                    className={classNames(
+                      "text-left px-2 py-1 rounded-md border bg-white text-little text-gray-800 shadow hover:shadow-md"
+                    )}
+                    onClick={() => {
+                      setUserText(text);
+                    }}
+                  >
+                    {text}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+          )}
         </div>
       </div>
       {/* Textbox user types into */}
-      <div className="flex flex-col pt-4 px-32">
+      <div className="flex flex-col pt-4 px-8 md:px-14 lg:px-20">
         <AutoGrowingTextArea
           className={classNames(
-            "text-sm resize-none mx-1 rounded py-2 border-gray-300 focus:border-sky-300 focus:ring-1 focus:ring-sky-300 placeholder:text-gray-400",
+            "text-sm resize-none mx-1 rounded py-2 border-gray-300 focus:border-purple-300 focus:ring-1 focus:ring-purple-300 placeholder:text-gray-400",
             userText.length > 300 ? "overflow-auto-y" : "overflow-hidden"
           )}
           placeholder={"Send a message"}

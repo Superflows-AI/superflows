@@ -35,7 +35,6 @@ const OptionalStringZod = z.optional(z.string());
 const AnswersZod = z.object({
   user_input: z.string(),
   conversation_id: z.nullable(z.number()),
-  // TODO: Not used anywhere yet!!!
   user_description: OptionalStringZod,
   user_api_key: OptionalStringZod,
   language: OptionalStringZod,
@@ -259,11 +258,12 @@ async function Angela( // Good ol' Angela
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
         actionGroupJoinActions,
+        reqData.user_description,
         currentPageName,
         org,
         reqData.language ?? "English"
       );
-      console.log("ChatGPTPrompt", chatGptPrompt[0].content);
+      console.log("ChatGPT system prompt", chatGptPrompt[0].content);
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
