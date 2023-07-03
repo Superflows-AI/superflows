@@ -264,6 +264,34 @@ export interface Database {
           }
         ];
       };
+      usage: {
+        Row: {
+          date: string;
+          id: number;
+          org_id: number;
+          usage: number;
+        };
+        Insert: {
+          date?: string;
+          id?: number;
+          org_id: number;
+          usage: number;
+        };
+        Update: {
+          date?: string;
+          id?: number;
+          org_id?: number;
+          usage?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "usage_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

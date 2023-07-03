@@ -7,6 +7,7 @@ import {
   convertToRenderable,
   exponentialRetryWrapper,
   isValidBody,
+  openAiCost,
 } from "../../../lib/utils";
 import { z } from "zod";
 import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
@@ -177,7 +178,7 @@ export default async function handler(req: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         // Angela gets the answers for us
-        const allMessages = await Angela(
+        const { nonSystemMessages: allMessages, cost } = await Angela(
           controller,
           requestData,
           activeActions,
@@ -197,6 +198,26 @@ export default async function handler(req: NextRequest) {
           );
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
+
+        const todaysDate = new Date().toISOString().split("T")[0];
+        const { data, error } = await supabase
+          .from("usage")
+          .select("*")
+          .eq("org_id", org!.id)
+          .eq("date", todaysDate);
+        if (error) throw new Error(error.message);
+        if (data.length > 0) {
+          const { error } = await supabase
+            .from("usage")
+            .update({ usage: cost + data[0].usage })
+            .eq("id", data[0].id);
+          if (error) throw new Error(error.message);
+        } else {
+          const { error: error2 } = await supabase
+            .from("usage")
+            .insert({ org_id: org!.id, usage: cost });
+          if (error2) throw new Error(error2.message);
+        }
         controller.close();
       },
     });
@@ -236,7 +257,7 @@ async function Angela( // Good ol' Angela
   org: Organization,
   convoId: number,
   previousMessages: ChatGPTMessage[]
-): Promise<ChatGPTMessage[]> {
+): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -258,6 +279,8 @@ async function Angela( // Good ol' Angela
   let numOpenAIRequests = 0;
   // TODO: When changing away from page-based system, delete this
   let currentPageName = actionGroupJoinActions[0].name;
+  let cost = 0;
+  let inputCost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
@@ -270,6 +293,9 @@ async function Angela( // Good ol' Angela
         reqData.language ?? "English"
       );
       console.log("ChatGPT system prompt", chatGptPrompt[0].content);
+      cost += openAiCost(chatGptPrompt, "in");
+      inputCost = cost;
+      console.log("GPT input  cost: ", cost);
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
@@ -280,7 +306,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call failed",
         });
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
 
       // Stream response from OpenAI
@@ -301,12 +327,15 @@ async function Angela( // Good ol' Angela
           }
           rawOutput += content;
           mostRecentParsedOutput = parseOutput(rawOutput);
-          streamInfo({
+          const formatted = {
             role: "assistant",
             content,
-          });
+          };
+          cost += openAiCost([formatted as ChatGPTMessage], "out");
+          streamInfo(formatted as StreamingStepInput);
         }
       }
+      console.log("GPT output cost: ", cost - inputCost);
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push({ role: "assistant", content: rawOutput });
 
@@ -356,7 +385,7 @@ async function Angela( // Good ol' Angela
         });
       }
       if (mostRecentParsedOutput.completed !== false) {
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
 
       numOpenAIRequests++;
@@ -365,7 +394,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call limit reached",
         });
-        return nonSystemMessages;
+        return { nonSystemMessages, cost };
       }
     }
   } catch (e) {
@@ -374,9 +403,9 @@ async function Angela( // Good ol' Angela
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return nonSystemMessages;
+    return { nonSystemMessages, cost };
   }
-  return nonSystemMessages;
+  return { nonSystemMessages, cost };
 }
 
 export async function httpRequestFromAction(

@@ -1,7 +1,6 @@
+import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
-import { Database } from "./database.types";
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { StreamingStep } from "../pages/api/v1/answers";
+import { ChatGPTMessage, ChatMessage } from "./models";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -163,4 +162,21 @@ export function isJsonString(str: string) {
     return false;
   }
   return true;
+}
+
+export function openAiCost(
+  messages: ChatGPTMessage[],
+  put: "in" | "out"
+): number {
+  let costPerToken;
+  if (put === "in") {
+    costPerToken = 0.03 / 1000;
+  } else {
+    costPerToken = 0.06 / 1000;
+  }
+
+  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
+  const nTokens = encoded.length;
+  // For the 8k context model
+  return nTokens * costPerToken;
 }

@@ -9,6 +9,13 @@ export type ChatGPTMessage =
       name: string;
     };
 
+// Required by the tokeniser
+export interface ChatMessage {
+  role?: "system" | "user" | "assistant";
+  name?: string;
+  content: string;
+}
+
 export interface ChatGPTResponse {
   id: string;
   object: string;
