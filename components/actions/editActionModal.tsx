@@ -214,13 +214,13 @@ export default function EditActionModal(props: {
 
       <div className="mt-10 mb-4 grid grid-cols-2 gap-x-6">
         <div className="relative">
-          <div className="absolute top-3 right-3 z-10">
-            <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full hover:bg-gray-50" />
-            <div className={classNames("-top-8 left-12 w-64 popup")}>
-              The AI uses this to write this 1-click reply - be descriptive.
-              E.g.
-            </div>
-          </div>
+          {/*<div className="absolute top-3 right-3 z-10">*/}
+          {/*  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full hover:bg-gray-50" />*/}
+          {/*  <div className={classNames("-top-8 left-12 w-64 popup")}>*/}
+          {/*    The AI uses this to write this 1-click reply - be descriptive.*/}
+          {/*    E.g.*/}
+          {/*  </div>*/}
+          {/*</div>*/}
           <FloatingLabelInput
             className={classNames(
               "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
@@ -297,12 +297,9 @@ export default function EditActionModal(props: {
         )}
         <div className="absolute top-3 right-3">
           <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full" />
-          <div className={classNames("right-0 -top-36 w-64 popup")}>
-            Give instructions & information to the AI writing the reply.
-            <br />
-            <br />
-            E.g. &ldquo;Book a call, my calendar link is:
-            https://calendly.com/...&rdquo;
+          <div className={classNames("right-0 -top-20 w-64 popup")}>
+            Information given to the AI about what this action does. E.g.
+            &#34;Sends a message to the user.&#34;
           </div>
         </div>
         <div
