@@ -266,19 +266,22 @@ export interface Database {
       };
       usage: {
         Row: {
-          date: string | null;
+          date: string;
+          id: number;
           org_id: number;
-          usage: number | null;
+          usage: number;
         };
         Insert: {
-          date?: string | null;
-          org_id?: number;
-          usage?: number | null;
+          date: string;
+          id?: number;
+          org_id: number;
+          usage: number;
         };
         Update: {
-          date?: string | null;
+          date?: string;
+          id?: number;
           org_id?: number;
-          usage?: number | null;
+          usage?: number;
         };
         Relationships: [
           {
