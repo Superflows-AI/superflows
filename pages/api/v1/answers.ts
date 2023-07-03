@@ -306,12 +306,12 @@ async function Angela( // Good ol' Angela
           }
           rawOutput += content;
           mostRecentParsedOutput = parseOutput(rawOutput);
-          // const lastSectionName = getLastSectionName(rawOutput);
-          // console.log("Raw output", rawOutput);
-          streamInfo({
+          const formatted = {
             role: "assistant",
             content,
-          });
+          };
+          cost += openAiCost([formatted as ChatGPTMessage]);
+          streamInfo(formatted as StreamingStepInput);
         }
       }
       // Add assistant message to nonSystemMessages
