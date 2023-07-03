@@ -82,7 +82,13 @@ export default async function handler(req: NextRequest) {
       );
     }
     const res = NextResponse.next();
-    const supabase = createMiddlewareSupabaseClient<Database>({ req, res });
+    const supabase = createMiddlewareSupabaseClient<Database>(
+      { req, res },
+      {
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        supabaseKey: process.env.SERVICE_LEVEL_KEY_SUPABASE,
+      }
+    );
 
     // Validate that the request body is of the correct format
     const requestData = await req.json();
