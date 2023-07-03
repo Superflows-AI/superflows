@@ -34,7 +34,7 @@ interface JsonTextBoxProps {
 function JsonTextBox(props: JsonTextBoxProps) {
   return (
     <>
-      <div className="w-full px-32 flex flex-row justify-between place-items-start overflow-hidden">
+      <div className="w-full px-20 flex flex-row justify-between place-items-start overflow-hidden">
         <div className="font-bold text-lg text-gray-100 mt-4 w-40">
           {props.title.charAt(0).toUpperCase() +
             props.title.slice(1).replace(/_/g, " ")}
@@ -319,7 +319,7 @@ export default function EditActionModal(props: {
 
       <div className="my-4 flex flex-col gap-y-4">
         {/* PATH */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-center">
+        <div className="w-full px-20 flex flex-row justify-center place-items-center">
           <div className="font-bold text-lg text-gray-100 w-40">Path:</div>
           <div className="w-full flex-1">
             <input
@@ -345,7 +345,7 @@ export default function EditActionModal(props: {
           </div>
         </div>
         {/* METHOD */}
-        <div className="w-full px-32 flex flex-row justify-center place-items-center">
+        <div className="w-full px-20 flex flex-row justify-center place-items-center">
           <div className="font-bold text-lg text-gray-100 w-40">Method:</div>
           <SelectBox
             options={allRequestMethods}
