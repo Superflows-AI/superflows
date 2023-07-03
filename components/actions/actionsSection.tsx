@@ -386,9 +386,14 @@ function ActionsSection(props: {
                   >
                     {action.name}
                   </h3>
-                  <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
-                    {action.description}
-                  </p>
+                  {action.description !==
+                    `${action.request_method?.toUpperCase()} ${
+                      action.path
+                    }` && (
+                    <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
+                      {action.description}
+                    </p>
+                  )}
                 </div>
                 <FlyoutMenu
                   getClassName={(open: boolean) =>
