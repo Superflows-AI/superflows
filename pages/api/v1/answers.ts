@@ -183,24 +183,24 @@ export default async function handler(req: NextRequest) {
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
 
-        const { data, error } = await supabase
-          .from("organizations")
-          .select("openai_usage")
-          .eq("id", org!.id)
-          .single();
-        if (error) throw new Error(error.message);
-        if (!data.openai_usage) throw new Error("No usage found");
-        const usage = data.openai_usage as { [key: string]: number };
         const todaysDate = new Date().toISOString().split("T")[0];
-        if (todaysDate in usage) {
-          usage[todaysDate] += cost;
-        } else {
-          usage[todaysDate] = cost;
+        const { data, error } = await supabase
+          .from("usage")
+          .select("usage")
+          .eq("org_id", org!.id)
+          .eq("date", todaysDate);
+        if (error) throw new Error(error.message);
+        let usage = cost;
+        if (data.length > 0 && data[0].usage) {
+          usage += data[0].usage;
         }
-        await supabase
-          .from("organizations")
-          .update({ openai_usage: usage })
-          .eq("id", org!.id);
+
+        const res = await supabase
+          .from("usage")
+          .upsert({ org_id: org!.id, date: todaysDate, usage })
+          .eq("org_id", org!.id)
+          .eq("date", todaysDate);
+        if (res.error) throw new Error(res.error.message);
         controller.close();
       },
     });
@@ -263,6 +263,7 @@ async function Angela( // Good ol' Angela
   // TODO: When changing away from page-based system, delete this
   let currentPageName = actionGroupJoinActions[0].name;
   let cost = 0;
+  let inputCost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
@@ -275,6 +276,8 @@ async function Angela( // Good ol' Angela
       );
       console.log("ChatGPTPrompt", chatGptPrompt[0].content);
       cost += openAiCost(chatGptPrompt);
+      inputCost = cost;
+      console.log("GPT input  cost: ", cost);
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
@@ -314,6 +317,7 @@ async function Angela( // Good ol' Angela
           streamInfo(formatted as StreamingStepInput);
         }
       }
+      console.log("GPT output cost: ", cost - inputCost);
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push({ role: "assistant", content: rawOutput });
 

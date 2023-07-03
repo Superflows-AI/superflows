@@ -205,7 +205,6 @@ export interface Database {
           description: string;
           id: number;
           name: string;
-          openai_usage: Json;
         };
         Insert: {
           api_host?: string;
@@ -214,7 +213,6 @@ export interface Database {
           description?: string;
           id?: number;
           name?: string;
-          openai_usage?: Json;
         };
         Update: {
           api_host?: string;
@@ -223,7 +221,6 @@ export interface Database {
           description?: string;
           id?: number;
           name?: string;
-          openai_usage?: Json;
         };
         Relationships: [];
       };
@@ -262,6 +259,31 @@ export interface Database {
           {
             foreignKeyName: "profiles_org_id_fkey";
             columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      usage: {
+        Row: {
+          date: string | null;
+          organization_id: number;
+          usage: number | null;
+        };
+        Insert: {
+          date?: string | null;
+          organization_id?: number;
+          usage?: number | null;
+        };
+        Update: {
+          date?: string | null;
+          organization_id?: number;
+          usage?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "usage_organization_id_fkey";
+            columns: ["organization_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           }
