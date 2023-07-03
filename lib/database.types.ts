@@ -267,23 +267,23 @@ export interface Database {
       usage: {
         Row: {
           date: string | null;
-          organization_id: number;
+          org_id: number;
           usage: number | null;
         };
         Insert: {
           date?: string | null;
-          organization_id?: number;
+          org_id?: number;
           usage?: number | null;
         };
         Update: {
           date?: string | null;
-          organization_id?: number;
+          org_id?: number;
           usage?: number | null;
         };
         Relationships: [
           {
-            foreignKeyName: "usage_organization_id_fkey";
-            columns: ["organization_id"];
+            foreignKeyName: "usage_org_id_fkey";
+            columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           }
