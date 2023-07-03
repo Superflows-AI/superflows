@@ -61,12 +61,12 @@ export default function Playground() {
             <h2 className="text-gray-200 font-medium">User description</h2>
             <p className="text-gray-400 text-sm">
               With each API request, you can provide a description of the user
-              who is asking the question and instructions on how to address
-              them.
+              who is asking the question, any useful information for accessing
+              your API (e.g. user id) and instructions on how to address them.
             </p>
             <textarea
               className="mt-4 w-full h-96 bg-gray-700 border border-gray-600 rounded-md focus:border-purple-700 focus:ring-purple-700 placeholder:text-gray-400 text-gray-200 px-3 py-2 text-sm resize-none"
-              placeholder="E.g. Bill is a salesperson at Acme Corp. He's not comfortable with statistical terms, instead use plain English to answer his questions."
+              placeholder="E.g. Bill is a salesperson at Acme Corp. His project id is f35ahe2g1p. He's not comfortable with statistical terms, instead use plain English to answer his questions."
               value={userDescription}
               onChange={(e) => setUserDescription(e.target.value)}
               onBlur={() => {
