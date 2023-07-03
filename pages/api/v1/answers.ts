@@ -475,7 +475,7 @@ async function Angela( // Good ol' Angela
 export async function httpRequestFromAction(
   action: Action,
   parameters: Record<string, unknown>,
-  apiHost: string,
+  organization: { api_host: string; id: string },
   stream: (stepInfo: StreamingStepInput) => void,
   userApiKey?: string
 ): Promise<Record<string, any> | any[]> {
@@ -485,7 +485,7 @@ export async function httpRequestFromAction(
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
-  if (!apiHost) {
+  if (!organization.api_host) {
     throw new Error("API host has not been provided");
   }
 
@@ -495,6 +495,10 @@ export async function httpRequestFromAction(
   headers["Accept"] = "application/json";
   if (userApiKey) {
     headers["Authorization"] = `Bearer ${userApiKey}`;
+  }
+
+  if (organization.api_host.includes("api/test-superflowstest/")) {
+    headers["org_id"] = organization.id;
   }
 
   const requestOptions: RequestInit = {
