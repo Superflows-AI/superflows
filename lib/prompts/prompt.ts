@@ -39,7 +39,6 @@ export default function getMessages(
     i++;
     numberedActions += `1. navigateTo: This will navigate you to another page. This enables you to use functions that are available on that page. Available pages (in format "- 'page-name': description") are: ${availablePages}. PARAMETERS: - pageName (string): The name of the page you want to navigate to. REQUIRED\n`;
   }
-  // console.log("currentPage.actions", currentPage);
   currentPage.actions.forEach((action) => {
     let paramString = "";
     // For parameters
@@ -69,6 +68,8 @@ export default function getMessages(
       const required = action.request_body_contents["application/json"].schema
         .required as string[];
       Object.entries(properties).forEach(([key, value]) => {
+        // Throw out readonly attributes
+        if (value.readOnly) return;
         const enums = value.enum;
         // TODO: Deal with very long enums better - right now we are just ignoring them
         paramString += `\n- ${key} (${value.type}${
