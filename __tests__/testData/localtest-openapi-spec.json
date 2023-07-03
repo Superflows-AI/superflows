@@ -6,7 +6,7 @@
     "version": "v1"
   },
   "paths": {
-    "/api/v1/Customers": {
+    "/api/local/Customers": {
       "post": {
         "tags": [
           "Customers"
@@ -86,7 +86,7 @@
         }
       }
     },
-    "/api/v1/Customers/recentInformation/{id}": {
+    "/api/local/Customers/recentInformation/{id}": {
       "get": {
         "tags": [
           "Customers"
@@ -116,7 +116,7 @@
         }
       }
     },
-    "/api/v1/Customers/{id}": {
+    "/api/local/Customers/{id}": {
       "get": {
         "tags": [
           "Customers"
@@ -167,7 +167,7 @@
         }
       }
     },
-    "/api/v1/Customers/search": {
+    "/api/local/Customers/search": {
       "get": {
         "tags": [
           "Customers"
@@ -199,7 +199,7 @@
         }
       }
     },
-    "/api/v1/Customers/location": {
+    "/api/local/Customers/location": {
       "get": {
         "tags": [
           "Customers"

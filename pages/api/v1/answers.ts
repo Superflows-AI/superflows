@@ -24,7 +24,7 @@ import {
   Organization,
 } from "../../../lib/types";
 import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { Database, Json } from "../../../lib/database.types";
+import { Database } from "../../../lib/database.types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export const config = {
@@ -36,7 +36,6 @@ const OptionalStringZod = z.optional(z.string());
 const AnswersZod = z.object({
   user_input: z.string(),
   conversation_id: z.nullable(z.number()),
-  // TODO: Not used anywhere yet!!!
   user_description: OptionalStringZod,
   user_api_key: OptionalStringZod,
   language: OptionalStringZod,
@@ -84,20 +83,36 @@ export default async function handler(req: NextRequest) {
       );
     }
     const res = NextResponse.next();
-    const supabase = createMiddlewareSupabaseClient<Database>({ req, res });
+    const supabase = createMiddlewareSupabaseClient<Database>(
+      { req, res },
+      {
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        supabaseKey: process.env.SERVICE_LEVEL_KEY_SUPABASE,
+      }
+    );
 
     // Validate that the request body is of the correct format
     const requestData = await req.json();
-    console.log("Turned to json!" + JSON.stringify(requestData));
     if (!isValidBody<AnswersType>(requestData, AnswersZod)) {
       return new Response(JSON.stringify({ message: "Invalid request body" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
+    // TODO: Add non-streaming API support (although the UX is 10x worse)
+    if (requestData.stream === false) {
+      return new Response(
+        JSON.stringify({
+          error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
+        }),
+        {
+          status: 501,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Get the past conversation from the DB
-    console.log("Getting past convo");
     let previousMessages: ChatGPTMessage[] = [];
     let conversationId: number;
     if (requestData.conversation_id) {
@@ -130,9 +145,10 @@ export default async function handler(req: NextRequest) {
       role: "user",
       content: requestData.user_input,
     };
-    console.log("Previous messages: " + JSON.stringify(previousMessages));
     previousMessages.push(newUserMessage);
-    console.log("Number of previous messages: " + previousMessages.length);
+    console.log(
+      "Number of previous messages in conversation: " + previousMessages.length
+    );
     const insertedChatMessagesRes = await supabase
       .from("chat_messages")
       .insert({
@@ -271,11 +287,12 @@ async function Angela( // Good ol' Angela
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
         actionGroupJoinActions,
+        reqData.user_description,
         currentPageName,
         org,
         reqData.language ?? "English"
       );
-      console.log("ChatGPTPrompt", chatGptPrompt[0].content);
+      console.log("ChatGPT system prompt", chatGptPrompt[0].content);
       cost += openAiCost(chatGptPrompt, "in");
       inputCost = cost;
       console.log("GPT input  cost: ", cost);
@@ -457,7 +474,7 @@ export async function httpRequestFromAction(
 
   let url = apiHost + action.path;
 
-  // TODO: accept array for JSON? Is this even possible? (not needed right now)
+  // TODO: accept array for JSON?
   // Set parameters
   if (
     action.parameters &&

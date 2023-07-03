@@ -11,6 +11,9 @@ import FlyoutMenu from "../flyoutMenu";
 import Checkbox from "../checkbox";
 import { useProfile } from "../contextManagers/profile";
 import EditActionGroupModal from "./editActionGroupModal";
+import DropdownWithCheckboxes, {
+  SelectBoxWithDropdownOption,
+} from "../dropdown";
 
 export default function PageActionsSection(props: {
   actionGroups: ActionGroupJoinActions[];
@@ -33,13 +36,24 @@ export default function PageActionsSection(props: {
       />
       <div className="mt-5 mx-5 mb-20">
         <div className="flex w-full place-items-end justify-between gap-x-2">
-          <Checkbox
-            onChange={(checked) => {
-              setIncludeInactive(checked);
-            }}
-            checked={includeInactive}
-            label={"Show inactive"}
-          />
+          <div className="flex flex-row gap-x-6 place-items-center">
+            <Checkbox
+              onChange={(checked) => {
+                setIncludeInactive(checked);
+              }}
+              checked={includeInactive}
+              label={"Show inactive"}
+            />
+            {props.actionGroups.length > 0 && (
+              <DropdownWithCheckboxes
+                title={"Enable HTTP method"}
+                items={actionGroupsToToggleItems(
+                  props.actionGroups,
+                  props.setActionGroups
+                )}
+              />
+            )}
+          </div>
           <div className="flex flex-row gap-x-2 place-items-center">
             {profile && (
               <button
@@ -249,6 +263,7 @@ function ActionsSection(props: {
             >
               {props.actionGroupJoinActions.actions.length > 0 && (
                 <Checkbox
+                  label={"Active"}
                   checked={props.actionGroupJoinActions.actions.some(
                     (a) => a.active
                   )}
@@ -273,11 +288,9 @@ function ActionsSection(props: {
                           JSON.stringify(res.data)
                       );
                   }}
-                  label={"Active"}
                 />
               )}
             </div>
-
             <FlyoutMenu
               items={[
                 {
@@ -354,9 +367,17 @@ function ActionsSection(props: {
                   if (res.data === null || res.data.length === 0)
                     throw new Error("Expected >0 rows to be updated");
                 }}
-                className="relative flex max-w-full w-full items-center justify-between space-x-6 p-6"
+                className="relative flex max-w-full w-full items-center justify-between space-x-3 p-6"
               >
                 <div className="flex flex-col select-none max-w-[calc(100%-3.75rem)]">
+                  <p
+                    className={classNames(
+                      "truncate max-h-20 text-xs font-mono whitespace-pre-line",
+                      action.active ? "text-gray-400" : "text-gray-500"
+                    )}
+                  >
+                    {action.request_method?.toUpperCase()} {action.path}
+                  </p>
                   <h3
                     className={classNames(
                       "font-medium whitespace-wrap break-words",
@@ -365,20 +386,15 @@ function ActionsSection(props: {
                   >
                     {action.name}
                   </h3>
-                  <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
-                    {action.description}
-                  </p>
+                  {action.description !==
+                    `${action.request_method?.toUpperCase()} ${
+                      action.path
+                    }` && (
+                    <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
+                      {action.description}
+                    </p>
+                  )}
                 </div>
-                {/*<button*/}
-                {/*  type="button"*/}
-                {/*  className="invisible group-hover:visible absolute top-3 right-3 rounded-md border-0 bg-gray-900 p-1 text-gray-300 hover:bg-gray-800 hover:text-gray-200 outline-0"*/}
-                {/*  onClick={(e) => {*/}
-                {/*    e.stopPropagation();*/}
-                {/*    setDeleteActionIndex(index);*/}
-                {/*  }}*/}
-                {/*>*/}
-                {/*  <TrashIcon className="w-5 h-5" />*/}
-                {/*</button>*/}
                 <FlyoutMenu
                   getClassName={(open: boolean) =>
                     open ? "visible" : "invisible group-hover:visible"
@@ -441,4 +457,32 @@ function ActionsSection(props: {
       </div>
     </>
   );
+}
+
+function actionGroupsToToggleItems(
+  actionGroups: ActionGroupJoinActions[],
+  setActionGroups: (actionGroups: ActionGroupJoinActions[]) => void
+): SelectBoxWithDropdownOption[] {
+  const allActions = actionGroups
+    .map((actionGroup) => actionGroup.actions)
+    .flat();
+  return [...new Set(allActions.map((a) => a.request_method))]
+    .filter((m) => !!m)
+    .map((m) => ({
+      id: m,
+      name: m!.toUpperCase(),
+      onChange: (checked: boolean) => {
+        const newActionGroups = [...actionGroups];
+        newActionGroups.forEach((actionGroup) => {
+          actionGroup.actions.forEach((action) => {
+            if (action.request_method === m) action.active = checked;
+          });
+        });
+        setActionGroups(newActionGroups);
+      },
+      // console.log("Checked", checked);
+      checked: allActions
+        .filter((a) => a.active)
+        .some((a) => a.request_method === m),
+    }));
 }

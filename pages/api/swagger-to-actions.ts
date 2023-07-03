@@ -133,14 +133,12 @@ export default async function handler(
         }
         groupNameToId[groupName] = actionGroupId;
       }
-      let description = methodObj.operationId
-        ? methodObj.description ??
-          methodObj.summary ??
-          method.toUpperCase() + " " + path
-        : methodObj.description ?? methodObj.summary ?? "";
+      let description =
+        replaceMarkdownLinks(methodObj.description ?? methodObj.summary) ??
+        method.toUpperCase() + " " + path;
       actionInserts.push({
         name:
-          methodObj.operationId ??
+          methodObj.operationId?.toLowerCase().replaceAll(" ", "_") ??
           requestToFunctionName(method, methodObj, path),
         description: description,
         active: ["get"].includes(method),
@@ -238,4 +236,15 @@ export function requestToFunctionName(
   functionName = functionName.replaceAll("__", "_").toLowerCase();
 
   return functionName;
+}
+
+export function replaceMarkdownLinks(
+  inputString: string | undefined
+): string | undefined {
+  if (!inputString) return undefined;
+  const markdownLinkRegEx = /\[([^\]]+)\]\(([^)]+)\)/g;
+  return inputString.replaceAll(
+    markdownLinkRegEx,
+    (match, linkText) => linkText
+  );
 }

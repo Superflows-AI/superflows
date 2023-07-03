@@ -1,30 +1,13 @@
-import { Dialog, Listbox, Transition } from "@headlessui/react";
+import { Dialog } from "@headlessui/react";
 import {
-  ArchiveBoxIcon,
-  ArrowRightCircleIcon,
-  ChevronDownIcon,
-  DocumentDuplicateIcon,
-  HeartIcon,
-  TrashIcon,
-  UserPlusIcon,
-  GlobeAltIcon,
-  CodeBracketSquareIcon,
-  CursorArrowRippleIcon,
-} from "@heroicons/react/20/solid";
-import {
-  LinkIcon,
   PencilSquareIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
-import { XMarkIcon } from "@heroicons/react/24/solid";
-import React, { Fragment, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
-import { Database } from "../../lib/database.types";
 import Modal from "../modal";
-import { Action, ActionGroup, ActionGroupJoinActions } from "../../lib/types";
-import { SelectBoxOption } from "../selectBox";
-import SelectBox from "../selectBox";
+import { ActionGroup } from "../../lib/types";
 
 export default function EditActionGroupModal(props: {
   actionGroup: ActionGroup;

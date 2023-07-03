@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from "react";
+import React from "react";
 
 export default function Checkbox(props: {
   onChange: (checked: boolean) => void;
@@ -14,10 +14,14 @@ export default function Checkbox(props: {
       }}
     >
       <div className="mr-2 text-sm">
-        <label className="font-medium text-gray-300 cursor-pointer select-none">
-          {props.label}
-        </label>
-        <span className="sr-only">{props.label}</span>
+        {props.label && (
+          <>
+            <label className="font-medium text-gray-300 cursor-pointer select-none">
+              {props.label}
+            </label>
+            <span className="sr-only">{props.label}</span>
+          </>
+        )}
       </div>
       <div className="flex h-6 items-center">
         <input

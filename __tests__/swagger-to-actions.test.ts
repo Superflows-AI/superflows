@@ -1,5 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
-import { requestToFunctionName } from "../pages/api/swagger-to-actions";
+import {
+  replaceMarkdownLinks,
+  requestToFunctionName,
+} from "../pages/api/swagger-to-actions";
 
 describe("request to function name", () => {
   it("list organizations", () => {
@@ -33,5 +36,23 @@ describe("request to function name", () => {
       "/api/organizations/{parent_lookup_organization_id}/plugins/activity/"
     );
     expect(fnName).toEqual("get_plugin_activity");
+  });
+});
+
+describe("replaceMarkdownLinks", () => {
+  it("undefined passes through", () => {
+    let result = replaceMarkdownLinks(undefined);
+    expect(result).toEqual(undefined);
+  });
+  it("replace 1 markdown link", () => {
+    let testString = "there's [something](https://something.com)";
+    let result = replaceMarkdownLinks(testString);
+    expect(result).toEqual("there's something");
+  });
+  it("replace 2 markdown links", () => {
+    let testString =
+      "there's [something](https://something.com) [here](https://something.com)";
+    let result = replaceMarkdownLinks(testString);
+    expect(result).toEqual("there's something here");
   });
 });
