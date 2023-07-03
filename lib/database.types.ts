@@ -272,7 +272,7 @@ export interface Database {
           usage: number;
         };
         Insert: {
-          date: string;
+          date?: string;
           id?: number;
           org_id: number;
           usage: number;

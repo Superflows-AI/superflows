@@ -186,21 +186,22 @@ export default async function handler(req: NextRequest) {
         const todaysDate = new Date().toISOString().split("T")[0];
         const { data, error } = await supabase
           .from("usage")
-          .select("usage")
+          .select("*")
           .eq("org_id", org!.id)
           .eq("date", todaysDate);
         if (error) throw new Error(error.message);
-        let usage = cost;
-        if (data.length > 0 && data[0].usage) {
-          usage += data[0].usage;
+        if (data.length > 0) {
+          const { error } = await supabase
+            .from("usage")
+            .update({ usage: cost + data[0].usage })
+            .eq("id", data[0].id);
+          if (error) throw new Error(error.message);
+        } else {
+          const { error: error2 } = await supabase
+            .from("usage")
+            .insert({ org_id: org!.id, usage: cost });
+          if (error2) throw new Error(error2.message);
         }
-
-        const res = await supabase
-          .from("usage")
-          .upsert({ org_id: org!.id, date: todaysDate, usage })
-          .eq("org_id", org!.id)
-          .eq("date", todaysDate);
-        if (res.error) throw new Error(res.error.message);
         controller.close();
       },
     });
@@ -275,7 +276,7 @@ async function Angela( // Good ol' Angela
         reqData.language ?? "English"
       );
       console.log("ChatGPTPrompt", chatGptPrompt[0].content);
-      cost += openAiCost(chatGptPrompt);
+      cost += openAiCost(chatGptPrompt, "in");
       inputCost = cost;
       console.log("GPT input  cost: ", cost);
       const res = await exponentialRetryWrapper(
@@ -313,7 +314,7 @@ async function Angela( // Good ol' Angela
             role: "assistant",
             content,
           };
-          cost += openAiCost([formatted as ChatGPTMessage]);
+          cost += openAiCost([formatted as ChatGPTMessage], "out");
           streamInfo(formatted as StreamingStepInput);
         }
       }

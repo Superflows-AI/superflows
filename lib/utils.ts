@@ -164,10 +164,19 @@ export function isJsonString(str: string) {
   return true;
 }
 
-export function openAiCost(messages: ChatGPTMessage[]): number {
+export function openAiCost(
+  messages: ChatGPTMessage[],
+  put: "in" | "out"
+): number {
+  let costPerToken;
+  if (put === "in") {
+    costPerToken = 0.03 / 1000;
+  } else {
+    costPerToken = 0.06 / 1000;
+  }
+
   const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
   const nTokens = encoded.length;
   // For the 8k context model
-  const gpt4CostPerToken = 0.03 / 1000;
-  return nTokens * gpt4CostPerToken;
+  return nTokens * costPerToken;
 }
