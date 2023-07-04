@@ -56,5 +56,11 @@ export default async function handler(
   if (profileResp.data === null)
     throw new Error("No data returned from profiles update");
 
+  const isPaidResp = await supabase
+    .from("is_paid")
+    .insert({ org_id: data[0].id })
+    .eq("id", req.body.user_id);
+  if (isPaidResp.error) throw isPaidResp.error;
+
   res.status(200).send({ success: true });
 }

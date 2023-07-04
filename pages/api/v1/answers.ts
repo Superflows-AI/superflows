@@ -16,16 +16,15 @@ import getMessages from "../../../lib/prompts/prompt";
 import {
   getActiveActionGroupsAndActions,
   getConversation,
-  getOrgFromToken,
 } from "../../../lib/edge-runtime/utils";
 import {
   Action,
   ActionGroupJoinActions,
   Organization,
+  OrgJoinIsPaid,
 } from "../../../lib/types";
-import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { Database } from "../../../lib/database.types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import { createClient } from "@supabase/supabase-js";
 
 export const config = {
   runtime: "edge",
@@ -66,9 +65,30 @@ export default async function handler(req: NextRequest) {
         }
       );
     }
+    // Bring me my Bow of burning gold:
+    const supabase = createClient(
+      // Bring me my arrows of desire:
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+      // Bring me my Spear: O clouds unfold!
+      process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+      // Bring me my Chariot of fire!
+    );
 
     // Authenticate that the user is allowed to use this API
-    let org = await getOrgFromToken(req);
+    let token = req.headers
+      .get("Authorization")
+      ?.replace("Bearer ", "")
+      .replace("bearer ", "");
+    let org: OrgJoinIsPaid | null = null;
+    if (token) {
+      const authRes = await supabase
+        .from("organizations")
+        .select("*, is_paid(*)")
+        .eq("api_key", token)
+        .single();
+      if (authRes.error) throw new Error(authRes.error.message);
+      org = authRes.data;
+    }
     if (!org || !org.api_host) {
       return new Response(
         JSON.stringify({
@@ -82,14 +102,29 @@ export default async function handler(req: NextRequest) {
         }
       );
     }
-    const res = NextResponse.next();
-    const supabase = createMiddlewareSupabaseClient<Database>(
-      { req, res },
-      {
-        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        supabaseKey: process.env.SERVICE_LEVEL_KEY_SUPABASE,
+
+    // Check that the user hasn't surpassed the usage limit
+    if (org.is_paid.length === 0 || !org.is_paid[0].is_premium) {
+      // Below is the number of messages sent by the organization's users
+      const usageRes = await supabase
+        .from("chat_messages")
+        .select("*", { count: "estimated", head: true })
+        .eq("org_id", org.id)
+        .eq("role", "user");
+      if (usageRes.error) throw new Error(usageRes.error.message);
+      const numQueriesMade = usageRes.count ?? 0;
+      if (numQueriesMade >= 100) {
+        return new Response(
+          JSON.stringify({
+            error: `You have reached your usage limit of 100 messages. Upgrade to premium to get unlimited messages.`,
+          }),
+          {
+            status: 402,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
-    );
+    }
 
     // Validate that the request body is of the correct format
     const requestData = await req.json();
@@ -279,8 +314,7 @@ async function Angela( // Good ol' Angela
   let numOpenAIRequests = 0;
   // TODO: When changing away from page-based system, delete this
   let currentPageName = actionGroupJoinActions[0].name;
-  let cost = 0;
-  let inputCost = 0;
+  let totalCost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
@@ -293,9 +327,9 @@ async function Angela( // Good ol' Angela
         reqData.language ?? "English"
       );
       console.log("ChatGPT system prompt", chatGptPrompt[0].content);
-      cost += openAiCost(chatGptPrompt, "in");
-      inputCost = cost;
-      console.log("GPT input  cost: ", cost);
+      const promptInputCost = openAiCost(chatGptPrompt, "in");
+      console.log("GPT input cost:", promptInputCost);
+      totalCost += promptInputCost;
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
@@ -306,7 +340,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call failed",
         });
-        return { nonSystemMessages, cost };
+        return { nonSystemMessages, cost: totalCost };
       }
 
       // Stream response from OpenAI
@@ -326,18 +360,24 @@ async function Angela( // Good ol' Angela
             break;
           }
           rawOutput += content;
-          mostRecentParsedOutput = parseOutput(rawOutput);
           const formatted = {
             role: "assistant",
             content,
           };
-          cost += openAiCost([formatted as ChatGPTMessage], "out");
           streamInfo(formatted as StreamingStepInput);
         }
       }
-      console.log("GPT output cost: ", cost - inputCost);
+      const newMessage = {
+        role: "assistant",
+        content: rawOutput,
+      } as ChatGPTMessage;
+      const outCost = openAiCost([newMessage], "out");
+      console.log("GPT output cost: ", outCost);
+      totalCost += outCost;
+
+      mostRecentParsedOutput = parseOutput(rawOutput);
       // Add assistant message to nonSystemMessages
-      nonSystemMessages.push({ role: "assistant", content: rawOutput });
+      nonSystemMessages.push(newMessage);
 
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
@@ -385,7 +425,7 @@ async function Angela( // Good ol' Angela
         });
       }
       if (mostRecentParsedOutput.completed !== false) {
-        return { nonSystemMessages, cost };
+        return { nonSystemMessages, cost: totalCost };
       }
 
       numOpenAIRequests++;
@@ -394,7 +434,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call limit reached",
         });
-        return { nonSystemMessages, cost };
+        return { nonSystemMessages, cost: totalCost };
       }
     }
   } catch (e) {
@@ -403,9 +443,9 @@ async function Angela( // Good ol' Angela
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return { nonSystemMessages, cost };
+    return { nonSystemMessages, cost: totalCost };
   }
-  return { nonSystemMessages, cost };
+  return { nonSystemMessages, cost: totalCost };
 }
 
 export async function httpRequestFromAction(
