@@ -7,9 +7,10 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
+import { OrgJoinIsPaid } from "../../lib/types";
 
 type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
-  organizations: Database["public"]["Tables"]["organizations"]["Row"] | null;
+  organizations: OrgJoinIsPaid | null;
 };
 
 const ProfileContext = createContext<{
@@ -28,7 +29,7 @@ export function ProfileContextProvider(props: {
     if (props.disabled) return;
     const { data, error } = await props.supabase
       .from("profiles")
-      .select("*, organizations(*)")
+      .select("*, organizations(*, is_paid(*))")
       .single();
     if (error) console.error(error.message);
     console.log("data", data);

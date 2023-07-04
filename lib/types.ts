@@ -14,3 +14,7 @@ export type ConversationsJoinMessages =
   };
 
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
+
+export type IsPaid = Database["public"]["Tables"]["is_paid"]["Row"];
+
+export type OrgJoinIsPaid = Organization & { is_paid: IsPaid[] };

@@ -1,31 +1,11 @@
 import { NextRequest } from "next/server";
-import { ActionGroupJoinActions, ChatMessage, Organization } from "../types";
+import {
+  ActionGroupJoinActions,
+  ChatMessage,
+  Organization,
+  OrgJoinIsPaid,
+} from "../types";
 import { ChatGPTMessage } from "../models";
-
-export async function getOrgFromToken(
-  req: NextRequest
-): Promise<Organization | undefined> {
-  let token = req.headers
-    .get("Authorization")
-    ?.replace("Bearer ", "")
-    .replace("bearer ", "");
-  if (token) {
-    // const hashedToken = await hashOnEdgeRuntime(token);
-    let authRequestResult = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/organizations?api_key=eq.${token}&select=*`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
-          APIKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-        },
-      }
-    );
-    const jsonResponse = await authRequestResult.json();
-    if (jsonResponse.error) throw new Error(jsonResponse.error.message);
-    return jsonResponse[0];
-  }
-  return undefined;
-}
 
 export async function getActiveActionGroupsAndActions(
   orgId: number

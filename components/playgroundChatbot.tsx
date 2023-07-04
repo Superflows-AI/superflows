@@ -15,6 +15,7 @@ import { StreamingStep } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
 import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
 
 const BrandColour = "#ffffff";
 const BrandColourAction = "#5664d1";
@@ -48,6 +49,7 @@ export default function PlaygroundChatbot(props: {
   // Get suggestions from past conversations in playground
   const supabase = useSupabaseClient();
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [usageLevel, setUsageLevel] = useState<number>(0);
   useEffect(() => {
     (async () => {
       const res = await supabase
@@ -64,6 +66,26 @@ export default function PlaygroundChatbot(props: {
       );
     })();
   }, []);
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      // Get the usage count for the user
+      if (
+        profile?.organizations!.is_paid.length === 0 ||
+        !profile?.organizations!.is_paid[0].is_premium
+      ) {
+        // Below is the number of messages sent by the organization's users
+        const usageRes = await supabase
+          .from("chat_messages")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", profile?.organizations!.id)
+          .eq("role", "user");
+        if (usageRes.error) throw new Error(JSON.stringify(usageRes));
+        const numQueriesMade = usageRes.count ?? 0;
+        setUsageLevel(numQueriesMade);
+      }
+    })();
+  }, [profile]);
 
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
@@ -78,6 +100,7 @@ export default function PlaygroundChatbot(props: {
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
       setDevChatContents(chat);
+      setUsageLevel((prev) => prev + 1);
       if (loading || alreadyRunning.current) return;
       alreadyRunning.current = true;
       setLoading(true);
@@ -118,7 +141,6 @@ export default function PlaygroundChatbot(props: {
           // Can be multiple server-side chunks in one client-side chunk,
           // separated by "data:". The .slice(5) removes the "data:" at
           // the start of the string
-          console.log("My chunk", chunkValue);
           chunkValue
             .slice(5)
             .split("data:")
@@ -156,6 +178,7 @@ export default function PlaygroundChatbot(props: {
       setLoading,
       devChatContents,
       setDevChatContents,
+      setUsageLevel,
       killSwitchClicked.current,
       alreadyRunning.current,
       props.language,
@@ -214,9 +237,36 @@ export default function PlaygroundChatbot(props: {
       </div>
       {/* Scrollable chat window */}
       <div
-        className="flex-1 overflow-y-auto h-full flex flex-col pb-1 px-8 md:px-14 lg:px-20"
+        className="relative flex-1 overflow-y-auto h-full flex flex-col pb-1 pt-36 px-8 md:px-14 lg:px-20"
         id={"scrollable-chat-contents"}
       >
+        {profile &&
+          (profile?.organizations!.is_paid.length === 0 ||
+            !profile?.organizations!.is_paid[0].is_premium ||
+            USAGE_LIMIT <= usageLevel) && (
+            <div
+              className={classNames(
+                "absolute top-28 inset-x-0 flex flex-col justify-center place-items-center text-xl",
+                USAGE_LIMIT - usageLevel < 5 ? "text-red-500" : "text-gray-800"
+              )}
+            >
+              <p>
+                You&apos;ve used{" "}
+                <b className="inline">
+                  {usageLevel}/{USAGE_LIMIT}
+                </b>{" "}
+                of your free-tier queries.
+              </p>
+              {USAGE_LIMIT <= usageLevel && (
+                <a
+                  href={PRICING_PAGE}
+                  className="mt-4 hover:underline text-blue-600 text-lg"
+                >
+                  Click here to upgrade to premium tier.
+                </a>
+              )}
+            </div>
+          )}
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
             if (devMode || chatItem.role === "user")

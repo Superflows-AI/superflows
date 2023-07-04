@@ -197,6 +197,31 @@ export interface Database {
           }
         ];
       };
+      is_paid: {
+        Row: {
+          id: number;
+          is_premium: boolean;
+          org_id: number;
+        };
+        Insert: {
+          id?: number;
+          is_premium?: boolean;
+          org_id: number;
+        };
+        Update: {
+          id?: number;
+          is_premium?: boolean;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "is_paid_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       organizations: {
         Row: {
           api_host: string;
