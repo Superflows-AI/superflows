@@ -1,11 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import JSON5 from "json5";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Database } from "../../../lib/database.types";
 import { RequestMethods } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { Action } from "../../../lib/types";
-import { getOpenAIResponse } from "../../../lib/queryOpenAI";
-import { exponentialRetryWrapper } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -114,18 +113,24 @@ export default async function handler(
     expectedResponseType,
     orgInfo
   );
+  console.log("PROMPT:\n\n", prompt[0].content, "\n\n");
 
-  const response = await exponentialRetryWrapper(
-    getOpenAIResponse,
-    [prompt, {}, "3"],
-    3
-  );
-  // const response = "{}";
+  // const response = await exponentialRetryWrapper(
+  //   getOpenAIResponse,
+  //   [prompt, {}, "4"],
+  //   3
+  // );
+
+  const response = "{}";
 
   // console.log("queryParams", queryParams);
   // console.log("body params", JSON.stringify(req.body));
   // console.log("SLUG", slug);
   // res.status(200).send({});
   console.log("RESPONSE", response);
-  res.status(200).send({ response: JSON.parse(response) });
+
+  // JSON5 means we don't have to enforce double quotes and no trailing commas
+  const json = JSON5.parse(response);
+
+  res.status(200).send({ json });
 }

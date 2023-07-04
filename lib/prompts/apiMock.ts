@@ -49,7 +49,8 @@ ${
     : ""
 }
 
-Your response should be a valid JSON.`,
+Your response should be a valid JSON. Include only the JSON. Do not include any extra information.
+`,
     },
   ];
 }
