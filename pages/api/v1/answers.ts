@@ -14,7 +14,7 @@ import {
 import { z } from "zod";
 import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
-import getMessages from "../../../lib/prompts/prompt";
+import getMessages from "../../../lib/prompts/chatBot";
 import {
   getActiveActionGroupsAndActions,
   getConversation,
@@ -418,7 +418,7 @@ async function Angela( // Good ol' Angela
         let out = await httpRequestFromAction(
           chosenAction,
           command.args,
-          org.api_host,
+          org,
           streamInfo,
           reqData.user_api_key ?? ""
         );
@@ -475,7 +475,7 @@ async function Angela( // Good ol' Angela
 export async function httpRequestFromAction(
   action: Action,
   parameters: Record<string, unknown>,
-  organization: { api_host: string; id: string },
+  organization: { api_host: string; id: number },
   stream: (stepInfo: StreamingStepInput) => void,
   userApiKey?: string
 ): Promise<Record<string, any> | any[]> {
@@ -497,9 +497,10 @@ export async function httpRequestFromAction(
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/test-superflowstest/")) {
-    headers["org_id"] = organization.id;
-  }
+  // TODO:
+  // if (organization.api_host.includes("api/test-superflowstest/")) {
+  //   headers["org_id"] = organization.id;
+  // }
 
   const requestOptions: RequestInit = {
     method: action.request_method,
@@ -540,7 +541,7 @@ export async function httpRequestFromAction(
     requestOptions.body = JSON.stringify(body);
   }
 
-  let url = apiHost + action.path;
+  let url = organization.api_host + action.path;
 
   // TODO: accept array for JSON?
   // Set parameters

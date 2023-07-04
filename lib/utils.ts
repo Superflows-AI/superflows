@@ -40,7 +40,7 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
     console.log(
       `Exponential retry wrapper completed in ${Date.now() - t1} ms for func "${
         func.name
-      }". This time is for retry number: ${retries}`
+      }". There were ${retries - 1} retries remaining.`
     );
     return res;
   } catch (error) {
@@ -178,6 +178,10 @@ export function openAiCost(
   const nTokens = encoded.length;
   // For the 8k context model
   return nTokens * costPerToken;
+}
+
+export function objectNotEmpty(obj: Object): boolean {
+  return Object.keys(obj).length > 0;
 }
 
 function deleteUndefined<InputType extends Record<string, any | undefined>>(
