@@ -349,13 +349,22 @@ async function Angela( // Good ol' Angela
       const reader = res.getReader();
       let rawOutput = "";
       let done = false;
+      let incompleteChunk = "";
       // https://web.dev/streams/#asynchronous-iteration
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         if (done) break;
 
-        const contentItems = parseGPTStreamedData(decoder.decode(value));
+        const contentItems = parseGPTStreamedData(
+          incompleteChunk + decoder.decode(value)
+        );
+        if (contentItems === undefined) {
+          incompleteChunk += decoder.decode(value);
+          continue;
+        }
+
+        incompleteChunk = "";
         for (const content of contentItems) {
           if (content === "[DONE]") {
             done = true;

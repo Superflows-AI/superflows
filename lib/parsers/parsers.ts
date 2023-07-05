@@ -147,15 +147,20 @@ function parseFunctionCall(text: string) {
   return { name, args };
 }
 
-export function parseGPTStreamedData(gptOutString: string): string[] {
-  console.log("gptOut string", gptOutString);
-  return gptOutString
-    .split("data: ")
-    .filter((l: string) => l.trim())
-    .map((line: string) => {
-      if (line.includes("[DONE]")) return "[DONE]";
-      console.log("line", line);
-      return JSON.parse(line.trim()).choices[0].delta.content;
-    })
-    .filter((l: string) => l);
+export function parseGPTStreamedData(
+  gptOutString: string
+): string[] | undefined {
+  try {
+    return gptOutString
+      .split("data: ")
+      .filter((l: string) => l.trim())
+      .map((line: string) => {
+        if (line.includes("[DONE]")) return "[DONE]";
+        return JSON.parse(line.trim()).choices[0].delta.content;
+      })
+      .filter((l: string) => l);
+  } catch (e) {
+    console.error("error parsing gptOutString", e);
+    return undefined;
+  }
 }
