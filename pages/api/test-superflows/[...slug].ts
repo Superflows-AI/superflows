@@ -74,7 +74,7 @@ async function getResponseType(
     console.log(
       `Could not match slug "${slugString}" with method "${method}" to any action in the database for organisation "${org_id}"`
     );
-    return {};
+    return {} as { properties: object; type: string };
   }
 
   if (matches.length > 1) matches = processMultipleMatches(matches, slug);
@@ -83,7 +83,12 @@ async function getResponseType(
     `Successfully matched slug "${slugString}" to action with path "${matches[0].path}"`
   );
 
-  return matches[0].responses as object;
+  const responses = matches[0].responses;
+
+  // Placeholder. This follows the structure specifically for rcontrol. It will most likely break for other APIs.
+  // TODO: generalise
+  // @ts-ignore
+  return responses["200"].content["application/json"].schema.properties;
 }
 
 export default async function handler(
@@ -105,6 +110,7 @@ export default async function handler(
     .select("*")
     .eq("id", org_id);
   if (orgError) throw orgError;
+
   const orgInfo = orgData.length == 1 ? orgData[0] : undefined;
 
   const prompt = apiMockPrompt(
@@ -115,24 +121,21 @@ export default async function handler(
     expectedResponseType,
     orgInfo
   );
-  console.log("PROMPT:\n\n", prompt[0].content, "\n\n");
+  console.log("PROMPT:\n\n", prompt[1].content, "\n\n");
 
   const response = await exponentialRetryWrapper(
     getOpenAIResponse,
-    [prompt, {}, "4"],
+    [prompt, {}, "3"],
     3
   );
 
   // const response = "{}";
-
   // console.log("queryParams", queryParams);
   // console.log("body params", JSON.stringify(req.body));
   // console.log("SLUG", slug);
   // res.status(200).send({});
   console.log("RESPONSE", response);
-
   // JSON5 means we don't have to enforce double quotes and no trailing commas
   const json = JSON5.parse(response);
-
   res.status(200).send({ json });
 }
