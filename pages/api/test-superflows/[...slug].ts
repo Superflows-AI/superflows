@@ -22,9 +22,11 @@ const supabase = createClient<Database>(
 );
 
 function slugMatchesPath(path: string, slug: string): boolean {
-  let regexPath = path
-    .replace(/\//g, "\\/")
-    .replace(/{.*?}/g, "([-a-zA-Z0-9@:%_+.~#?&/=]*)");
+  let regexPath =
+    path
+      .replace(/\//g, "\\/")
+      .replace(/{.*?}/g, "([-a-zA-Z0-9@:%_+.~#?&/=]*)") + "?";
+
   const regex = new RegExp("^" + regexPath + "$");
 
   const res = regex.test(slug);
@@ -88,7 +90,8 @@ async function getResponseType(
   // Placeholder. This follows the structure specifically for rcontrol. It will most likely break for other APIs.
   // TODO: generalise
   // @ts-ignore
-  return responses["200"].content["application/json"].schema.properties;
+  const res = responses["200"].content["application/json"].schema;
+  return res;
 }
 
 export default async function handler(
