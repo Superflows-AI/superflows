@@ -46,55 +46,67 @@ ${
 
     Type:
     {
-      {
-        "name": "string",
-        "description": "The name of the customer"
-        nullable: false
-      },
-      {
-        "id": "integer",
-        "description": "The internal ID of the customer"
-        nullable: false
-      },
-      {
-        "birthday": "",
-        "description": "The customer's birthday"
-        nullable: true
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The id of the customer",
+          },
+          "name": {
+            "type": "string",
+            "description": "the name of the customer",
+            "nullable": true
+          },
+          "birthday": {
+            "description": "The customer's birthday",
+            "nullable": true
+          }
+        }
       }
     }
-
     Response:
-    {
-      name: "John Doe",
-      id: 123
-      birthday: null
-    }
+    [
+      {
+        "name": "John Doe",
+        "id": 123,
+        "birthday": null
+      }
+    ]
 
     Type:
     {
-      {
-        "location": "string",
-        "description": "Where is the customer's house located"
-        nullable: false
-      },
-      {
-        "id": "integer",
-        "description": "The internal ID of the customer"
-        nullable: false
-      },
-      {
-        "notes": "string",
-        "description": "Notes about the customer's case"
-        nullable: true
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "dateCreated",
+          "id"
+        ],
+        "properties": {
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       }
     }
-
     Response:
-    {
-      location: "New york ",
-      id: 999
-      notes: "Customer is a VIP"
-    }
+    [
+      {
+        "dateCreated": "2021-01-01T00:00:00.000Z",
+        "id": "123",
+        "message": "Hello world!"
+      }
+    ]
 
     Complete the following response with a valid JSON. Include only the JSON. Do not include any extra information.
 
