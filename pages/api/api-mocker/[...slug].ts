@@ -36,24 +36,38 @@ function slugMatchesPath(path: string, slug: string): boolean {
   return res;
 }
 
-function processMultipleMatches(matches: Action[], slug: string[]): Action[] {
-  /* 
-  For example when slug is 'api/v1/Customers/location' 
-  It may match /api/v1/Customers/location and /api/v1/Customers/{id}
+export function processMultipleMatches(
+  matches: Action[],
+  slug: string[]
+): Action[] {
+  /*
+  For example when slug is 
+  It may match 
   */
 
-  // This deals with the example in the docstring. May need to add more cases
-  const match = matches.filter((match) => {
+  // slug = 'api/v1/Customers/location'. matches = /api/v1/Customers/location and /api/v1/Customers/{id}.
+  const matchEnd = matches.filter((match) => {
     const split = match.path?.split("/") ?? [];
     return split[split.length - 1] === slug[slug.length - 1];
   });
+  if (matchEnd.length === 1) return matchEnd;
 
-  if (match.length != 1)
-    throw new Error(
-      "Need to deal with more cases in the processMultipleMatches function" // TODO: catch this error and give a more sensible message
+  // slug = 'api/v2/Coordinators/1234'. matches = "/api/v2/Coordinators/{id}". "/api/v2/Coordinators/location"
+  const matchPenultimate = matches.filter((match) => {
+    const split = match.path?.split("/") ?? [];
+    return (
+      split[split.length - 1].includes("}") &&
+      split[split.length - 1].includes("{") &&
+      split[split.length - 2] === slug[slug.length - 2]
     );
+  });
+  if (matchPenultimate.length === 1) return matchPenultimate;
 
-  return match;
+  throw new Error(
+    `Failed to match slug: "${slug}" to single action. Candidate paths: ${matches.map(
+      (match) => match.path
+    )}`
+  );
 }
 
 async function getResponseType(

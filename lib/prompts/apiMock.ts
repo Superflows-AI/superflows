@@ -114,7 +114,7 @@ ${
       }
     ]
 
-    Provide a valid JSON response. Include only JSON. All fields in the "Type" must be included
+    Provide a valid JSON response. Include only JSON. All fields in the "Type" must be included. Avoid using null.
 
     Type:
     ${JSON.stringify(expectedResponseType, null, 2)}.
