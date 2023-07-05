@@ -2,8 +2,9 @@ import { ChatGPTMessage, RequestMethods } from "../models";
 import { objectNotEmpty } from "../utils";
 
 export default function apiMockPrompt(
-  slug: string[],
+  path: string,
   requestMethod: RequestMethods,
+  pathParameters: { [key: string]: any },
   queryParameters: { [key: string]: any },
   requestBodyParameters: { [key: string]: any },
   expectedResponseType: object,
@@ -25,11 +26,18 @@ Your task is to generate a response to mock the API and respond to the user's re
     {
       role: "user",
       content: `
-I am sending a ${requestMethod} request to the ${slug.join("/")} endpoint.
+I am sending a ${requestMethod} request to the ${path} endpoint.
 ${
   objectNotEmpty(queryParameters)
     ? `I am sending the following query parameters: ${JSON.stringify(
         queryParameters
+      )}.`
+    : ""
+}
+${
+  objectNotEmpty(pathParameters)
+    ? `I am sending the following path parameters: ${JSON.stringify(
+        pathParameters
       )}.`
     : ""
 }

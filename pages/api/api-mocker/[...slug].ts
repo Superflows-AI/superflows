@@ -7,8 +7,8 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { Database } from "../../../lib/database.types";
 import { RequestMethods } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
-import { Action } from "../../../lib/types";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
+import { Action } from "../../../lib/types";
 import { exponentialRetryWrapper } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -70,11 +70,11 @@ export function processMultipleMatches(
   );
 }
 
-async function getResponseType(
+async function getMatchingAction(
   org_id: string,
   method: RequestMethods,
   slug: string[]
-): Promise<object> {
+): Promise<Action | null> {
   const { data: actions, error } = await supabase
     .from("actions")
     .select("*")
@@ -93,7 +93,7 @@ async function getResponseType(
     console.log(
       `Could not match slug "${slugString}" with method "${method}" to any action in the database for organisation "${org_id}"`
     );
-    return {} as { properties: object; type: string };
+    return null;
   }
 
   if (matches.length > 1) matches = processMultipleMatches(matches, slug);
@@ -102,14 +102,29 @@ async function getResponseType(
     `Successfully matched slug "${slugString}" to action with path "${matches[0].path}"`
   );
 
-  if (!matches[0].responses || !("200" in (matches[0].responses as object))) {
-    throw new Error("200 not in response type"); // TODO: probably a 201 in some cases
-  }
+  return matches[0];
+}
 
-  // @ts-ignore
-  const response = matches[0].responses["200"];
-  const res = response.content?.["application/json"]?.schema ?? response;
-  return res;
+function getPathParameters(
+  path: string,
+  querySlugs: string[]
+): { [name: string]: string } {
+  let variables: { [name: string]: string } = {};
+  console.log("pathyyyy", path);
+  const urlSlugs = path.split("/").filter((slug) => slug !== "");
+  if (urlSlugs.length !== querySlugs.length)
+    throw new Error(
+      `Path and query slugs lengths do not match: [${urlSlugs}] AND  [${querySlugs}]`
+    );
+
+  for (let index = 0; index < urlSlugs.length; index++) {
+    // slicing to remove { and } from urlSlugs variable name
+    if (urlSlugs[index].startsWith("{") && urlSlugs[index].endsWith("}")) {
+      const variableName = urlSlugs[index].slice(1, urlSlugs[index].length - 1);
+      variables[variableName] = querySlugs[index];
+    }
+  }
+  return variables;
 }
 
 export default async function handler(
@@ -122,9 +137,27 @@ export default async function handler(
   delete queryParams.slug;
   const method = req.method as RequestMethods;
 
-  const expectedResponseType = org_id
-    ? await getResponseType(org_id as string, method, slug)
-    : {};
+  const matchingAction = org_id
+    ? await getMatchingAction(org_id as string, method, slug)
+    : null;
+
+  if (
+    matchingAction &&
+    !matchingAction.responses &&
+    !("200" in (matchingAction.responses as object))
+  ) {
+    throw new Error("200 not in response type"); // TODO: probably a 201 in some cases
+  }
+
+  const pathParameters =
+    matchingAction?.path?.includes("{") && matchingAction?.path?.includes("}")
+      ? getPathParameters(matchingAction.path, slug)
+      : {};
+
+  // @ts-ignore
+  const response = matchingAction.responses["200"];
+  const expectedResponseType =
+    response.content?.["application/json"]?.schema ?? response;
 
   const { data: orgData, error: orgError } = await supabase
     .from("organizations")
@@ -135,8 +168,9 @@ export default async function handler(
   const orgInfo = orgData.length == 1 ? orgData[0] : undefined;
 
   const prompt = apiMockPrompt(
-    slug as string[],
+    matchingAction?.path ?? slug.join("/"),
     method,
+    pathParameters,
     queryParams,
     req.body,
     expectedResponseType,
@@ -144,7 +178,7 @@ export default async function handler(
   );
   console.log("PROMPT:\n\n", prompt[1].content, "\n\n");
 
-  const response = await exponentialRetryWrapper(
+  const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
     [prompt, {}, "3"],
     3
@@ -153,7 +187,7 @@ export default async function handler(
   let json;
   try {
     // JSON5 means we don't have to enforce double quotes and no trailing commas
-    json = JSON5.parse(response);
+    json = JSON5.parse(openAiResponse);
   } catch (e) {
     // The dirty json parser is opinionated and imperfect but can e.g. parse this:
     // {
@@ -161,7 +195,7 @@ export default async function handler(
     //   "b": 2,,
     //   "c": 3
     // }
-    json = dJSON.parse(response);
+    json = dJSON.parse(openAiResponse);
   }
   res.status(200).send({ json });
 }
