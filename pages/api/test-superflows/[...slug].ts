@@ -85,12 +85,13 @@ async function getResponseType(
     `Successfully matched slug "${slugString}" to action with path "${matches[0].path}"`
   );
 
-  const responses = matches[0].responses;
+  if (!matches[0].responses || !("200" in (matches[0].responses as object))) {
+    throw new Error("200 not in response type"); // TODO: probably a 201 in some cases
+  }
 
-  // Placeholder. This follows the structure specifically for rcontrol. It will most likely break for other APIs.
-  // TODO: generalise
   // @ts-ignore
-  const res = responses["200"].content["application/json"].schema;
+  const response = matches[0].responses["200"];
+  const res = response.content?.["application/json"]?.schema ?? response;
   return res;
 }
 
