@@ -148,11 +148,13 @@ function parseFunctionCall(text: string) {
 }
 
 export function parseGPTStreamedData(gptOutString: string): string[] {
+  console.log("gptOut string", gptOutString);
   return gptOutString
     .split("data: ")
     .filter((l: string) => l.trim())
     .map((line: string) => {
       if (line.includes("[DONE]")) return "[DONE]";
+      console.log("line", line);
       return JSON.parse(line.trim()).choices[0].delta.content;
     })
     .filter((l: string) => l);
