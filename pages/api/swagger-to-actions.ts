@@ -112,7 +112,8 @@ export default async function handler(
         const existingActionGroupResp = await supabase
           .from("action_groups")
           .select("*")
-          .eq("name", groupName);
+          .eq("name", groupName)
+          .eq("org_id", orgId);
         if (existingActionGroupResp.error) throw existingActionGroupResp.error;
         if (
           existingActionGroupResp.data === null ||
@@ -159,6 +160,7 @@ export default async function handler(
     const actionResp = await supabase
       .from("actions")
       .select("*")
+      .eq("org_id", orgId)
       .in(
         "name",
         actionInserts.map((action) => action.name)
