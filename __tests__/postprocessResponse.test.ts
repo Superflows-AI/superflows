@@ -545,6 +545,7 @@ describe("cutUnecessaryKeys", () => {
     expect(out).toEqual({
       age: 20,
       address: "123 Main St.",
+      // TODO: We keep all array values which don't contain objects
       items: [1, 2, 3, 4, 5],
     });
   });
