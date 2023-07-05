@@ -141,21 +141,23 @@ export default async function handler(
     ? await getMatchingAction(org_id as string, method, slug)
     : null;
 
-  if (
-    matchingAction &&
-    !matchingAction.responses &&
-    !("200" in (matchingAction.responses as object))
-  ) {
-    throw new Error("200 not in response type"); // TODO: probably a 201 in some cases
-  }
-
   const pathParameters =
     matchingAction?.path?.includes("{") && matchingAction?.path?.includes("}")
       ? getPathParameters(matchingAction.path, slug)
       : {};
 
-  // @ts-ignore
-  const response = matchingAction.responses["200"];
+  const responses = matchingAction?.responses as { [key: string]: any };
+
+  let responseCode;
+  // Search for a 2xx response starting at 200
+  const response =
+    matchingAction && matchingAction.responses
+      ? ((responseCode = Object.entries(matchingAction.responses).find(
+          ([key, value]) => Number(key) >= 200 && Number(key) < 300
+        )?.[0]),
+        responses[responseCode ?? ""] ?? {})
+      : {};
+
   const expectedResponseType =
     response.content?.["application/json"]?.schema ?? response;
 
@@ -184,6 +186,8 @@ export default async function handler(
     3
   );
 
+  console.log("openAiResponse", openAiResponse);
+
   let json;
   try {
     // JSON5 means we don't have to enforce double quotes and no trailing commas
@@ -197,5 +201,5 @@ export default async function handler(
     // }
     json = dJSON.parse(openAiResponse);
   }
-  res.status(200).send({ json });
+  res.status(responseCode ? Number(responseCode) : 200).send({ json });
 }
