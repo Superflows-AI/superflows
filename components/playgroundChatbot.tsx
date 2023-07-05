@@ -151,10 +151,7 @@ export default function PlaygroundChatbot(props: {
               if (
                 data.role !== outputMessages[outputMessages.length - 1]?.role
               ) {
-                outputMessages.push({
-                  role: data.role,
-                  content: data.content,
-                });
+                outputMessages.push({ ...data });
               } else {
                 outputMessages[outputMessages.length - 1].content +=
                   data.content;
@@ -289,6 +286,7 @@ export default function PlaygroundChatbot(props: {
                 ) {
                   contentString = "No results found.";
                 } else {
+                  console.log("chatItem", chatItem);
                   contentString =
                     chatItem.name +
                     "called:\n" +
@@ -561,7 +559,7 @@ function DevChatItem(props: { chatItem: ChatItem }) {
         return (
           <p
             key={idx}
-            className="text-little text-gray-900 whitespace-pre-line"
+            className="text-little text-gray-900 whitespace-pre-line break-all"
           >
             {text}
           </p>

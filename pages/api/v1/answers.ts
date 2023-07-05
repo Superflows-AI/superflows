@@ -2,10 +2,12 @@ import {
   parseGPTStreamedData,
   parseOutput,
 } from "../../../lib/parsers/parsers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   convertToRenderable,
+  deduplicateArray,
   exponentialRetryWrapper,
+  filterKeys,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
@@ -267,7 +269,7 @@ export default async function handler(req: NextRequest) {
     } else if (e instanceof Error) {
       message = e.message;
     } else message = "Internal Server Error";
-    console.error(message);
+    console.error(e);
     return new Response(
       JSON.stringify({
         error: message,
@@ -404,20 +406,33 @@ async function Angela( // Good ol' Angela
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
         }
-        const out = await httpRequestFromAction(
+        let out = await httpRequestFromAction(
           chosenAction,
           command.args,
           org.api_host,
           streamInfo,
           reqData.user_api_key ?? ""
         );
-        const renderableOutput =
-          "\n\n" + command.name + " output:\n" + convertToRenderable(out);
+        console.log("Output from API call:", out);
+        // Post-processing
+        if (Array.isArray(out)) {
+          out = deduplicateArray(out);
+        }
+        const keys = chosenAction.keys_to_keep;
+        if (
+          keys &&
+          Array.isArray(keys) &&
+          keys.every((k) => typeof k === "string")
+        ) {
+          out = filterKeys(out, keys as string[]);
+        }
         streamInfo({
           role: "function",
           name: command.name,
           content: JSON.stringify(out, null, 2),
         });
+        const renderableOutput =
+          "\n\n" + command.name + " output:\n" + convertToRenderable(out);
         nonSystemMessages.push({
           role: "function",
           name: command.name,
@@ -531,7 +546,10 @@ export async function httpRequestFromAction(
         );
       }
       if (param.in === "path") {
-        url = url.replace(`{${param.name}}`, String(parameters[param.name]));
+        url = url.replace(
+          `{${param.name}}`,
+          encodeURIComponent(String(parameters[param.name]))
+        );
       } else if (param.in === "query") {
         queryParams.set(param.name, String(parameters[param.name]));
       } else if (param.in === "header") {

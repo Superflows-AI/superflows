@@ -18,7 +18,6 @@ export function getNumRows(text: string, textWidth: number): number {
 export function parseKeyValues(
   keyValueText: string
 ): { key: string; value: string }[] {
-  // console.log("Parsing key values from", keyValueText);
   return keyValueText.split("<br/>").map((line) => {
     const [key, ...value] = line.split(":");
     return { key: key.trim(), value: value.join(":").trim() };
@@ -179,4 +178,75 @@ export function openAiCost(
   const nTokens = encoded.length;
   // For the 8k context model
   return nTokens * costPerToken;
+}
+
+function deleteUndefined<InputType extends Record<string, any | undefined>>(
+  obj: InputType
+): Partial<InputType> {
+  for (let key in obj) {
+    if (obj[key] === undefined) {
+      delete obj[key];
+    }
+  }
+  return obj;
+}
+
+export function deduplicateArray<ArrType extends any[]>(
+  arr: ArrType
+): Partial<ArrType | { items: Partial<ArrType>[] }> {
+  if (arr.length === 0) return {};
+  const firstEle = arr[0];
+  if (typeof firstEle !== "object") return arr;
+  let output: Record<string, any> = { items: [] };
+
+  Object.keys(firstEle).forEach((key) => {
+    const allValues = arr.map((ele) => ele[key]);
+    if (allValues.every((val) => val === allValues[0])) {
+      output[key] = allValues[0];
+    } else if (output.items.length === 0) {
+      output.items = arr.map((ele) => ({ [key]: ele[key] }));
+    } else {
+      output.items.forEach((item: any, i: number) => {
+        item[key] = arr[i][key];
+      });
+    }
+  });
+  if (output.items.length === 0) {
+    delete output.items;
+  } else {
+    output.items = output.items.map((item: any) => {
+      return deleteUndefined(item);
+    });
+  }
+
+  return output;
+}
+
+export function filterKeys<InputObject extends any>(
+  obj: InputObject,
+  keysToKeep: string[]
+): any {
+  if (!obj || typeof obj !== "object") return obj;
+  else if (Array.isArray(obj)) {
+    return obj.map((ele) => filterKeys(ele, keysToKeep));
+  } else {
+    const output: Record<string, any> = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      // Not array or object
+      if (!value || typeof value !== "object") {
+        if (keysToKeep.includes(key)) {
+          output[key] = value;
+        }
+        return;
+      }
+      // Array
+      if (Array.isArray(value)) {
+        output[key] = value.map((ele) => filterKeys(ele, keysToKeep));
+      }
+      // Object
+      output[key] = filterKeys(value, keysToKeep);
+    });
+
+    return output;
+  }
 }
