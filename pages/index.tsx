@@ -8,6 +8,7 @@ import { useProfile } from "../components/contextManagers/profile";
 import CreateOrgScreen from "../components/onboarding/createOrg";
 import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
+import { useRouter } from "next/router";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
 
 function Dashboard() {
   const session = useSession();
+  const router = useRouter();
   const { profile, refreshProfile } = useProfile();
   const supabase = useSupabaseClient();
   const isDev = process.env.NODE_ENV === "development";
@@ -42,6 +44,17 @@ function Dashboard() {
       }
     })();
   }, [session, refreshProfile, supabase]);
+
+  // TODO: Improve the way we generate join links for orgs
+  useEffect(() => {
+    if (Object.keys(router.query).length > 0) {
+      const { org_id } = router.query;
+      if (org_id && typeof org_id === "string") {
+        localStorage.setItem("org_id", org_id);
+        router.push("/");
+      }
+    }
+  }, [router]);
 
   return !session ? (
     !isDev ? (

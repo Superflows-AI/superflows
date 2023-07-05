@@ -6,7 +6,7 @@
     "version": "v1"
   },
   "paths": {
-    "/api/local/Customers": {
+    "/api/v1/Customers": {
       "post": {
         "tags": [
           "Customers"
@@ -86,37 +86,7 @@
         }
       }
     },
-    "/api/local/Customers/recentInformation/{id}": {
-      "get": {
-        "tags": [
-          "Customers"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TblCustomer"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/local/Customers/{id}": {
+    "/api/v1/Customers/{id}": {
       "get": {
         "tags": [
           "Customers"
@@ -167,7 +137,7 @@
         }
       }
     },
-    "/api/local/Customers/search": {
+    "/api/v1/Customers/search": {
       "get": {
         "tags": [
           "Customers"
@@ -199,7 +169,7 @@
         }
       }
     },
-    "/api/local/Customers/location": {
+    "/api/v1/Customers/location": {
       "get": {
         "tags": [
           "Customers"
@@ -223,6 +193,38 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ViewCustomer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Status/fullname/{value}": {
+      "get": {
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewClaim"
                   }
                 }
               }
@@ -2515,6 +2517,192 @@
           "voicemailCalls": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ViewClaim": {
+        "type": "object",
+        "properties": {
+          "idproject": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idclaim": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "idcustomer": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullname": {
+            "type": "string",
+            "nullable": true
+          },
+          "idpubliccompany": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idinsurancecompany": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "personalPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "personalEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "idClaim1": {
+            "type": "string",
+            "nullable": true
+          },
+          "policyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "dol": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "mitigationDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "typeDamage": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyAddress2": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyState": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyCountry": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceCompany": {
+            "type": "string",
+            "nullable": true
+          },
+          "publicCompany": {
+            "type": "string",
+            "nullable": true
+          },
+          "negotiatedAmount": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiptAmount": {
+            "type": "string",
+            "nullable": true
+          },
+          "underpaidAmount": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusInvoice": {
+            "type": "string",
+            "nullable": true
+          },
+          "idInvoice": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idInsuranceAdjuster": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idPublicAdjuster": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "perilName": {
+            "type": "string",
+            "nullable": true
+          },
+          "internalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "idCompany": {
+            "type": "string",
+            "nullable": true
+          },
+          "refBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "idRefBy": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "registerDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "statusProject": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectoragent": {
+            "type": "string",
             "nullable": true
           }
         },

@@ -1,14 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useProfile } from "../contextManagers/profile";
-import { Simulate } from "react-dom/test-utils";
-import load = Simulate.load;
 import { LoadingSpinner } from "../loadingspinner";
 
 export default function CreateOrgScreen() {
   const [orgName, setOrgName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const { profile, refreshProfile } = useProfile();
+  const supabase = useSupabaseClient();
+
+  useEffect(() => {
+    const org_id = localStorage.getItem("org_id");
+    if (org_id !== null) {
+      localStorage.removeItem("org_id");
+      (async () => {
+        const profileUpdateRes = await supabase
+          .from("profiles")
+          .update({ org_id: org_id })
+          .eq("id", profile?.id);
+        if (profileUpdateRes.error) throw profileUpdateRes.error;
+        await refreshProfile();
+      })();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col max-h-screen justify-center place-items-center w-screen bg-gray-800 gap-y-8">
