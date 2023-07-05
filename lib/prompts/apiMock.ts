@@ -60,6 +60,7 @@ ${
             "nullable": true
           },
           "birthday": {
+            "type": "string",
             "description": "The customer's birthday",
             "nullable": true
           }
@@ -69,9 +70,9 @@ ${
     Response:
     [
       {
-        "name": "John Doe",
         "id": 123,
-        "birthday": null
+        "name": "John Doe",
+        "birthday": "1990-01-01"
       }
     ]
 
@@ -96,6 +97,10 @@ ${
             "type": "string",
             "nullable": true
           }
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
         }
       }
     }
@@ -104,11 +109,12 @@ ${
       {
         "dateCreated": "2021-01-01T00:00:00.000Z",
         "id": "123",
-        "message": "Hello world!"
+        "message": "Hello world!",
+        "notes": null
       }
     ]
 
-    Complete the following response with a valid JSON. Include only the JSON. Do not include any extra information.
+    Provide a valid JSON response. Include only JSON. All fields in the "Type" must be included
 
     Type:
     ${JSON.stringify(expectedResponseType, null, 2)}.

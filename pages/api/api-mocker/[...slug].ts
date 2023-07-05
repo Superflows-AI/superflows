@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import JSON5 from "json5";
+
+const dJSON = require("dirty-json");
+
 import { NextApiRequest, NextApiResponse } from "next";
 import { Database } from "../../../lib/database.types";
 import { RequestMethods } from "../../../lib/models";
@@ -133,13 +136,18 @@ export default async function handler(
     3
   );
 
-  // const response = "{}";
-  // console.log("queryParams", queryParams);
-  // console.log("body params", JSON.stringify(req.body));
-  // console.log("SLUG", slug);
-  // res.status(200).send({});
-  console.log("RESPONSE", response);
-  // JSON5 means we don't have to enforce double quotes and no trailing commas
-  const json = JSON5.parse(response);
+  let json;
+  try {
+    // JSON5 means we don't have to enforce double quotes and no trailing commas
+    json = JSON5.parse(response);
+  } catch (e) {
+    // The dirty json parser is opinionated and imperfect but can e.g. parse this:
+    // {
+    //   "a": 1,
+    //   "b": 2,,
+    //   "c": 3
+    // }
+    json = dJSON.parse(response);
+  }
   res.status(200).send({ json });
 }

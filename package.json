@@ -23,6 +23,7 @@
     "@uppy/progress-bar": "^3.0.2",
     "@uppy/react": "^3.1.2",
     "d3-time-format": "^4.1.0",
+    "dirty-json": "^0.9.2",
     "dotenv": "^16.0.3",
     "eventsource-parser": "^1.0.0",
     "fuse.js": "^6.6.2",
