@@ -176,15 +176,11 @@ export default async function handler(
     expectedResponseType,
     orgInfo
   );
-  console.log("PROMPT:\n\n", prompt[1].content, "\n\n");
-
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
     [prompt, {}, "3"],
     3
   );
-
-  console.log("openAiResponse", openAiResponse);
 
   let json;
   try {
