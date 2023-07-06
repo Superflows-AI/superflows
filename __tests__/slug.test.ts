@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
+
 import {
   getMatchingAction,
+  getPathParameters,
   processMultipleMatches,
   slugMatchesPath,
 } from "../pages/api/api-mocker/[...slug]";
@@ -94,7 +96,6 @@ describe("getMatchingAction", () => {
 
   it("handles single matching action", async () => {
     const slug = ["api", "v1", "endpoint1"];
-    // mock slugMatchesPath to return true on first match
     const result = getMatchingAction(1, actions, requestMethod, slug);
     expect(result).toEqual(actions[0]); // assuming the first match is the correct one
   });
@@ -139,7 +140,54 @@ describe("processMultipleMatches", () => {
     ];
 
     const result = processMultipleMatches(localActions, slug);
-    console.log(result);
     expect(result[0].path).toEqual("/api/v2/Coordinators/{id}");
+  });
+});
+
+describe("getPathParameters", () => {
+  it("no path params", () => {
+    const res = getPathParameters("/api/v1/endpoint1", [
+      "api",
+      "v1",
+      "endpoint1",
+    ]);
+
+    expect(res).toEqual({});
+  });
+
+  it("path param at end", () => {
+    const res = getPathParameters("/api/v1/endpoint1/{paramy}", [
+      "api",
+      "v1",
+      "endpoint1",
+      "very-nice-param",
+    ]);
+    expect(res).toEqual({ paramy: "very-nice-param" });
+  });
+
+  it("path param in middle", () => {
+    const res = getPathParameters("/api/v1/0/{paramy}/endpoint", [
+      "api",
+      "v1",
+      "0",
+      "very-nice-param",
+      "endpoint",
+    ]);
+    expect(res).toEqual({ paramy: "very-nice-param" });
+  });
+
+  it("multiple params", () => {
+    const res = getPathParameters("/api/v1/0/{paramy1}/endpoint/{paramy2}", [
+      "api",
+      "v1",
+      "0",
+      "very-nice-param",
+      "endpoint",
+      "another-very-nice-param",
+    ]);
+    expect(res).toEqual({
+      paramy1: "very-nice-param",
+      paramy2: "another-very-nice-param",
+    });
   });
 });

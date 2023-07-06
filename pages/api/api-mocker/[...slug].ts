@@ -93,7 +93,7 @@ export function getMatchingAction(
   return matches[0];
 }
 
-function getPathParameters(
+export function getPathParameters(
   path: string,
   querySlugs: string[]
 ): { [name: string]: string } {
