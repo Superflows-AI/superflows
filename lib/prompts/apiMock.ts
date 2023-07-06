@@ -13,6 +13,8 @@ export default function apiMockPrompt(
     description: string;
   }
 ): ChatGPTMessage[] {
+  // TODO: Maybe add Examples to prompt type as e.g for retrieve_event_counts_for_a_team it's required to infer the shape of
+  // the array they want back
   return [
     {
       role: "system",

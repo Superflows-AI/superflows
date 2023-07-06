@@ -40,21 +40,16 @@ export function processMultipleMatches(
   matches: Action[],
   slug: string[]
 ): Action[] {
-  /*
-  For example when slug is 
-  It may match 
-  */
-
   // slug = 'api/v1/Customers/location'. matches = /api/v1/Customers/location and /api/v1/Customers/{id}.
   const matchEnd = matches.filter((match) => {
-    const split = match.path?.split("/") ?? [];
+    const split = match.path?.split("/").filter((arr) => arr != "") ?? [];
     return split[split.length - 1] === slug[slug.length - 1];
   });
   if (matchEnd.length === 1) return matchEnd;
 
   // slug = 'api/v2/Coordinators/1234'. matches = "/api/v2/Coordinators/{id}". "/api/v2/Coordinators/location"
   const matchPenultimate = matches.filter((match) => {
-    const split = match.path?.split("/") ?? [];
+    const split = match.path?.split("/").filter((arr) => arr != "") ?? [];
     return (
       split[split.length - 1].includes("}") &&
       split[split.length - 1].includes("{") &&
@@ -110,7 +105,6 @@ function getPathParameters(
   querySlugs: string[]
 ): { [name: string]: string } {
   let variables: { [name: string]: string } = {};
-  console.log("pathyyyy", path);
   const urlSlugs = path.split("/").filter((slug) => slug !== "");
   if (urlSlugs.length !== querySlugs.length)
     throw new Error(
