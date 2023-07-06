@@ -199,5 +199,5 @@ export default async function handler(
     // }
     json = dJSON.parse(openAiResponse);
   }
-  res.status(responseCode ? Number(responseCode) : 200).send({ json });
+  res.status(responseCode ? Number(responseCode) : 200).send(json);
 }
