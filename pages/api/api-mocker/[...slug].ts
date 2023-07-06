@@ -66,7 +66,7 @@ export function processMultipleMatches(
 }
 
 async function getMatchingAction(
-  org_id: string,
+  org_id: number,
   method: RequestMethods,
   slug: string[]
 ): Promise<Action | null> {
@@ -126,13 +126,13 @@ export default async function handler(
   res: NextApiResponse
 ): Promise<void> {
   const queryParams = req.query;
-  const org_id = req.headers["org_id"];
+  const org_id = Number(req.headers["org_id"]);
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
   const method = req.method as RequestMethods;
 
   const matchingAction = org_id
-    ? await getMatchingAction(org_id as string, method, slug)
+    ? await getMatchingAction(org_id, method, slug)
     : null;
 
   const pathParameters =

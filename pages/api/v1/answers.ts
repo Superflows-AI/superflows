@@ -497,10 +497,8 @@ export async function httpRequestFromAction(
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
 
-  // TODO:
-  // if (organization.api_host.includes("api/test-superflowstest/")) {
-  //   headers["org_id"] = organization.id;
-  // }
+  if (organization.api_host.includes("api/api-mocker"))
+    headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {
     method: action.request_method,
