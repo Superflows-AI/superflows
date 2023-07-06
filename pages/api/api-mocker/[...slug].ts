@@ -193,7 +193,13 @@ export default async function handler(
     //   "b": 2,,
     //   "c": 3
     // }
-    json = dJSON.parse(openAiResponse);
+    try {
+      json = dJSON.parse(openAiResponse);
+    } catch (e) {
+      console.log("Failed to parse response as JSON", openAiResponse);
+      throw e;
+    }
   }
+
   res.status(responseCode ? Number(responseCode) : 200).send(json);
 }
