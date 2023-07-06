@@ -89,6 +89,22 @@ const actions: Action[] = [
     request_method: "PUT",
     responses: null,
   },
+  {
+    action_group: 2,
+    action_type: "http",
+    description: "",
+    active: true,
+    created_at: "2022-01-01T00:00:00Z",
+    id: 3,
+    keys_to_keep: null,
+    name: "Action D",
+    org_id: 1,
+    parameters: null,
+    path: "/api/0/teams/{organization_slug}/{team_slug}/",
+    request_body_contents: null,
+    request_method: "PUT",
+    responses: null,
+  },
 ];
 
 describe("getMatchingAction", () => {
@@ -108,13 +124,30 @@ describe("getMatchingAction", () => {
 
   it("Handles trailing path param", async () => {
     const slug = ["api", "v2", "endpoint3", "1234"];
-    const result = await getMatchingAction(1, actions, requestMethod, slug);
+    const result = getMatchingAction(1, actions, requestMethod, slug);
     expect(result).toEqual(actions[3]);
   });
-  it("Handles internal path param", async () => {
+  it("handle internal path param", async () => {
     const slug = ["api", "v2", "1234", "endpoint3"];
-    const result = await getMatchingAction(1, actions, requestMethod, slug);
+    const result = getMatchingAction(1, actions, requestMethod, slug);
     expect(result).toEqual(actions[4]);
+  });
+  it("slug longer than path", async () => {
+    const slug = [
+      "api",
+      "0",
+      "teams",
+      "teamy",
+      "teamymcteamface",
+      "mteamystreamfacefaceteam",
+    ];
+    const slugMatch = slugMatchesPath(
+      "/api/0/teams/{organization_slug}/{team_slug}/",
+      "/api/0/teams/teamy/teamymcteamface/mteamystreamfacefaceteam"
+    );
+    expect(slugMatch).toEqual(false);
+    const result = getMatchingAction(1, actions, requestMethod, slug);
+    expect(result).toEqual(null);
   });
 });
 

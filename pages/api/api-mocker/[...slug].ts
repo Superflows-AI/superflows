@@ -9,7 +9,7 @@ import { RequestMethods } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action } from "../../../lib/types";
-import { exponentialRetryWrapper } from "../../../lib/utils";
+import { exponentialRetryWrapper, splitPath } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -25,6 +25,8 @@ const supabase = createClient<Database>(
 );
 
 export function slugMatchesPath(path: string, slug: string): boolean {
+  if (splitPath(path).length !== splitPath(slug).length) return false;
+
   let regexPath =
     path
       .replace(/\//g, "\\/")

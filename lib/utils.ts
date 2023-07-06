@@ -254,3 +254,7 @@ export function filterKeys<InputObject extends any>(
     return output;
   }
 }
+
+export function splitPath(path: string): string[] {
+  return path.split("/").filter((ele) => ele !== "");
+}
