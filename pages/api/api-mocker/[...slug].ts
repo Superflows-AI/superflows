@@ -24,7 +24,7 @@ const supabase = createClient<Database>(
   process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
 );
 
-function slugMatchesPath(path: string, slug: string): boolean {
+export function slugMatchesPath(path: string, slug: string): boolean {
   let regexPath =
     path
       .replace(/\//g, "\\/")
@@ -65,19 +65,12 @@ export function processMultipleMatches(
   );
 }
 
-async function getMatchingAction(
+export function getMatchingAction(
   org_id: number,
+  actions: Action[],
   method: RequestMethods,
   slug: string[]
-): Promise<Action | null> {
-  const { data: actions, error } = await supabase
-    .from("actions")
-    .select("*")
-    .eq("org_id", org_id)
-    .eq("request_method", method.toLowerCase())
-    .eq("active", true);
-
-  if (error) throw error;
+): Action | null {
   const slugString = "/" + slug.join("/");
 
   let matches = actions.filter((action) => {
@@ -131,8 +124,17 @@ export default async function handler(
   delete queryParams.slug;
   const method = req.method as RequestMethods;
 
+  const { data: actions, error } = await supabase
+    .from("actions")
+    .select("*")
+    .eq("org_id", org_id)
+    .eq("request_method", method.toLowerCase())
+    .eq("active", true);
+
+  if (error) throw error;
+
   const matchingAction = org_id
-    ? await getMatchingAction(org_id, method, slug)
+    ? getMatchingAction(org_id, actions, method, slug)
     : null;
 
   const pathParameters =
