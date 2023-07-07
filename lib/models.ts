@@ -55,4 +55,10 @@ export interface ChatGPTParams {
   user?: string;
 }
 
-export type RequestMethods = "GET" | "POST" | "PUT" | "DELETE";
+export type RequestMethods =
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "DELETE"
+  | "PATCH"
+  | "OPTIONS";

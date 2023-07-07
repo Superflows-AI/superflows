@@ -88,7 +88,7 @@ ${
 
     Type:
     {
-      "type": "array",
+      "type": "object",
       "items": {
         "type": "object",
         "required": [
@@ -115,14 +115,12 @@ ${
       }
     }
     Response:
-    [
-      {
-        "dateCreated": "2021-01-01T00:00:00.000Z",
-        "id": "123",
-        "message": "Hello world!",
-        "notes": null
-      }
-    ]
+    {
+      "dateCreated": "2021-01-01T00:00:00.000Z",
+      "id": "123",
+      "message": "Hello world!",
+      "notes": null
+    }
 
     Provide a valid JSON response. Include only JSON. All fields in the "Type" must be included. Avoid using null.
 

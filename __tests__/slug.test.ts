@@ -5,7 +5,7 @@ import {
   getPathParameters,
   processMultipleMatches,
   slugMatchesPath,
-} from "../pages/api/api-mocker/[...slug]";
+} from "../pages/api/api-mock/[...slug]";
 import { Action } from "../lib/types";
 
 const actions: Action[] = [
@@ -174,6 +174,48 @@ describe("processMultipleMatches", () => {
 
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v2/Coordinators/{id}");
+  });
+  it("Double {} ", () => {
+    const slug = ["api", "v2", "Coordinators", "location"];
+    const localActions = [
+      Action_Fixture("/api/v2/{id1}/{id2}"),
+      Action_Fixture("/api/v2/Coordinators/location"),
+    ];
+
+    const result = processMultipleMatches(localActions, slug);
+    expect(result[0].path).toEqual("/api/v2/Coordinators/location");
+  });
+  it("Double {} slug has params", () => {
+    const slug = ["api", "v2", "123", "456"];
+    const localActions = [
+      Action_Fixture("/api/v2/{id1}/{id2}"),
+      Action_Fixture("/api/v2/Coordinators/location"),
+    ];
+
+    const result = processMultipleMatches(localActions, slug);
+    expect(result[0].path).toEqual("/api/v2/{id1}/{id2}");
+  });
+
+  it("Double internal params", () => {
+    const slug = ["api", "123", "Coordinators", "456"];
+    const localActions = [
+      Action_Fixture("/api/{id}/Coordinators/{id2}"),
+      Action_Fixture("/api/v2/Coordinators/location"),
+    ];
+
+    const result = processMultipleMatches(localActions, slug);
+    expect(result[0].path).toEqual("/api/{id}/Coordinators/{id2}");
+  });
+
+  it("Double internal params2", () => {
+    const slug = ["api", "v2", "Coordinators", "location"];
+    const localActions = [
+      Action_Fixture("/api/{id}/Coordinators/{id2}"),
+      Action_Fixture("/api/v2/Coordinators/location"),
+    ];
+
+    const result = processMultipleMatches(localActions, slug);
+    expect(result[0].path).toEqual("/api/v2/Coordinators/location");
   });
 });
 
