@@ -15,9 +15,10 @@ export const defaultParams: ChatGPTParams = {
   presence_penalty: 0,
 };
 
-export async function queryChatGPT(
+export async function getOpenAIResponse(
   messages: ChatGPTMessage[],
-  params: ChatGPTParams = {}
+  params: ChatGPTParams = {},
+  model: "3" | "4"
 ): Promise<string> {
   const options = {
     method: "POST",
@@ -27,7 +28,7 @@ export async function queryChatGPT(
     },
     // Use our default params, rather than OpenAI's when these aren't specified
     body: JSON.stringify({
-      model: "gpt-3.5-turbo",
+      model: model === "3" ? "gpt-3.5-turbo-0613" : "gpt-4-0613",
       messages,
       ...defaultParams,
       ...params,

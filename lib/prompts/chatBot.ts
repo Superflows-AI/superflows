@@ -59,14 +59,18 @@ export default function getMessages(
       action.request_body_contents &&
       typeof action.request_body_contents === "object" &&
       // TODO: Content-types other than application/json aren't supported
-      !("application/json" in action.request_body_contents)
+      "application/json" in action.request_body_contents
     ) {
+      const body = action.request_body_contents["application/json"];
+
       // @ts-ignore
-      const properties = action.request_body_contents["application/json"].schema
-        .properties as { [name: string]: OpenAPIV3_1.SchemaObject };
-      // @ts-ignore
-      const required = action.request_body_contents["application/json"].schema
-        .required as string[];
+      const properties = body.schema.properties as {
+        [name: string]: OpenAPIV3_1.SchemaObject;
+      };
+
+      const required =
+        ((body as { schema: any })?.schema?.required as string[]) ?? null;
+
       Object.entries(properties).forEach(([key, value]) => {
         // Throw out readonly attributes
         if (value.readOnly) return;
@@ -75,11 +79,10 @@ export default function getMessages(
         paramString += `\n- ${key} (${value.type}${
           enums && enums.length < 20 ? `: ${enums}` : ""
         })${value.description ? `: ${value.description}` : ""} ${
-          required.includes(key) ? "REQUIRED" : ""
+          required && required.includes(key) ? "REQUIRED" : ""
         }`;
       });
     }
-
     numberedActions += `${i}. ${action.name}: ${action.description}.${
       paramString ? " PARAMETERS: " + paramString : ""
     }\n`;

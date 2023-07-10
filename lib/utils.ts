@@ -40,7 +40,7 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
     console.log(
       `Exponential retry wrapper completed in ${Date.now() - t1} ms for func "${
         func.name
-      }". This time is for retry number: ${retries}`
+      }". There were ${retries - 1} retries remaining.`
     );
     return res;
   } catch (error) {
@@ -180,6 +180,10 @@ export function openAiCost(
   return nTokens * costPerToken;
 }
 
+export function objectNotEmpty(obj: Object): boolean {
+  return Object.keys(obj).length > 0;
+}
+
 function deleteUndefined<InputType extends Record<string, any | undefined>>(
   obj: InputType
 ): Partial<InputType> {
@@ -249,4 +253,8 @@ export function filterKeys<InputObject extends any>(
 
     return output;
   }
+}
+
+export function splitPath(path: string): string[] {
+  return path.split("/").filter((ele) => ele !== "");
 }

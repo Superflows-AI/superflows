@@ -54,3 +54,11 @@ export interface ChatGPTParams {
   logit_bias?: Function | null;
   user?: string;
 }
+
+export type RequestMethods =
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "DELETE"
+  | "PATCH"
+  | "OPTIONS";

@@ -14,7 +14,7 @@ import {
 import { z } from "zod";
 import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
-import getMessages from "../../../lib/prompts/prompt";
+import getMessages from "../../../lib/prompts/chatBot";
 import {
   getActiveActionGroupsAndActions,
   getConversation,
@@ -418,7 +418,7 @@ async function Angela( // Good ol' Angela
         let out = await httpRequestFromAction(
           chosenAction,
           command.args,
-          org.api_host,
+          org,
           streamInfo,
           reqData.user_api_key ?? ""
         );
@@ -475,7 +475,7 @@ async function Angela( // Good ol' Angela
 export async function httpRequestFromAction(
   action: Action,
   parameters: Record<string, unknown>,
-  apiHost: string,
+  organization: { api_host: string; id: number },
   stream: (stepInfo: StreamingStepInput) => void,
   userApiKey?: string
 ): Promise<Record<string, any> | any[]> {
@@ -485,7 +485,7 @@ export async function httpRequestFromAction(
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
-  if (!apiHost) {
+  if (!organization.api_host) {
     throw new Error("API host has not been provided");
   }
 
@@ -496,6 +496,9 @@ export async function httpRequestFromAction(
   if (userApiKey) {
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
+
+  if (organization.api_host.includes("api/api-mock"))
+    headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {
     method: action.request_method,
@@ -536,7 +539,7 @@ export async function httpRequestFromAction(
     requestOptions.body = JSON.stringify(body);
   }
 
-  let url = apiHost + action.path;
+  let url = organization.api_host + action.path;
 
   // TODO: accept array for JSON?
   // Set parameters
