@@ -65,29 +65,6 @@ export default async function handler(
   }
   if (!dereferencedSwagger.paths) throw Error("No paths");
 
-  // We store actions in groups. This stores the action_groups id for the row with the name of the group
-  let groupNameToId: { [name: string]: number } = {};
-
-  // First, add tags as action_groups
-  console.log("Adding tags..");
-  for (const tagObj of dereferencedSwagger.tags ?? []) {
-    // Add to action_groups table
-    const actionGroupResponse = await supabase
-      .from("action_groups")
-      .insert({
-        name: tagObj.name,
-        description: tagObj.description,
-        org_id: orgId,
-      })
-      .select();
-    if (actionGroupResponse.error) throw actionGroupResponse.error;
-    if (actionGroupResponse.data.length === 0) {
-      throw new Error("No action group created");
-    }
-    groupNameToId[tagObj.name] = actionGroupResponse.data[0].id;
-  }
-
-  console.log("Adding paths...");
   for (const [path, pathObj] of Object.entries(dereferencedSwagger.paths)) {
     if (pathObj === undefined) {
       continue;
@@ -103,37 +80,6 @@ export default async function handler(
         console.log("Skipping methodObj because it's an array");
         continue;
       }
-      const groupName = methodObj.tags?.[0] ?? stripTrailingAndCurly(path);
-      let actionGroupId: number;
-      if (groupName in groupNameToId) {
-        actionGroupId = groupNameToId[groupName];
-      } else {
-        // This is used as the name of the action group - strip trailing slash and curly braces
-        const existingActionGroupResp = await supabase
-          .from("action_groups")
-          .select("*")
-          .eq("name", groupName)
-          .eq("org_id", orgId);
-        if (existingActionGroupResp.error) throw existingActionGroupResp.error;
-        if (
-          existingActionGroupResp.data === null ||
-          existingActionGroupResp.data.length === 0
-        ) {
-          // Add to action_groups table
-          const actionGroupResponse = await supabase
-            .from("action_groups")
-            .insert({ name: groupName, org_id: orgId })
-            .select();
-          if (actionGroupResponse.error) throw actionGroupResponse.error;
-          if (actionGroupResponse.data.length === 0) {
-            throw new Error("No action group created");
-          }
-          actionGroupId = actionGroupResponse.data[0].id;
-        } else {
-          actionGroupId = existingActionGroupResp.data[0].id;
-        }
-        groupNameToId[groupName] = actionGroupId;
-      }
       let description =
         replaceMarkdownLinks(methodObj.description ?? methodObj.summary) ??
         method.toUpperCase() + " " + path;
@@ -144,7 +90,6 @@ export default async function handler(
         description: description,
         active: ["get"].includes(method),
         org_id: orgId,
-        action_group: actionGroupId,
         action_type: "http",
         path: path,
         // @ts-ignore

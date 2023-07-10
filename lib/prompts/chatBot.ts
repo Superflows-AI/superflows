@@ -1,45 +1,26 @@
 import { ChatGPTMessage } from "../models";
-import { ActionGroupJoinActions } from "../types";
+import { Action } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
 
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
-  pageActions: ActionGroupJoinActions[],
+  actions: Action[],
   userDescription: string | undefined,
-  currentPageName: string,
   orgInfo: {
     name: string;
     description: string;
   },
   language: string
 ): ChatGPTMessage[] {
-  const currentPage = pageActions.find((p) => p.name === currentPageName);
-
   let userDescriptionSection = "";
   if (userDescription) {
     userDescriptionSection = `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`;
   }
 
-  if (!currentPage) {
-    throw new Error(
-      `Page ${currentPageName} not found in pageActions ${JSON.stringify(
-        pageActions
-      )}`
-    );
-  }
-  const otherPages = pageActions.filter((p) => p.name !== currentPageName);
-  const availablePages = otherPages
-    .map(
-      (pageAction) => "\n- '" + pageAction.name + "': " + pageAction.description
-    )
-    .join("");
   let i = 1;
   let numberedActions = "";
-  if (availablePages.length > 0) {
-    i++;
-    numberedActions += `1. navigateTo: This will navigate you to another page. This enables you to use functions that are available on that page. Available pages (in format "- 'page-name': description") are: ${availablePages}. PARAMETERS: - pageName (string): The name of the page you want to navigate to. REQUIRED\n`;
-  }
-  currentPage.actions.forEach((action) => {
+
+  actions.forEach((action: Action) => {
     let paramString = "";
     // For parameters
     if (action.parameters && Array.isArray(action.parameters)) {

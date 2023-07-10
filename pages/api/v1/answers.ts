@@ -19,12 +19,7 @@ import {
   getActiveActionGroupsAndActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
-import {
-  Action,
-  ActionGroupJoinActions,
-  Organization,
-  OrgJoinIsPaid,
-} from "../../../lib/types";
+import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { createClient } from "@supabase/supabase-js";
 
@@ -290,7 +285,7 @@ export type StreamingStep = StreamingStepInput & { id: number };
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
-  actionGroupJoinActions: ActionGroupJoinActions[],
+  actions: Action[],
   org: Organization,
   convoId: number,
   previousMessages: ChatGPTMessage[]
@@ -314,17 +309,14 @@ async function Angela( // Good ol' Angela
 
   let mostRecentParsedOutput = parseOutput("");
   let numOpenAIRequests = 0;
-  // TODO: When changing away from page-based system, delete this
-  let currentPageName = actionGroupJoinActions[0].name;
   let totalCost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
-        actionGroupJoinActions,
+        actions,
         reqData.user_description,
-        currentPageName,
         org,
         reqData.language ?? "English"
       );
@@ -394,7 +386,6 @@ async function Angela( // Good ol' Angela
       for (const command of mostRecentParsedOutput.commands) {
         if (command.name === "navigateTo") {
           console.log("navigatingTo", command.args.pageName);
-          currentPageName = command.args.pageName;
           streamInfo({
             role: "function",
             name: command.name,
@@ -409,9 +400,7 @@ async function Angela( // Good ol' Angela
           });
           continue;
         }
-        const chosenAction = actionGroupJoinActions
-          .find((ag) => ag.name === currentPageName)!
-          .actions.find((a) => a.name === command.name);
+        const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
         }

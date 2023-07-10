@@ -6,7 +6,7 @@ import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { Navbar } from "../components/navbar";
 import SignInComponent from "../components/signIn";
-import { Action, ActionGroupJoinActions } from "../lib/types";
+import { Action } from "../lib/types";
 import { classNames } from "../lib/utils";
 
 export default function App() {
@@ -28,44 +28,42 @@ function Dashboard() {
       <Navbar current={"Actions"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="h-full rounded px-6">
-          <RepliesPage />
+          <ActionsPage />
         </div>
       </div>
     </div>
   );
 }
 
-export function RepliesPage() {
+export function ActionsPage() {
   const supabase = useSupabaseClient();
   const { profile } = useProfile();
   const [isError, setIsError] = useState(false);
+  const [actions, setActions] = useState<Action[] | null>(null);
 
-  const [actionGroup, setActionGroupsJoinActions] = useState<
-    ActionGroupJoinActions[] | undefined
-  >(undefined);
   const loadActions = useCallback(async () => {
-    const actionGroupRes = await supabase
-      .from("action_groups")
-      .select("*, actions(*)")
+    const { data, error } = await supabase
+      .from("actions")
+      .select("*")
       .order("id", { ascending: true })
       .eq("org_id", profile?.org_id);
 
-    // if you don't sort the actions get shuffled around on the page each time
-    actionGroupRes.data?.forEach((actionGroup) => {
-      actionGroup.actions.sort((a: Action, b: Action) => {
-        return a.name.localeCompare(b.name);
-      });
-    });
-
-    if (actionGroupRes.error) {
+    if (error) {
       setIsError(true);
-      throw actionGroupRes.error;
+      throw new Error(error.message);
     }
-    if (actionGroupRes.data === null) {
+
+    if (!data) {
       setIsError(true);
       throw new Error("No data returned");
     }
-    setActionGroupsJoinActions(actionGroupRes.data);
+
+    // if you don't sort the actions get shuffled around on the page each time
+    setActions(
+      data.sort((a: Action, b: Action) => {
+        return a.name.localeCompare(b.name);
+      })
+    );
   }, [profile, supabase]);
   useEffect(() => {
     if (!profile) return;
@@ -74,10 +72,10 @@ export function RepliesPage() {
 
   return (
     <div className={classNames("w-full relative h-full")}>
-      {actionGroup ? (
+      {actions ? (
         <PageActionsSection
-          actionGroups={actionGroup}
-          setActionGroups={setActionGroupsJoinActions}
+          actions={actions}
+          setActions={setActions}
           loadActions={loadActions}
         />
       ) : !isError ? (

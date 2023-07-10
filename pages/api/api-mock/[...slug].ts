@@ -161,7 +161,7 @@ export default async function handler(
     .eq("request_method", method.toLowerCase())
     .eq("active", true);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   const matchingAction = org_id
     ? getMatchingAction(org_id, actions, method, slug)

@@ -43,7 +43,7 @@ export default async function handler(
     .from("organizations")
     .insert({ name: req.body.org_name, api_key })
     .select();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   if (data === null) {
     throw new Error("No data returned from organizations insert");
   }
