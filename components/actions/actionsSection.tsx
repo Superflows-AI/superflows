@@ -44,10 +44,7 @@ export default function PageActionsSection(props: {
             {props.actions.length > 0 && (
               <DropdownWithCheckboxes
                 title={"Enable HTTP method"}
-                items={actionGroupsToToggleItems(
-                  props.actions,
-                  props.setActions
-                )}
+                items={actionsToToggleItems(props.actions, props.setActions)}
               />
             )}{" "}
           </div>
@@ -98,9 +95,6 @@ function ActionsSection(props: {
   const [editActionIndex, setEditActionIndex] = React.useState<number | null>(
     null
   );
-  const [editActionGroup, setEditActionGroup] = React.useState<boolean>(false);
-  const [deleteActionGroup, setDeleteActionGroup] =
-    React.useState<boolean>(false);
   const [deleteActionIndex, setDeleteActionIndex] = React.useState<
     number | null
   >(null);
@@ -280,7 +274,7 @@ function ActionsSection(props: {
   );
 }
 
-function actionGroupsToToggleItems(
+function actionsToToggleItems(
   actions: Action[],
   setActions: React.Dispatch<React.SetStateAction<Action[] | null>>
 ): SelectBoxWithDropdownOption[] {

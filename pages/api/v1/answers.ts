@@ -16,7 +16,7 @@ import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import getMessages from "../../../lib/prompts/chatBot";
 import {
-  getActiveActionGroupsAndActions,
+  getActiveActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
@@ -194,7 +194,7 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the active actions from the DB which we can choose between
-    const activeActions = await getActiveActionGroupsAndActions(org.id);
+    const activeActions = await getActiveActions(org.id);
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({

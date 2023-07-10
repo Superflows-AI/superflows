@@ -1,10 +1,9 @@
 import { ChatGPTMessage } from "../models";
 import { Action, ChatMessage } from "../types";
 
-export async function getActiveActionGroupsAndActions(
+export async function getActiveActions(
   orgId: number
 ): Promise<Action[] | undefined> {
-  // Below gets the action groups and actions that are active
   let authRequestResult = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/actions?select=*%29&active=is.true&org_id=eq.${orgId}`,
     {
