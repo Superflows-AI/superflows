@@ -320,7 +320,7 @@ async function Angela( // Good ol' Angela
         org,
         reqData.language ?? "English"
       );
-      console.log("ChatGPT system prompt", chatGptPrompt[0].content);
+      console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;

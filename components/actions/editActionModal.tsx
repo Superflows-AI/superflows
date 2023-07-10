@@ -408,7 +408,6 @@ export default function EditActionModal(props: {
           onClick={(event) => {
             event.preventDefault();
             if (nameValid && parametersValidJSON && responsesValidJSON) {
-              console.log("saving action", localAction);
               props.setAction(localAction);
               props.close();
             }

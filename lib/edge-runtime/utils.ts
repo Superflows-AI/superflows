@@ -1,18 +1,12 @@
-import { NextRequest } from "next/server";
-import {
-  ActionGroupJoinActions,
-  ChatMessage,
-  Organization,
-  OrgJoinIsPaid,
-} from "../types";
 import { ChatGPTMessage } from "../models";
+import { Action, ChatMessage } from "../types";
 
 export async function getActiveActionGroupsAndActions(
   orgId: number
-): Promise<ActionGroupJoinActions[] | undefined> {
+): Promise<Action[] | undefined> {
   // Below gets the action groups and actions that are active
   let authRequestResult = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/action_groups?select=*%2Cactions%21inner%28*%29&actions.active=is.true&org_id=eq.${orgId}`,
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/actions?select=*%29&active=is.true&org_id=eq.${orgId}`,
     {
       headers: {
         Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,

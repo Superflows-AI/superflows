@@ -82,10 +82,6 @@ Seek more info or help when needed. Avoid directing users, instead, complete tas
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}.
 
-Available functions vary by page. Sometimes, accessing a function requires navigation to a new page. Halt commands until you reach the correct page.
-
-You are currently on the ${currentPageName} page. 
-
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
 ${numberedActions}

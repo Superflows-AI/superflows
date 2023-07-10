@@ -32,7 +32,6 @@ export function ProfileContextProvider(props: {
       .select("*, organizations(*, is_paid(*))")
       .single();
     if (error) console.error(error.message);
-    console.log("data", data);
     setProfile(data);
   }, [props.disabled, setProfile, props.supabase]);
 
