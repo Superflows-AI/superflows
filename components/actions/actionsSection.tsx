@@ -19,13 +19,33 @@ export default function PageActionsSection(props: {
   setActions: Dispatch<SetStateAction<Action[] | null>>;
   loadActions: () => Promise<void>;
 }) {
-  const supabase = useSupabaseClient();
-  const { profile } = useProfile();
   const [open, setUploadModalOpen] = useState<boolean>(false);
   const [includeInactive, setIncludeInactive] = useState<boolean>(true);
+  const [showWarning, setShowWarning] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (props.actions.filter((action) => action.active).length > 20) {
+      setShowWarning(true);
+    } else {
+      setShowWarning(false);
+    }
+  }, [props.actions]);
 
   return (
     <>
+      {showWarning && (
+        <div
+          className="bg-yellow-200 border-l-4 border-yellow-500 text-yellow-700 p-4"
+          role="alert"
+        >
+          <p className="font-bold">Warning</p>
+          <p>
+            There are more than 20 active actions currently. Superflows performs
+            best with fewer than 20.
+          </p>
+        </div>
+      )}
+
       <UploadModal
         open={open}
         setOpen={setUploadModalOpen}
