@@ -384,22 +384,6 @@ async function Angela( // Good ol' Angela
 
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
-        if (command.name === "navigateTo") {
-          console.log("navigatingTo", command.args.pageName);
-          streamInfo({
-            role: "function",
-            name: command.name,
-            content: JSON.stringify({
-              message: "Navigated to " + command.args.pageName,
-            }),
-          });
-          nonSystemMessages.push({
-            role: "function",
-            name: command.name,
-            content: "Navigated to " + command.args.pageName,
-          });
-          continue;
-        }
         const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
