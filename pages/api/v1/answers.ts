@@ -10,6 +10,7 @@ import {
   filterKeys,
   isValidBody,
   openAiCost,
+  processAPIoutput,
 } from "../../../lib/utils";
 import { z } from "zod";
 import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
@@ -232,6 +233,7 @@ export default async function handler(req: NextRequest) {
               conversation_index: idx + 1,
             }))
           );
+
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
 
@@ -392,26 +394,20 @@ async function Angela( // Good ol' Angela
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
         }
-        let out = await httpRequestFromAction(
-          chosenAction,
-          command.args,
-          org,
-          streamInfo,
-          reqData.user_api_key ?? ""
-        );
+
+        const actionToHttpRequest: ActionToHttpRequest = {
+          action: chosenAction,
+          parameters: command.args,
+          organization: org,
+          stream: streamInfo,
+          userApiKey: reqData.user_api_key ?? "",
+        };
+
+        let out = await httpRequestFromAction(actionToHttpRequest);
+
+        out = processAPIoutput(out, chosenAction);
+
         console.log("Output from API call:", out);
-        // Post-processing
-        if (Array.isArray(out)) {
-          out = deduplicateArray(out);
-        }
-        const keys = chosenAction.keys_to_keep;
-        if (
-          keys &&
-          Array.isArray(keys) &&
-          keys.every((k) => typeof k === "string")
-        ) {
-          out = filterKeys(out, keys as string[]);
-        }
         streamInfo({
           role: "function",
           name: command.name,
@@ -449,13 +445,21 @@ async function Angela( // Good ol' Angela
   return { nonSystemMessages, cost: totalCost };
 }
 
-export async function httpRequestFromAction(
-  action: Action,
-  parameters: Record<string, unknown>,
-  organization: { api_host: string; id: number },
-  stream: (stepInfo: StreamingStepInput) => void,
-  userApiKey?: string
-): Promise<Record<string, any> | any[]> {
+interface ActionToHttpRequest {
+  action: Action;
+  parameters: Record<string, unknown>;
+  organization: { api_host: string; id: number };
+  userApiKey?: string;
+  stream?: (input: StreamingStepInput) => void;
+}
+
+export async function httpRequestFromAction({
+  action,
+  parameters,
+  organization,
+  userApiKey,
+  stream,
+}: ActionToHttpRequest): Promise<Record<string, any> | any[]> {
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -562,10 +566,13 @@ export async function httpRequestFromAction(
     2
   )}`;
   console.log(logMessage);
-  stream({
-    role: "debug",
-    content: logMessage,
-  });
+
+  if (stream)
+    stream({
+      role: "debug",
+      content: logMessage,
+    });
+
   const response = await fetch(url, requestOptions);
 
   if (!response.ok) {
