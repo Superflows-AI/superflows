@@ -101,7 +101,7 @@ Plan:
 - list that conveys
 - long-term plan
 
-Tell user: (optional) tell the user something. E.g. if you're answering a question, write the answer to the user here.
+Tell user: tell the user something. E.g. if you're answering a question, write the answer to the user here.
 
 Commands: (optional)
 FUNCTION_NAME_1(PARAM_NAME_1=PARAM_VALUE_1, PARAM_NAME_2=PARAM_VALUE_2, ...)

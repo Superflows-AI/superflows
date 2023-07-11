@@ -91,7 +91,7 @@ describe("Parse output", () => {
       "We have multiple customers with the last name Martinez. Could you please provide more information, such as a first name, to help identify the correct Mr. Martinez?"
     );
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(null);
+    expect(output.completed).toBe(true);
   });
   it("should not output 'invalid input format:'", () => {
     const output = parseOutput(

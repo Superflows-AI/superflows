@@ -1,28 +1,36 @@
+import { createClient } from "@supabase/supabase-js";
+import { Redis } from "@upstash/redis";
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { USAGE_LIMIT } from "../../../lib/consts";
+import {
+  ActionToHttpRequest,
+  ChatGPTMessage,
+  ChatGPTParams,
+  StreamingStepInput,
+} from "../../../lib/models";
 import {
   parseGPTStreamedData,
   parseOutput,
 } from "../../../lib/parsers/parsers";
-import { NextRequest } from "next/server";
+import getMessages from "../../../lib/prompts/chatBot";
+import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
   convertToRenderable,
-  deduplicateArray,
   exponentialRetryWrapper,
-  filterKeys,
   isValidBody,
   openAiCost,
-  processAPIoutput,
 } from "../../../lib/utils";
-import { z } from "zod";
-import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
-import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
-import getMessages from "../../../lib/prompts/chatBot";
 import {
   getActiveActionTagsAndActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { createClient } from "@supabase/supabase-js";
+import {
+  httpRequestFromAction,
+  processAPIoutput
+} from "../../../lib/edge-runtime/requests.ts";
 
 export const config = {
   runtime: "edge",
@@ -43,6 +51,12 @@ type AnswersType = z.infer<typeof AnswersZod>;
 const completionOptions: ChatGPTParams = {
   max_tokens: 1000,
 };
+
+// TODO: is this the best thing for open source? Would require users to have a redis account
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
+});
 
 export default async function handler(req: NextRequest) {
   try {
@@ -111,10 +125,10 @@ export default async function handler(req: NextRequest) {
         .eq("role", "user");
       if (usageRes.error) throw new Error(usageRes.error.message);
       const numQueriesMade = usageRes.count ?? 0;
-      if (numQueriesMade >= 100) {
+      if (numQueriesMade >= USAGE_LIMIT) {
         return new Response(
           JSON.stringify({
-            error: `You have reached your usage limit of 100 messages. Upgrade to premium to get unlimited messages.`,
+            error: `You have reached your usage limit of ${USAGE_LIMIT} messages. Upgrade to premium to get unlimited messages.`,
           }),
           {
             status: 402,
@@ -233,7 +247,6 @@ export default async function handler(req: NextRequest) {
               conversation_index: idx + 1,
             }))
           );
-
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
 
@@ -283,17 +296,12 @@ export default async function handler(req: NextRequest) {
   }
 }
 
-type StreamingStepInput =
-  | { role: "assistant" | "error" | "debug"; content: string }
-  | { role: "function"; name: string; content: string };
-export type StreamingStep = StreamingStepInput & { id: number };
-
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
   actions: Action[],
   org: Organization,
-  convoId: number,
+  conversationId: number,
   previousMessages: ChatGPTMessage[]
 ): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
   const encoder = new TextEncoder();
@@ -306,7 +314,7 @@ async function Angela( // Good ol' Angela
       encoder.encode(
         "data:" +
           JSON.stringify({
-            id: convoId,
+            id: conversationId,
             ...step,
           })
       )
@@ -328,7 +336,7 @@ async function Angela( // Good ol' Angela
       );
       console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");
-      console.log("GPT input cost:", promptInputCost);
+      // console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
@@ -388,6 +396,7 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
+      const toConfirm: { actionId: number; parameters: object }[] = [];
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
         const chosenAction = actions.find((a) => a.name === command.name);
@@ -403,25 +412,44 @@ async function Angela( // Good ol' Angela
           userApiKey: reqData.user_api_key ?? "",
         };
 
-        let out = await httpRequestFromAction(actionToHttpRequest);
+        if (
+          ["get", "head", "options", "connect"].includes(
+            chosenAction.request_method!.toLowerCase()
+          )
+        ) {
+          let out = await httpRequestFromAction(actionToHttpRequest);
+          out = processAPIoutput(out, chosenAction);
+          console.log("Output from API call:", out);
+          streamInfo({
+            role: "function",
+            name: command.name,
+            content: JSON.stringify(out, null, 2),
+          });
+          const renderableOutput =
+            "\n\n" + command.name + " output:\n" + convertToRenderable(out);
+          nonSystemMessages.push({
+            role: "function",
+            name: command.name,
+            content: renderableOutput,
+          });
+        } else {
+          const confirmationMessage = {
+            role: "assistant",
+            content:
+              "\n\nExecuting these instructions requires confirmation. I will not proceed until the user has provided this.",
+          };
 
-        out = processAPIoutput(out, chosenAction);
+          toConfirm.push({
+            actionId: chosenAction.id,
+            parameters: command.args,
+          });
 
-        console.log("Output from API call:", out);
-        streamInfo({
-          role: "function",
-          name: command.name,
-          content: JSON.stringify(out, null, 2),
-        });
-        const renderableOutput =
-          "\n\n" + command.name + " output:\n" + convertToRenderable(out);
-        nonSystemMessages.push({
-          role: "function",
-          name: command.name,
-          content: renderableOutput,
-        });
+          nonSystemMessages.push(confirmationMessage as ChatGPTMessage);
+          streamInfo(confirmationMessage as StreamingStepInput);
+        }
       }
       if (mostRecentParsedOutput.completed !== false) {
+        await storeActionsAwaitingConfirmation(toConfirm, conversationId);
         return { nonSystemMessages, cost: totalCost };
       }
 
@@ -433,6 +461,7 @@ async function Angela( // Good ol' Angela
         });
         return { nonSystemMessages, cost: totalCost };
       }
+      await storeActionsAwaitingConfirmation(toConfirm, conversationId);
     }
   } catch (e) {
     console.error(e);
@@ -445,138 +474,19 @@ async function Angela( // Good ol' Angela
   return { nonSystemMessages, cost: totalCost };
 }
 
-interface ActionToHttpRequest {
-  action: Action;
-  parameters: Record<string, unknown>;
-  organization: { api_host: string; id: number };
-  userApiKey?: string;
-  stream?: (input: StreamingStepInput) => void;
-}
-
-export async function httpRequestFromAction({
-  action,
-  parameters,
-  organization,
-  userApiKey,
-  stream,
-}: ActionToHttpRequest): Promise<Record<string, any> | any[]> {
-  if (!action.path) {
-    throw new Error("Path is not provided");
-  }
-  if (!action.request_method) {
-    throw new Error("Request method is not provided");
-  }
-  if (!organization.api_host) {
-    throw new Error("API host has not been provided");
-  }
-
-  const headers: Record<string, string> = {};
-  // TODO: Only application/json supported for now(!!)
-  headers["Content-Type"] = "application/json";
-  headers["Accept"] = "application/json";
-  if (userApiKey) {
-    headers["Authorization"] = `Bearer ${userApiKey}`;
-  }
-
-  if (organization.api_host.includes("api/mock"))
-    headers["org_id"] = organization.id.toString();
-
-  const requestOptions: RequestInit = {
-    method: action.request_method,
-    headers: headers,
-  };
-
-  // Request body
-  if (action.request_method !== "GET" && action.request_body_contents) {
-    const reqBodyContents =
-      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
-    if (!("application/json" in reqBodyContents)) {
+async function storeActionsAwaitingConfirmation(
+  toConfirm: { actionId: number; parameters: object }[],
+  conversationId: number
+) {
+  if (toConfirm.length > 0) {
+    if ((await redis.get(conversationId.toString())) !== null)
       throw new Error(
-        "Only application/json request body contents are supported for now"
+        `Conversation ID "${conversationId}" already exists in redis, something has gone wrong`
       );
-    }
-    const applicationJson = reqBodyContents[
-      "application/json"
-    ] as OpenAPIV3.MediaTypeObject;
-    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-    const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
-    const bodyArray = Object.entries(properties).map(([name, property]) => {
-      // Throw out readonly attributes
-      if (property.readOnly) return undefined;
-      if (parameters[name]) {
-        return { [name]: parameters[name] };
-      }
-    });
-    const body = Object.assign({}, ...bodyArray);
+    console.log("Setting redis key", conversationId.toString());
 
-    // Check all required params are present
-    const required = schema.required ?? [];
-    required.forEach((key: string) => {
-      if (!body[key]) {
-        throw new Error(`Required parameter "${key}" is not provided`);
-      }
-    });
-
-    requestOptions.body = JSON.stringify(body);
+    await redis.json.set(conversationId.toString(), "$", { toConfirm });
+    // 10 minutes seems like a reasonable time if the user gets distracted etc
+    await redis.expire(conversationId.toString(), 60 * 10);
   }
-
-  let url = organization.api_host + action.path;
-
-  // TODO: accept array for JSON?
-  // Set parameters
-  if (
-    action.parameters &&
-    typeof action.parameters === "object" &&
-    Array.isArray(action.parameters)
-  ) {
-    const queryParams = new URLSearchParams();
-    const actionParameters =
-      action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
-    for (const param of actionParameters) {
-      if (param.required && !parameters[param.name]) {
-        throw new Error(
-          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
-        );
-      }
-      if (param.in === "path") {
-        url = url.replace(
-          `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name]))
-        );
-      } else if (param.in === "query") {
-        queryParams.set(param.name, String(parameters[param.name]));
-      } else if (param.in === "header") {
-        headers[param.name] = String(parameters[param.name]);
-      } else if (param.in === "cookie") {
-        headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
-      } else {
-        throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`
-        );
-      }
-    }
-    // Below only adds query params if there are any query params
-    if ([...queryParams.entries()].length > 0) {
-      url += `?${queryParams.toString()}`;
-    }
-  }
-  const logMessage = `Attempting fetch with url: ${url} and options: ${JSON.stringify(
-    requestOptions,
-    null,
-    2
-  )}`;
-  console.log(logMessage);
-
-  if (stream)
-    stream({
-      role: "debug",
-      content: logMessage,
-    });
-
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-  }
-  return await response.json();
 }

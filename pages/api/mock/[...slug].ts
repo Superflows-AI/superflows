@@ -4,11 +4,10 @@ import JSON5 from "json5";
 const dJSON = require("dirty-json");
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { Database } from "../../../lib/database.types";
 import { RequestMethods } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
-import { Action, OrgJoinIsPaid } from "../../../lib/types";
+import { Action } from "../../../lib/types";
 import { exponentialRetryWrapper, splitPath } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -225,7 +224,9 @@ export default async function handler(
     try {
       json = dJSON.parse(openAiResponse);
     } catch (e) {
-      console.log("Failed to parse response as JSON", openAiResponse);
+      console.log(
+        `Failed to parse response as JSON. The response was: ${openAiResponse}`
+      );
       throw e;
     }
   }
