@@ -1,6 +1,7 @@
 import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
 import { ChatGPTMessage, ChatMessage } from "./models";
+import { Action } from "./types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -257,4 +258,18 @@ export function filterKeys<InputObject extends any>(
 
 export function splitPath(path: string): string[] {
   return path.split("/").filter((ele) => ele !== "");
+}
+
+export function processAPIoutput(
+  out: object | Array<any>,
+  chosenAction: Action
+) {
+  if (Array.isArray(out)) {
+    out = deduplicateArray(out);
+  }
+  const keys = chosenAction.keys_to_keep;
+  if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
+    out = filterKeys(out, keys as string[]);
+  }
+  return out;
 }
