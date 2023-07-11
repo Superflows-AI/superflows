@@ -1,15 +1,4 @@
-export interface FunctionCall {
-  name: string;
-  args: { [key: string]: any };
-}
-
-export interface ParsedOutput {
-  reasoning: string;
-  plan: string;
-  tellUser: string;
-  commands: FunctionCall[];
-  completed: boolean | null;
-}
+import { FunctionCall, ParsedOutput } from "../models";
 
 function getSectionText(
   inputStr: string,
@@ -61,7 +50,7 @@ export function parseOutput(gptString: string): ParsedOutput {
       .trim();
     completed =
       completedString.startsWith("true") ||
-      (completedString.startsWith("question") ? null : false);
+      completedString.startsWith("question");
   }
 
   let reasoningText = "";

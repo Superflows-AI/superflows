@@ -5,24 +5,29 @@ import {
   HandThumbUpIcon,
   LightBulbIcon,
 } from "@heroicons/react/24/outline";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { LoadingSpinner } from "./loadingspinner";
-import { classNames, convertToRenderable, parseKeyValues } from "../lib/utils";
-import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
-import Toggle from "./toggle";
-import { useProfile } from "./contextManagers/profile";
-import { StreamingStep } from "../pages/api/v1/answers";
-import { Json } from "../lib/database.types";
-import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
+import { Json } from "../lib/database.types";
+import { ParsedOutput, StreamingStep } from "../lib/models";
+import { parseOutput } from "../lib/parsers/parsers";
+import {
+  classNames,
+  convertToRenderable,
+  functionNameToDisplay,
+  parseTableTags,
+} from "../lib/utils";
+import { AutoGrowingTextArea } from "./autoGrowingTextarea";
+import { useProfile } from "./contextManagers/profile";
+import { LoadingSpinner } from "./loadingspinner";
+import Toggle from "./toggle";
 
 const BrandColour = "#ffffff";
 const BrandColourAction = "#5664d1";
 const BrandActionTextColour = "#ffffff";
 
 interface ChatItem {
-  role: "user" | "assistant" | "function" | "debug" | "error";
+  role: "user" | "assistant" | "function" | "debug" | "error" | "confirmation";
   name?: string;
   content: string;
 }
@@ -92,10 +97,92 @@ export default function PlaygroundChatbot(props: {
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
+  const [confirmationRequired, setConfirmationRequired] =
+    useState<boolean>(false);
+
+  const [confirmationButtonClicked, setConfirmationButtonClicked] = useState<
+    "yes" | "no" | null
+  >(null);
 
   const killSwitchClicked = useRef(false);
 
   const submitButtonClickable = props.submitReady && userText.length > 3;
+
+  // Hack to prevent the effect from running twice in development
+  const [init, setInit] = useState(true);
+
+  useEffect(() => {
+    if (!confirmationRequired || !init) return;
+
+    const commandsAwaitingConfirmation = parseOutput(
+      devChatContents[devChatContents.length - 1].content
+    ).commands;
+
+    setDevChatContents((prevState) => [
+      ...prevState,
+      {
+        role: "confirmation",
+        content: `The following actions are required to achieve your goal ${commandsAwaitingConfirmation.map(
+          (command, index) =>
+            convertToRenderable(
+              command.args,
+              `Action ${index + 1}: ${functionNameToDisplay(command.name)}`
+            )
+        )} <button>Confirm</button>`,
+      },
+    ]);
+    setInit(false); // Set init to false after first run
+  }, [confirmationRequired, init]);
+
+  useEffect(() => {
+    if (!confirmationButtonClicked) return;
+    (async () => {
+      setLoading(true);
+      setDevChatContents((prevState) => [
+        ...prevState,
+        {
+          role: "user",
+          content:
+            confirmationButtonClicked === "yes"
+              ? "Confirm Action"
+              : "Cancel Action",
+        },
+      ]);
+      const response = await fetch("/api/v1/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${profile!.organizations!.api_key}`,
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          user_api_key: props.userApiKey,
+          org_id: profile!.organizations!.id,
+          button_clicked: confirmationButtonClicked,
+        }),
+      });
+
+      if (response.status === 200) {
+        const json = await response.json();
+        const outs: { name: string; result: object }[] = json.outs;
+
+        console.log("Outtyyyyyyyyy", JSON.stringify(outs));
+        for (const out of outs) {
+          setDevChatContents((prevState) => [
+            ...prevState,
+            {
+              role: "function",
+              name: out.name,
+              content: JSON.stringify(out.result),
+            },
+          ]);
+        }
+      }
+
+      setConfirmationButtonClicked(null);
+      setLoading(false);
+    })();
+  }, [confirmationButtonClicked]);
 
   const addTextToChat = useCallback(
     async (chat: ChatItem[]) => {
@@ -162,10 +249,17 @@ export default function PlaygroundChatbot(props: {
           console.error(e);
         }
       }
-      // TODO: Add a confirmation step when taking non-GET actions
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
+      setConfirmationRequired(
+        outputMessages
+          .map((message) => message.content)
+          .join("")
+          .includes(
+            "Executing these instructions requires confirmation. I will not proceed until the user has provided this."
+          )
+      );
     },
     [
       props.userApiKey,
@@ -267,11 +361,25 @@ export default function PlaygroundChatbot(props: {
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
             if (devMode || chatItem.role === "user")
-              return <DevChatItem chatItem={chatItem} key={idx} />;
+              return (
+                <DevChatItem
+                  chatItem={chatItem}
+                  key={idx}
+                  setConfirmationButtonClicked={setConfirmationButtonClicked}
+                  setConfirmationRequired={setConfirmationRequired}
+                />
+              );
             else {
               if (chatItem.role === "debug") return <></>;
               else if (chatItem.role === "error") {
-                return <DevChatItem chatItem={chatItem} key={idx} />;
+                return (
+                  <DevChatItem
+                    chatItem={chatItem}
+                    key={idx}
+                    setConfirmationButtonClicked={setConfirmationButtonClicked}
+                    setConfirmationRequired={setConfirmationRequired}
+                  />
+                );
               } else if (chatItem.role === "function") {
                 let contentString;
                 const functionJsonResponse = JSON.parse(chatItem.content);
@@ -286,21 +394,31 @@ export default function PlaygroundChatbot(props: {
                 ) {
                   contentString = "No results found.";
                 } else {
-                  console.log("chatItem", chatItem);
-                  contentString =
-                    chatItem.name +
-                    "called:\n" +
-                    convertToRenderable(functionJsonResponse);
+                  contentString = convertToRenderable(
+                    functionJsonResponse,
+                    `${functionNameToDisplay(chatItem?.name ?? "")} result`
+                  );
                 }
                 return (
                   <DevChatItem
                     chatItem={{ ...chatItem, content: contentString }}
                     key={idx}
+                    setConfirmationButtonClicked={setConfirmationButtonClicked}
+                    setConfirmationRequired={setConfirmationRequired}
+                  />
+                );
+              } else if (chatItem.role === "confirmation") {
+                return (
+                  <DevChatItem
+                    chatItem={chatItem}
+                    key={idx}
+                    setConfirmationButtonClicked={setConfirmationButtonClicked}
+                    setConfirmationRequired={setConfirmationRequired}
                   />
                 );
               }
-              return <UserChatItem chatItem={chatItem} key={idx} />;
             }
+            return <UserChatItem chatItem={chatItem} key={idx} />;
           })}
           {devChatContents.length === 0 && suggestions.length > 0 && (
             <div className="py-4 px-1.5">
@@ -347,7 +465,7 @@ export default function PlaygroundChatbot(props: {
             }
           }}
         />
-        <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2">
+        <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2 h-20">
           <p
             className={classNames(
               "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
@@ -359,41 +477,45 @@ export default function PlaygroundChatbot(props: {
             }
           </p>
           {loading && (
+            <div className="flex justify-center items-center space-x-4 ">
+              <button
+                className={
+                  "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
+                }
+                onClick={() => {
+                  killSwitchClicked.current = true;
+                  alreadyRunning.current = false;
+                  setLoading(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <div className="flex justify-center items-center space-x-4 ">
             <button
-              className={
-                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
-              }
+              type="submit"
+              className={classNames(
+                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
+                loading || !submitButtonClickable
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 bg-purple-500`
+              )}
               onClick={() => {
-                killSwitchClicked.current = true;
-                alreadyRunning.current = false;
-                setLoading(false);
+                if (!loading && submitButtonClickable) {
+                  addTextToChat([
+                    ...devChatContents,
+                    { role: "user", content: userText },
+                  ]);
+                  setUserText("");
+                  killSwitchClicked.current = false;
+                }
               }}
             >
-              Cancel
+              {loading && <LoadingSpinner classes="h-4 w-4" />}
+              Submit
             </button>
-          )}
-          <button
-            type="submit"
-            className={classNames(
-              "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
-              loading || !submitButtonClickable
-                ? "bg-gray-500 cursor-not-allowed"
-                : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 bg-purple-500`
-            )}
-            onClick={() => {
-              if (!loading && submitButtonClickable) {
-                addTextToChat([
-                  ...devChatContents,
-                  { role: "user", content: userText },
-                ]);
-                setUserText("");
-                killSwitchClicked.current = false;
-              }
-            }}
-          >
-            {loading && <LoadingSpinner classes="h-4 w-4" />}
-            Submit
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -435,11 +557,16 @@ function fromStepToGPTMessages(steps: Step[]): ChatItem[] {
 }
 
 const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;
+let feedbackRegex = /<button>Feedback<\/button>/;
 let confirmRegex = /<button>Confirm<\/button>/;
-let buttonRegex = /<button>(.*?)<\/button>/;
+let buttonRegex = /<button>(?![^<]*<button>)(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
-function DevChatItem(props: { chatItem: ChatItem }) {
+function DevChatItem(props: {
+  chatItem: ChatItem;
+  setConfirmationButtonClicked: (clicked: "yes" | "no" | null) => void;
+  setConfirmationRequired: (required: boolean) => void;
+}) {
   const { profile } = useProfile();
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
@@ -469,7 +596,9 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           : props.chatItem.role === "debug"
           ? "bg-green-100"
           : props.chatItem.role === "function"
-          ? "bg-purple-100"
+          ? "bg-green-200"
+          : props.chatItem.role === "confirmation"
+          ? "bg-red-300"
           : ""
       )}
     >
@@ -478,6 +607,8 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           ? profile?.organizations?.name + " AI"
           : props.chatItem.role === "function"
           ? "Function called"
+          : props.chatItem.role === "confirmation"
+          ? "Confirmation required"
           : props.chatItem.role === "user"
           ? "You"
           : props.chatItem.role === "debug"
@@ -487,7 +618,7 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           : "Unknown"}
       </p>
       {matches.map((text, idx) => {
-        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+        if (feedbackRegex.exec(text) && feedbackRegex.exec(text)!.length > 0) {
           return (
             <div
               key={idx}
@@ -504,6 +635,47 @@ function DevChatItem(props: { chatItem: ChatItem }) {
                 </button>
                 <button
                   onClick={() => setSaveSuccessfulFeedback(true)}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
+                >
+                  <HandThumbUpIcon className="h-5 w-5" />
+                  Yes
+                </button>
+              </div>
+              <div
+                className={classNames(
+                  "flex flex-row place-items-center gap-x-1",
+                  saveSuccessfulFeedback ? "visible" : "invisible"
+                )}
+              >
+                <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                <div className="text-sm">Thanks for your feedback!</div>
+              </div>
+            </div>
+          );
+        }
+        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+          return (
+            <div
+              key={idx}
+              className="my-5 w-full flex flex-col place-items-center gap-y-2"
+            >
+              Are you sure you want to continue?
+              <div className="flex flex-row gap-x-4">
+                <button
+                  onClick={() => {
+                    props.setConfirmationButtonClicked("no");
+                    props.setConfirmationRequired(false);
+                  }}
+                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
+                >
+                  <HandThumbDownIcon className="h-5 w-5" />
+                  No
+                </button>
+                <button
+                  onClick={() => {
+                    props.setConfirmationButtonClicked("yes");
+                    props.setConfirmationRequired(false);
+                  }}
                   className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
                 >
                   <HandThumbUpIcon className="h-5 w-5" />
@@ -570,22 +742,28 @@ function DevChatItem(props: { chatItem: ChatItem }) {
 }
 
 function Table(props: { chatKeyValueText: string }) {
-  const parsedValues = parseKeyValues(props.chatKeyValueText);
+  let parsedValues = parseTableTags(props.chatKeyValueText);
 
   return (
     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
       <table className="min-w-full divide-y divide-gray-300">
+        <caption className="text-md text-gray-900 mb-2 font-extrabold">
+          {parsedValues.find((keyValue) => keyValue.key === "caption")?.value}
+        </caption>
         <tbody className="bg-gray-300 rounded-full">
-          {parsedValues.map((keyValue) => (
-            <tr key={keyValue.key} className="even:bg-[#DADDE3]">
-              <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
-                {keyValue.key}
-              </td>
-              <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
-                {keyValue.value}
-              </td>
-            </tr>
-          ))}
+          {parsedValues.map(
+            (keyValue) =>
+              keyValue.key !== "caption" && (
+                <tr key={keyValue.key} className="even:bg-[#DADDE3]">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
+                    {keyValue.key}
+                  </td>
+                  <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
+                    {keyValue.value}
+                  </td>
+                </tr>
+              )
+          )}
         </tbody>
       </table>
     </div>
@@ -616,7 +794,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
         {profile?.organizations?.name + " AI"}
       </p>
       {matches.map((text, idx) => {
-        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+        if (feedbackRegex.exec(text) && feedbackRegex.exec(text)!.length > 0) {
           return (
             <div
               key={idx}

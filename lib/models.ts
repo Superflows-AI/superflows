@@ -1,3 +1,5 @@
+import { Action } from "./types";
+
 export type ChatGPTMessage =
   | {
       role: "system" | "user" | "assistant";
@@ -62,3 +64,27 @@ export type RequestMethods =
   | "DELETE"
   | "PATCH"
   | "OPTIONS";
+
+export type StreamingStepInput =
+  | { role: "assistant" | "error" | "debug"; content: string }
+  | { role: "function"; name: string; content: string };
+export type StreamingStep = StreamingStepInput & { id: number };
+export interface ActionToHttpRequest {
+  action: Action;
+  parameters: Record<string, unknown>;
+  organization: { api_host: string; id: number };
+  userApiKey?: string;
+  stream?: (input: StreamingStepInput) => void;
+}
+export interface FunctionCall {
+  name: string;
+  args: { [key: string]: any };
+}
+
+export interface ParsedOutput {
+  reasoning: string;
+  plan: string;
+  tellUser: string;
+  commands: FunctionCall[];
+  completed: boolean | null;
+}

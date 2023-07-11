@@ -11,6 +11,7 @@
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
     "@headlessui/react": "^1.7.7",
+    "@node-redis/json": "^1.0.2",
     "@sentry/nextjs": "^7.56.0",
     "@supabase/auth-helpers-nextjs": "^0.6.1",
     "@supabase/auth-helpers-react": "^0.3.1",
@@ -22,6 +23,7 @@
     "@uppy/file-input": "^3.0.2",
     "@uppy/progress-bar": "^3.0.2",
     "@uppy/react": "^3.1.2",
+    "@upstash/redis": "^1.22.0",
     "d3-time-format": "^4.1.0",
     "dirty-json": "^0.9.2",
     "dotenv": "^16.0.3",
