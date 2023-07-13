@@ -86,5 +86,6 @@ export interface ParsedOutput {
   plan: string;
   tellUser: string;
   commands: FunctionCall[];
-  completed: boolean | null;
+  // Only valid when streaming is complete. Don't use while streaming
+  completed: boolean;
 }

@@ -26,7 +26,7 @@ export function ProfileContextProvider(props: {
   const [profile, setProfile] = useState<ProfilesRow | null>(null);
 
   const refreshProfile = useCallback(async (): Promise<void> => {
-    if (props.disabled) return;
+    if (props.disabled || !props.supabase || !setProfile) return;
     const { data, error } = await props.supabase
       .from("profiles")
       .select("*, organizations(*, is_paid(*))")

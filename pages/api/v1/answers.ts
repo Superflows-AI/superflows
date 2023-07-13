@@ -29,7 +29,7 @@ import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import {
   httpRequestFromAction,
-  processAPIoutput
+  processAPIoutput,
 } from "../../../lib/edge-runtime/requests.ts";
 
 export const config = {
@@ -448,7 +448,7 @@ async function Angela( // Good ol' Angela
           streamInfo(confirmationMessage as StreamingStepInput);
         }
       }
-      if (mostRecentParsedOutput.completed !== false) {
+      if (mostRecentParsedOutput.completed) {
         await storeActionsAwaitingConfirmation(toConfirm, conversationId);
         return { nonSystemMessages, cost: totalCost };
       }

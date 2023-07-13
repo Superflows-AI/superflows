@@ -364,7 +364,7 @@ export default function PlaygroundChatbot(props: {
               return (
                 <DevChatItem
                   chatItem={chatItem}
-                  key={idx}
+                  key={idx + chatItem.content}
                   setConfirmationButtonClicked={setConfirmationButtonClicked}
                   setConfirmationRequired={setConfirmationRequired}
                 />
@@ -375,7 +375,7 @@ export default function PlaygroundChatbot(props: {
                 return (
                   <DevChatItem
                     chatItem={chatItem}
-                    key={idx}
+                    key={idx + chatItem.content}
                     setConfirmationButtonClicked={setConfirmationButtonClicked}
                     setConfirmationRequired={setConfirmationRequired}
                   />
@@ -402,7 +402,7 @@ export default function PlaygroundChatbot(props: {
                 return (
                   <DevChatItem
                     chatItem={{ ...chatItem, content: contentString }}
-                    key={idx}
+                    key={idx + chatItem.content}
                     setConfirmationButtonClicked={setConfirmationButtonClicked}
                     setConfirmationRequired={setConfirmationRequired}
                   />
@@ -411,14 +411,16 @@ export default function PlaygroundChatbot(props: {
                 return (
                   <DevChatItem
                     chatItem={chatItem}
-                    key={idx}
+                    key={idx + chatItem.content}
                     setConfirmationButtonClicked={setConfirmationButtonClicked}
                     setConfirmationRequired={setConfirmationRequired}
                   />
                 );
               }
             }
-            return <UserChatItem chatItem={chatItem} key={idx} />;
+            return (
+              <UserChatItem chatItem={chatItem} key={idx + chatItem.content} />
+            );
           })}
           {devChatContents.length === 0 && suggestions.length > 0 && (
             <div className="py-4 px-1.5">

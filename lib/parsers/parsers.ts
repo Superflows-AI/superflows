@@ -26,11 +26,42 @@ export function parseOutput(gptString: string): ParsedOutput {
   const planIn = gptString.toLowerCase().includes("plan:");
   const tellUserIn = gptString.toLowerCase().includes("tell user:");
   const commandsIn = gptString.toLowerCase().includes("commands:");
-  const completedIn = gptString.toLowerCase().includes("completed:");
+
+  let reasoning = "";
+  if (reasoningIn && (planIn || tellUserIn || commandsIn)) {
+    reasoning = getSectionText(
+      gptString,
+      "Reasoning",
+      planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"
+    );
+  } else if (reasoningIn) {
+    // Response streaming in, reasoning present, but no other sections yet
+    reasoning = gptString.split("Reasoning:")[1].trim();
+  } // Either streaming in, reasoning word incomplete, or no reasoning
+
+  let plan: string = "";
+  if (planIn) {
+    if (tellUserIn) {
+      plan = getSectionText(gptString, "Plan", "Tell user");
+    } else if (commandsIn) {
+      plan = getSectionText(gptString, "Plan", "Commands");
+    } else {
+      plan = gptString.split("Plan:")[1].trim();
+    }
+  }
+
+  let tellUser: string = "";
+  if (tellUserIn) {
+    if (commandsIn) {
+      tellUser = getSectionText(gptString, "Tell user", "Commands");
+    } else {
+      tellUser = gptString.split("Tell user:")[1].trim();
+    }
+  }
 
   let commands: FunctionCall[] = [];
-  if (commandsIn && completedIn) {
-    const commandsText = getSectionText(gptString, "Commands", "Completed");
+  if (commandsIn) {
+    const commandsText = gptString.split("Commands:")[1].trim();
     commandsText
       .split("\n")
       // Filter out comments & empty lines
@@ -38,57 +69,20 @@ export function parseOutput(gptString: string): ParsedOutput {
         (line: string) => !line.startsWith("# ") && line.trim().length > 0
       )
       .forEach((line: string) => {
-        commands.push(parseFunctionCall(line));
+        try {
+          commands.push(parseFunctionCall(line));
+        } catch (e) {}
       });
   }
+  // Note: this gives true while streaming in. This is of course, incorrect!
+  const completed =
+    (commandsIn || tellUserIn || planIn) && commands.length === 0;
 
-  let completed: boolean | null = null;
-  if (gptString.split("Completed: ").length > 1) {
-    const completedString = gptString
-      .toLowerCase()
-      .split("completed: ")[1]
-      .trim();
-    completed =
-      completedString.startsWith("true") ||
-      completedString.startsWith("question");
-  }
-
-  let reasoningText = "";
-  if (planIn || tellUserIn || commandsIn) {
-    reasoningText = getSectionText(
-      gptString,
-      "Reasoning",
-      planIn ? "Plan" : tellUserIn ? "Tell user" : "Commands"
-    );
-  } else if (reasoningIn) {
-    // Response streaming in, reasoning present, but no other sections yet
-    reasoningText = gptString.split("Reasoning:")[1].trim();
-  } else {
-    // Streaming in, reasoning word incomplete
-    reasoningText = "";
-  }
-
-  return {
-    reasoning: reasoningText,
-    plan: planIn
-      ? getSectionText(gptString, "Plan", tellUserIn ? "Tell user" : "Commands")
-      : "",
-    tellUser: tellUserIn
-      ? getSectionText(
-          gptString,
-          "Tell user",
-          commandsIn ? "Commands" : "Completed"
-        )
-      : "",
-    commands,
-    completed,
-  };
+  return { reasoning, plan, tellUser, commands, completed };
 }
 
 export function getLastSectionName(gptString: string): string {
-  if (gptString.toLowerCase().includes("completed:")) {
-    return "completed";
-  } else if (gptString.toLowerCase().includes("commands:")) {
+  if (gptString.toLowerCase().includes("commands:")) {
     return "commands";
   } else if (gptString.toLowerCase().includes("tell user:")) {
     return "tell user";
