@@ -6,9 +6,28 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
-  // This enables calls to /api/watch from the chrome extension
+  // This enables calls to /api/v1 from users' domains
   async headers() {
-    return [];
+    return [
+      {
+        source: '/api/v1/answers',
+        headers: [
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, Accept" }
+        ],
+      },
+      {
+        source: '/api/v1/confirm',
+        headers: [
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, Accept" }
+        ],
+      }
+    ];
   }
 };
 
