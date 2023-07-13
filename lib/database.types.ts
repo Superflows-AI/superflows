@@ -34,6 +34,37 @@ export interface Database {
   };
   public: {
     Tables: {
+      action_tags: {
+        Row: {
+          created_at: string | null;
+          description: string;
+          id: number;
+          name: string;
+          org_id: number | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          description?: string;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+        };
+        Update: {
+          created_at?: string | null;
+          description?: string;
+          id?: number;
+          name?: string;
+          org_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "action_tags_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       actions: {
         Row: {
           action_type: string;
@@ -49,6 +80,7 @@ export interface Database {
           request_body_contents: Json | null;
           request_method: string | null;
           responses: Json | null;
+          tag: number | null;
         };
         Insert: {
           action_type?: string;
@@ -64,6 +96,7 @@ export interface Database {
           request_body_contents?: Json | null;
           request_method?: string | null;
           responses?: Json | null;
+          tag?: number | null;
         };
         Update: {
           action_type?: string;
@@ -79,12 +112,19 @@ export interface Database {
           request_body_contents?: Json | null;
           request_method?: string | null;
           responses?: Json | null;
+          tag?: number | null;
         };
         Relationships: [
           {
             foreignKeyName: "actions_org_id_fkey";
             columns: ["org_id"];
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "actions_tag_fkey";
+            columns: ["tag"];
+            referencedRelation: "action_tags";
             referencedColumns: ["id"];
           }
         ];

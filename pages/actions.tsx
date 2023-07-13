@@ -6,7 +6,7 @@ import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { Navbar } from "../components/navbar";
 import SignInComponent from "../components/signIn";
-import { Action } from "../lib/types";
+import { Action, ActionTagJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
 
 export default function App() {
@@ -28,42 +28,44 @@ function Dashboard() {
       <Navbar current={"Actions"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="h-full rounded px-6">
-          <ActionsPage />
+          <RepliesPage />
         </div>
       </div>
     </div>
   );
 }
 
-export function ActionsPage() {
+export function RepliesPage() {
   const supabase = useSupabaseClient();
   const { profile } = useProfile();
   const [isError, setIsError] = useState(false);
-  const [actions, setActions] = useState<Action[] | null>(null);
 
+  const [actionTag, setActionTagsJoinActions] = useState<
+    ActionTagJoinActions[] | undefined
+  >(undefined);
   const loadActions = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("actions")
-      .select("*")
+    const actionTagRes = await supabase
+      .from("action_tags")
+      .select("*, actions(*)")
       .order("id", { ascending: true })
       .eq("org_id", profile?.org_id);
 
-    if (error) {
-      setIsError(true);
-      throw new Error(error.message);
-    }
+    // if you don't sort the actions get shuffled around on the page each time
+    actionTagRes.data?.forEach((actionTag) => {
+      actionTag.actions.sort((a: Action, b: Action) => {
+        return a.name.localeCompare(b.name);
+      });
+    });
 
-    if (!data) {
+    if (actionTagRes.error) {
+      setIsError(true);
+      throw actionTagRes.error;
+    }
+    if (actionTagRes.data === null) {
       setIsError(true);
       throw new Error("No data returned");
     }
-
-    // if you don't sort the actions get shuffled around on the page each time
-    setActions(
-      data.sort((a: Action, b: Action) => {
-        return a.name.localeCompare(b.name);
-      })
-    );
+    setActionTagsJoinActions(actionTagRes.data);
   }, [profile, supabase]);
   useEffect(() => {
     if (!profile) return;
@@ -72,10 +74,10 @@ export function ActionsPage() {
 
   return (
     <div className={classNames("w-full relative h-full")}>
-      {actions ? (
+      {actionTag ? (
         <PageActionsSection
-          actions={actions}
-          setActions={setActions}
+          actionTags={actionTag}
+          setActionTags={setActionTagsJoinActions}
           loadActions={loadActions}
         />
       ) : !isError ? (

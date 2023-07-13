@@ -78,7 +78,7 @@ export default function getMessages(
 
 Seek user assistance when necessary or more information is required.
 
-Seek more info or help when needed. Avoid directing users, instead, complete tasks with "commands" output in the desired order.
+Avoid directing users, instead, complete tasks with "commands" output in the desired order.
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}.
 

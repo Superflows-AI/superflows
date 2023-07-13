@@ -122,7 +122,7 @@ ${
       "notes": null
     }
 
-    Provide a valid JSON response. Include only JSON. All fields in the "Type" must be included. Avoid using null.
+    Provide a valid JSON response. THIS IS VERY IMPORTANT DO NOT FORGET THIS. Include only JSON. All fields in the "Type" must be included. Avoid using null.
 
     Type:
     ${JSON.stringify(expectedResponseType, null, 2)}.
@@ -130,7 +130,7 @@ ${
     Response:
 
     `
-    : "Your response should be a valid JSON. Include only the JSON. Do not include any extra information."
+    : "Your response should be a valid JSON. THIS IS VERY IMPORTANT DO NOT FORGET THIS. Include only the JSON. Do not include any extra information."
 }
 `,
     },

@@ -16,7 +16,7 @@ import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import getMessages from "../../../lib/prompts/chatBot";
 import {
-  getActiveActions,
+  getActiveActionTagsAndActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
@@ -194,7 +194,11 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the active actions from the DB which we can choose between
-    const activeActions = await getActiveActions(org.id);
+    const actionsWithTags = await getActiveActionTagsAndActions(org.id);
+    const activeActions = actionsWithTags!
+      .map((tag) => tag.actions)
+      .flat()
+      .filter((action) => action.active);
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
@@ -562,6 +566,8 @@ export async function httpRequestFromAction(
     role: "debug",
     content: logMessage,
   });
+  console.log("HERE WE AREEEEEEEE", JSON.stringify(requestOptions));
+  console.log("HERE WE AREEEEEEEE2", url);
   const response = await fetch(url, requestOptions);
 
   if (!response.ok) {

@@ -65,6 +65,27 @@ export default async function handler(
   }
   if (!dereferencedSwagger.paths) throw Error("No paths");
 
+  // We store actions in tags. This stores the action_tags id for the row with the name of the tag
+  let tagNameToId: { [name: string]: number } = {};
+
+  console.log("Adding tags..");
+  for (const tagObj of dereferencedSwagger.tags ?? []) {
+    const actionTagResponse = await supabase
+      .from("action_tags")
+      .insert({
+        name: tagObj.name,
+        description: tagObj.description,
+        org_id: orgId,
+      })
+      .select();
+    if (actionTagResponse.error) throw actionTagResponse.error;
+    if (actionTagResponse.data.length === 0) {
+      throw new Error("No action tag created");
+    }
+    tagNameToId[tagObj.name] = actionTagResponse.data[0].id;
+  }
+
+  console.log("Adding paths...");
   for (const [path, pathObj] of Object.entries(dereferencedSwagger.paths)) {
     if (pathObj === undefined) {
       continue;
@@ -80,6 +101,37 @@ export default async function handler(
         console.log("Skipping methodObj because it's an array");
         continue;
       }
+      const tagName = methodObj.tags?.[0] ?? stripTrailingAndCurly(path);
+      let actionTagId: number;
+      if (tagName in tagNameToId) {
+        actionTagId = tagNameToId[tagName];
+      } else {
+        // This is used as the name of the action tag - strip trailing slash and curly braces
+        const existingActionTagResp = await supabase
+          .from("action_tags")
+          .select("*")
+          .eq("name", tagName)
+          .eq("org_id", orgId);
+        if (existingActionTagResp.error) throw existingActionTagResp.error;
+        if (
+          existingActionTagResp.data === null ||
+          existingActionTagResp.data.length === 0
+        ) {
+          // Add to action_tags table
+          const actionTagResponse = await supabase
+            .from("action_tags")
+            .insert({ name: tagName, org_id: orgId })
+            .select();
+          if (actionTagResponse.error) throw actionTagResponse.error;
+          if (actionTagResponse.data.length === 0) {
+            throw new Error("No action tag created");
+          }
+          actionTagId = actionTagResponse.data[0].id;
+        } else {
+          actionTagId = existingActionTagResp.data[0].id;
+        }
+        tagNameToId[tagName] = actionTagId;
+      }
       let description =
         replaceMarkdownLinks(methodObj.description ?? methodObj.summary) ??
         method.toUpperCase() + " " + path;
@@ -90,6 +142,7 @@ export default async function handler(
         description: description,
         active: ["get"].includes(method),
         org_id: orgId,
+        tag: actionTagId,
         action_type: "http",
         path: path,
         // @ts-ignore
