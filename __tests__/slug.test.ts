@@ -10,6 +10,7 @@ import { Action } from "../lib/types";
 
 const actions: Action[] = [
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -25,6 +26,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -40,6 +42,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -55,6 +58,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -70,6 +74,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -85,6 +90,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
