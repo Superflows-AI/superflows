@@ -14,7 +14,7 @@ export default function apiMockPrompt(
   }
 ): ChatGPTMessage[] {
   // TODO: Maybe add Examples to prompt type as e.g for retrieve_event_counts_for_a_team it's required to infer the shape of
-  // the array they want back
+  //  the array they want back
   return [
     {
       role: "system",
@@ -22,115 +22,114 @@ export default function apiMockPrompt(
         orgInfo ? `${orgInfo.name}'s` : "an"
       } API. ${
         orgInfo ? orgInfo.description : ""
-      } However, they do not have access to the real API. 
-Your task is to generate a response to mock the API and respond to the user's request.`,
+      } However, they do not have access to the real API.
+
+Your task is to generate a mock API response to the user's request.`,
     },
     {
       role: "user",
       content: `
-I am sending a ${requestMethod} request to the ${path} endpoint.
-${
-  objectNotEmpty(queryParameters)
-    ? `I am sending the following query parameters: ${JSON.stringify(
-        queryParameters
-      )}.`
-    : ""
-}
-${
-  objectNotEmpty(pathParameters)
-    ? `I am sending the following path parameters: ${JSON.stringify(
-        pathParameters
-      )}.`
-    : ""
-}
-${
-  objectNotEmpty(requestBodyParameters)
-    ? `I am is sending the following request body parameters: ${JSON.stringify(
-        requestBodyParameters
-      )}.`
-    : ""
-}
+I am sending a ${requestMethod} request to the ${path} endpoint${
+        objectNotEmpty({
+          ...queryParameters,
+          ...pathParameters,
+          ...requestBodyParameters,
+        })
+          ? ` with parameters:
+${JSON.stringify({
+  ...queryParameters,
+  ...pathParameters,
+  ...requestBodyParameters,
+})}`
+          : " with no parameters."
+      }
+
 ${
   objectNotEmpty(expectedResponseType)
-    ? `Your response should be JSON of a specific type. Below are examples of how to generate a response from a type.
+    ? `Your response should be JSON of a specific type. Below are 2 examples of how to generate a response from a type.
 
-    Type:
-    {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "The id of the customer",
-          },
-          "name": {
-            "type": "string",
-            "description": "the name of the customer",
-            "nullable": true
-          },
-          "birthday": {
-            "type": "string",
-            "description": "The customer's birthday",
-            "nullable": true
-          }
-        }
+-- EXAMPLE 1 --
+
+Type:
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer",
+        "description": "The id of the customer",
+      },
+      "name": {
+        "type": "string",
+        "description": "the name of the customer",
+        "nullable": true
+      },
+      "birthday": {
+        "type": "string",
+        "description": "The customer's birthday",
+        "nullable": true
       }
     }
-    Response:
-    [
-      {
-        "id": 123,
-        "name": "John Doe",
-        "birthday": "1990-01-01"
-      }
-    ]
+  }
+}
+Response:
+[
+  {
+    "id": 123,
+    "name": "John Doe",
+    "birthday": "1990-01-01"
+  }
+]
 
-    Type:
-    {
-      "type": "object",
-      "items": {
-        "type": "object",
-        "required": [
-          "dateCreated",
-          "id"
-        ],
-        "properties": {
-          "dateCreated": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "id": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          }
-          "notes": {
-            "type": "string",
-            "nullable": true
-          }
-        }
+-- EXAMPLE 2 --
+
+Type:
+{
+  "type": "object",
+  "items": {
+    "type": "object",
+    "required": [
+      "dateCreated",
+      "id"
+    ],
+    "properties": {
+      "dateCreated": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "id": {
+        "type": "string"
+      },
+      "message": {
+        "type": "string",
+        "nullable": true
+      }
+      "notes": {
+        "type": "string",
+        "nullable": true
       }
     }
-    Response:
-    {
-      "dateCreated": "2021-01-01T00:00:00.000Z",
-      "id": "123",
-      "message": "Hello world!",
-      "notes": null
-    }
+  }
+}
+Response:
+{
+  "dateCreated": "2021-01-01T00:00:00.000Z",
+  "id": "123",
+  "message": "Hello world!",
+  "notes": null
+}
 
-    Provide a valid JSON response. THIS IS VERY IMPORTANT DO NOT FORGET THIS. Include only JSON. All fields in the "Type" must be included. Avoid using null.
+-- END OF EXAMPLES --
 
-    Type:
-    ${JSON.stringify(expectedResponseType, null, 2)}.
+Provide a valid JSON response of the type given below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Include only JSON. All fields in the "Type" must be included.
 
-    Response:
+Type:
+${JSON.stringify(expectedResponseType, null, 2)}.
 
-    `
-    : "Your response should be a valid JSON. THIS IS VERY IMPORTANT DO NOT FORGET THIS. Include only the JSON. Do not include any extra information."
+Response:
+`
+    : "Your response should be a valid JSON. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Include only the JSON. Do not include any extra information."
 }
 `,
     },

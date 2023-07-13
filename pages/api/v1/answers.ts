@@ -474,7 +474,7 @@ export async function httpRequestFromAction(
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/api-mock"))
+  if (organization.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {
@@ -566,8 +566,6 @@ export async function httpRequestFromAction(
     role: "debug",
     content: logMessage,
   });
-  console.log("HERE WE AREEEEEEEE", JSON.stringify(requestOptions));
-  console.log("HERE WE AREEEEEEEE2", url);
   const response = await fetch(url, requestOptions);
 
   if (!response.ok) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  operationIdToFunctionName,
   replaceMarkdownLinks,
   requestToFunctionName,
 } from "../pages/api/swagger-to-actions";
@@ -54,5 +55,27 @@ describe("replaceMarkdownLinks", () => {
       "there's [something](https://something.com) [here](https://something.com)";
     let result = replaceMarkdownLinks(testString);
     expect(result).toEqual("there's something here");
+  });
+});
+
+describe("operationIdToFunctionName", () => {
+  it("handles simple camel case", () => {
+    expect(operationIdToFunctionName("camelCase")).toBe("camel_case");
+  });
+
+  it("handles multiple capital letters in a row", () => {
+    expect(operationIdToFunctionName("camelCaseJSON")).toBe("camel_case_json");
+  });
+
+  it("handles words without capital letters", () => {
+    expect(operationIdToFunctionName("camelcase")).toBe("camelcase");
+  });
+
+  it("handles single words", () => {
+    expect(operationIdToFunctionName("Camel")).toBe("camel");
+  });
+
+  it("handles words with numbers", () => {
+    expect(operationIdToFunctionName("camelCase2Go")).toBe("camel_case2_go");
   });
 });

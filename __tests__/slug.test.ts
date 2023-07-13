@@ -5,7 +5,7 @@ import {
   getPathParameters,
   processMultipleMatches,
   slugMatchesPath,
-} from "../pages/api/api-mock/[...slug]";
+} from "../pages/api/mock/[...slug]";
 import { Action } from "../lib/types";
 
 const actions: Action[] = [

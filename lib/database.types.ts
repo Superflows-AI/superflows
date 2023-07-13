@@ -58,7 +58,7 @@ export interface Database {
         };
         Relationships: [
           {
-            foreignKeyName: "action_tags_org_id_fkey";
+            foreignKeyName: "action_groups_org_id_fkey";
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
@@ -116,15 +116,15 @@ export interface Database {
         };
         Relationships: [
           {
-            foreignKeyName: "actions_org_id_fkey";
-            columns: ["org_id"];
-            referencedRelation: "organizations";
+            foreignKeyName: "actions_action_group_fkey";
+            columns: ["tag"];
+            referencedRelation: "action_tags";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "actions_tag_fkey";
-            columns: ["tag"];
-            referencedRelation: "action_tags";
+            foreignKeyName: "actions_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
             referencedColumns: ["id"];
           }
         ];

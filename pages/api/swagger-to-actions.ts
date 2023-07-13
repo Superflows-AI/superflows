@@ -137,7 +137,7 @@ export default async function handler(
         method.toUpperCase() + " " + path;
       actionInserts.push({
         name:
-          methodObj.operationId?.toLowerCase().replaceAll(" ", "_") ??
+          operationIdToFunctionName(methodObj.operationId) ??
           requestToFunctionName(method, methodObj, path),
         description: description,
         active: ["get"].includes(method),
@@ -177,6 +177,16 @@ export default async function handler(
   }
 
   res.status(200).send({ success: true });
+}
+
+export function operationIdToFunctionName(
+  operationId: string | undefined
+): string | undefined {
+  if (!operationId) return undefined;
+  operationId = operationId
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase();
+  return operationId.replaceAll(" ", "_");
 }
 
 export function requestToFunctionName(
