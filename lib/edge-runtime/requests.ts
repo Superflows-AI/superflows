@@ -42,7 +42,7 @@ export async function httpRequestFromAction({
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/api-mock"))
+  if (organization.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {

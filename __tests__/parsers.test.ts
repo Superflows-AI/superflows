@@ -9,9 +9,7 @@ describe("Parse output", () => {
         "Plan:\n" +
         "- Inform the user about the retrieved information.\n" +
         "\n" +
-        "Commands:\n" +
-        "\n" +
-        "Completed:"
+        "Commands:\n"
     );
     expect(output).toBeDefined();
     expect(output.reasoning).toBe(
@@ -22,7 +20,7 @@ describe("Parse output", () => {
     );
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(null);
+    expect(output.completed).toBe(true);
   });
   it("should not error including tell user", () => {
     const output = parseOutput(
@@ -33,9 +31,7 @@ describe("Parse output", () => {
         "- Ask the user for more information about the type of trap, the customer involved, and any other relevant details.\n" +
         "\n" +
         "Tell user:\n" +
-        "Could you please provide more information? Who is the customer we need to schedule a trap for and what type of trap are we talking about?\n" +
-        "\n" +
-        "Completed:"
+        "Could you please provide more information? Who is the customer we need to schedule a trap for and what type of trap are we talking about?\n"
     );
     expect(output).toBeDefined();
     expect(output.reasoning).toBe(
@@ -48,15 +44,13 @@ describe("Parse output", () => {
       "Could you please provide more information? Who is the customer we need to schedule a trap for and what type of trap are we talking about?"
     );
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(null);
+    expect(output.completed).toBe(true);
   });
   it("should not error no plan, no commands", () => {
     const output = parseOutput(
       "Reasoning: We have successfully retrieved the recent information about Mr. Nestor Alfaras's case.\n" +
         "\n" +
-        "Tell user: The most recent update for Mr. Nestor Alfaras's case is an insurance note which has been completed. The subproject type was Plumbing and the details were passed on to WekLaw.\n" +
-        "\n" +
-        "Completed: true"
+        "Tell user: The most recent update for Mr. Nestor Alfaras's case is an insurance note which has been completed. The subproject type was Plumbing and the details were passed on to WekLaw.\n"
     );
     expect(output).toBeDefined();
     expect(output.reasoning).toBe(
@@ -76,9 +70,7 @@ describe("Parse output", () => {
         "Plan:\n" +
         "- Ask the user to provide more information about Mr. Martinez so we can identify the correct person.\n" +
         "\n" +
-        "Tell user: We have multiple customers with the last name Martinez. Could you please provide more information, such as a first name, to help identify the correct Mr. Martinez?\n" +
-        "\n" +
-        "Completed: question"
+        "Tell user: We have multiple customers with the last name Martinez. Could you please provide more information, such as a first name, to help identify the correct Mr. Martinez?"
     );
     expect(output).toBeDefined();
     expect(output.reasoning).toBe(
@@ -104,7 +96,7 @@ describe("Parse output", () => {
     expect(output.plan).toBe("");
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
-    expect(output.completed).toBe(null);
+    expect(output.completed).toBe(false);
   });
 });
 
