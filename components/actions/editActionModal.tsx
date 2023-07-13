@@ -9,17 +9,17 @@ import {
   PencilSquareIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Action } from "../../lib/types";
 import {
   classNames,
   isAlphaNumericUnderscore,
   isJsonString,
 } from "../../lib/utils";
+import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
-import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 
 interface JsonTextBoxProps {
   title: "parameters" | "responses" | "request_body_contents";
@@ -31,7 +31,17 @@ interface JsonTextBoxProps {
   setLocalAction: (action: Action) => void;
 }
 
+const textToJson = (text: string) => {
+  return isJsonString(text)
+    ? JSON.stringify(JSON.parse(text), undefined, 2)
+    : text;
+};
+
 function JsonTextBox(props: JsonTextBoxProps) {
+  // Just format the text once at the start to prevent formatting mid-editing
+  useEffect(() => {
+    props.setText(textToJson(props.text));
+  }, []);
   return (
     <>
       <div className="w-full px-20 flex flex-row justify-between place-items-start overflow-hidden">
@@ -43,15 +53,14 @@ function JsonTextBox(props: JsonTextBoxProps) {
           className="border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded text-black whitespace-pre-wrap resize-none overflow-hidden"
           onChange={(e) => {
             props.setText(e.target.value);
+            props.setValidJSON(isJsonString(e.target.value));
           }}
-          value={
-            isJsonString(props.text)
-              ? JSON.stringify(JSON.parse(props.text), undefined, 2)
-              : props.text
-          }
+          value={props.text}
           placeholder={"{}"}
           onBlur={(e) => {
             try {
+              const textarea = e.target as HTMLTextAreaElement;
+              textarea.value = textToJson(textarea.value);
               const newAction = props.action;
               newAction[props.title] = JSON.parse(e.target.value);
               props.setLocalAction(newAction);
@@ -214,13 +223,6 @@ export default function EditActionModal(props: {
 
       <div className="mt-10 mb-4 grid grid-cols-2 gap-x-6">
         <div className="relative">
-          {/*<div className="absolute top-3 right-3 z-10">*/}
-          {/*  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full hover:bg-gray-50" />*/}
-          {/*  <div className={classNames("-top-8 left-12 w-64 popup")}>*/}
-          {/*    The AI uses this to write this 1-click reply - be descriptive.*/}
-          {/*    E.g.*/}
-          {/*  </div>*/}
-          {/*</div>*/}
           <FloatingLabelInput
             className={classNames(
               "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
@@ -398,14 +400,14 @@ export default function EditActionModal(props: {
         <button
           ref={saveRef}
           className={classNames(
-            "inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm  focus:outline-none focus:ring-2 focus:ring-sky-500 sm:order-3 focus:ring-offset-2 sm:text-sm",
+            "inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none  sm:order-3  sm:text-sm",
             parametersValidJSON && responsesValidJSON
-              ? "bg-sky-600 hover:bg-sky-700"
+              ? "bg-sky-600 hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
               : "bg-gray-400 cursor-not-allowed"
           )}
           onClick={(event) => {
             event.preventDefault();
-            if (nameValid) {
+            if (nameValid && parametersValidJSON && responsesValidJSON) {
               console.log("saving action", localAction);
               props.setAction(localAction);
               props.close();
