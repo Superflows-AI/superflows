@@ -35,6 +35,11 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
     .map((d) => ({ date: Date.parse(d.date) / msToDay, value: d.usage }))
     .sort((a, b) => a.date - b.date);
 
+  const xRange = chartData[chartData.length - 1].date - chartData[0].date;
+  const offset = Math.ceil(xRange * 0.1);
+
+  const intToDate = (date: number) => formatDate(new Date(date * msToDay));
+
   return (
     <>
       <ResponsiveContainer width="99%" aspect={2}>
@@ -52,8 +57,8 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
             dataKey="date"
             type="number"
             scale="time"
-            domain={["dataMin - 10", "dataMax + 10"]}
-            tickFormatter={(date) => formatDate(new Date(date * msToDay))}
+            domain={[`dataMin - ${offset}`, `dataMax + ${offset}`]}
+            tickFormatter={intToDate}
           />
           <YAxis>
             <Label
@@ -63,7 +68,13 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
               offset={-5}
             />
           </YAxis>
-          <Tooltip />
+          <Tooltip
+            labelFormatter={intToDate}
+            formatter={(value) =>
+              `$${Math.round((value as number) * 100) / 100}`
+            }
+          />
+
           <Bar dataKey="value" fill="#8884d8" />
         </ComposedChart>
       </ResponsiveContainer>
@@ -76,6 +87,7 @@ function Dashboard() {
   const { profile, refreshProfile } = useProfile();
   const [cost, setCost] = useState([{}] as { date: string; usage: number }[]);
   const [sum, setSum] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +98,7 @@ function Dashboard() {
       if (res.error) throw res.error;
       setCost(res.data.map((d) => ({ date: d.date, usage: d.usage })));
       setSum(res.data.reduce((acc, curr) => acc + curr.usage, 0));
+      setLoading(false);
     })();
   }, [profile, refreshProfile, supabase]);
   return (
@@ -99,7 +112,7 @@ function Dashboard() {
               Math.round(sum * 100) / 100
             }`}
           </p>
-          <DatesBarGraph data={cost} />
+          {!loading && <DatesBarGraph data={cost} />}
         </div>
       </div>
     </div>
