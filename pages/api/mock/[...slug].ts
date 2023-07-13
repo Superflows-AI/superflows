@@ -161,7 +161,7 @@ export default async function handler(
     .eq("request_method", method.toLowerCase())
     .eq("active", true);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   const matchingAction = org_id
     ? getMatchingAction(org_id, actions, method, slug)
@@ -204,6 +204,7 @@ export default async function handler(
     expectedResponseType,
     orgInfo
   );
+  console.log("Mock Prompt:", prompt);
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
     [prompt, {}, "3"],
@@ -229,5 +230,5 @@ export default async function handler(
     }
   }
 
-  res.status(responseCode ? Number(responseCode) : 200).send(json);
+  res.status(responseCode ? Number(responseCode) : 200).json(json);
 }

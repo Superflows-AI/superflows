@@ -6,7 +6,7 @@ import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { Navbar } from "../components/navbar";
 import SignInComponent from "../components/signIn";
-import { Action, ActionGroupJoinActions } from "../lib/types";
+import { Action, ActionTagJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
 
 export default function App() {
@@ -40,32 +40,32 @@ export function RepliesPage() {
   const { profile } = useProfile();
   const [isError, setIsError] = useState(false);
 
-  const [actionGroup, setActionGroupsJoinActions] = useState<
-    ActionGroupJoinActions[] | undefined
+  const [actionTag, setActionTagsJoinActions] = useState<
+    ActionTagJoinActions[] | undefined
   >(undefined);
   const loadActions = useCallback(async () => {
-    const actionGroupRes = await supabase
-      .from("action_groups")
+    const actionTagRes = await supabase
+      .from("action_tags")
       .select("*, actions(*)")
       .order("id", { ascending: true })
       .eq("org_id", profile?.org_id);
 
     // if you don't sort the actions get shuffled around on the page each time
-    actionGroupRes.data?.forEach((actionGroup) => {
-      actionGroup.actions.sort((a: Action, b: Action) => {
+    actionTagRes.data?.forEach((actionTag) => {
+      actionTag.actions.sort((a: Action, b: Action) => {
         return a.name.localeCompare(b.name);
       });
     });
 
-    if (actionGroupRes.error) {
+    if (actionTagRes.error) {
       setIsError(true);
-      throw actionGroupRes.error;
+      throw actionTagRes.error;
     }
-    if (actionGroupRes.data === null) {
+    if (actionTagRes.data === null) {
       setIsError(true);
       throw new Error("No data returned");
     }
-    setActionGroupsJoinActions(actionGroupRes.data);
+    setActionTagsJoinActions(actionTagRes.data);
   }, [profile, supabase]);
   useEffect(() => {
     if (!profile) return;
@@ -74,10 +74,10 @@ export function RepliesPage() {
 
   return (
     <div className={classNames("w-full relative h-full")}>
-      {actionGroup ? (
+      {actionTag ? (
         <PageActionsSection
-          actionGroups={actionGroup}
-          setActionGroups={setActionGroupsJoinActions}
+          actionTags={actionTag}
+          setActionTags={setActionTagsJoinActions}
           loadActions={loadActions}
         />
       ) : !isError ? (

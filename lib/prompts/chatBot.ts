@@ -1,45 +1,26 @@
 import { ChatGPTMessage } from "../models";
-import { ActionGroupJoinActions } from "../types";
+import { Action } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
 
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
-  pageActions: ActionGroupJoinActions[],
+  actions: Action[],
   userDescription: string | undefined,
-  currentPageName: string,
   orgInfo: {
     name: string;
     description: string;
   },
   language: string
 ): ChatGPTMessage[] {
-  const currentPage = pageActions.find((p) => p.name === currentPageName);
-
   let userDescriptionSection = "";
   if (userDescription) {
     userDescriptionSection = `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`;
   }
 
-  if (!currentPage) {
-    throw new Error(
-      `Page ${currentPageName} not found in pageActions ${JSON.stringify(
-        pageActions
-      )}`
-    );
-  }
-  const otherPages = pageActions.filter((p) => p.name !== currentPageName);
-  const availablePages = otherPages
-    .map(
-      (pageAction) => "\n- '" + pageAction.name + "': " + pageAction.description
-    )
-    .join("");
   let i = 1;
   let numberedActions = "";
-  if (availablePages.length > 0) {
-    i++;
-    numberedActions += `1. navigateTo: This will navigate you to another page. This enables you to use functions that are available on that page. Available pages (in format "- 'page-name': description") are: ${availablePages}. PARAMETERS: - pageName (string): The name of the page you want to navigate to. REQUIRED\n`;
-  }
-  currentPage.actions.forEach((action) => {
+
+  actions.forEach((action: Action) => {
     let paramString = "";
     // For parameters
     if (action.parameters && Array.isArray(action.parameters)) {
@@ -91,25 +72,21 @@ export default function getMessages(
   return [
     {
       role: "system",
-      content: `You are ${orgInfo.name} chatbot AI. ${
+      content: `You are ${orgInfo.name} chatbot AI ${
         orgInfo.description
-      } Your role is to be helpful to the user. Help them achieve tasks in ${
-        orgInfo.name
-      } by calling functions.
+      }. Your purpose is to assist users in ${orgInfo.name} via function calls.
 
 Seek user assistance when necessary or more information is required.
 
-Do not instruct the user to perform actions. Instead, perform the actions yourself by calling functions in the "commands" output. Output commands in the order you want them to be performed.
+Avoid directing users, instead, complete tasks with "commands" output in the desired order.
 ${userDescriptionSection}
-The date today is ${new Date().toISOString().split("T")[0]}.
-
-You are currently on the ${currentPageName} page. The functions available are determined by the page you're on. Sometimes, to access a function, you will need to navigate to a new page to be able to see the function definition. In such cases, stop outputting commands when you navigate to the correct page.
+Today's date is ${new Date().toISOString().split("T")[0]}.
 
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
 ${numberedActions}
 
-If you need to use the output of a previous command for a command, simply stop outputting commands and set "Completed: false" - you will be asked once the function has returned for your next step.
+To use the output of a prior command, stop issuing commands and set "Completed: false". You will be prompted for the next step once the function returns.
 
 Aim to complete the task in the smallest number of steps. Be as concise as possible in your responses. 
 

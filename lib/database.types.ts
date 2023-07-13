@@ -34,7 +34,7 @@ export interface Database {
   };
   public: {
     Tables: {
-      action_groups: {
+      action_tags: {
         Row: {
           created_at: string | null;
           description: string;
@@ -67,7 +67,6 @@ export interface Database {
       };
       actions: {
         Row: {
-          action_group: number | null;
           action_type: string;
           active: boolean;
           created_at: string;
@@ -81,9 +80,9 @@ export interface Database {
           request_body_contents: Json | null;
           request_method: string | null;
           responses: Json | null;
+          tag: number | null;
         };
         Insert: {
-          action_group?: number | null;
           action_type?: string;
           active?: boolean;
           created_at?: string;
@@ -97,9 +96,9 @@ export interface Database {
           request_body_contents?: Json | null;
           request_method?: string | null;
           responses?: Json | null;
+          tag?: number | null;
         };
         Update: {
-          action_group?: number | null;
           action_type?: string;
           active?: boolean;
           created_at?: string;
@@ -113,12 +112,13 @@ export interface Database {
           request_body_contents?: Json | null;
           request_method?: string | null;
           responses?: Json | null;
+          tag?: number | null;
         };
         Relationships: [
           {
             foreignKeyName: "actions_action_group_fkey";
-            columns: ["action_group"];
-            referencedRelation: "action_groups";
+            columns: ["tag"];
+            referencedRelation: "action_tags";
             referencedColumns: ["id"];
           },
           {

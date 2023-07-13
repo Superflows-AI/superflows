@@ -16,15 +16,10 @@ import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import getMessages from "../../../lib/prompts/chatBot";
 import {
-  getActiveActionGroupsAndActions,
+  getActiveActionTagsAndActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
-import {
-  Action,
-  ActionGroupJoinActions,
-  Organization,
-  OrgJoinIsPaid,
-} from "../../../lib/types";
+import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { createClient } from "@supabase/supabase-js";
 
@@ -199,7 +194,11 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the active actions from the DB which we can choose between
-    const activeActions = await getActiveActionGroupsAndActions(org.id);
+    const actionsWithTags = await getActiveActionTagsAndActions(org.id);
+    const activeActions = actionsWithTags!
+      .map((tag) => tag.actions)
+      .flat()
+      .filter((action) => action.active);
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
@@ -290,7 +289,7 @@ export type StreamingStep = StreamingStepInput & { id: number };
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
-  actionGroupJoinActions: ActionGroupJoinActions[],
+  actions: Action[],
   org: Organization,
   convoId: number,
   previousMessages: ChatGPTMessage[]
@@ -314,21 +313,18 @@ async function Angela( // Good ol' Angela
 
   let mostRecentParsedOutput = parseOutput("");
   let numOpenAIRequests = 0;
-  // TODO: When changing away from page-based system, delete this
-  let currentPageName = actionGroupJoinActions[0].name;
   let totalCost = 0;
 
   try {
     while (!mostRecentParsedOutput.completed) {
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
-        actionGroupJoinActions,
+        actions,
         reqData.user_description,
-        currentPageName,
         org,
         reqData.language ?? "English"
       );
-      console.log("ChatGPT system prompt", chatGptPrompt[0].content);
+      console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
@@ -392,26 +388,7 @@ async function Angela( // Good ol' Angela
 
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
-        if (command.name === "navigateTo") {
-          console.log("navigatingTo", command.args.pageName);
-          currentPageName = command.args.pageName;
-          streamInfo({
-            role: "function",
-            name: command.name,
-            content: JSON.stringify({
-              message: "Navigated to " + command.args.pageName,
-            }),
-          });
-          nonSystemMessages.push({
-            role: "function",
-            name: command.name,
-            content: "Navigated to " + command.args.pageName,
-          });
-          continue;
-        }
-        const chosenAction = actionGroupJoinActions
-          .find((ag) => ag.name === currentPageName)!
-          .actions.find((a) => a.name === command.name);
+        const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
         }
@@ -497,7 +474,7 @@ export async function httpRequestFromAction(
     headers["Authorization"] = `Bearer ${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/api-mock"))
+  if (organization.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {

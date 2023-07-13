@@ -2,9 +2,9 @@ import { Database } from "./database.types";
 
 export type Action = Database["public"]["Tables"]["actions"]["Row"];
 
-export type ActionGroup = Database["public"]["Tables"]["action_groups"]["Row"];
+export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 
-export type ActionGroupJoinActions = ActionGroup & { actions: Action[] };
+export type ActionTagJoinActions = ActionTag & { actions: Action[] };
 
 export type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
 

@@ -5,12 +5,12 @@ import {
   getPathParameters,
   processMultipleMatches,
   slugMatchesPath,
-} from "../pages/api/api-mock/[...slug]";
+} from "../pages/api/mock/[...slug]";
 import { Action } from "../lib/types";
 
 const actions: Action[] = [
   {
-    action_group: 1,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -26,7 +26,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
-    action_group: 1,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -42,7 +42,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
-    action_group: 2,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -58,7 +58,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
-    action_group: 2,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -74,7 +74,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
-    action_group: 2,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -90,7 +90,7 @@ const actions: Action[] = [
     responses: null,
   },
   {
-    action_group: 2,
+    tag: 1,
     action_type: "http",
     description: "",
     active: true,
@@ -161,6 +161,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v1/Customers/{id}"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v1/Customers/location");
   });
@@ -172,6 +173,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v2/Coordinators/location"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v2/Coordinators/{id}");
   });
@@ -182,6 +184,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v2/Coordinators/location"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v2/Coordinators/location");
   });
@@ -192,6 +195,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v2/Coordinators/location"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v2/{id1}/{id2}");
   });
@@ -203,6 +207,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v2/Coordinators/location"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/{id}/Coordinators/{id2}");
   });
@@ -214,6 +219,7 @@ describe("processMultipleMatches", () => {
       Action_Fixture("/api/v2/Coordinators/location"),
     ];
 
+    // @ts-ignore
     const result = processMultipleMatches(localActions, slug);
     expect(result[0].path).toEqual("/api/v2/Coordinators/location");
   });

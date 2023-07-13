@@ -65,26 +65,24 @@ export default async function handler(
   }
   if (!dereferencedSwagger.paths) throw Error("No paths");
 
-  // We store actions in groups. This stores the action_groups id for the row with the name of the group
-  let groupNameToId: { [name: string]: number } = {};
+  // We store actions in tags. This stores the action_tags id for the row with the name of the tag
+  let tagNameToId: { [name: string]: number } = {};
 
-  // First, add tags as action_groups
   console.log("Adding tags..");
   for (const tagObj of dereferencedSwagger.tags ?? []) {
-    // Add to action_groups table
-    const actionGroupResponse = await supabase
-      .from("action_groups")
+    const actionTagResponse = await supabase
+      .from("action_tags")
       .insert({
         name: tagObj.name,
         description: tagObj.description,
         org_id: orgId,
       })
       .select();
-    if (actionGroupResponse.error) throw actionGroupResponse.error;
-    if (actionGroupResponse.data.length === 0) {
-      throw new Error("No action group created");
+    if (actionTagResponse.error) throw actionTagResponse.error;
+    if (actionTagResponse.data.length === 0) {
+      throw new Error("No action tag created");
     }
-    groupNameToId[tagObj.name] = actionGroupResponse.data[0].id;
+    tagNameToId[tagObj.name] = actionTagResponse.data[0].id;
   }
 
   console.log("Adding paths...");
@@ -103,48 +101,48 @@ export default async function handler(
         console.log("Skipping methodObj because it's an array");
         continue;
       }
-      const groupName = methodObj.tags?.[0] ?? stripTrailingAndCurly(path);
-      let actionGroupId: number;
-      if (groupName in groupNameToId) {
-        actionGroupId = groupNameToId[groupName];
+      const tagName = methodObj.tags?.[0] ?? stripTrailingAndCurly(path);
+      let actionTagId: number;
+      if (tagName in tagNameToId) {
+        actionTagId = tagNameToId[tagName];
       } else {
-        // This is used as the name of the action group - strip trailing slash and curly braces
-        const existingActionGroupResp = await supabase
-          .from("action_groups")
+        // This is used as the name of the action tag - strip trailing slash and curly braces
+        const existingActionTagResp = await supabase
+          .from("action_tags")
           .select("*")
-          .eq("name", groupName)
+          .eq("name", tagName)
           .eq("org_id", orgId);
-        if (existingActionGroupResp.error) throw existingActionGroupResp.error;
+        if (existingActionTagResp.error) throw existingActionTagResp.error;
         if (
-          existingActionGroupResp.data === null ||
-          existingActionGroupResp.data.length === 0
+          existingActionTagResp.data === null ||
+          existingActionTagResp.data.length === 0
         ) {
-          // Add to action_groups table
-          const actionGroupResponse = await supabase
-            .from("action_groups")
-            .insert({ name: groupName, org_id: orgId })
+          // Add to action_tags table
+          const actionTagResponse = await supabase
+            .from("action_tags")
+            .insert({ name: tagName, org_id: orgId })
             .select();
-          if (actionGroupResponse.error) throw actionGroupResponse.error;
-          if (actionGroupResponse.data.length === 0) {
-            throw new Error("No action group created");
+          if (actionTagResponse.error) throw actionTagResponse.error;
+          if (actionTagResponse.data.length === 0) {
+            throw new Error("No action tag created");
           }
-          actionGroupId = actionGroupResponse.data[0].id;
+          actionTagId = actionTagResponse.data[0].id;
         } else {
-          actionGroupId = existingActionGroupResp.data[0].id;
+          actionTagId = existingActionTagResp.data[0].id;
         }
-        groupNameToId[groupName] = actionGroupId;
+        tagNameToId[tagName] = actionTagId;
       }
       let description =
         replaceMarkdownLinks(methodObj.description ?? methodObj.summary) ??
         method.toUpperCase() + " " + path;
       actionInserts.push({
         name:
-          methodObj.operationId?.toLowerCase().replaceAll(" ", "_") ??
+          operationIdToFunctionName(methodObj.operationId) ??
           requestToFunctionName(method, methodObj, path),
         description: description,
         active: ["get"].includes(method),
         org_id: orgId,
-        action_group: actionGroupId,
+        tag: actionTagId,
         action_type: "http",
         path: path,
         // @ts-ignore
@@ -179,6 +177,16 @@ export default async function handler(
   }
 
   res.status(200).send({ success: true });
+}
+
+export function operationIdToFunctionName(
+  operationId: string | undefined
+): string | undefined {
+  if (!operationId) return undefined;
+  operationId = operationId
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase();
+  return operationId.replaceAll(" ", "_");
 }
 
 export function requestToFunctionName(

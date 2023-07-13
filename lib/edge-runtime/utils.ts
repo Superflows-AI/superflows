@@ -1,18 +1,18 @@
 import { NextRequest } from "next/server";
 import {
-  ActionGroupJoinActions,
+  ActionTagJoinActions,
   ChatMessage,
   Organization,
   OrgJoinIsPaid,
 } from "../types";
 import { ChatGPTMessage } from "../models";
 
-export async function getActiveActionGroupsAndActions(
+export async function getActiveActionTagsAndActions(
   orgId: number
-): Promise<ActionGroupJoinActions[] | undefined> {
-  // Below gets the action groups and actions that are active
+): Promise<ActionTagJoinActions[] | undefined> {
+  // Below gets the action tags and actions that are active
   let authRequestResult = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/action_groups?select=*%2Cactions%21inner%28*%29&actions.active=is.true&org_id=eq.${orgId}`,
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/action_tags?select=*%2Cactions%21inner%28*%29&actions.active=is.true&org_id=eq.${orgId}`,
     {
       headers: {
         Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
@@ -28,7 +28,7 @@ export async function getActiveActionGroupsAndActions(
 export async function getConversation(
   conversationId: number
 ): Promise<ChatGPTMessage[] | undefined> {
-  // Below gets the action groups and actions that are active
+  // Below gets the action tags and actions that are active
   let authRequestResult = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chat_messages?select=*&conversation_id=eq.${conversationId}`,
     {

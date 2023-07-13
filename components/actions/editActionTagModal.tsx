@@ -7,22 +7,22 @@ import React, { useRef } from "react";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
-import { ActionGroup } from "../../lib/types";
+import { ActionTag } from "../../lib/types";
 
 export default function EditActionGroupModal(props: {
-  actionGroup: ActionGroup;
+  actionTag: ActionTag;
   close: () => void;
-  setActionGroup: (actionGroup: ActionGroup) => void;
+  setActionTag: (actionGroup: ActionTag) => void;
 }) {
   const saveRef = useRef(null);
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
-  const [localActionGroup, setLocalActionGroup] = React.useState<ActionGroup>(
-    props.actionGroup
+  const [localActionGroup, setLocalActionGroup] = React.useState<ActionTag>(
+    props.actionTag
   );
 
   return (
     <Modal
-      open={!!props.actionGroup}
+      open={!!props.actionTag}
       setOpen={props.close}
       classNames={"max-w-xl"}
     >
@@ -35,7 +35,7 @@ export default function EditActionGroupModal(props: {
             />
           </div>
           <Dialog.Title as="h3" className="text-xl leading-6 text-gray-100">
-            Edit Action Group
+            Edit Action Tag
           </Dialog.Title>
         </div>
       </div>
@@ -146,7 +146,7 @@ export default function EditActionGroupModal(props: {
           onClick={(event) => {
             event.preventDefault();
             if (localActionGroup.name !== "") {
-              props.setActionGroup(localActionGroup);
+              props.setActionTag(localActionGroup);
               props.close();
             } else setInvalid(true);
           }}

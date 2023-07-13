@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { filterKeys, deduplicateArray } from "../lib/utils.ts";
+import { deduplicateArray, filterKeys } from "../lib/utils";
 
 describe("deduplicateArray", () => {
   it("No duplicate properties:", () => {
@@ -41,7 +41,7 @@ describe("deduplicateArray", () => {
     });
   });
   it("Empty array:", () => {
-    const arr4 = [];
+    const arr4: any[] = [];
     const result4 = deduplicateArray(arr4);
     expect(result4).toStrictEqual({});
   });

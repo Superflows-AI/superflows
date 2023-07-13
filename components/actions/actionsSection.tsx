@@ -1,34 +1,57 @@
 import { DocumentArrowUpIcon, PlusIcon } from "@heroicons/react/24/outline";
+import {
+  SupabaseClient,
+  useSupabaseClient,
+} from "@supabase/auth-helpers-react";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Action, ActionGroup, ActionGroupJoinActions } from "../../lib/types";
-import { classNames } from "../../lib/utils";
-import WarningModal from "../warningModal";
-import EditActionModal from "./editActionModal";
-import UploadModal from "./uploadModal";
 import { Database } from "../../lib/database.types";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import FlyoutMenu from "../flyoutMenu";
+import { Action, ActionTag, ActionTagJoinActions } from "../../lib/types";
+import { classNames } from "../../lib/utils";
 import Checkbox from "../checkbox";
 import { useProfile } from "../contextManagers/profile";
-import EditActionGroupModal from "./editActionGroupModal";
 import DropdownWithCheckboxes, {
   SelectBoxWithDropdownOption,
 } from "../dropdown";
+import FlyoutMenu from "../flyoutMenu";
+import WarningModal from "../warningModal";
+import EditActionModal from "./editActionModal";
+import EditActionTagModal from "./editActionTagModal";
+import UploadModal from "./uploadModal";
 
 export default function PageActionsSection(props: {
-  actionGroups: ActionGroupJoinActions[];
-  setActionGroups: Dispatch<
-    SetStateAction<ActionGroupJoinActions[] | undefined>
-  >;
+  actionTags: ActionTagJoinActions[];
+  setActionTags: Dispatch<SetStateAction<ActionTagJoinActions[] | undefined>>;
   loadActions: () => Promise<void>;
 }) {
   const supabase = useSupabaseClient();
   const { profile } = useProfile();
   const [open, setUploadModalOpen] = useState<boolean>(false);
   const [includeInactive, setIncludeInactive] = useState<boolean>(true);
+  const [numActiveActions, setNumActiveActions] = useState<number>(0);
+
+  useEffect(() => {
+    setNumActiveActions(
+      props.actionTags
+        .map((tag) => tag.actions)
+        .flat()
+        .filter((action) => action.active).length
+    );
+  }, [props.actionTags]);
 
   return (
     <>
+      {numActiveActions > 20 && (
+        <div
+          className="bg-yellow-200 border-l-4 border-yellow-500 text-yellow-700 p-4"
+          role="alert"
+        >
+          <p className="font-bold">Warning</p>
+          <p>
+            {`${numActiveActions} actions are enabled. Superflows performs best
+            with fewer than 20.`}
+          </p>
+        </div>
+      )}
       <UploadModal
         open={open}
         setOpen={setUploadModalOpen}
@@ -44,12 +67,13 @@ export default function PageActionsSection(props: {
               checked={includeInactive}
               label={"Show inactive"}
             />
-            {props.actionGroups.length > 0 && (
+            {props.actionTags.length > 0 && (
               <DropdownWithCheckboxes
                 title={"Enable HTTP method"}
-                items={actionGroupsToToggleItems(
-                  props.actionGroups,
-                  props.setActionGroups
+                items={actionTagsToToggleItems(
+                  props.actionTags,
+                  props.setActionTags,
+                  supabase
                 )}
               />
             )}
@@ -60,25 +84,25 @@ export default function PageActionsSection(props: {
                 className="flex flex-row place-items-center gap-x-1 bg-green-900 text-white font-medium text-sm py-1.5 px-2 rounded hover:bg-green-800 focus:ring-2"
                 onClick={async () => {
                   const res = await supabase
-                    .from("action_groups")
+                    .from("action_tags")
                     .insert({
-                      name: "New Action Group",
+                      name: "New Tag",
                       org_id: profile.org_id,
                     })
                     .select("*");
                   if (res.error) throw res.error;
                   if (res.data === null) throw new Error("No data returned");
-                  const newActionGroups = [
+                  const newActionTags = [
                     {
                       ...res.data[0],
                       actions: [],
                     },
-                    ...props.actionGroups,
+                    ...props.actionTags,
                   ];
-                  props.setActionGroups(newActionGroups);
+                  props.setActionTags(newActionTags);
                 }}
               >
-                <PlusIcon className="text-gray-200 w-5 h-5" /> Add action group
+                <PlusIcon className="text-gray-200 w-5 h-5" /> Add tag
               </button>
             )}
             <button
@@ -89,35 +113,35 @@ export default function PageActionsSection(props: {
             </button>
           </div>
         </div>
-        {props.actionGroups.length > 0 ? (
-          props.actionGroups
-            .filter((actionGroup) => {
+        {props.actionTags.length > 0 ? (
+          props.actionTags
+            .filter((actionTag) => {
               if (includeInactive) return true;
-              return actionGroup.actions.some((action) => action.active);
+              return actionTag.actions.some((action) => action.active);
             })
-            .map((actionGroup: ActionGroupJoinActions) => (
+            .map((actionTag: ActionTagJoinActions) => (
               <ActionsSection
-                key={actionGroup.id}
-                actionGroupJoinActions={actionGroup}
-                setActionGroup={(actionGroup: ActionGroupJoinActions) => {
-                  const copy = [...props.actionGroups];
-                  const agIndex = props.actionGroups.findIndex(
-                    (ag) => ag.id === actionGroup.id
+                key={actionTag.id}
+                actionTagJoinActions={actionTag}
+                setActionTag={(actionTag: ActionTagJoinActions) => {
+                  const copy = [...props.actionTags];
+                  const agIndex = props.actionTags.findIndex(
+                    (ag) => ag.id === actionTag.id
                   );
-                  copy[agIndex] = actionGroup;
-                  props.setActionGroups(copy);
+                  copy[agIndex] = actionTag;
+                  props.setActionTags(copy);
                 }}
-                deleteActionGroup={async () => {
-                  const copy = [...props.actionGroups];
-                  const agIndex = props.actionGroups.findIndex(
-                    (ag) => ag.id === actionGroup.id
+                deleteActionTag={async () => {
+                  const copy = [...props.actionTags];
+                  const agIndex = props.actionTags.findIndex(
+                    (ag) => ag.id === actionTag.id
                   );
                   copy.splice(agIndex, 1);
-                  props.setActionGroups(copy);
+                  props.setActionTags(copy);
                   const res = await supabase
-                    .from("action_groups")
+                    .from("action_tags")
                     .delete()
-                    .match({ id: actionGroup.id });
+                    .match({ id: actionTag.id });
                   if (res.error) throw res.error;
                 }}
               />
@@ -144,29 +168,28 @@ export default function PageActionsSection(props: {
 }
 
 function ActionsSection(props: {
-  actionGroupJoinActions: ActionGroupJoinActions;
-  setActionGroup: (actionGroup: ActionGroupJoinActions) => void;
-  deleteActionGroup: () => void;
+  actionTagJoinActions: ActionTagJoinActions;
+  setActionTag: (actionTag: ActionTagJoinActions) => void;
+  deleteActionTag: () => void;
 }) {
   const supabase = useSupabaseClient();
 
   const [editActionIndex, setEditActionIndex] = React.useState<number | null>(
     null
   );
-  const [editActionGroup, setEditActionGroup] = React.useState<boolean>(false);
-  const [deleteActionGroup, setDeleteActionGroup] =
-    React.useState<boolean>(false);
+  const [editActionTag, setEditActionTag] = React.useState<boolean>(false);
+  const [deleteActionTag, setDeleteActionTag] = React.useState<boolean>(false);
   const [deleteActionIndex, setDeleteActionIndex] = React.useState<
     number | null
   >(null);
   const [actions, setActions] = React.useState<Action[]>(
-    props.actionGroupJoinActions.actions
+    props.actionTagJoinActions.actions
   );
   const { profile } = useProfile();
 
   useEffect(() => {
-    setActions(props.actionGroupJoinActions.actions);
-  }, [props.actionGroupJoinActions.actions]);
+    setActions(props.actionTagJoinActions.actions);
+  }, [props.actionTagJoinActions.actions]);
 
   return (
     <>
@@ -196,29 +219,29 @@ function ActionsSection(props: {
         }}
       />
       <WarningModal
-        title={`Delete action group and all its actions: "${props.actionGroupJoinActions.name}"?`}
+        title={`Delete action tag and all its actions: "${props.actionTagJoinActions.name}"?`}
         description={
-          "Are you sure you want to delete this action group and all its actions? Once you delete it you can't get it back. There's no undo button."
+          "Are you sure you want to delete this action tag and all its actions? Once you delete it you can't get it back. There's no undo button."
         }
-        action={props.deleteActionGroup}
-        open={deleteActionGroup}
-        setOpen={setDeleteActionGroup}
+        action={props.deleteActionTag}
+        open={deleteActionTag}
+        setOpen={setDeleteActionTag}
       />
-      {editActionGroup && (
-        <EditActionGroupModal
-          actionGroup={props.actionGroupJoinActions}
-          setActionGroup={async (actionGroup: ActionGroup) => {
-            props.setActionGroup({
-              ...props.actionGroupJoinActions,
-              ...actionGroup,
+      {editActionTag && (
+        <EditActionTagModal
+          actionTag={props.actionTagJoinActions}
+          setActionTag={async (actionTag: ActionTag) => {
+            props.setActionTag({
+              ...props.actionTagJoinActions,
+              ...actionTag,
             });
             const res = await supabase
-              .from("action_groups")
-              .update(actionGroup)
-              .match({ id: actionGroup.id });
+              .from("action_tags")
+              .update(actionTag)
+              .match({ id: actionTag.id });
             if (res.error) throw res.error;
           }}
-          close={() => setEditActionGroup(false)}
+          close={() => setEditActionTag(false)}
         />
       )}
       {editActionIndex !== null && (
@@ -246,40 +269,38 @@ function ActionsSection(props: {
       <div
         className={classNames(
           "relative px-6 py-4 my-5 border border-gray-600 rounded-lg",
-          props.actionGroupJoinActions.actions.some((a) => a.active)
+          props.actionTagJoinActions.actions.some((a) => a.active)
             ? "shadow-xl"
             : ""
         )}
-        id={props.actionGroupJoinActions.name}
+        id={props.actionTagJoinActions.name}
       >
         <div className="flex flex-col w-full">
           <div className="flex flex-row justify-between place-items-start">
             <div
               className={
-                props.actionGroupJoinActions.actions.some((a) => a.active)
+                props.actionTagJoinActions.actions.some((a) => a.active)
                   ? ""
                   : "opacity-60"
               }
             >
-              {props.actionGroupJoinActions.actions.length > 0 && (
+              {props.actionTagJoinActions.actions.length > 0 && (
                 <Checkbox
                   label={"Active"}
-                  checked={props.actionGroupJoinActions.actions.some(
+                  checked={props.actionTagJoinActions.actions.some(
                     (a) => a.active
                   )}
                   onChange={async (checked: boolean) => {
-                    const newActionGroup = { ...props.actionGroupJoinActions };
-                    newActionGroup.actions = newActionGroup.actions.map(
-                      (a) => ({
-                        ...a,
-                        active: checked,
-                      })
-                    );
-                    props.setActionGroup(newActionGroup);
+                    const newActionTag = { ...props.actionTagJoinActions };
+                    newActionTag.actions = newActionTag.actions.map((a) => ({
+                      ...a,
+                      active: checked,
+                    }));
+                    props.setActionTag(newActionTag);
                     const res = await supabase
                       .from("actions")
                       .update({ active: checked })
-                      .eq("action_group", props.actionGroupJoinActions.id)
+                      .eq("tag", props.actionTagJoinActions.id)
                       .select();
                     if (res.error) throw res.error;
                     if (res.data === null || res.data.length === 0)
@@ -294,21 +315,19 @@ function ActionsSection(props: {
             <FlyoutMenu
               items={[
                 {
-                  name: "Edit Group",
-                  onClick: () => setEditActionGroup(true),
+                  name: "Edit Tag",
+                  onClick: () => setEditActionTag(true),
                 },
                 {
-                  name: "Delete Group",
+                  name: "Delete Tag",
                   onClick: () => {
-                    setDeleteActionGroup(true);
+                    setDeleteActionTag(true);
                   },
                 },
               ]}
               getClassName={(open) => {
                 if (open) return "";
-                return !props.actionGroupJoinActions.actions.some(
-                  (a) => a.active
-                )
+                return !props.actionTagJoinActions.actions.some((a) => a.active)
                   ? "opacity-60"
                   : "";
               }}
@@ -318,22 +337,22 @@ function ActionsSection(props: {
         <h2
           className={classNames(
             "font-bold text-2xl",
-            props.actionGroupJoinActions.actions.some((a) => a.active)
+            props.actionTagJoinActions.actions.some((a) => a.active)
               ? "text-gray-200"
               : "text-gray-600"
           )}
         >
-          {props.actionGroupJoinActions.name}
+          {props.actionTagJoinActions.name}
         </h2>
         <p
           className={classNames(
             "mt-2",
-            props.actionGroupJoinActions.actions.some((a) => a.active)
+            props.actionTagJoinActions.actions.some((a) => a.active)
               ? "text-gray-300"
               : "text-gray-700"
           )}
         >
-          {props.actionGroupJoinActions.description}
+          {props.actionTagJoinActions.description}
         </p>
         <ul
           role="list"
@@ -353,14 +372,14 @@ function ActionsSection(props: {
             >
               <div
                 onClick={async () => {
-                  const newActionGroup = { ...props.actionGroupJoinActions };
+                  const newActionTag = { ...props.actionTagJoinActions };
 
-                  newActionGroup.actions[index].active =
-                    !newActionGroup.actions[index].active;
-                  props.setActionGroup(newActionGroup);
+                  newActionTag.actions[index].active =
+                    !newActionTag.actions[index].active;
+                  props.setActionTag(newActionTag);
                   const res = await supabase
                     .from("actions")
-                    .update({ active: newActionGroup.actions[index].active })
+                    .update({ active: newActionTag.actions[index].active })
                     .eq("id", action.id)
                     .select();
                   if (res.error) throw res.error;
@@ -423,7 +442,7 @@ function ActionsSection(props: {
               const resp = await supabase
                 .from("actions")
                 .insert({
-                  action_group: props.actionGroupJoinActions.id,
+                  tag: props.actionTagJoinActions.id,
                   name: "new_action",
                   description: "",
                   action_type: "http",
@@ -435,12 +454,9 @@ function ActionsSection(props: {
               if (resp.data.length !== 1)
                 throw new Error("Expected 1 row to be inserted");
               setActions([...actions, resp.data[0]]);
-              props.setActionGroup({
-                ...props.actionGroupJoinActions,
-                actions: [
-                  ...props.actionGroupJoinActions.actions,
-                  resp.data[0],
-                ],
+              props.setActionTag({
+                ...props.actionTagJoinActions,
+                actions: [...props.actionTagJoinActions.actions, resp.data[0]],
               });
               setEditActionIndex(exampleLen);
             }}
@@ -459,28 +475,35 @@ function ActionsSection(props: {
   );
 }
 
-function actionGroupsToToggleItems(
-  actionGroups: ActionGroupJoinActions[],
-  setActionGroups: (actionGroups: ActionGroupJoinActions[]) => void
+function actionTagsToToggleItems(
+  actionTags: ActionTagJoinActions[],
+  setActionTags: (actionTags: ActionTagJoinActions[]) => void,
+  supabase: SupabaseClient<Database>
 ): SelectBoxWithDropdownOption[] {
-  const allActions = actionGroups
-    .map((actionGroup) => actionGroup.actions)
-    .flat();
+  const allActions = actionTags.map((actionTag) => actionTag.actions).flat();
+
+  const updateActiveStatus = async (checked: boolean, m: any) => {
+    const newActionTags = [...actionTags];
+    newActionTags.forEach((actionTag) => {
+      actionTag.actions.forEach((action) => {
+        if (action.request_method === m) action.active = checked;
+      });
+    });
+    setActionTags(newActionTags);
+    await supabase
+      .from("actions")
+      .update({ active: checked })
+      .eq("request_method", m);
+  };
+
   return [...new Set(allActions.map((a) => a.request_method))]
     .filter((m) => !!m)
     .map((m) => ({
       id: m,
       name: m!.toUpperCase(),
       onChange: (checked: boolean) => {
-        const newActionGroups = [...actionGroups];
-        newActionGroups.forEach((actionGroup) => {
-          actionGroup.actions.forEach((action) => {
-            if (action.request_method === m) action.active = checked;
-          });
-        });
-        setActionGroups(newActionGroups);
+        updateActiveStatus(checked, m);
       },
-      // console.log("Checked", checked);
       checked: allActions
         .filter((a) => a.active)
         .some((a) => a.request_method === m),

@@ -29,7 +29,6 @@ export default function CreateOrgScreen() {
       <h1 className="text-3xl font-medium text-gray-200">
         Create an Organization
       </h1>
-      {/*  TODO: Add a way to join existing organizations  */}
       <input
         value={orgName}
         onChange={(e) => setOrgName(e.target.value)}
@@ -48,6 +47,8 @@ export default function CreateOrgScreen() {
             body: JSON.stringify({
               org_name: orgName,
               user_id: profile?.id,
+              // Set to mock api endpoint for now
+              api_host: window.location.href + "api/mock",
             }),
           });
           setLoading(false);

@@ -160,7 +160,9 @@ export function parseGPTStreamedData(
       })
       .filter((l: string) => l);
   } catch (e) {
-    console.error("error parsing gptOutString", e);
+    console.error(
+      `Error parsing GPT output string: ${gptOutString}. Error: ${e}`
+    );
     return undefined;
   }
 }
