@@ -1,10 +1,10 @@
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { ReactNode, useEffect, useState } from "react";
-import { classNames } from "../lib/utils";
 import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
 import SelectBox from "./selectBox";
+import Toggle from "./toggle.tsx";
+import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 const languageOptions: {
   id: string;
@@ -25,9 +25,10 @@ const languageOptions: {
 
 export default function Playground() {
   const supabase = useSupabaseClient();
-  const [language, setLanguage] = useState("EN");
-  const [userDescription, setUserDescription] = useState("");
-  const [userApiKey, setUserApiKey] = useState("");
+  const [language, setLanguage] = useState<string>("EN");
+  const [userDescription, setUserDescription] = useState<string>("");
+  const [userApiKey, setUserApiKey] = useState<string>("");
+  const [testModeEnabled, setTestModeEnabled] = useState<boolean>(false);
 
   const { profile } = useProfile();
   const [numActions, setNumActions] = useState<number>(0);
@@ -78,8 +79,6 @@ export default function Playground() {
       </div>
       <main className="fixed inset-x-40 md:inset-x-56 lg:inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
-          page={"RControl"}
-          setPage={() => {}}
           language={
             languageOptions.find((item) => item.id === language)?.name ??
             "English"
@@ -88,9 +87,11 @@ export default function Playground() {
           userDescription={userDescription}
           submitReady={
             numActions > 0 &&
-            !!profile?.organizations?.api_host &&
-            profile?.organizations?.api_host.length > 0
+            ((!!profile?.organizations?.api_host &&
+              profile?.organizations?.api_host.length > 0) ||
+              testModeEnabled)
           }
+          testMode={testModeEnabled}
         />
       </main>
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
@@ -103,6 +104,26 @@ export default function Playground() {
               selected={language}
               setSelected={setLanguage}
             />
+          </div>
+          <div className="relative">
+            <div className="peer flex flex-col place-items- gap-y-1 text-sm text-gray-200 font-bold">
+              <div className="flex flex-row gap-x-1 place-items-center">
+                Test mode
+                <QuestionMarkCircleIcon className="h-4 w-4 text-gray-300" />
+              </div>
+              <div className="flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border border-gray-300 w-full">
+                <Toggle
+                  enabled={testModeEnabled}
+                  size={"sm"}
+                  setEnabled={setTestModeEnabled}
+                  sr={"Test mode"}
+                />
+              </div>
+            </div>
+            <div className="popup top-20 font-normal text-sm">
+              Test mode mocks the API response, so you can use the playground
+              without connecting to your API.
+            </div>
           </div>
         </div>
         <div className="fixed bottom-0 right-0 w-40 md:w-56 lg:w-72 bg-gray-900 py-4 px-4">

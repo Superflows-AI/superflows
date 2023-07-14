@@ -47,8 +47,6 @@ export default function CreateOrgScreen() {
             body: JSON.stringify({
               org_name: orgName,
               user_id: profile?.id,
-              // Set to mock api endpoint for now
-              api_host: window.location.href + "api/mock",
             }),
           });
           setLoading(false);
