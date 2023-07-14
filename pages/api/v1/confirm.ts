@@ -10,6 +10,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { parseOutput } from "../../../lib/parsers/parsers";
 import { Database } from "../../../lib/database.types";
+import { Ratelimit } from "@upstash/ratelimit";
 
 export const config = {
   runtime: "edge",
@@ -24,21 +25,27 @@ const ConfirmZod = z.object({
   button_clicked: z.enum(["yes", "no"]),
 });
 
+// Create a new ratelimiter, that allows 2 requests per 10 seconds
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  // TODO: When someone is in production, this should be raised
+  limiter: Ratelimit.slidingWindow(2, "10 s"),
+});
+
 type ConfirmType = z.infer<typeof ConfirmZod>;
 
 let redis: Redis | null = null;
 // AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
-// if (
-//   !process.env.UPSTASH_REDIS_REST_URL ||
-//   !process.env.UPSTASH_REDIS_REST_TOKEN
-// ) {
-//   console.log("Redis not found, falling back to supabase");
-// } else {
-//   redis = new Redis({
-//     url: process.env.UPSTASH_REDIS_REST_URL ?? "",
-//     token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
-//   });
-// }
+if (
+  !process.env.UPSTASH_REDIS_REST_URL ||
+  !process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  console.log("Redis not found, falling back to supabase");
+} else {
+  redis = Redis.fromEnv();
+}
+
+const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest) {
   try {
@@ -55,7 +62,7 @@ export default async function handler(req: NextRequest) {
         }),
         {
           status: 405,
-          headers: { "Content-Type": "application/json" },
+          headers,
         }
       );
     }
@@ -70,6 +77,23 @@ export default async function handler(req: NextRequest) {
       .get("Authorization")
       ?.replace("Bearer ", "")
       .replace("bearer ", "");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
+    }
+
+    // Check that the user hasn't surpassed the rate limit
+    const { success } = await ratelimit.limit(token);
+    if (!success) {
+      return new Response(JSON.stringify({ error: "Rate limit hit" }), {
+        status: 429,
+        headers,
+      });
+    }
+
     let org: OrgJoinIsPaid | null = null;
     if (token) {
       const authRes = await supabase
@@ -89,7 +113,7 @@ export default async function handler(req: NextRequest) {
         }),
         {
           status: !org ? 401 : 400,
-          headers: { "Content-Type": "application/json" },
+          headers,
         }
       );
     }
@@ -100,7 +124,7 @@ export default async function handler(req: NextRequest) {
     if (!isValidBody<ConfirmType>(requestData, ConfirmZod)) {
       return new Response(JSON.stringify({ message: "Invalid request body" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
     }
 
@@ -108,7 +132,7 @@ export default async function handler(req: NextRequest) {
       if (redis) await redis.json.del(requestData.conversation_id.toString());
       return new Response("Rejected actions removed from cache", {
         status: 204,
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
     }
 
@@ -197,7 +221,7 @@ export default async function handler(req: NextRequest) {
 
     return new Response(JSON.stringify({ outs }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   } catch (e) {
     let message: string;
@@ -213,7 +237,7 @@ export default async function handler(req: NextRequest) {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers,
       }
     );
   }

@@ -23,6 +23,7 @@
     "@uppy/file-input": "^3.0.2",
     "@uppy/progress-bar": "^3.0.2",
     "@uppy/react": "^3.1.2",
+    "@upstash/ratelimit": "^0.4.3",
     "@upstash/redis": "^1.22.0",
     "d3-time-format": "^4.1.0",
     "dirty-json": "^0.9.2",
