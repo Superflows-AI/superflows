@@ -145,6 +145,7 @@ export default async function handler(req: NextRequest) {
       const currentHost =
         req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
       org.api_host = currentHost + "/api/mock";
+      console.log("Test mode enabled: overriding api_host to", org.api_host);
     }
     if (!org?.api_host) {
       return new Response(
