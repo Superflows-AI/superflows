@@ -332,6 +332,7 @@ export default function PlaygroundChatbot(props: {
         id={"scrollable-chat-contents"}
       >
         {profile &&
+          process.env.VERCEL_ENV === "production" &&
           (profile?.organizations!.is_paid.length === 0 ||
             !profile?.organizations!.is_paid[0].is_premium ||
             USAGE_LIMIT <= usageLevel) && (
