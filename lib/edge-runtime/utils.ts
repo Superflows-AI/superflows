@@ -1,10 +1,4 @@
-import { NextRequest } from "next/server";
-import {
-  ActionTagJoinActions,
-  ChatMessage,
-  Organization,
-  OrgJoinIsPaid,
-} from "../types";
+import { ActionTagJoinActions, ChatMessage } from "../types";
 import { ChatGPTMessage } from "../models";
 
 export async function getActiveActionTagsAndActions(
