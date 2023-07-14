@@ -44,6 +44,7 @@ const AnswersZod = z.object({
   user_api_key: OptionalStringZod,
   language: OptionalStringZod,
   stream: z.optional(z.boolean()),
+  test_mode: z.optional(z.boolean()),
 });
 type AnswersType = z.infer<typeof AnswersZod>;
 
@@ -56,6 +57,17 @@ const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL ?? "",
   token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
 });
+
+// Bring me my Bow of burning gold:
+const supabase = createClient(
+  // Bring me my arrows of desire:
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  // Bring me my Spear: O clouds unfold!
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  // Bring me my Chariot of fire!
+);
+
+const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest) {
   try {
@@ -70,20 +82,9 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: "Only POST requests allowed",
         }),
-        {
-          status: 405,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 405, headers }
       );
     }
-    // Bring me my Bow of burning gold:
-    const supabase = createClient(
-      // Bring me my arrows of desire:
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      // Bring me my Spear: O clouds unfold!
-      process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
-      // Bring me my Chariot of fire!
-    );
 
     // Authenticate that the user is allowed to use this API
     let token = req.headers
@@ -100,18 +101,11 @@ export default async function handler(req: NextRequest) {
       if (authRes.error) throw new Error(authRes.error.message);
       org = authRes.data;
     }
-    if (!org || !org.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: !org
-            ? "Authentication failed"
-            : "No API host found - add an API host on the API settings page",
-        }),
-        {
-          status: !org ? 401 : 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    if (!org) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
     }
 
     // Check that the user hasn't surpassed the usage limit
@@ -131,7 +125,7 @@ export default async function handler(req: NextRequest) {
           }),
           {
             status: 402,
-            headers: { "Content-Type": "application/json" },
+            headers,
           }
         );
       }
@@ -142,19 +136,32 @@ export default async function handler(req: NextRequest) {
     if (!isValidBody<AnswersType>(requestData, AnswersZod)) {
       return new Response(JSON.stringify({ message: "Invalid request body" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
     }
+
+    // Override api_host if test_mode is set to true
+    if (org && requestData.test_mode) {
+      const currentHost =
+        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+      org.api_host = currentHost + "/api/mock";
+    }
+    if (!org?.api_host) {
+      return new Response(
+        JSON.stringify({
+          error: "No API host found - add an API host on the API settings page",
+        }),
+        { status: 400, headers }
+      );
+    }
+
     // TODO: Add non-streaming API support (although the UX is 10x worse)
     if (requestData.stream === false) {
       return new Response(
         JSON.stringify({
           error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
         }),
-        {
-          status: 501,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 501, headers }
       );
     }
 
@@ -169,10 +176,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `Conversation with ID=${requestData.conversation_id} not found`,
           }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          }
+          { status: 404, headers }
         );
       }
       previousMessages = conversation;
@@ -218,10 +222,7 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: "No active actions found",
         }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 404, headers }
       );
     }
 
@@ -287,10 +288,7 @@ export default async function handler(req: NextRequest) {
       JSON.stringify({
         error: message,
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers }
     );
   }
 }
