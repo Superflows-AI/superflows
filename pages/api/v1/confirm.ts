@@ -7,7 +7,7 @@ import { isValidBody } from "../../../lib/utils";
 import {
   httpRequestFromAction,
   processAPIoutput,
-} from "../../../lib/edge-runtime/requests.ts";
+} from "../../../lib/edge-runtime/requests";
 
 export const config = {
   runtime: "edge",

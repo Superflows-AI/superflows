@@ -26,11 +26,10 @@ import {
   getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import {
   httpRequestFromAction,
   processAPIoutput,
-} from "../../../lib/edge-runtime/requests.ts";
+} from "../../../lib/edge-runtime/requests";
 
 export const config = {
   runtime: "edge",
