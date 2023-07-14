@@ -433,16 +433,19 @@ async function Angela( // Good ol' Angela
             content: renderableOutput,
           });
         } else {
-          const confirmationMessage = {
-            role: "assistant",
-            content:
-              "\n\nExecuting these instructions requires confirmation. I will not proceed until the user has provided this.",
-          };
-
-          toConfirm.push({
+          const step = {
             actionId: chosenAction.id,
             parameters: command.args,
-          });
+          };
+
+          const confirmationMessage = {
+            role: "confirmation",
+            content: `\n\nExecuting these instructions requires confirmation. I will not proceed until the user has provided this. The user will be asked to confirm the following: ${JSON.stringify(
+              step
+            )}`,
+          };
+
+          toConfirm.push(step);
 
           nonSystemMessages.push(confirmationMessage as ChatGPTMessage);
           streamInfo(confirmationMessage as StreamingStepInput);

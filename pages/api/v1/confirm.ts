@@ -2,12 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { OrgJoinIsPaid } from "../../../lib/types";
+import { Action, OrgJoinIsPaid } from "../../../lib/types";
 import { isValidBody } from "../../../lib/utils";
 import {
   httpRequestFromAction,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
+import { parseOutput } from "../../../lib/parsers/parsers";
+import { Database } from "../../../lib/database.types";
 
 export const config = {
   runtime: "edge",
@@ -24,11 +26,19 @@ const ConfirmZod = z.object({
 
 type ConfirmType = z.infer<typeof ConfirmZod>;
 
-// TODO: is this the best thing for open source? Would require users to have a redis account
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
-});
+let redis: Redis | null = null;
+// AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+// if (
+//   !process.env.UPSTASH_REDIS_REST_URL ||
+//   !process.env.UPSTASH_REDIS_REST_TOKEN
+// ) {
+//   console.log("Redis not found, falling back to supabase");
+// } else {
+//   redis = new Redis({
+//     url: process.env.UPSTASH_REDIS_REST_URL ?? "",
+//     token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
+//   });
+// }
 
 export default async function handler(req: NextRequest) {
   try {
@@ -50,7 +60,7 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    const supabase = createClient(
+    const supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
       process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
     );
@@ -95,50 +105,94 @@ export default async function handler(req: NextRequest) {
     }
 
     if (requestData.button_clicked === "no") {
-      await redis.json.del(requestData.conversation_id.toString());
+      if (redis) await redis.json.del(requestData.conversation_id.toString());
       return new Response("Rejected actions removed from cache", {
         status: 204,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const redisData = await redis.json.get(
-      requestData.conversation_id.toString()
-    );
-    await redis.json.del(requestData.conversation_id.toString());
+    let toExecute: { action: Action; params: object }[];
 
-    if (!redisData) {
-      return new Response(
-        JSON.stringify({
-          message: `ConversationId ${requestData.conversation_id} not found in redis cache`,
-        }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
+    if (redis) {
+      const redisData = await redis.json.get(
+        requestData.conversation_id.toString()
+      );
+      await redis.json.del(requestData.conversation_id.toString());
+
+      if (!redisData) {
+        return new Response(
+          JSON.stringify({
+            message: `ConversationId ${requestData.conversation_id} not found in redis cache`,
+          }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const storedParams = redisData.toConfirm as {
+        actionId: number;
+        parameters: object;
+      }[];
+
+      toExecute = await Promise.all(
+        storedParams.map(async (param) => {
+          const action = await supabase
+            .from("actions")
+            .select("*")
+            .eq("org_id", requestData.org_id)
+            .eq("id", param.actionId)
+            .single()
+            .then((res) => res.data!);
+          return {
+            action: action,
+            params: param.parameters,
+          };
+        })
+      );
+    } else {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("org_id", requestData.org_id)
+        .eq("conversation_id", requestData.conversation_id)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) throw new Error(error.message);
+
+      toExecute = await Promise.all(
+        parseOutput(data[0].content).commands.map(async (command) => {
+          const action = await supabase
+            .from("actions")
+            .select("*")
+            .eq("org_id", requestData.org_id)
+            .eq("name", command.name)
+            .single()
+            .then((res) => res.data!);
+          return {
+            action: action,
+            params: command.args,
+          };
+        })
       );
     }
 
-    const storedParams = redisData.toConfirm as {
-      actionId: number;
-      parameters: object;
-    }[];
-
     const outs: { name: string; result: object }[] = [];
-    for (const storedParam of storedParams) {
-      const { data: action, error } = await supabase
-        .from("actions")
-        .select("*")
-        .eq("id", storedParam.actionId)
-        .single();
-      if (error) throw new Error(error.message);
+    for (const execute of toExecute) {
       let out = await httpRequestFromAction({
-        action,
-        parameters: storedParam.parameters as Record<string, unknown>,
+        action: execute.action,
+        parameters: execute.params as Record<string, unknown>,
         organization: org,
         userApiKey: requestData.user_api_key,
       });
-      outs.push({ name: action.name, result: processAPIoutput(out, action) });
+      outs.push({
+        name: execute.action.name,
+        result: processAPIoutput(out, execute.action),
+      });
     }
 
     return new Response(JSON.stringify({ outs }), {
