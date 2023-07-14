@@ -63,6 +63,7 @@ export default function PlaygroundChatbot(props: {
         .eq("role", "user")
         // This means it's the first message in a conversation
         .eq("conversation_index", 0)
+        .order("created_at", { ascending: false })
         .limit(10);
       if (res.error) throw res.error;
       // Below gets the unique messages and then takes the first 3
