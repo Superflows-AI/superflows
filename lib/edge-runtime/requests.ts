@@ -1,7 +1,7 @@
-import { Action } from "../types.ts";
-import { ActionToHttpRequest } from "../models.ts";
+import { Action } from "../types";
+import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { deduplicateArray, filterKeys } from "../utils.ts";
+import { deduplicateArray, filterKeys } from "../utils";
 
 export function processAPIoutput(
   out: object | Array<any>,
