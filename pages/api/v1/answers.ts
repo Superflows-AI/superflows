@@ -52,6 +52,13 @@ const completionOptions: ChatGPTParams = {
   max_tokens: 1000,
 };
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined!");
+}
+if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
+  throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
+}
+
 // TODO: is this the best thing for open source? Would require users to have a redis account
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL ?? "",
@@ -61,9 +68,9 @@ const redis = new Redis({
 // Bring me my Bow of burning gold:
 const supabase = createClient(
   // Bring me my arrows of desire:
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.SERVICE_LEVEL_KEY_SUPABASE
   // Bring me my Chariot of fire!
 );
 
