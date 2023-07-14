@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { USAGE_LIMIT } from "../../../lib/consts";
@@ -60,10 +61,7 @@ if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
 }
 
 // TODO: is this the best thing for open source? Would require users to have a redis account
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
-});
+const redis = Redis.fromEnv();
 
 // Bring me my Bow of burning gold:
 const supabase = createClient(
@@ -73,6 +71,13 @@ const supabase = createClient(
   process.env.SERVICE_LEVEL_KEY_SUPABASE
   // Bring me my Chariot of fire!
 );
+
+// Create a new ratelimiter, that allows 2 requests per 10 seconds
+const ratelimit = new Ratelimit({
+  redis: redis,
+  // TODO: When someone is in production, this should be raised
+  limiter: Ratelimit.slidingWindow(1, "10 s"),
+});
 
 const headers = { "Content-Type": "application/json" };
 
@@ -98,6 +103,23 @@ export default async function handler(req: NextRequest) {
       .get("Authorization")
       ?.replace("Bearer ", "")
       .replace("bearer ", "");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
+    }
+
+    // Check that the user hasn't surpassed the rate limit
+    const { success } = await ratelimit.limit(token);
+    if (!success) {
+      return new Response(JSON.stringify({ error: "Rate limit hit" }), {
+        status: 429,
+        headers,
+      });
+    }
+
     let org: OrgJoinIsPaid | null = null;
     if (token) {
       const authRes = await supabase
