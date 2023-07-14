@@ -2,7 +2,7 @@ import { Action } from "./types";
 
 export type ChatGPTMessage =
   | {
-      role: "system" | "user" | "assistant";
+      role: "system" | "user" | "assistant" | "confirm";
       content: string;
     }
   | {
