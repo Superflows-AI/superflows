@@ -3,7 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
 import SelectBox from "./selectBox";
-import Toggle from "./toggle.tsx";
+import Toggle from "./toggle";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 const languageOptions: {
