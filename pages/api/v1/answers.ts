@@ -109,7 +109,10 @@ export default async function handler(req: NextRequest) {
     }
 
     // Check that the user hasn't surpassed the usage limit
-    if (org.is_paid.length === 0 || !org.is_paid[0].is_premium) {
+    if (
+      process.env.VERCEL_ENV === "production" &&
+      (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
+    ) {
       // Below is the number of messages sent by the organization's users
       const usageRes = await supabase
         .from("chat_messages")
@@ -123,10 +126,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `You have reached your usage limit of ${USAGE_LIMIT} messages. Upgrade to premium to get unlimited messages.`,
           }),
-          {
-            status: 402,
-            headers,
-          }
+          { status: 402, headers }
         );
       }
     }
