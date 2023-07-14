@@ -166,7 +166,6 @@ export default function PlaygroundChatbot(props: {
         const json = await response.json();
         const outs: { name: string; result: object }[] = json.outs;
 
-        console.log("Outtyyyyyyyyy", JSON.stringify(outs));
         for (const out of outs) {
           setDevChatContents((prevState) => [
             ...prevState,
@@ -387,12 +386,13 @@ export default function PlaygroundChatbot(props: {
                   Array.isArray(functionJsonResponse) &&
                   functionJsonResponse.length === 0
                 ) {
-                  contentString = "No results found.";
+                  contentString = "No data returned";
                 } else if (
+                  functionJsonResponse &&
                   typeof functionJsonResponse === "object" &&
                   Object.entries(functionJsonResponse).length === 0
                 ) {
-                  contentString = "No results found.";
+                  contentString = "No data returned";
                 } else {
                   contentString = convertToRenderable(
                     functionJsonResponse,
