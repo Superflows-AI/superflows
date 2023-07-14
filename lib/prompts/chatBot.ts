@@ -26,12 +26,12 @@ export default function getMessages(
     if (action.parameters && Array.isArray(action.parameters)) {
       action.parameters.forEach((param) => {
         const p = param as unknown as OpenAPIV3_1.ParameterObject;
-        const schema = p.schema as OpenAPIV3_1.SchemaObject;
-        const enums = schema.enum;
+        const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+        const enums = schema?.enum ?? null;
         // TODO: Deal with very long enums better - right now we are just ignoring them
-        paramString += `\n- ${p.name} (${schema.type}${
-          enums && enums.length < 20 ? `: ${enums}` : ""
-        })${
+        paramString += `\n- ${p.name} (${
+          schema && schema.type ? schema.type : ""
+        }${enums && enums.length < 20 ? `: ${enums}` : ""})${
           p.description
             ? `: ${p.description}${p.description.endsWith(".") ? "" : "."}`
             : ""
@@ -67,7 +67,7 @@ export default function getMessages(
       });
     }
     numberedActions += `${i}. ${action.name}: ${action.description}.${
-      paramString ? " PARAMETERS: " + paramString : ""
+      paramString ? " PARAMETERS: " + paramString : "PARAMETERS: None."
     }\n`;
     i++;
   });

@@ -323,9 +323,10 @@ async function Angela( // Good ol' Angela
   let mostRecentParsedOutput = parseOutput("");
   let numOpenAIRequests = 0;
   let totalCost = 0;
+  let awaitingConfirmation = false;
 
   try {
-    while (!mostRecentParsedOutput.completed) {
+    while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
         actions,
@@ -445,6 +446,8 @@ async function Angela( // Good ol' Angela
 
           nonSystemMessages.push(confirmationMessage as ChatGPTMessage);
           streamInfo(confirmationMessage as StreamingStepInput);
+
+          awaitingConfirmation = true;
         }
       }
       if (mostRecentParsedOutput.completed) {
