@@ -37,12 +37,11 @@ export type Step =
   | { id: number; role: "function"; name: string; result: Json };
 
 export default function PlaygroundChatbot(props: {
-  page: string;
-  setPage: (page: string) => void;
   language: "English" | "Espanol";
   userApiKey: string;
   submitReady: boolean;
   userDescription: string;
+  testMode: boolean;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -204,6 +203,7 @@ export default function PlaygroundChatbot(props: {
           user_api_key: props.userApiKey,
           user_description: props.userDescription,
           stream: true,
+          test_mode: props.testMode,
         }),
       });
 
@@ -273,6 +273,7 @@ export default function PlaygroundChatbot(props: {
       killSwitchClicked.current,
       alreadyRunning.current,
       props.language,
+      props.testMode,
     ]
   );
 
@@ -477,7 +478,7 @@ export default function PlaygroundChatbot(props: {
             )}
           >
             {
-              "You need to add your API hostname (API tab) and actions (Actions tab)."
+              "You need to add actions (Actions tab) and API hostname (API tab) or enable test mode."
             }
           </p>
           {loading && (
