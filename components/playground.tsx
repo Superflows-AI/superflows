@@ -28,17 +28,24 @@ export default function Playground() {
   const [language, setLanguage] = useState<string>("EN");
   const [userDescription, setUserDescription] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
-  const [testModeEnabled, setTestModeEnabled] = useState<boolean>(false);
+  const [testModeEnabled, setTestModeEnabled] = useState<boolean | null>(null);
 
   const { profile } = useProfile();
   const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
+    localStorage.getItem("testMode") &&
+      setTestModeEnabled(localStorage.getItem("testMode") === "true");
     localStorage.getItem("userApiKey") &&
       setUserApiKey(localStorage.getItem("userApiKey") as string);
     localStorage.getItem("userDescription") &&
       setUserDescription(localStorage.getItem("userDescription") as string);
   }, []);
+
+  useEffect(() => {
+    if (testModeEnabled !== null)
+      localStorage.setItem("testMode", testModeEnabled.toString());
+  }, [testModeEnabled]);
 
   useEffect(() => {
     (async () => {
@@ -89,9 +96,9 @@ export default function Playground() {
             numActions > 0 &&
             ((!!profile?.organizations?.api_host &&
               profile?.organizations?.api_host.length > 0) ||
-              testModeEnabled)
+              !!testModeEnabled)
           }
-          testMode={testModeEnabled}
+          testMode={!!testModeEnabled}
         />
       </main>
       <div className="fixed bottom-0 right-0 top-16 z-50 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
@@ -112,12 +119,14 @@ export default function Playground() {
                 <QuestionMarkCircleIcon className="h-4 w-4 text-gray-300" />
               </div>
               <div className="flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border border-gray-300 w-full">
-                <Toggle
-                  enabled={testModeEnabled}
-                  size={"sm"}
-                  setEnabled={setTestModeEnabled}
-                  sr={"Test mode"}
-                />
+                {testModeEnabled !== null && (
+                  <Toggle
+                    enabled={testModeEnabled}
+                    size={"sm"}
+                    setEnabled={setTestModeEnabled}
+                    sr={"Test mode"}
+                  />
+                )}
               </div>
             </div>
             <div className="popup top-20 font-normal text-sm">
