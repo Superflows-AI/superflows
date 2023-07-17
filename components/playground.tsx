@@ -34,8 +34,7 @@ export default function Playground() {
   const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
-    localStorage.getItem("testMode") &&
-      setTestModeEnabled(localStorage.getItem("testMode") === "true");
+    setTestModeEnabled(localStorage.getItem("testMode") === "true");
     localStorage.getItem("userApiKey") &&
       setUserApiKey(localStorage.getItem("userApiKey") as string);
     localStorage.getItem("userDescription") &&

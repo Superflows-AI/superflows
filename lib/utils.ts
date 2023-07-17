@@ -1,8 +1,7 @@
 import tokenizer from "gpt-tokenizer";
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { z } from "zod";
-import { ActionToHttpRequest, ChatGPTMessage, ChatMessage } from "./models";
-import { Action } from "./types";
+import { ChatGPTMessage } from "./models";
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -145,6 +144,7 @@ export function convertToRenderable(
         typeof value === "object" ? JSON.stringify(value) : value
       }<br/>`;
     });
+    output = output.slice(0, -5);
   }
   output += "</table>";
   return output;

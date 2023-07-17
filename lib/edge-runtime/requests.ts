@@ -124,7 +124,7 @@ export async function httpRequestFromAction({
       url += `?${queryParams.toString()}`;
     }
   }
-  const logMessage = `Attempting fetch with url: ${url} and options: ${JSON.stringify(
+  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
     2

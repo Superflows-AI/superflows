@@ -4,12 +4,12 @@ import {
   HandThumbDownIcon,
   HandThumbUpIcon,
   LightBulbIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
-import { Json } from "../lib/database.types";
-import { ParsedOutput, StreamingStep } from "../lib/models";
+import { StreamingStep, StreamingStepInput } from "../lib/models";
 import { parseOutput } from "../lib/parsers/parsers";
 import {
   classNames,
@@ -21,20 +21,8 @@ import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useProfile } from "./contextManagers/profile";
 import { LoadingSpinner } from "./loadingspinner";
 import Toggle from "./toggle";
-
-const BrandColour = "#ffffff";
-const BrandColourAction = "#5664d1";
-const BrandActionTextColour = "#ffffff";
-
-interface ChatItem {
-  role: "user" | "assistant" | "function" | "debug" | "error" | "confirmation";
-  name?: string;
-  content: string;
-}
-
-export type Step =
-  | ({ id: number; role: "assistant" } & ParsedOutput)
-  | { id: number; role: "function"; name: string; result: Json };
+import { ToConfirm } from "../pages/api/v1/answers";
+import { Json } from "../lib/database.types";
 
 export default function PlaygroundChatbot(props: {
   language: "English" | "Espanol";
@@ -93,98 +81,17 @@ export default function PlaygroundChatbot(props: {
   }, [profile]);
 
   const [conversationId, setConversationId] = useState<number | null>(null);
-  const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
+  const [devChatContents, setDevChatContents] = useState<StreamingStepInput[]>(
+    []
+  );
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
-  const [confirmationRequired, setConfirmationRequired] =
-    useState<boolean>(false);
-
-  const [confirmationButtonClicked, setConfirmationButtonClicked] = useState<
-    "yes" | "no" | null
-  >(null);
-
   const killSwitchClicked = useRef(false);
-
   const submitButtonClickable = props.submitReady && userText.length > 3;
 
-  // Hack to prevent the effect from running twice in development
-  const [init, setInit] = useState(true);
-
-  useEffect(() => {
-    if (!confirmationRequired || !init) return;
-
-    const commandsAwaitingConfirmation = parseOutput(
-      devChatContents[devChatContents.length - 1].content
-    ).commands;
-
-    setDevChatContents((prevState) => [
-      ...prevState,
-      {
-        role: "confirmation",
-        content: `The following actions are required to achieve your goal ${commandsAwaitingConfirmation.map(
-          (command, index) =>
-            convertToRenderable(
-              command.args,
-              `Action ${index + 1}: ${functionNameToDisplay(command.name)}`
-            )
-        )} <button>Confirm</button>`,
-      },
-    ]);
-    setInit(false); // Set init to false after first run
-  }, [confirmationRequired, init]);
-
-  useEffect(() => {
-    if (!confirmationButtonClicked) return;
-    (async () => {
-      setLoading(true);
-      setDevChatContents((prevState) => [
-        ...prevState,
-        {
-          role: "user",
-          content:
-            confirmationButtonClicked === "yes"
-              ? "Confirm Action"
-              : "Cancel Action",
-        },
-      ]);
-      const response = await fetch("/api/v1/confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${profile!.organizations!.api_key}`,
-        },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-          user_api_key: props.userApiKey,
-          org_id: profile!.organizations!.id,
-          button_clicked: confirmationButtonClicked,
-        }),
-      });
-
-      if (response.status === 200) {
-        const json = await response.json();
-        const outs: { name: string; result: object }[] = json.outs;
-
-        for (const out of outs) {
-          setDevChatContents((prevState) => [
-            ...prevState,
-            {
-              role: "function",
-              name: out.name,
-              content: JSON.stringify(out.result),
-            },
-          ]);
-        }
-      }
-
-      setConfirmationButtonClicked(null);
-      setLoading(false);
-    })();
-  }, [confirmationButtonClicked]);
-
-  const addTextToChat = useCallback(
-    async (chat: ChatItem[]) => {
+  const onChatSubmit = useCallback(
+    async (chat: StreamingStepInput[]) => {
       setDevChatContents(chat);
       setUsageLevel((prev) => prev + 1);
       if (loading || alreadyRunning.current) return;
@@ -218,7 +125,9 @@ export default function PlaygroundChatbot(props: {
       const reader = data.getReader();
       const decoder = new TextDecoder();
       let done = false;
-      let outputMessages = [{ role: "assistant", content: "" }] as ChatItem[];
+      let outputMessages = [
+        { role: "assistant", content: "" },
+      ] as StreamingStepInput[];
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -226,25 +135,18 @@ export default function PlaygroundChatbot(props: {
         const chunkValue = decoder.decode(value);
         try {
           // Can be multiple server-side chunks in one client-side chunk,
-          // separated by "data:". The .slice(5) removes the "data:" at
-          // the start of the string
-          chunkValue
-            .slice(5)
-            .split("data:")
-            .forEach((chunkOfChunk) => {
-              if (chunkOfChunk.length === 0) return;
-              const data = JSON.parse(chunkOfChunk) as StreamingStep;
-              if (conversationId === null) setConversationId(data.id);
-              if (
-                data.role !== outputMessages[outputMessages.length - 1]?.role
-              ) {
-                outputMessages.push({ ...data });
-              } else {
-                outputMessages[outputMessages.length - 1].content +=
-                  data.content;
-              }
-              setDevChatContents([...chat, ...outputMessages]);
-            });
+          // separated by "data:"
+          chunkValue.split("data:").forEach((chunkOfChunk) => {
+            if (chunkOfChunk.length === 0) return;
+            const data = JSON.parse(chunkOfChunk) as StreamingStep;
+            if (conversationId === null) setConversationId(data.id);
+            if (data.role !== outputMessages[outputMessages.length - 1]?.role) {
+              outputMessages.push({ ...data });
+            } else {
+              outputMessages[outputMessages.length - 1].content += data.content;
+            }
+            setDevChatContents([...chat, ...outputMessages]);
+          });
         } catch (e) {
           console.error(e);
         }
@@ -252,14 +154,6 @@ export default function PlaygroundChatbot(props: {
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
-      setConfirmationRequired(
-        outputMessages
-          .map((message) => message.content)
-          .join("")
-          .includes(
-            "Executing these instructions requires confirmation. I will not proceed until the user has provided this."
-          )
-      );
     },
     [
       props.userApiKey,
@@ -277,6 +171,63 @@ export default function PlaygroundChatbot(props: {
     ]
   );
 
+  const onConfirm = useCallback(
+    async (confirm: boolean) => {
+      setLoading(true);
+      const response = await fetch("/api/v1/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${profile!.organizations!.api_key}`,
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          user_api_key: props.userApiKey,
+          org_id: profile!.organizations!.id,
+          confirm: confirm,
+          test_mode: props.testMode,
+        }),
+      });
+
+      const json = await response.json();
+      if (response.status === 200) {
+        const newChat = [
+          ...devChatContents,
+          ...(json.outs as StreamingStepInput[]),
+        ];
+        setDevChatContents(newChat);
+        if (confirm) {
+          // TODO: This adds an empty message to the DB and GPT chat history.
+          //  This is hacky, since all we actually want to do is restart Angela with the existing
+          //  chat history. We should refactor this to do that instead.
+          await onChatSubmit([...newChat, { role: "user", content: "" }]);
+        }
+      } else {
+        // Handle errors here - add them to chat
+        console.error(json.error);
+        setDevChatContents((prevState) => [
+          ...prevState,
+          {
+            role: "error",
+            content: json.error,
+          },
+        ]);
+      }
+
+      setLoading(false);
+    },
+    [
+      devChatContents,
+      setDevChatContents,
+      onChatSubmit,
+      conversationId,
+      setLoading,
+      props.userApiKey,
+      profile,
+      props.testMode,
+    ]
+  );
+
   useEffect(() => {
     const ele = document.getElementById("scrollable-chat-contents");
     if (ele) {
@@ -290,9 +241,8 @@ export default function PlaygroundChatbot(props: {
       <div
         className={classNames(
           `pt-6 px-3 pb-4`,
-          "text-gray-900 border-b border-gray-200"
+          "text-gray-900 border-b border-gray-200 bg-gray-50"
         )}
-        style={{ backgroundColor: BrandColour }}
       >
         <div className="flex flex-row place-items-center justify-between">
           <div className="flex flex-col place-items-center gap-y-1 text-sm font-bold">
@@ -362,64 +312,47 @@ export default function PlaygroundChatbot(props: {
           )}
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
-            if (devMode || chatItem.role === "user")
+            if (
+              devMode ||
+              ["error", "confirmation", "user"].includes(chatItem.role)
+            )
               return (
                 <DevChatItem
-                  chatItem={chatItem}
                   key={idx + chatItem.content}
-                  setConfirmationButtonClicked={setConfirmationButtonClicked}
-                  setConfirmationRequired={setConfirmationRequired}
+                  chatItem={chatItem}
+                  onConfirm={onConfirm}
                 />
               );
-            else {
-              if (chatItem.role === "debug") return <></>;
-              else if (chatItem.role === "error") {
-                return (
-                  <DevChatItem
-                    chatItem={chatItem}
-                    key={idx + chatItem.content}
-                    setConfirmationButtonClicked={setConfirmationButtonClicked}
-                    setConfirmationRequired={setConfirmationRequired}
-                  />
-                );
-              } else if (chatItem.role === "function") {
-                let contentString;
-                const functionJsonResponse = JSON.parse(chatItem.content);
-                if (
-                  Array.isArray(functionJsonResponse) &&
-                  functionJsonResponse.length === 0
-                ) {
-                  contentString = "No data returned";
-                } else if (
-                  functionJsonResponse &&
-                  typeof functionJsonResponse === "object" &&
-                  Object.entries(functionJsonResponse).length === 0
-                ) {
-                  contentString = "No data returned";
-                } else {
-                  contentString = convertToRenderable(
-                    functionJsonResponse,
-                    `${functionNameToDisplay(chatItem?.name ?? "")} result`
-                  );
-                }
-                return (
-                  <DevChatItem
-                    chatItem={{ ...chatItem, content: contentString }}
-                    key={idx + chatItem.content}
-                    setConfirmationButtonClicked={setConfirmationButtonClicked}
-                    setConfirmationRequired={setConfirmationRequired}
-                  />
-                );
-              } else if (chatItem.role === "confirmation") {
-                return (
-                  <DevChatItem
-                    chatItem={chatItem}
-                    key={idx + chatItem.content}
-                    setConfirmationButtonClicked={setConfirmationButtonClicked}
-                    setConfirmationRequired={setConfirmationRequired}
-                  />
+            else if (chatItem.role === "debug") return;
+            else if (chatItem.role === "function") {
+              let contentString = "";
+              const functionJsonResponse = JSON.parse(chatItem.content) as Json;
+              if (
+                Array.isArray(functionJsonResponse) &&
+                functionJsonResponse.length === 0
+              ) {
+                contentString = "No data returned";
+              } else if (
+                functionJsonResponse &&
+                typeof functionJsonResponse === "object" &&
+                Object.entries(functionJsonResponse).length === 0
+              ) {
+                contentString = "No data returned";
+              } else if (
+                functionJsonResponse &&
+                typeof functionJsonResponse === "object"
+              ) {
+                contentString = convertToRenderable(
+                  functionJsonResponse,
+                  `${functionNameToDisplay(chatItem?.name ?? "")} result`
                 );
               }
+              return (
+                <DevChatItem
+                  chatItem={{ ...chatItem, content: contentString }}
+                  key={idx + chatItem.content}
+                />
+              );
             }
             return (
               <UserChatItem chatItem={chatItem} key={idx + chatItem.content} />
@@ -461,7 +394,7 @@ export default function PlaygroundChatbot(props: {
             if (e.key === "Enter") {
               e.preventDefault();
               if (submitButtonClickable) {
-                addTextToChat([
+                onChatSubmit([
                   ...devChatContents,
                   { role: "user", content: userText },
                 ]);
@@ -508,7 +441,7 @@ export default function PlaygroundChatbot(props: {
               )}
               onClick={() => {
                 if (!loading && submitButtonClickable) {
-                  addTextToChat([
+                  onChatSubmit([
                     ...devChatContents,
                     { role: "user", content: userText },
                   ]);
@@ -527,53 +460,20 @@ export default function PlaygroundChatbot(props: {
   );
 }
 
-function fromStepToGPTMessages(steps: Step[]): ChatItem[] {
-  return steps.map((step) => {
-    if (step.role === "assistant") {
-      const commandsString =
-        "Commands:\n" +
-        step.commands
-          .map((command) => {
-            const argsString = Object.entries(command.args)
-              .map(([argName, argValue]) => argName + "=" + argValue)
-              .join(", ");
-            return `${command.name}(${argsString})`;
-          })
-          .join("\n");
-      const completedString =
-        step.completed === null ? "question" : step.completed;
-      const tellUserString = step.tellUser
-        ? "Tell user: " + step.tellUser + "\n\n"
-        : "";
-      return {
-        role: step.role,
-        content: `Reasoning: ${step.reasoning}\n\nPlan: ${step.plan}\n\n${tellUserString}${commandsString}Completed: ${completedString}\n\n`,
-      };
-    } else {
-      return {
-        role: step.role,
-        name: step.name,
-        content: `Function: ${step.name}\n\nResult: ${JSON.stringify(
-          step.result
-        )}\n\n`,
-      };
-    }
-  });
-}
-
 const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;
 let feedbackRegex = /<button>Feedback<\/button>/;
-let confirmRegex = /<button>Confirm<\/button>/;
 let buttonRegex = /<button>(?![^<]*<button>)(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
 function DevChatItem(props: {
-  chatItem: ChatItem;
-  setConfirmationButtonClicked: (clicked: "yes" | "no" | null) => void;
-  setConfirmationRequired: (required: boolean) => void;
+  chatItem: StreamingStepInput;
+  onConfirm?: (confirm: boolean) => void;
 }) {
   const { profile } = useProfile();
-  const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
+  const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] =
+    useState<boolean>(false);
+  // Confirmed is null if the user hasn't confirmed yet, true if the user has confirmed, and false if the user has cancelled
+  const [confirmed, setConfirmed] = useState<boolean | null>(null);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
       setTimeout(() => {
@@ -581,14 +481,31 @@ function DevChatItem(props: {
       }, 3000);
     }
   }, [saveSuccessfulFeedback]);
+
+  let content = props.chatItem.content;
+  if (!content) return <></>;
+  if (props.chatItem.role === "confirmation") {
+    const toConfirm = JSON.parse(props.chatItem.content) as ToConfirm[];
+    content = `The following action${
+      toConfirm.length > 1 ? "s require" : " requires"
+    } confirmation:${toConfirm
+      .map((action) => {
+        return `\n\n${convertToRenderable(
+          action.args,
+          functionNameToDisplay(action.name)
+        )}`;
+      })
+      .join("")}`;
+  }
+
+  // We split the message into different parts, and then render each part one-by-one
   let match;
   let matches = [];
-  while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
+  while ((match = fullRegex.exec(content)) !== null) {
     if (match[1]) matches.push(match[1]);
     if (match[2]) matches.push(match[2]);
     if (match[3]) matches.push(match[3].trim());
   }
-  // TODO: if it's a function call, hide it from the user
   return (
     <div
       className={classNames(
@@ -603,7 +520,7 @@ function DevChatItem(props: {
           : props.chatItem.role === "function"
           ? "bg-green-200"
           : props.chatItem.role === "confirmation"
-          ? "bg-red-300"
+          ? "bg-blue-100"
           : ""
       )}
     >
@@ -658,47 +575,6 @@ function DevChatItem(props: {
             </div>
           );
         }
-        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
-          return (
-            <div
-              key={idx}
-              className="my-5 w-full flex flex-col place-items-center gap-y-2"
-            >
-              Are you sure you want to continue?
-              <div className="flex flex-row gap-x-4">
-                <button
-                  onClick={() => {
-                    props.setConfirmationButtonClicked("no");
-                    props.setConfirmationRequired(false);
-                  }}
-                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-red-500 ring-red-500 hover:bg-red-600`}
-                >
-                  <HandThumbDownIcon className="h-5 w-5" />
-                  No
-                </button>
-                <button
-                  onClick={() => {
-                    props.setConfirmationButtonClicked("yes");
-                    props.setConfirmationRequired(false);
-                  }}
-                  className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-green-500 ring-green-500 hover:bg-green-600`}
-                >
-                  <HandThumbUpIcon className="h-5 w-5" />
-                  Yes
-                </button>
-              </div>
-              <div
-                className={classNames(
-                  "flex flex-row place-items-center gap-x-1",
-                  saveSuccessfulFeedback ? "visible" : "invisible"
-                )}
-              >
-                <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                <div className="text-sm">Thanks for your feedback!</div>
-              </div>
-            </div>
-          );
-        }
         const buttonMatches = buttonRegex.exec(text);
         if (buttonMatches && buttonMatches.length > 0) {
           return (
@@ -708,13 +584,7 @@ function DevChatItem(props: {
             >
               <button
                 onClick={() => setSaveSuccessfulFeedback(true)}
-                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2`}
-                style={{
-                  backgroundColor: BrandColourAction,
-                  color: BrandActionTextColour,
-                  // @ts-ignore
-                  "--tw-ring-color": BrandColourAction,
-                }}
+                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 ring-purple-600 bg-purple-600 text-white`}
               >
                 {buttonMatches[1].trim()}
               </button>
@@ -742,6 +612,52 @@ function DevChatItem(props: {
           </p>
         );
       })}
+      {props.onConfirm &&
+        props.chatItem.role === "confirmation" &&
+        (confirmed === null ? (
+          <div className="my-5 w-full flex flex-col place-items-center gap-y-2">
+            Are you sure you want to continue?
+            <div className="flex flex-row gap-x-8">
+              <button
+                onClick={() => {
+                  setConfirmed(false);
+                  props.onConfirm!(false);
+                }}
+                className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-700 px-4 border border-gray-400 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-gray-100 ring-gray-500 hover:bg-gray-200`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmed(true);
+                  props.onConfirm!(true);
+                }}
+                className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-blue-500 ring-blue-500 hover:bg-blue-600`}
+              >
+                Confirm
+              </button>
+            </div>
+            <div
+              className={classNames(
+                "flex flex-row place-items-center gap-x-1",
+                saveSuccessfulFeedback ? "visible" : "invisible"
+              )}
+            >
+              <CheckCircleIcon className="h-5 w-5 text-green-500" />
+              <div className="text-sm">Thanks for your feedback!</div>
+            </div>
+          </div>
+        ) : confirmed ? (
+          <div className="my-5 w-full font-semibold flex flex-row justify-center gap-x-1 place-items-center">
+            <CheckCircleIcon className="h-5 w-5 text-green-500" />
+            Confirmed
+          </div>
+        ) : (
+          <div className="my-5 w-full flex flex-row font-semibold justify-center gap-x-2 place-items-center">
+            <XCircleIcon className="h-5 w-5 text-red-500" />
+            Cancelled
+          </div>
+        ))}
     </div>
   );
 }
@@ -750,32 +666,34 @@ function Table(props: { chatKeyValueText: string }) {
   let parsedValues = parseTableTags(props.chatKeyValueText);
 
   return (
-    <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-      <table className="min-w-full divide-y divide-gray-300">
-        <caption className="text-md text-gray-900 mb-2 font-extrabold">
-          {parsedValues.find((keyValue) => keyValue.key === "caption")?.value}
-        </caption>
-        <tbody className="bg-gray-300 rounded-full">
-          {parsedValues.map(
-            (keyValue) =>
-              keyValue.key !== "caption" && (
-                <tr key={keyValue.key} className="even:bg-[#DADDE3]">
-                  <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
-                    {keyValue.key}
-                  </td>
-                  <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
-                    {keyValue.value}
-                  </td>
-                </tr>
-              )
-          )}
-        </tbody>
-      </table>
+    <div className="inline-block min-w-full py-4 align-middle sm:px-6 lg:px-8">
+      <div className="min-w-full border border-gray-300">
+        <table className="w-full divide-y divide-gray-300">
+          <caption className="text-md text-gray-900 bg-gray-100 py-2 font-extrabold">
+            {parsedValues.find((keyValue) => keyValue.key === "caption")?.value}
+          </caption>
+          <tbody className="bg-gray-300 rounded-full">
+            {parsedValues.map(
+              (keyValue) =>
+                keyValue.key !== "caption" && (
+                  <tr key={keyValue.key} className="even:bg-[#DADDE3]">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
+                      {keyValue.key}
+                    </td>
+                    <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
+                      {keyValue.value}
+                    </td>
+                  </tr>
+                )
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-function UserChatItem(props: { chatItem: ChatItem }) {
+function UserChatItem(props: { chatItem: StreamingStepInput }) {
   const { profile } = useProfile();
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
@@ -785,6 +703,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
       }, 3000);
     }
   }, [saveSuccessfulFeedback]);
+  if (!props.chatItem.content) return <></>;
   let match;
   let matches = [];
   while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
@@ -843,13 +762,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
             >
               <button
                 onClick={() => setSaveSuccessfulFeedback(true)}
-                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2`}
-                style={{
-                  backgroundColor: BrandColourAction,
-                  color: BrandActionTextColour,
-                  // @ts-ignore
-                  "--tw-ring-color": BrandColourAction,
-                }}
+                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 ring-purple-600 bg-purple-600 text-white`}
               >
                 {buttonMatches[1].trim()}
               </button>
@@ -869,24 +782,26 @@ function UserChatItem(props: { chatItem: ChatItem }) {
           return <Table chatKeyValueText={tableMatches[1]} key={idx} />;
         }
         return (
-          <>
-            <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
-              <p className="flex flex-row gap-x-1.5 text-yellow-800">
-                <LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts
-              </p>
-              <p className="mt-1 text-little whitespace-pre-line text-gray-700">
-                {outputObj.reasoning}
-              </p>
-            </div>
+          <div key={idx} className="w-full">
+            {outputObj.reasoning && (
+              <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
+                <p className="flex flex-row gap-x-1.5 text-yellow-800">
+                  <LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts
+                </p>
+                <p className="mt-1 text-little whitespace-pre-line text-gray-700">
+                  {outputObj.reasoning}
+                </p>
+              </div>
+            )}
             {outputObj.tellUser && (
               <p
                 key={idx}
-                className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line"
+                className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line w-full"
               >
                 {outputObj.tellUser}
               </p>
             )}
-          </>
+          </div>
         );
       })}
     </div>
