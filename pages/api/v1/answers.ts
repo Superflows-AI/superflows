@@ -18,7 +18,6 @@ import {
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
-  convertToRenderable,
   exponentialRetryWrapper,
   isValidBody,
   openAiCost,
@@ -134,10 +133,9 @@ export default async function handler(req: NextRequest) {
       const authRes = await supabase
         .from("organizations")
         .select("*, is_paid(*)")
-        .eq("api_key", token)
-        .single();
+        .eq("api_key", token);
       if (authRes.error) throw new Error(authRes.error.message);
-      org = authRes.data;
+      org = authRes.data?.[0] ?? null;
     }
     if (!org) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
