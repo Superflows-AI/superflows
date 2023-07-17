@@ -304,3 +304,77 @@ export function jsonReconstruct(chunks: Chunk[]): any {
 
   return root;
 }
+
+// export function chunkKeyValuePairs(
+//   obj: { [key: string]: any },
+//   chunkSize: number
+// ) {
+//   const keys = Object.keys(obj);
+//   let results = [];
+
+//   return results;
+// }
+
+// export function chunkKeyValuePairs(
+//   obj: { [key: string]: any },
+//   chunkSize: number
+// ) {
+//   const keys = Object.keys(obj);
+//   let results = [];
+
+//   for (let i = 0; i < keys.length; i += chunkSize) {
+//     const chunkKeys = keys.slice(i, i + chunkSize);
+//     const chunk = chunkKeys.reduce((result, key) => {
+//       result[key] = obj[key];
+//       return result;
+//     }, {});
+
+//     results.push(chunk);
+//   }
+
+//   return results;
+// }
+
+// export function chunkKeyValuePairs(
+//   obj: { [key: string]: any },
+//   chunkSize: number
+// ) {
+//   const keys = Object.keys(obj);
+//   let results: { [key: string]: any }[] = {};
+
+//   for (let i = 0; i < keys.length; i += chunkSize) {
+//     const chunkKeys = keys.slice(i, i + chunkSize);
+//     const chunk = chunkKeys.reduce((result, key) => {
+//       result[key] = obj[key];
+//       return result;
+//     }, {});
+
+//     results[i / chunkSize] = chunk; // wrap each chunk in an object
+//   }
+
+//   return results;
+// }
+
+export function chunkKeyValuePairs(
+  obj: { [key: string]: any },
+  chunkSize: number
+) {
+  const keys = Object.keys(obj);
+  let results = [];
+
+  for (let i = 0; i < keys.length; i += chunkSize) {
+    const chunkKeys = keys.slice(i, i + chunkSize);
+    const chunk = chunkKeys.reduce((result, key) => {
+      result[key] = obj[key];
+      return result;
+    }, {});
+
+    results.push(chunk);
+  }
+
+  return results;
+}
+
+export function reconstructChunks(chunks: Array<{ [key: string]: any }>) {
+  return Object.assign({}, ...chunks);
+}

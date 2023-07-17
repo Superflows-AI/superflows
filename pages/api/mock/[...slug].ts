@@ -4,12 +4,16 @@ import JSON5 from "json5";
 const dJSON = require("dirty-json");
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { Database } from "../../../lib/database.types";
 import { RequestMethods } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
-import { Action, OrgJoinIsPaid } from "../../../lib/types";
-import { exponentialRetryWrapper, splitPath } from "../../../lib/utils";
+import { Action, Organization } from "../../../lib/types";
+import {
+  chunkKeyValuePairs,
+  exponentialRetryWrapper,
+  splitPath,
+} from "../../../lib/utils";
+import { promise } from "zod";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -114,6 +118,15 @@ export function getPathParameters(
   return variables;
 }
 
+// Bring me my Bow of burning gold:
+const supabase = createClient(
+  // Bring me my arrows of desire:
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  // Bring me my Spear: O clouds unfold!
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  // Bring me my Chariot of fire!
+);
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -123,23 +136,6 @@ export default async function handler(
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
   const method = req.method as RequestMethods;
-
-  // Authenticate the user
-  const authUserSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-    {
-      global: { headers: { Authorization: req.headers.authorization ?? "" } },
-    }
-  );
-  // Bring me my Bow of burning gold:
-  const supabase = createClient(
-    // Bring me my arrows of desire:
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    // Bring me my Spear: O clouds unfold!
-    process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
-    // Bring me my Chariot of fire!
-  );
 
   // Authenticate that the user is allowed to use this API
   let token = (req.headers["Authorization"] as string)
@@ -184,8 +180,31 @@ export default async function handler(
         responses[responseCode ?? ""] ?? {})
       : {};
 
-  const expectedResponseType =
-    response.content?.["application/json"]?.schema ?? response;
+  const fullResponseType =
+    response.content?.["application/json"]?.schema ?? null;
+
+  // TODO fix. Doesn't work if no match
+  if (!fullResponseType) {
+    throw new Error(
+      `parsing this wrong. The response is ${JSON.stringify(response)}`
+    );
+  }
+
+  let properties = fullResponseType.properties
+    ? fullResponseType.properties
+    : fullResponseType.items.properties
+    ? fullResponseType.items.properties
+    : null;
+
+  // TODO deal with this better
+  if (!properties) {
+    console.error(
+      `Could not find properties in response schema: ${JSON.stringify(
+        fullResponseType
+      )}`
+    );
+    res.status(400).json(fullResponseType);
+  }
 
   const { data: orgData, error: orgError } = await supabase
     .from("organizations")
@@ -195,16 +214,71 @@ export default async function handler(
 
   const orgInfo = orgData.length === 1 ? orgData[0] : undefined;
 
+  // This should be a load of key-value pairs so it should not be too hard to split up but possible alternative structures
+  const chunkedProperties = chunkKeyValuePairs(properties, 5);
+
+  const allJson = await Promise.all(
+    chunkedProperties.map((chunk) =>
+      getResponseForChunk(
+        fullResponseType,
+        chunk,
+        matchingAction,
+        queryParams,
+        slug,
+        method,
+        pathParameters,
+        req,
+        orgInfo
+      )
+    )
+  );
+
+  res.status(responseCode ? Number(responseCode) : 200).json({ ...allJson });
+}
+
+async function getResponseForChunk(
+  fullResponseType: any,
+  propertiesSubset: { [key: string]: any },
+  matchingAction: Action | null,
+  queryParams: Partial<{ [key: string]: string | string[] }>,
+  slug: string[],
+  method: RequestMethods,
+  pathParameters: { [name: string]: string },
+  requestBodyParameters: { [key: string]: any },
+  orgInfo: Organization
+) {
+  console.log("Expected Response Type:", fullResponseType);
+  let responseTypeSubset;
+  let required;
+  if (fullResponseType.properties) {
+    responseTypeSubset = { ...fullResponseType, properties: propertiesSubset };
+  } else if (fullResponseType.items.properties) {
+    if (fullResponseType.items.required)
+      required = fullResponseType.items.required.filter((item: string) =>
+        Object.keys(propertiesSubset).includes(item)
+      );
+    responseTypeSubset = {
+      ...fullResponseType,
+      items: {
+        ...fullResponseType.items,
+        properties: propertiesSubset,
+        required,
+      },
+    };
+  }
+
   const prompt = apiMockPrompt(
     matchingAction?.path ?? slug.join("/"),
     method,
     pathParameters,
     queryParams,
-    req.body,
-    expectedResponseType,
+    requestBodyParameters,
+    responseTypeSubset,
     orgInfo
   );
-  console.log("Mock Prompt:", prompt);
+
+  console.log("Mock Prompt:", prompt[1].content);
+
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
     [prompt, {}, "3"],
@@ -212,6 +286,7 @@ export default async function handler(
   );
 
   let json;
+
   try {
     // JSON5 means we don't have to enforce double quotes and no trailing commas
     json = JSON5.parse(openAiResponse);
@@ -226,9 +301,8 @@ export default async function handler(
       json = dJSON.parse(openAiResponse);
     } catch (e) {
       console.log("Failed to parse response as JSON", openAiResponse);
-      throw e;
+      throw e; // TODO: probably best to fallback to ignore the broken chunk
     }
   }
-
-  res.status(responseCode ? Number(responseCode) : 200).json(json);
+  return json;
 }
