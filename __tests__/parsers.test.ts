@@ -135,15 +135,6 @@ describe("parseFunctionCall", () => {
     };
     expect(output).toEqual(expectedOutput);
   });
-  it("hyphenated function name", () => {
-    const str = `set-coordinates(x=3.14, placeName="The Moon", y=0.98)`;
-    const output = parseFunctionCall(str);
-    const expectedOutput = {
-      name: "set-coordinates",
-      args: { x: 3.14, y: 0.98, placeName: "The Moon" },
-    };
-    expect(output).toEqual(expectedOutput);
-  });
   it("returns function with no arguments when none are provided", () => {
     const str = `do_something()`;
     const output = parseFunctionCall(str);
