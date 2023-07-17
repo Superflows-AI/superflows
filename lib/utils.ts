@@ -258,3 +258,49 @@ export function filterKeys<InputObject extends any>(
 export function splitPath(path: string): string[] {
   return path.split("/").filter((ele) => ele !== "");
 }
+
+interface Chunk {
+  path: (string | number)[];
+  dataType: "Object" | "Array" | "Primitive";
+  data: any;
+}
+
+export function jsonSplitter(
+  json: any,
+  path: (string | number)[] = []
+): Chunk[] {
+  if (Array.isArray(json)) {
+    let chunks: Chunk[] = [];
+    for (let i = 0; i < json.length; i++) {
+      chunks.push(...jsonSplitter(json[i], [...path, i]));
+    }
+    return chunks.map((chunk) => ({ ...chunk, dataType: "Array" }));
+  } else if (typeof json === "object" && json !== null) {
+    let chunks: Chunk[] = [];
+    for (let key in json) {
+      chunks.push(...jsonSplitter(json[key], [...path, key]));
+    }
+    return chunks.map((chunk) => ({ ...chunk, dataType: "Object" }));
+  } else {
+    return [{ path, data: json, dataType: "Primitive" }];
+  }
+}
+
+export function jsonReconstruct(chunks: Chunk[]): any {
+  let root: any = {};
+
+  for (let chunk of chunks) {
+    let layer = root;
+    for (let i = 0; i < chunk.path.length; i++) {
+      let key = chunk.path[i];
+      if (i === chunk.path.length - 1) {
+        layer[key] = chunk.data;
+      } else if (layer[key] === undefined) {
+        layer[key] = isNaN(Number(chunk.path[i + 1])) ? {} : [];
+      }
+      layer = layer[key];
+    }
+  }
+
+  return root;
+}
