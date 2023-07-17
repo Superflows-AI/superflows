@@ -186,7 +186,8 @@ export function operationIdToFunctionName(
   operationId = operationId
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .toLowerCase();
-  return operationId.replaceAll(" ", "_");
+  operationId = operationId.replaceAll(" ", "_");
+  return operationId.replaceAll("-", "_");
 }
 
 export function requestToFunctionName(
