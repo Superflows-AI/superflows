@@ -1,5 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
-import { parseGPTStreamedData, parseOutput } from "../lib/parsers/parsers";
+import {
+  parseFunctionCall,
+  parseGPTStreamedData,
+  parseOutput,
+} from "../lib/parsers/parsers";
 
 describe("Parse output", () => {
   it("should not error", () => {
@@ -97,6 +101,60 @@ describe("Parse output", () => {
     expect(output.tellUser).toBe("");
     expect(output.commands).toStrictEqual([]);
     expect(output.completed).toBe(false);
+  });
+});
+
+describe("parseFunctionCall", () => {
+  it("hyphenated argument name", () => {
+    const str = `get_account(gtmhub-accountId="64b17ac6548041a751aaf2f6", id_team="64b17ac6548041a751aaf2f7")`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = {
+      name: "get_account",
+      args: {
+        "gtmhub-accountId": "64b17ac6548041a751aaf2f6",
+        id_team: "64b17ac6548041a751aaf2f7",
+      },
+    };
+    expect(output).toStrictEqual(expectedOutput);
+  });
+  it("correctly parses function with floating point argument", () => {
+    const str = `set_coordinates(x=3.14, y=0.98)`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = {
+      name: "set_coordinates",
+      args: { x: 3.14, y: 0.98 },
+    };
+    expect(output).toEqual(expectedOutput);
+  });
+  it("correctly parses function mixed argument types", () => {
+    const str = `set_coordinates(x=3.14, placeName="The Moon", y=0.98)`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = {
+      name: "set_coordinates",
+      args: { x: 3.14, y: 0.98, placeName: "The Moon" },
+    };
+    expect(output).toEqual(expectedOutput);
+  });
+  it("hyphenated function name", () => {
+    const str = `set-coordinates(x=3.14, placeName="The Moon", y=0.98)`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = {
+      name: "set-coordinates",
+      args: { x: 3.14, y: 0.98, placeName: "The Moon" },
+    };
+    expect(output).toEqual(expectedOutput);
+  });
+  it("returns function with no arguments when none are provided", () => {
+    const str = `do_something()`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = { name: "do_something", args: {} };
+    expect(output).toEqual(expectedOutput);
+  });
+  it("throws an error when function call format is invalid", () => {
+    const str = `getAccount "64b17ac6548041a751aaf2f6" "64b17ac6548041a751aaf2f7"`;
+    expect(() => parseFunctionCall(str)).toThrowError(
+      "Invalid function call format: " + str
+    );
   });
 });
 
