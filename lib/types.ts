@@ -6,11 +6,12 @@ export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 
 export type ActionTagJoinActions = ActionTag & { actions: Action[] };
 
-export type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+export type DBChatMessage =
+  Database["public"]["Tables"]["chat_messages"]["Row"];
 
 export type ConversationsJoinMessages =
   Database["public"]["Tables"]["conversations"]["Row"] & {
-    chat_messages: ChatMessage[];
+    chat_messages: DBChatMessage[];
   };
 
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];

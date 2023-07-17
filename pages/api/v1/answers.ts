@@ -8,6 +8,7 @@ import {
   ActionToHttpRequest,
   ChatGPTMessage,
   ChatGPTParams,
+  FunctionCall,
   StreamingStepInput,
 } from "../../../lib/models";
 import {
@@ -60,8 +61,21 @@ if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
 }
 
-// TODO: is this the best thing for open source? Would require users to have a redis account
-const redis = Redis.fromEnv();
+let redis: Redis | null = null,
+  ratelimit: Ratelimit | null = null;
+if (
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  redis = Redis.fromEnv();
+
+  // Create a new ratelimiter, that allows 3 requests per 10 seconds
+  ratelimit = new Ratelimit({
+    redis: redis,
+    // TODO: When someone is in production, this should be raised
+    limiter: Ratelimit.slidingWindow(3, "10 s"),
+  });
+}
 
 // Bring me my Bow of burning gold:
 const supabase = createClient(
@@ -71,13 +85,6 @@ const supabase = createClient(
   process.env.SERVICE_LEVEL_KEY_SUPABASE
   // Bring me my Chariot of fire!
 );
-
-// Create a new ratelimiter, that allows 2 requests per 10 seconds
-const ratelimit = new Ratelimit({
-  redis: redis,
-  // TODO: When someone is in production, this should be raised
-  limiter: Ratelimit.slidingWindow(1, "10 s"),
-});
 
 const headers = { "Content-Type": "application/json" };
 
@@ -112,12 +119,14 @@ export default async function handler(req: NextRequest) {
     }
 
     // Check that the user hasn't surpassed the rate limit
-    const { success } = await ratelimit.limit(token);
-    if (!success) {
-      return new Response(JSON.stringify({ error: "Rate limit hit" }), {
-        status: 429,
-        headers,
-      });
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(token);
+      if (!success) {
+        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
+          status: 429,
+          headers,
+        });
+      }
     }
 
     let org: OrgJoinIsPaid | null = null;
@@ -274,7 +283,7 @@ export default async function handler(req: NextRequest) {
               ...m,
               org_id: org!.id,
               conversation_id: conversationId,
-              conversation_index: idx + 1,
+              conversation_index: previousMessages.length + idx,
             }))
           );
         if (insertedChatMessagesRes.error)
@@ -323,6 +332,10 @@ export default async function handler(req: NextRequest) {
   }
 }
 
+export interface ToConfirm extends FunctionCall {
+  actionId: number;
+}
+
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
@@ -364,7 +377,7 @@ async function Angela( // Good ol' Angela
       );
       console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");
-      // console.log("GPT input cost:", promptInputCost);
+      console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
@@ -424,7 +437,7 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
-      const toConfirm: { actionId: number; parameters: object }[] = [];
+      const toConfirm: ToConfirm[] = [];
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
         const chosenAction = actions.find((a) => a.name === command.name);
@@ -448,41 +461,33 @@ async function Angela( // Good ol' Angela
           let out = await httpRequestFromAction(actionToHttpRequest);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
-          streamInfo({
+          const outMessage = {
             role: "function",
             name: command.name,
             content: JSON.stringify(out, null, 2),
-          });
-          const renderableOutput =
-            "\n\n" + command.name + " output:\n" + convertToRenderable(out);
-          nonSystemMessages.push({
-            role: "function",
-            name: command.name,
-            content: renderableOutput,
-          });
+          } as ChatGPTMessage;
+          streamInfo(outMessage);
+          nonSystemMessages.push(outMessage);
         } else {
-          const step = {
+          toConfirm.push({
             actionId: chosenAction.id,
-            parameters: command.args,
-          };
-
-          const confirmationMessage = {
-            role: "confirmation",
-            content: `\n\nExecuting these instructions requires confirmation. I will not proceed until the user has provided this. The user will be asked to confirm the following: ${JSON.stringify(
-              step
-            )}`,
-          };
-
-          toConfirm.push(step);
-
-          nonSystemMessages.push(confirmationMessage as ChatGPTMessage);
-          streamInfo(confirmationMessage as StreamingStepInput);
+            args: command.args,
+            name: command.name,
+          });
 
           awaitingConfirmation = true;
         }
       }
+      if (awaitingConfirmation) {
+        streamInfo({
+          role: "confirmation",
+          content: JSON.stringify(toConfirm),
+        });
+        if (redis)
+          await storeActionsAwaitingConfirmation(toConfirm, conversationId);
+      }
+
       if (mostRecentParsedOutput.completed) {
-        await storeActionsAwaitingConfirmation(toConfirm, conversationId);
         return { nonSystemMessages, cost: totalCost };
       }
 
@@ -494,7 +499,6 @@ async function Angela( // Good ol' Angela
         });
         return { nonSystemMessages, cost: totalCost };
       }
-      await storeActionsAwaitingConfirmation(toConfirm, conversationId);
     }
   } catch (e) {
     console.error(e);
@@ -508,10 +512,10 @@ async function Angela( // Good ol' Angela
 }
 
 async function storeActionsAwaitingConfirmation(
-  toConfirm: { actionId: number; parameters: object }[],
+  toConfirm: ToConfirm[],
   conversationId: number
 ) {
-  if (toConfirm.length > 0) {
+  if (toConfirm.length > 0 && redis) {
     if ((await redis.get(conversationId.toString())) !== null)
       throw new Error(
         `Conversation ID "${conversationId}" already exists in redis, something has gone wrong`

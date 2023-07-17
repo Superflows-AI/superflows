@@ -11,6 +11,8 @@ import {
 import { parseOutput } from "../../../lib/parsers/parsers";
 import { Database } from "../../../lib/database.types";
 import { Ratelimit } from "@upstash/ratelimit";
+import { ToConfirm } from "./answers";
+import { ChatGPTMessage } from "../../../lib/models";
 
 export const config = {
   runtime: "edge",
@@ -22,20 +24,14 @@ const ConfirmZod = z.object({
   conversation_id: z.number(),
   user_api_key: OptionalStringZod,
   org_id: z.number(),
-  button_clicked: z.enum(["yes", "no"]),
-});
-
-// Create a new ratelimiter, that allows 2 requests per 10 seconds
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  // TODO: When someone is in production, this should be raised
-  limiter: Ratelimit.slidingWindow(2, "10 s"),
+  confirm: z.boolean(),
+  test_mode: z.optional(z.boolean()),
 });
 
 type ConfirmType = z.infer<typeof ConfirmZod>;
 
-let redis: Redis | null = null;
-// AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+let redis: Redis | null = null,
+  ratelimit: Ratelimit | null = null;
 if (
   !process.env.UPSTASH_REDIS_REST_URL ||
   !process.env.UPSTASH_REDIS_REST_TOKEN
@@ -43,7 +39,18 @@ if (
   console.log("Redis not found, falling back to supabase");
 } else {
   redis = Redis.fromEnv();
+  // Create a new ratelimiter, that allows 3 requests per 10 seconds
+  ratelimit = new Ratelimit({
+    redis,
+    // TODO: When someone is in production, this should be raised
+    limiter: Ratelimit.slidingWindow(3, "10 s"),
+  });
 }
+
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+);
 
 const headers = { "Content-Type": "application/json" };
 
@@ -67,11 +74,6 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    const supabase = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
-    );
-
     // Authenticate that the user is allowed to use this API
     let token = req.headers
       .get("Authorization")
@@ -86,12 +88,14 @@ export default async function handler(req: NextRequest) {
     }
 
     // Check that the user hasn't surpassed the rate limit
-    const { success } = await ratelimit.limit(token);
-    if (!success) {
-      return new Response(JSON.stringify({ error: "Rate limit hit" }), {
-        status: 429,
-        headers,
-      });
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(token);
+      if (!success) {
+        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
+          status: 429,
+          headers,
+        });
+      }
     }
 
     let org: OrgJoinIsPaid | null = null;
@@ -104,39 +108,84 @@ export default async function handler(req: NextRequest) {
       if (authRes.error) throw new Error(authRes.error.message);
       org = authRes.data;
     }
-    if (!org || !org.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: !org
-            ? "Authentication failed"
-            : "No API host found - add an API host on the API settings page",
-        }),
-        {
-          status: !org ? 401 : 400,
-          headers,
-        }
-      );
+    if (!org) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
     }
 
     // Validate that the request body is of the correct format
     const requestData = await req.json();
-    console.log("Request data:", requestData);
     if (!isValidBody<ConfirmType>(requestData, ConfirmZod)) {
-      return new Response(JSON.stringify({ message: "Invalid request body" }), {
+      return new Response(JSON.stringify({ error: "Invalid request body" }), {
         status: 400,
         headers,
       });
     }
 
-    if (requestData.button_clicked === "no") {
-      if (redis) await redis.json.del(requestData.conversation_id.toString());
-      return new Response("Rejected actions removed from cache", {
-        status: 204,
-        headers,
-      });
+    // Override api_host if test_mode is set to true
+    if (org && requestData.test_mode) {
+      const currentHost =
+        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+      org.api_host = currentHost + "/api/mock";
+      console.log("Test mode enabled: overriding api_host to", org.api_host);
+    }
+    if (!org?.api_host) {
+      return new Response(
+        JSON.stringify({
+          error: "No API host found - add an API host on the API settings page",
+        }),
+        { status: 400, headers }
+      );
     }
 
-    let toExecute: { action: Action; params: object }[];
+    const countMessagesRes = await supabase
+      .from("chat_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("conversation_id", requestData.conversation_id)
+      .eq("org_id", org.id);
+    if (countMessagesRes.error) throw new Error(countMessagesRes.error.message);
+    const numPastMessages = countMessagesRes.count ?? 0;
+
+    if (!requestData.confirm) {
+      if (redis) await redis.json.del(requestData.conversation_id.toString());
+      // Respond with a message from the assistant & add user cancel to GPT history
+      const assistantMessage = {
+        role: "assistant",
+        content:
+          "Reasoning: I've cancelled the actions.\n\nTell user: What would you like me to do instead?",
+      };
+
+      const cancelRes = await supabase.from("chat_messages").insert([
+        {
+          role: "user",
+          content: "Cancel actions",
+          conversation_id: requestData.conversation_id,
+          org_id: org.id,
+          conversation_index: numPastMessages,
+        },
+        {
+          ...assistantMessage,
+          conversation_id: requestData.conversation_id,
+          org_id: org.id,
+          conversation_index: numPastMessages + 1,
+        },
+      ]);
+      if (cancelRes.error) throw new Error(cancelRes.error.message);
+
+      return new Response(
+        JSON.stringify({
+          outs: [assistantMessage],
+        }),
+        {
+          status: 200,
+          headers,
+        }
+      );
+    }
+
+    let toExecute: { action: Action; params: object }[] = [];
 
     if (redis) {
       const redisData = await redis.json.get(
@@ -144,39 +193,28 @@ export default async function handler(req: NextRequest) {
       );
       await redis.json.del(requestData.conversation_id.toString());
 
-      if (!redisData) {
-        return new Response(
-          JSON.stringify({
-            message: `ConversationId ${requestData.conversation_id} not found in redis cache`,
-          }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          }
+      if (redisData) {
+        const storedParams = redisData.toConfirm as ToConfirm[];
+
+        toExecute = await Promise.all(
+          storedParams.map(async (param) => {
+            const action = await supabase
+              .from("actions")
+              .select("*")
+              .eq("org_id", requestData.org_id)
+              .eq("id", param.actionId)
+              .single()
+              .then((res) => res.data!);
+            return {
+              action: action,
+              params: param.args,
+            };
+          })
         );
       }
-
-      const storedParams = redisData.toConfirm as {
-        actionId: number;
-        parameters: object;
-      }[];
-
-      toExecute = await Promise.all(
-        storedParams.map(async (param) => {
-          const action = await supabase
-            .from("actions")
-            .select("*")
-            .eq("org_id", requestData.org_id)
-            .eq("id", param.actionId)
-            .single()
-            .then((res) => res.data!);
-          return {
-            action: action,
-            params: param.parameters,
-          };
-        })
-      );
-    } else {
+    }
+    // If there is no redis data, get the data from the database
+    if (toExecute.length === 0) {
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
@@ -205,19 +243,29 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    const outs: { name: string; result: object }[] = [];
-    for (const execute of toExecute) {
-      let out = await httpRequestFromAction({
-        action: execute.action,
-        parameters: execute.params as Record<string, unknown>,
-        organization: org,
-        userApiKey: requestData.user_api_key,
-      });
-      outs.push({
-        name: execute.action.name,
-        result: processAPIoutput(out, execute.action),
-      });
-    }
+    const outs: ChatGPTMessage[] = await Promise.all(
+      toExecute.map(async (execute, idx) => {
+        let output = await httpRequestFromAction({
+          action: execute.action,
+          parameters: execute.params as Record<string, unknown>,
+          organization: org!,
+          userApiKey: requestData.user_api_key,
+        });
+        const out = {
+          role: "function",
+          name: execute.action.name,
+          content: JSON.stringify(processAPIoutput(output, execute.action)),
+        } as ChatGPTMessage;
+        const funcRes = await supabase.from("chat_messages").insert({
+          ...out,
+          conversation_id: requestData.conversation_id,
+          org_id: org!.id,
+          conversation_index: numPastMessages + idx,
+        });
+        if (funcRes.error) throw new Error(funcRes.error.message);
+        return out;
+      })
+    );
 
     return new Response(JSON.stringify({ outs }), {
       status: 200,

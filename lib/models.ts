@@ -2,7 +2,7 @@ import { Action } from "./types";
 
 export type ChatGPTMessage =
   | {
-      role: "system" | "user" | "assistant" | "confirm";
+      role: "system" | "user" | "assistant";
       content: string;
     }
   | {
@@ -10,13 +10,6 @@ export type ChatGPTMessage =
       content: string;
       name: string;
     };
-
-// Required by the tokeniser
-export interface ChatMessage {
-  role?: "system" | "user" | "assistant";
-  name?: string;
-  content: string;
-}
 
 export interface ChatGPTResponse {
   id: string;
@@ -65,9 +58,12 @@ export type RequestMethods =
   | "PATCH"
   | "OPTIONS";
 
+type NonSystemGPTMessage = Exclude<ChatGPTMessage, { role: "system" }>;
+
 export type StreamingStepInput =
-  | { role: "assistant" | "error" | "debug"; content: string }
-  | { role: "function"; name: string; content: string };
+  | NonSystemGPTMessage
+  | { role: "error" | "debug" | "confirmation"; content: string };
+
 export type StreamingStep = StreamingStepInput & { id: number };
 export interface ActionToHttpRequest {
   action: Action;
