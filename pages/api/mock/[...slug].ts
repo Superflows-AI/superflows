@@ -13,7 +13,6 @@ import {
   exponentialRetryWrapper,
   splitPath,
 } from "../../../lib/utils";
-import { promise } from "zod";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -47,7 +46,6 @@ export function processMultipleMatches(
     return split[split.length - 1] === slug[slug.length - 1];
   });
   if (matchEnd.length === 1) return matchEnd;
-
   const paramMatcher = (slugSegment: string, pathSegment: string) =>
     (pathSegment.includes("{") && pathSegment.includes("}")) ||
     slugSegment === pathSegment;
@@ -220,43 +218,66 @@ export default async function handler(
   const allJson = await Promise.all(
     chunkedProperties.map((chunk) =>
       getResponseForChunk(
-        fullResponseType,
-        chunk,
+        subsampleResponseType(fullResponseType, chunk),
         matchingAction,
         queryParams,
         slug,
         method,
         pathParameters,
-        req,
+        req.body,
         orgInfo
       )
     )
   );
 
-  res.status(responseCode ? Number(responseCode) : 200).json({ ...allJson });
+  res
+    .status(responseCode ? Number(responseCode) : 200)
+    .json(allJson.reduce((acc, obj) => deepMerge(acc, obj), {}));
 }
 
-async function getResponseForChunk(
-  fullResponseType: any,
-  propertiesSubset: { [key: string]: any },
-  matchingAction: Action | null,
-  queryParams: Partial<{ [key: string]: string | string[] }>,
-  slug: string[],
-  method: RequestMethods,
-  pathParameters: { [name: string]: string },
-  requestBodyParameters: { [key: string]: any },
-  orgInfo: Organization
+function deepMerge(
+  obj1: { [k: string]: any },
+  obj2: { [k: string]: any }
+): { [k: string]: any } {
+  for (let key in obj2) {
+    if (obj2.hasOwnProperty(key)) {
+      if (
+        obj1[key] &&
+        typeof obj2[key] === "object" &&
+        !Array.isArray(obj2[key])
+      ) {
+        deepMerge(obj1[key], obj2[key]);
+      } else {
+        obj1[key] = obj2[key];
+      }
+    }
+  }
+  return obj1;
+}
+
+function subsampleResponseType(
+  fullResponseType: object,
+  propertiesSubset: { [key: string]: any }
 ) {
-  console.log("Expected Response Type:", fullResponseType);
-  let responseTypeSubset;
+  let responseTypeSubset: object = {};
   let required;
+
   if (fullResponseType.properties) {
-    responseTypeSubset = { ...fullResponseType, properties: propertiesSubset };
+    const required = fullResponseType.required.filter((item: string) =>
+      Object.keys(propertiesSubset).includes(item)
+    );
+    responseTypeSubset = {
+      ...fullResponseType,
+      properties: propertiesSubset,
+      required,
+    };
   } else if (fullResponseType.items.properties) {
-    if (fullResponseType.items.required)
+    if (fullResponseType.items.required) {
       required = fullResponseType.items.required.filter((item: string) =>
         Object.keys(propertiesSubset).includes(item)
       );
+    }
+
     responseTypeSubset = {
       ...fullResponseType,
       items: {
@@ -266,7 +287,19 @@ async function getResponseForChunk(
       },
     };
   }
+  return responseTypeSubset;
+}
 
+async function getResponseForChunk(
+  responseTypeSubset: object,
+  matchingAction: Action | null,
+  queryParams: Partial<{ [key: string]: string | string[] }>,
+  slug: string[],
+  method: RequestMethods,
+  pathParameters: { [name: string]: string },
+  requestBodyParameters: { [key: string]: any },
+  orgInfo: Organization
+) {
   const prompt = apiMockPrompt(
     matchingAction?.path ?? slug.join("/"),
     method,
@@ -277,7 +310,7 @@ async function getResponseForChunk(
     orgInfo
   );
 
-  console.log("Mock Prompt:", prompt[1].content);
+  console.log("\n\n\n\nMock Prompt:\n\n", prompt[1].content, "\n\n\n\n");
 
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,

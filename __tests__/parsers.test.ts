@@ -106,19 +106,6 @@ describe("Parse output", () => {
     expect(output.commands).toStrictEqual([]);
     expect(output.completed).toBe(null);
   });
-
-  it("possible bug", () => {
-    const str = `
-    Reasoning: The user wants to know the name associated with their account. We can obtain this information by calling the 'get_account' function with the provided gtmhub-accountId and id.
-    Plan:
-    - Call the 'get_account' function using the provided gtmhub-accountId and id to retrieve account details.
-    Commands:
-    get_account(gtmhub-accountId="64b17ac6548041a751aaf2f6", id="64b17ac6548041a751aaf2f7")
-        `;
-    const output = parseOutput(str);
-    console.log(output);
-    1;
-  });
 });
 
 describe("Parse GPT Streaming output", () => {
