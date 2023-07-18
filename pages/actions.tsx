@@ -26,8 +26,8 @@ function Dashboard() {
   ) : (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Actions"} />
-      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="h-full rounded px-6">
+      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="h-full rounded">
           <RepliesPage />
         </div>
       </div>

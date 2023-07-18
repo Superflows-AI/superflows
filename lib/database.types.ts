@@ -229,6 +229,8 @@ export interface Database {
         Row: {
           api_host: string;
           api_key: string;
+          auth_header: string;
+          auth_scheme: string | null;
           created_at: string | null;
           description: string;
           id: number;
@@ -237,6 +239,8 @@ export interface Database {
         Insert: {
           api_host?: string;
           api_key?: string;
+          auth_header?: string;
+          auth_scheme?: string | null;
           created_at?: string | null;
           description?: string;
           id?: number;
@@ -245,6 +249,8 @@ export interface Database {
         Update: {
           api_host?: string;
           api_key?: string;
+          auth_header?: string;
+          auth_scheme?: string | null;
           created_at?: string | null;
           description?: string;
           id?: number;
