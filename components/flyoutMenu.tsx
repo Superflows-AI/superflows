@@ -53,7 +53,7 @@ export default function FlyoutMenu(props: {
                 )}
               >
                 {props.title && (
-                  <h1 className="text-lg px-6 pb-1.5 pt-1 border-b font-base border-gray-300">
+                  <h1 className="text-lg w-full text-center pb-1.5 pt-1 border-b font-base border-gray-300">
                     {props.title}
                   </h1>
                 )}

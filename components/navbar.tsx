@@ -99,8 +99,7 @@ export function Navbar(props: { current: string }) {
                     },
                     {
                       name: "Ask in Slack",
-                      // TODO: change to slack
-                      href: "https://join.slack.com/t",
+                      href: "https://join.slack.com/t/superflowsusers/shared_invite/zt-1z8ls9rp3-bSohOrMKOsX8zJOUcDy07g",
                       Icon: <SlackIcon aria-hidden="true" />,
                     },
                     {
