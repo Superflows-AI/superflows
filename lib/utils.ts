@@ -265,96 +265,6 @@ interface Chunk {
   data: any;
 }
 
-export function jsonSplitter(
-  json: any,
-  path: (string | number)[] = []
-): Chunk[] {
-  if (Array.isArray(json)) {
-    let chunks: Chunk[] = [];
-    for (let i = 0; i < json.length; i++) {
-      chunks.push(...jsonSplitter(json[i], [...path, i]));
-    }
-    return chunks.map((chunk) => ({ ...chunk, dataType: "Array" }));
-  } else if (typeof json === "object" && json !== null) {
-    let chunks: Chunk[] = [];
-    for (let key in json) {
-      chunks.push(...jsonSplitter(json[key], [...path, key]));
-    }
-    return chunks.map((chunk) => ({ ...chunk, dataType: "Object" }));
-  } else {
-    return [{ path, data: json, dataType: "Primitive" }];
-  }
-}
-
-export function jsonReconstruct(chunks: Chunk[]): any {
-  let root: any = {};
-
-  for (let chunk of chunks) {
-    let layer = root;
-    for (let i = 0; i < chunk.path.length; i++) {
-      let key = chunk.path[i];
-      if (i === chunk.path.length - 1) {
-        layer[key] = chunk.data;
-      } else if (layer[key] === undefined) {
-        layer[key] = isNaN(Number(chunk.path[i + 1])) ? {} : [];
-      }
-      layer = layer[key];
-    }
-  }
-
-  return root;
-}
-
-// export function chunkKeyValuePairs(
-//   obj: { [key: string]: any },
-//   chunkSize: number
-// ) {
-//   const keys = Object.keys(obj);
-//   let results = [];
-
-//   return results;
-// }
-
-// export function chunkKeyValuePairs(
-//   obj: { [key: string]: any },
-//   chunkSize: number
-// ) {
-//   const keys = Object.keys(obj);
-//   let results = [];
-
-//   for (let i = 0; i < keys.length; i += chunkSize) {
-//     const chunkKeys = keys.slice(i, i + chunkSize);
-//     const chunk = chunkKeys.reduce((result, key) => {
-//       result[key] = obj[key];
-//       return result;
-//     }, {});
-
-//     results.push(chunk);
-//   }
-
-//   return results;
-// }
-
-// export function chunkKeyValuePairs(
-//   obj: { [key: string]: any },
-//   chunkSize: number
-// ) {
-//   const keys = Object.keys(obj);
-//   let results: { [key: string]: any }[] = {};
-
-//   for (let i = 0; i < keys.length; i += chunkSize) {
-//     const chunkKeys = keys.slice(i, i + chunkSize);
-//     const chunk = chunkKeys.reduce((result, key) => {
-//       result[key] = obj[key];
-//       return result;
-//     }, {});
-
-//     results[i / chunkSize] = chunk; // wrap each chunk in an object
-//   }
-
-//   return results;
-// }
-
 export function chunkKeyValuePairs(
   obj: { [key: string]: any },
   chunkSize: number
@@ -365,6 +275,7 @@ export function chunkKeyValuePairs(
   for (let i = 0; i < keys.length; i += chunkSize) {
     const chunkKeys = keys.slice(i, i + chunkSize);
     const chunk = chunkKeys.reduce((result, key) => {
+      // @ts-ignore
       result[key] = obj[key];
       return result;
     }, {});
@@ -375,9 +286,6 @@ export function chunkKeyValuePairs(
   return results;
 }
 
-export function reconstructChunks(chunks: Array<{ [key: string]: any }>) {
-  return Object.assign({}, ...chunks);
-}
 export function deepMerge(
   obj1: { [k: string]: any },
   obj2: { [k: string]: any }
