@@ -16,7 +16,7 @@ const navigation = [
   { name: "Playground", href: "/" },
   { name: "Actions", href: "/actions" },
   { name: "Project", href: "/project" },
-  { name: "API", href: "/settings" },
+  { name: "API", href: "/api-settings" },
   { name: "Usage", href: "/usage" },
   // { name: "Evaluation (coming soon)", href: "/team" },
 ];
