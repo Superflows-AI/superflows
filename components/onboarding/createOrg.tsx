@@ -79,6 +79,7 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
                 return;
               }
               setLoading(true);
+              props.completeStep();
               const res = await fetch("/api/create-org", {
                 method: "POST",
                 headers: {
@@ -94,7 +95,6 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
               if (res.status !== 200)
                 throw new Error("Failed to create org: " + res.statusText);
               await refreshProfile();
-              props.completeStep();
             }}
           >
             {loading ? <LoadingSpinner classes={"my-0.5 h-5 w-5"} /> : "Create"}
