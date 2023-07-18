@@ -12,16 +12,10 @@ export default function ActionsExplanationPage() {
         Add the available API endpoints in the dashboard on the <b>actions</b>{" "}
         tab.
       </p>
-      <Image
-        alt="Actions diagram"
-        width={774}
-        height={504}
-        src="/diagram.png"
-        className="w-[27.5rem]"
-      />
       {/*<p className="text-lg text-gray-200 mt-6 text-center">*/}
       {/*  Then you can try out the chatbot in the <b>playground</b> tab.*/}
       {/*</p>*/}
+
       <Link
         href="/actions"
         className="mt-20 px-6 py-3 bg-purple-700 hover:bg-purple-800 rounded text-gray-100 hover:text-gray-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:outline-none focus:border-0"
