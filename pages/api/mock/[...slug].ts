@@ -4,12 +4,16 @@ import JSON5 from "json5";
 const dJSON = require("dirty-json");
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { RequestMethods } from "../../../lib/models";
+import {
+  OpenAPISchema as OpenAPISchema,
+  RequestMethod,
+} from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action, Organization } from "../../../lib/types";
 import {
   chunkKeyValuePairs,
+  deepMerge,
   exponentialRetryWrapper,
   splitPath,
 } from "../../../lib/utils";
@@ -68,7 +72,7 @@ export function processMultipleMatches(
 export function getMatchingAction(
   org_id: number,
   actions: Action[],
-  method: RequestMethods,
+  method: RequestMethod,
   slug: string[]
 ): Action | null {
   // Note: Assumes you have already filtered by request method
@@ -133,7 +137,7 @@ export default async function handler(
   const org_id = Number(req.headers["org_id"]);
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
-  const method = req.method as RequestMethods;
+  const method = req.method as RequestMethod;
 
   // Authenticate that the user is allowed to use this API
   let token = (req.headers["Authorization"] as string)
@@ -154,8 +158,13 @@ export default async function handler(
     .eq("org_id", org_id)
     .eq("request_method", method.toLowerCase())
     .eq("active", true);
-
   if (error) throw new Error(error.message);
+
+  const { data: orgData, error: orgError } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("id", org_id);
+  if (orgError) throw orgError;
 
   const matchingAction = org_id
     ? getMatchingAction(org_id, actions, method, slug)
@@ -166,6 +175,7 @@ export default async function handler(
       ? getPathParameters(matchingAction.path, slug)
       : {};
 
+  const orgInfo = orgData.length === 1 ? orgData[0] : undefined;
   const responses = matchingAction?.responses as { [key: string]: any };
 
   let responseCode;
@@ -178,47 +188,80 @@ export default async function handler(
         responses[responseCode ?? ""] ?? {})
       : {};
 
-  const fullResponseType =
-    response.content?.["application/json"]?.schema ?? null;
+  const schema =
+    (response.content?.["application/json"]?.schema as OpenAPISchema) ?? null;
 
-  // TODO fix. Doesn't work if no match
-  if (!fullResponseType) {
-    throw new Error(
-      `parsing this wrong. The response is ${JSON.stringify(response)}`
+  const properties = schema ? propertiesFromSchema(schema) : null;
+
+  if (schema && properties) {
+    const allJson = await mockWithChunkedResponse(
+      schema,
+      matchingAction,
+      queryParams,
+      slug,
+      method,
+      pathParameters,
+      req,
+      orgInfo
     );
+
+    console.log("allJson", JSON.stringify(allJson, null, 2));
+    res.status(responseCode ? Number(responseCode) : 200).json(allJson);
+    return;
   }
 
-  let properties = fullResponseType.properties
-    ? fullResponseType.properties
-    : fullResponseType.items.properties
-    ? fullResponseType.items.properties
+  // Hierarchy of fallbacks if we don't have full schema etc
+  const fallback =
+    response.content?.["application/json"].schema ||
+    response.content?.["application/json"] ||
+    response.content ||
+    response;
+
+  console.log(
+    "Could not find properties in schema, mocking whole response body in one prompt"
+  );
+  const json = await mockResponse(
+    fallback,
+    matchingAction,
+    queryParams,
+    slug,
+    method,
+    pathParameters,
+    req.body,
+    orgInfo
+  );
+
+  res.status(responseCode ? Number(responseCode) : 200).json(json);
+}
+
+function propertiesFromSchema(schema: OpenAPISchema) {
+  return schema.properties
+    ? schema.properties
+    : schema.items?.properties
+    ? schema.items?.properties
     : null;
+}
 
-  // TODO deal with this better
-  if (!properties) {
-    console.error(
-      `Could not find properties in response schema: ${JSON.stringify(
-        fullResponseType
-      )}`
-    );
-    res.status(400).json(fullResponseType);
-  }
-
-  const { data: orgData, error: orgError } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", org_id);
-  if (orgError) throw orgError;
-
-  const orgInfo = orgData.length === 1 ? orgData[0] : undefined;
-
+async function mockWithChunkedResponse(
+  schema: OpenAPISchema,
+  matchingAction: Action | null,
+  queryParams: Partial<{ [key: string]: string | string[] }>,
+  slug: string[],
+  method: RequestMethod,
+  pathParameters: { [name: string]: string },
+  req: NextApiRequest,
+  orgInfo: any
+) {
   // This should be a load of key-value pairs so it should not be too hard to split up but possible alternative structures
-  const chunkedProperties = chunkKeyValuePairs(properties, 5);
+  const chunkedProperties = chunkKeyValuePairs(
+    propertiesFromSchema(schema)!,
+    5
+  );
 
   const allJson = await Promise.all(
     chunkedProperties.map((chunk) =>
-      getResponseForChunk(
-        subsampleResponseType(fullResponseType, chunk),
+      mockResponse(
+        subsampleSchemaProperties(schema, chunk),
         matchingAction,
         queryParams,
         slug,
@@ -230,58 +273,36 @@ export default async function handler(
     )
   );
 
-  res
-    .status(responseCode ? Number(responseCode) : 200)
-    .json(allJson.reduce((acc, obj) => deepMerge(acc, obj), {}));
+  return allJson.reduce((acc, obj) => deepMerge(acc, obj), {});
 }
 
-function deepMerge(
-  obj1: { [k: string]: any },
-  obj2: { [k: string]: any }
-): { [k: string]: any } {
-  for (let key in obj2) {
-    if (obj2.hasOwnProperty(key)) {
-      if (
-        obj1[key] &&
-        typeof obj2[key] === "object" &&
-        !Array.isArray(obj2[key])
-      ) {
-        deepMerge(obj1[key], obj2[key]);
-      } else {
-        obj1[key] = obj2[key];
-      }
-    }
-  }
-  return obj1;
-}
-
-function subsampleResponseType(
-  fullResponseType: object,
+function subsampleSchemaProperties(
+  schema: OpenAPISchema,
   propertiesSubset: { [key: string]: any }
 ) {
-  let responseTypeSubset: object = {};
-  let required;
+  let responseTypeSubset: OpenAPISchema = {};
+  let required: string[] | undefined;
 
-  if (fullResponseType.properties) {
-    const required = fullResponseType.required.filter((item: string) =>
+  if (schema.properties) {
+    required = schema.required?.filter((item: string) =>
       Object.keys(propertiesSubset).includes(item)
     );
     responseTypeSubset = {
-      ...fullResponseType,
+      ...schema,
       properties: propertiesSubset,
       required,
     };
-  } else if (fullResponseType.items.properties) {
-    if (fullResponseType.items.required) {
-      required = fullResponseType.items.required.filter((item: string) =>
+  } else if (schema.items?.properties) {
+    if (schema.items.required) {
+      required = schema.items.required.filter((item: string) =>
         Object.keys(propertiesSubset).includes(item)
       );
     }
 
     responseTypeSubset = {
-      ...fullResponseType,
+      ...schema,
       items: {
-        ...fullResponseType.items,
+        ...schema.items,
         properties: propertiesSubset,
         required,
       },
@@ -290,12 +311,12 @@ function subsampleResponseType(
   return responseTypeSubset;
 }
 
-async function getResponseForChunk(
-  responseTypeSubset: object,
+async function mockResponse(
+  responseType: OpenAPISchema | object,
   matchingAction: Action | null,
   queryParams: Partial<{ [key: string]: string | string[] }>,
   slug: string[],
-  method: RequestMethods,
+  method: RequestMethod,
   pathParameters: { [name: string]: string },
   requestBodyParameters: { [key: string]: any },
   orgInfo: Organization
@@ -306,7 +327,7 @@ async function getResponseForChunk(
     pathParameters,
     queryParams,
     requestBodyParameters,
-    responseTypeSubset,
+    responseType,
     orgInfo
   );
 

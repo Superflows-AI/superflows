@@ -378,3 +378,22 @@ export function chunkKeyValuePairs(
 export function reconstructChunks(chunks: Array<{ [key: string]: any }>) {
   return Object.assign({}, ...chunks);
 }
+export function deepMerge(
+  obj1: { [k: string]: any },
+  obj2: { [k: string]: any }
+): { [k: string]: any } {
+  for (let key in obj2) {
+    if (obj2.hasOwnProperty(key)) {
+      if (
+        obj1[key] &&
+        typeof obj2[key] === "object" &&
+        !Array.isArray(obj2[key])
+      ) {
+        deepMerge(obj1[key], obj2[key]);
+      } else {
+        obj1[key] = obj2[key];
+      }
+    }
+  }
+  return obj1;
+}

@@ -55,10 +55,19 @@ export interface ChatGPTParams {
   user?: string;
 }
 
-export type RequestMethods =
+export type RequestMethod =
   | "GET"
   | "POST"
   | "PUT"
   | "DELETE"
   | "PATCH"
   | "OPTIONS";
+
+export interface OpenAPISchema {
+  properties?: { [key: string]: any };
+  required?: string[];
+  items?: {
+    properties?: { [key: string]: any };
+    required?: string[];
+  };
+}

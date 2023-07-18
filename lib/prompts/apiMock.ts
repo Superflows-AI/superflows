@@ -1,13 +1,13 @@
-import { ChatGPTMessage, RequestMethods } from "../models";
+import { ChatGPTMessage, OpenAPISchema, RequestMethod } from "../models";
 import { objectNotEmpty } from "../utils";
 
 export default function apiMockPrompt(
   path: string,
-  requestMethod: RequestMethods,
+  requestMethod: RequestMethod,
   pathParameters: { [key: string]: any },
   queryParameters: { [key: string]: any },
   requestBodyParameters: { [key: string]: any },
-  expectedResponseType: object,
+  expectedResponseType: OpenAPISchema | object,
   orgInfo?: {
     name: string;
     description: string;
