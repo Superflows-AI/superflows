@@ -4,10 +4,7 @@ import JSON5 from "json5";
 const dJSON = require("dirty-json");
 
 import { NextApiRequest, NextApiResponse } from "next";
-import {
-  OpenAPISchema as OpenAPISchema,
-  RequestMethod,
-} from "../../../lib/models";
+import { OpenAPISchema, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action, Organization } from "../../../lib/types";
@@ -354,8 +351,10 @@ async function mockResponse(
     try {
       json = dJSON.parse(openAiResponse);
     } catch (e) {
-      console.log("Failed to parse response as JSON", openAiResponse);
-      throw e; // TODO: probably best to fallback to ignore the broken chunk
+      console.log(
+        `Failed to parse response as JSON. The response was: ${openAiResponse}`
+      );
+      throw e;
     }
   }
   return json;

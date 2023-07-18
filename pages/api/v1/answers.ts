@@ -1,27 +1,36 @@
+import { createClient } from "@supabase/supabase-js";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { USAGE_LIMIT } from "../../../lib/consts";
+import {
+  ActionToHttpRequest,
+  ChatGPTMessage,
+  ChatGPTParams,
+  FunctionCall,
+  StreamingStepInput,
+} from "../../../lib/models";
 import {
   parseGPTStreamedData,
   parseOutput,
 } from "../../../lib/parsers/parsers";
-import { NextRequest } from "next/server";
+import getMessages from "../../../lib/prompts/chatBot";
+import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
-  convertToRenderable,
-  deduplicateArray,
   exponentialRetryWrapper,
-  filterKeys,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import { z } from "zod";
-import { ChatGPTMessage, ChatGPTParams } from "../../../lib/models";
-import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
-import getMessages from "../../../lib/prompts/chatBot";
 import {
   getActiveActionTagsAndActions,
   getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { createClient } from "@supabase/supabase-js";
+import {
+  httpRequestFromAction,
+  processAPIoutput,
+} from "../../../lib/edge-runtime/requests";
 
 export const config = {
   runtime: "edge",
@@ -36,12 +45,47 @@ const AnswersZod = z.object({
   user_api_key: OptionalStringZod,
   language: OptionalStringZod,
   stream: z.optional(z.boolean()),
+  test_mode: z.optional(z.boolean()),
 });
 type AnswersType = z.infer<typeof AnswersZod>;
 
 const completionOptions: ChatGPTParams = {
   max_tokens: 1000,
 };
+
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined!");
+}
+if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
+  throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
+}
+
+let redis: Redis | null = null,
+  ratelimit: Ratelimit | null = null;
+if (
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  redis = Redis.fromEnv();
+
+  // Create a new ratelimiter, that allows 3 requests per 10 seconds
+  ratelimit = new Ratelimit({
+    redis: redis,
+    // TODO: When someone is in production, this should be raised
+    limiter: Ratelimit.slidingWindow(3, "10 s"),
+  });
+}
+
+// Bring me my Bow of burning gold:
+const supabase = createClient(
+  // Bring me my arrows of desire:
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  // Bring me my Spear: O clouds unfold!
+  process.env.SERVICE_LEVEL_KEY_SUPABASE
+  // Bring me my Chariot of fire!
+);
+
+const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest) {
   try {
@@ -56,52 +100,55 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: "Only POST requests allowed",
         }),
-        {
-          status: 405,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 405, headers }
       );
     }
-    // Bring me my Bow of burning gold:
-    const supabase = createClient(
-      // Bring me my arrows of desire:
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      // Bring me my Spear: O clouds unfold!
-      process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
-      // Bring me my Chariot of fire!
-    );
 
     // Authenticate that the user is allowed to use this API
     let token = req.headers
       .get("Authorization")
       ?.replace("Bearer ", "")
       .replace("bearer ", "");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
+    }
+
+    // Check that the user hasn't surpassed the rate limit
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(token);
+      if (!success) {
+        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
+          status: 429,
+          headers,
+        });
+      }
+    }
+
     let org: OrgJoinIsPaid | null = null;
     if (token) {
       const authRes = await supabase
         .from("organizations")
         .select("*, is_paid(*)")
-        .eq("api_key", token)
-        .single();
+        .eq("api_key", token);
       if (authRes.error) throw new Error(authRes.error.message);
-      org = authRes.data;
+      org = authRes.data?.[0] ?? null;
     }
-    if (!org || !org.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: !org
-            ? "Authentication failed"
-            : "No API host found - add an API host on the API settings page",
-        }),
-        {
-          status: !org ? 401 : 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    if (!org) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
     }
 
     // Check that the user hasn't surpassed the usage limit
-    if (org.is_paid.length === 0 || !org.is_paid[0].is_premium) {
+    if (
+      process.env.VERCEL_ENV === "production" &&
+      (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
+    ) {
       // Below is the number of messages sent by the organization's users
       const usageRes = await supabase
         .from("chat_messages")
@@ -110,15 +157,12 @@ export default async function handler(req: NextRequest) {
         .eq("role", "user");
       if (usageRes.error) throw new Error(usageRes.error.message);
       const numQueriesMade = usageRes.count ?? 0;
-      if (numQueriesMade >= 100) {
+      if (numQueriesMade >= USAGE_LIMIT) {
         return new Response(
           JSON.stringify({
-            error: `You have reached your usage limit of 100 messages. Upgrade to premium to get unlimited messages.`,
+            error: `You have reached your usage limit of ${USAGE_LIMIT} messages. Upgrade to premium to get unlimited messages.`,
           }),
-          {
-            status: 402,
-            headers: { "Content-Type": "application/json" },
-          }
+          { status: 402, headers }
         );
       }
     }
@@ -128,19 +172,33 @@ export default async function handler(req: NextRequest) {
     if (!isValidBody<AnswersType>(requestData, AnswersZod)) {
       return new Response(JSON.stringify({ message: "Invalid request body" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
     }
+
+    // Override api_host if test_mode is set to true
+    if (org && requestData.test_mode) {
+      const currentHost =
+        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+      org.api_host = currentHost + "/api/mock";
+      console.log("Test mode enabled: overriding api_host to", org.api_host);
+    }
+    if (!org?.api_host) {
+      return new Response(
+        JSON.stringify({
+          error: "No API host found - add an API host on the API settings page",
+        }),
+        { status: 400, headers }
+      );
+    }
+
     // TODO: Add non-streaming API support (although the UX is 10x worse)
     if (requestData.stream === false) {
       return new Response(
         JSON.stringify({
           error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
         }),
-        {
-          status: 501,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 501, headers }
       );
     }
 
@@ -155,10 +213,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `Conversation with ID=${requestData.conversation_id} not found`,
           }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          }
+          { status: 404, headers }
         );
       }
       previousMessages = conversation;
@@ -204,10 +259,7 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: "No active actions found",
         }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 404, headers }
       );
     }
 
@@ -229,7 +281,7 @@ export default async function handler(req: NextRequest) {
               ...m,
               org_id: org!.id,
               conversation_id: conversationId,
-              conversation_index: idx + 1,
+              conversation_index: previousMessages.length + idx,
             }))
           );
         if (insertedChatMessagesRes.error)
@@ -273,25 +325,21 @@ export default async function handler(req: NextRequest) {
       JSON.stringify({
         error: message,
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers }
     );
   }
 }
 
-type StreamingStepInput =
-  | { role: "assistant" | "error" | "debug"; content: string }
-  | { role: "function"; name: string; content: string };
-export type StreamingStep = StreamingStepInput & { id: number };
+export interface ToConfirm extends FunctionCall {
+  actionId: number;
+}
 
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
   actions: Action[],
   org: Organization,
-  convoId: number,
+  conversationId: number,
   previousMessages: ChatGPTMessage[]
 ): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
   const encoder = new TextEncoder();
@@ -304,7 +352,7 @@ async function Angela( // Good ol' Angela
       encoder.encode(
         "data:" +
           JSON.stringify({
-            id: convoId,
+            id: conversationId,
             ...step,
           })
       )
@@ -314,9 +362,10 @@ async function Angela( // Good ol' Angela
   let mostRecentParsedOutput = parseOutput("");
   let numOpenAIRequests = 0;
   let totalCost = 0;
+  let awaitingConfirmation = false;
 
   try {
-    while (!mostRecentParsedOutput.completed) {
+    while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
       const chatGptPrompt: ChatGPTMessage[] = getMessages(
         nonSystemMessages,
         actions,
@@ -386,46 +435,57 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
+      const toConfirm: ToConfirm[] = [];
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
         const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
         }
-        let out = await httpRequestFromAction(
-          chosenAction,
-          command.args,
-          org,
-          streamInfo,
-          reqData.user_api_key ?? ""
-        );
-        console.log("Output from API call:", out);
-        // Post-processing
-        if (Array.isArray(out)) {
-          out = deduplicateArray(out);
-        }
-        const keys = chosenAction.keys_to_keep;
+
+        const actionToHttpRequest: ActionToHttpRequest = {
+          action: chosenAction,
+          parameters: command.args,
+          organization: org,
+          stream: streamInfo,
+          userApiKey: reqData.user_api_key ?? "",
+        };
+
         if (
-          keys &&
-          Array.isArray(keys) &&
-          keys.every((k) => typeof k === "string")
+          ["get", "head", "options", "connect"].includes(
+            chosenAction.request_method!.toLowerCase()
+          )
         ) {
-          out = filterKeys(out, keys as string[]);
+          let out = await httpRequestFromAction(actionToHttpRequest);
+          out = processAPIoutput(out, chosenAction);
+          console.log("Output from API call:", out);
+          const outMessage = {
+            role: "function",
+            name: command.name,
+            content: JSON.stringify(out, null, 2),
+          } as ChatGPTMessage;
+          streamInfo(outMessage);
+          nonSystemMessages.push(outMessage);
+        } else {
+          toConfirm.push({
+            actionId: chosenAction.id,
+            args: command.args,
+            name: command.name,
+          });
+
+          awaitingConfirmation = true;
         }
-        streamInfo({
-          role: "function",
-          name: command.name,
-          content: JSON.stringify(out, null, 2),
-        });
-        const renderableOutput =
-          "\n\n" + command.name + " output:\n" + convertToRenderable(out);
-        nonSystemMessages.push({
-          role: "function",
-          name: command.name,
-          content: renderableOutput,
-        });
       }
-      if (mostRecentParsedOutput.completed !== false) {
+      if (awaitingConfirmation) {
+        streamInfo({
+          role: "confirmation",
+          content: JSON.stringify(toConfirm),
+        });
+        if (redis)
+          await storeActionsAwaitingConfirmation(toConfirm, conversationId);
+      }
+
+      if (mostRecentParsedOutput.completed) {
         return { nonSystemMessages, cost: totalCost };
       }
 
@@ -449,127 +509,19 @@ async function Angela( // Good ol' Angela
   return { nonSystemMessages, cost: totalCost };
 }
 
-export async function httpRequestFromAction(
-  action: Action,
-  parameters: Record<string, unknown>,
-  organization: { api_host: string; id: number },
-  stream: (stepInfo: StreamingStepInput) => void,
-  userApiKey?: string
-): Promise<Record<string, any> | any[]> {
-  if (!action.path) {
-    throw new Error("Path is not provided");
-  }
-  if (!action.request_method) {
-    throw new Error("Request method is not provided");
-  }
-  if (!organization.api_host) {
-    throw new Error("API host has not been provided");
-  }
-
-  const headers: Record<string, string> = {};
-  // TODO: Only application/json supported for now(!!)
-  headers["Content-Type"] = "application/json";
-  headers["Accept"] = "application/json";
-  if (userApiKey) {
-    headers["Authorization"] = `Bearer ${userApiKey}`;
-  }
-
-  if (organization.api_host.includes("api/mock"))
-    headers["org_id"] = organization.id.toString();
-
-  const requestOptions: RequestInit = {
-    method: action.request_method,
-    headers: headers,
-  };
-
-  // Request body
-  if (action.request_method !== "GET" && action.request_body_contents) {
-    const reqBodyContents =
-      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
-    if (!("application/json" in reqBodyContents)) {
+async function storeActionsAwaitingConfirmation(
+  toConfirm: ToConfirm[],
+  conversationId: number
+) {
+  if (toConfirm.length > 0 && redis) {
+    if ((await redis.get(conversationId.toString())) !== null)
       throw new Error(
-        "Only application/json request body contents are supported for now"
+        `Conversation ID "${conversationId}" already exists in redis, something has gone wrong`
       );
-    }
-    const applicationJson = reqBodyContents[
-      "application/json"
-    ] as OpenAPIV3.MediaTypeObject;
-    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-    const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
-    const bodyArray = Object.entries(properties).map(([name, property]) => {
-      // Throw out readonly attributes
-      if (property.readOnly) return undefined;
-      if (parameters[name]) {
-        return { [name]: parameters[name] };
-      }
-    });
-    const body = Object.assign({}, ...bodyArray);
+    console.log("Setting redis key", conversationId.toString());
 
-    // Check all required params are present
-    const required = schema.required ?? [];
-    required.forEach((key: string) => {
-      if (!body[key]) {
-        throw new Error(`Required parameter "${key}" is not provided`);
-      }
-    });
-
-    requestOptions.body = JSON.stringify(body);
+    await redis.json.set(conversationId.toString(), "$", { toConfirm });
+    // 10 minutes seems like a reasonable time if the user gets distracted etc
+    await redis.expire(conversationId.toString(), 60 * 10);
   }
-
-  let url = organization.api_host + action.path;
-
-  // TODO: accept array for JSON?
-  // Set parameters
-  if (
-    action.parameters &&
-    typeof action.parameters === "object" &&
-    Array.isArray(action.parameters)
-  ) {
-    const queryParams = new URLSearchParams();
-    const actionParameters =
-      action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
-    for (const param of actionParameters) {
-      if (param.required && !parameters[param.name]) {
-        throw new Error(
-          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
-        );
-      }
-      if (param.in === "path") {
-        url = url.replace(
-          `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name]))
-        );
-      } else if (param.in === "query") {
-        queryParams.set(param.name, String(parameters[param.name]));
-      } else if (param.in === "header") {
-        headers[param.name] = String(parameters[param.name]);
-      } else if (param.in === "cookie") {
-        headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
-      } else {
-        throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`
-        );
-      }
-    }
-    // Below only adds query params if there are any query params
-    if ([...queryParams.entries()].length > 0) {
-      url += `?${queryParams.toString()}`;
-    }
-  }
-  const logMessage = `Attempting fetch with url: ${url} and options: ${JSON.stringify(
-    requestOptions,
-    null,
-    2
-  )}`;
-  console.log(logMessage);
-  stream({
-    role: "debug",
-    content: logMessage,
-  });
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-  }
-  return await response.json();
 }

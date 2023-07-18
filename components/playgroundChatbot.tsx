@@ -4,40 +4,32 @@ import {
   HandThumbDownIcon,
   HandThumbUpIcon,
   LightBulbIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { LoadingSpinner } from "./loadingspinner";
-import { classNames, convertToRenderable, parseKeyValues } from "../lib/utils";
-import { ParsedOutput, parseOutput } from "../lib/parsers/parsers";
-import Toggle from "./toggle";
-import { useProfile } from "./contextManagers/profile";
-import { StreamingStep } from "../pages/api/v1/answers";
-import { Json } from "../lib/database.types";
-import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
-
-const BrandColour = "#ffffff";
-const BrandColourAction = "#5664d1";
-const BrandActionTextColour = "#ffffff";
-
-interface ChatItem {
-  role: "user" | "assistant" | "function" | "debug" | "error";
-  name?: string;
-  content: string;
-}
-
-export type Step =
-  | ({ id: number; role: "assistant" } & ParsedOutput)
-  | { id: number; role: "function"; name: string; result: Json };
+import { StreamingStep, StreamingStepInput } from "../lib/models";
+import { parseOutput } from "../lib/parsers/parsers";
+import {
+  classNames,
+  convertToRenderable,
+  functionNameToDisplay,
+  parseTableTags,
+} from "../lib/utils";
+import { AutoGrowingTextArea } from "./autoGrowingTextarea";
+import { useProfile } from "./contextManagers/profile";
+import { LoadingSpinner } from "./loadingspinner";
+import Toggle from "./toggle";
+import { ToConfirm } from "../pages/api/v1/answers";
+import { Json } from "../lib/database.types";
 
 export default function PlaygroundChatbot(props: {
-  page: string;
-  setPage: (page: string) => void;
   language: "English" | "Espanol";
   userApiKey: string;
   submitReady: boolean;
   userDescription: string;
+  testMode: boolean;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -58,6 +50,7 @@ export default function PlaygroundChatbot(props: {
         .eq("role", "user")
         // This means it's the first message in a conversation
         .eq("conversation_index", 0)
+        .order("created_at", { ascending: false })
         .limit(10);
       if (res.error) throw res.error;
       // Below gets the unique messages and then takes the first 3
@@ -88,17 +81,17 @@ export default function PlaygroundChatbot(props: {
   }, [profile]);
 
   const [conversationId, setConversationId] = useState<number | null>(null);
-  const [devChatContents, setDevChatContents] = useState<ChatItem[]>([]);
+  const [devChatContents, setDevChatContents] = useState<StreamingStepInput[]>(
+    []
+  );
   const [userText, setUserText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
-
   const killSwitchClicked = useRef(false);
-
   const submitButtonClickable = props.submitReady && userText.length > 3;
 
-  const addTextToChat = useCallback(
-    async (chat: ChatItem[]) => {
+  const onChatSubmit = useCallback(
+    async (chat: StreamingStepInput[]) => {
       setDevChatContents(chat);
       setUsageLevel((prev) => prev + 1);
       if (loading || alreadyRunning.current) return;
@@ -117,6 +110,7 @@ export default function PlaygroundChatbot(props: {
           user_api_key: props.userApiKey,
           user_description: props.userDescription,
           stream: true,
+          test_mode: props.testMode,
         }),
       });
 
@@ -131,7 +125,9 @@ export default function PlaygroundChatbot(props: {
       const reader = data.getReader();
       const decoder = new TextDecoder();
       let done = false;
-      let outputMessages = [{ role: "assistant", content: "" }] as ChatItem[];
+      let outputMessages = [
+        { role: "assistant", content: "" },
+      ] as StreamingStepInput[];
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -139,30 +135,22 @@ export default function PlaygroundChatbot(props: {
         const chunkValue = decoder.decode(value);
         try {
           // Can be multiple server-side chunks in one client-side chunk,
-          // separated by "data:". The .slice(5) removes the "data:" at
-          // the start of the string
-          chunkValue
-            .slice(5)
-            .split("data:")
-            .forEach((chunkOfChunk) => {
-              if (chunkOfChunk.length === 0) return;
-              const data = JSON.parse(chunkOfChunk) as StreamingStep;
-              if (conversationId === null) setConversationId(data.id);
-              if (
-                data.role !== outputMessages[outputMessages.length - 1]?.role
-              ) {
-                outputMessages.push({ ...data });
-              } else {
-                outputMessages[outputMessages.length - 1].content +=
-                  data.content;
-              }
-              setDevChatContents([...chat, ...outputMessages]);
-            });
+          // separated by "data:"
+          chunkValue.split("data:").forEach((chunkOfChunk) => {
+            if (chunkOfChunk.length === 0) return;
+            const data = JSON.parse(chunkOfChunk) as StreamingStep;
+            if (conversationId === null) setConversationId(data.id);
+            if (data.role !== outputMessages[outputMessages.length - 1]?.role) {
+              outputMessages.push({ ...data });
+            } else {
+              outputMessages[outputMessages.length - 1].content += data.content;
+            }
+            setDevChatContents([...chat, ...outputMessages]);
+          });
         } catch (e) {
           console.error(e);
         }
       }
-      // TODO: Add a confirmation step when taking non-GET actions
       setLoading(false);
       alreadyRunning.current = false;
       killSwitchClicked.current = false;
@@ -179,6 +167,64 @@ export default function PlaygroundChatbot(props: {
       killSwitchClicked.current,
       alreadyRunning.current,
       props.language,
+      props.testMode,
+    ]
+  );
+
+  const onConfirm = useCallback(
+    async (confirm: boolean) => {
+      setLoading(true);
+      const response = await fetch("/api/v1/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${profile!.organizations!.api_key}`,
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          user_api_key: props.userApiKey,
+          org_id: profile!.organizations!.id,
+          confirm: confirm,
+          test_mode: props.testMode,
+        }),
+      });
+
+      const json = await response.json();
+      if (response.status === 200) {
+        const newChat = [
+          ...devChatContents,
+          ...(json.outs as StreamingStepInput[]),
+        ];
+        setDevChatContents(newChat);
+        if (confirm) {
+          // TODO: This adds an empty message to the DB and GPT chat history.
+          //  This is hacky, since all we actually want to do is restart Angela with the existing
+          //  chat history. We should refactor this to do that instead.
+          await onChatSubmit([...newChat, { role: "user", content: "" }]);
+        }
+      } else {
+        // Handle errors here - add them to chat
+        console.error(json.error);
+        setDevChatContents((prevState) => [
+          ...prevState,
+          {
+            role: "error",
+            content: json.error,
+          },
+        ]);
+      }
+
+      setLoading(false);
+    },
+    [
+      devChatContents,
+      setDevChatContents,
+      onChatSubmit,
+      conversationId,
+      setLoading,
+      props.userApiKey,
+      profile,
+      props.testMode,
     ]
   );
 
@@ -195,9 +241,8 @@ export default function PlaygroundChatbot(props: {
       <div
         className={classNames(
           `pt-6 px-3 pb-4`,
-          "text-gray-900 border-b border-gray-200"
+          "text-gray-900 border-b border-gray-200 bg-gray-50"
         )}
-        style={{ backgroundColor: BrandColour }}
       >
         <div className="flex flex-row place-items-center justify-between">
           <div className="flex flex-col place-items-center gap-y-1 text-sm font-bold">
@@ -238,6 +283,7 @@ export default function PlaygroundChatbot(props: {
         id={"scrollable-chat-contents"}
       >
         {profile &&
+          process.env.VERCEL_ENV === "production" &&
           (profile?.organizations!.is_paid.length === 0 ||
             !profile?.organizations!.is_paid[0].is_premium ||
             USAGE_LIMIT <= usageLevel) && (
@@ -266,41 +312,51 @@ export default function PlaygroundChatbot(props: {
           )}
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
           {devChatContents.map((chatItem, idx) => {
-            if (devMode || chatItem.role === "user")
-              return <DevChatItem chatItem={chatItem} key={idx} />;
-            else {
-              if (chatItem.role === "debug") return <></>;
-              else if (chatItem.role === "error") {
-                return <DevChatItem chatItem={chatItem} key={idx} />;
-              } else if (chatItem.role === "function") {
-                let contentString;
-                const functionJsonResponse = JSON.parse(chatItem.content);
-                if (
-                  Array.isArray(functionJsonResponse) &&
-                  functionJsonResponse.length === 0
-                ) {
-                  contentString = "No results found.";
-                } else if (
-                  typeof functionJsonResponse === "object" &&
-                  Object.entries(functionJsonResponse).length === 0
-                ) {
-                  contentString = "No results found.";
-                } else {
-                  console.log("chatItem", chatItem);
-                  contentString =
-                    chatItem.name +
-                    "called:\n" +
-                    convertToRenderable(functionJsonResponse);
-                }
-                return (
-                  <DevChatItem
-                    chatItem={{ ...chatItem, content: contentString }}
-                    key={idx}
-                  />
+            if (
+              devMode ||
+              ["error", "confirmation", "user"].includes(chatItem.role)
+            )
+              return (
+                <DevChatItem
+                  key={idx + chatItem.content}
+                  chatItem={chatItem}
+                  onConfirm={onConfirm}
+                />
+              );
+            else if (chatItem.role === "debug") return;
+            else if (chatItem.role === "function") {
+              let contentString = "";
+              const functionJsonResponse = JSON.parse(chatItem.content) as Json;
+              if (
+                Array.isArray(functionJsonResponse) &&
+                functionJsonResponse.length === 0
+              ) {
+                contentString = "No data returned";
+              } else if (
+                functionJsonResponse &&
+                typeof functionJsonResponse === "object" &&
+                Object.entries(functionJsonResponse).length === 0
+              ) {
+                contentString = "No data returned";
+              } else if (
+                functionJsonResponse &&
+                typeof functionJsonResponse === "object"
+              ) {
+                contentString = convertToRenderable(
+                  functionJsonResponse,
+                  `${functionNameToDisplay(chatItem?.name ?? "")} result`
                 );
               }
-              return <UserChatItem chatItem={chatItem} key={idx} />;
+              return (
+                <DevChatItem
+                  chatItem={{ ...chatItem, content: contentString }}
+                  key={idx + chatItem.content}
+                />
+              );
             }
+            return (
+              <UserChatItem chatItem={chatItem} key={idx + chatItem.content} />
+            );
           })}
           {devChatContents.length === 0 && suggestions.length > 0 && (
             <div className="py-4 px-1.5">
@@ -338,7 +394,7 @@ export default function PlaygroundChatbot(props: {
             if (e.key === "Enter") {
               e.preventDefault();
               if (submitButtonClickable) {
-                addTextToChat([
+                onChatSubmit([
                   ...devChatContents,
                   { role: "user", content: userText },
                 ]);
@@ -347,7 +403,7 @@ export default function PlaygroundChatbot(props: {
             }
           }}
         />
-        <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2">
+        <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2 h-20">
           <p
             className={classNames(
               "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
@@ -355,93 +411,69 @@ export default function PlaygroundChatbot(props: {
             )}
           >
             {
-              "You need to add your API hostname (API tab) and actions (Actions tab)."
+              "You need to add actions (Actions tab) and API hostname (API tab) or enable test mode."
             }
           </p>
           {loading && (
+            <div className="flex justify-center items-center space-x-4 ">
+              <button
+                className={
+                  "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
+                }
+                onClick={() => {
+                  killSwitchClicked.current = true;
+                  alreadyRunning.current = false;
+                  setLoading(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <div className="flex justify-center items-center space-x-4 ">
             <button
-              className={
-                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm text-gray-500 shadow-sm bg-gray-100 hover:bg-gray-200 border border-gray-300"
-              }
+              type="submit"
+              className={classNames(
+                "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
+                loading || !submitButtonClickable
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 bg-purple-500`
+              )}
               onClick={() => {
-                killSwitchClicked.current = true;
-                alreadyRunning.current = false;
-                setLoading(false);
+                if (!loading && submitButtonClickable) {
+                  onChatSubmit([
+                    ...devChatContents,
+                    { role: "user", content: userText },
+                  ]);
+                  setUserText("");
+                  killSwitchClicked.current = false;
+                }
               }}
             >
-              Cancel
+              {loading && <LoadingSpinner classes="h-4 w-4" />}
+              Submit
             </button>
-          )}
-          <button
-            type="submit"
-            className={classNames(
-              "flex flex-row gap-x-1 place-items-center ml-4 justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm",
-              loading || !submitButtonClickable
-                ? "bg-gray-500 cursor-not-allowed"
-                : `hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 bg-purple-500`
-            )}
-            onClick={() => {
-              if (!loading && submitButtonClickable) {
-                addTextToChat([
-                  ...devChatContents,
-                  { role: "user", content: userText },
-                ]);
-                setUserText("");
-                killSwitchClicked.current = false;
-              }
-            }}
-          >
-            {loading && <LoadingSpinner classes="h-4 w-4" />}
-            Submit
-          </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function fromStepToGPTMessages(steps: Step[]): ChatItem[] {
-  return steps.map((step) => {
-    if (step.role === "assistant") {
-      const commandsString =
-        "Commands:\n" +
-        step.commands
-          .map((command) => {
-            const argsString = Object.entries(command.args)
-              .map(([argName, argValue]) => argName + "=" + argValue)
-              .join(", ");
-            return `${command.name}(${argsString})`;
-          })
-          .join("\n");
-      const completedString =
-        step.completed === null ? "question" : step.completed;
-      const tellUserString = step.tellUser
-        ? "Tell user: " + step.tellUser + "\n\n"
-        : "";
-      return {
-        role: step.role,
-        content: `Reasoning: ${step.reasoning}\n\nPlan: ${step.plan}\n\n${tellUserString}${commandsString}Completed: ${completedString}\n\n`,
-      };
-    } else {
-      return {
-        role: step.role,
-        name: step.name,
-        content: `Function: ${step.name}\n\nResult: ${JSON.stringify(
-          step.result
-        )}\n\n`,
-      };
-    }
-  });
-}
-
 const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;
-let confirmRegex = /<button>Confirm<\/button>/;
-let buttonRegex = /<button>(.*?)<\/button>/;
+let feedbackRegex = /<button>Feedback<\/button>/;
+let buttonRegex = /<button>(?![^<]*<button>)(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
 
-function DevChatItem(props: { chatItem: ChatItem }) {
+function DevChatItem(props: {
+  chatItem: StreamingStepInput;
+  onConfirm?: (confirm: boolean) => void;
+}) {
   const { profile } = useProfile();
-  const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
+  const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] =
+    useState<boolean>(false);
+  // Confirmed is null if the user hasn't confirmed yet, true if the user has confirmed, and false if the user has cancelled
+  const [confirmed, setConfirmed] = useState<boolean | null>(null);
   useEffect(() => {
     if (saveSuccessfulFeedback) {
       setTimeout(() => {
@@ -449,14 +481,31 @@ function DevChatItem(props: { chatItem: ChatItem }) {
       }, 3000);
     }
   }, [saveSuccessfulFeedback]);
+
+  let content = props.chatItem.content;
+  if (!content) return <></>;
+  if (props.chatItem.role === "confirmation") {
+    const toConfirm = JSON.parse(props.chatItem.content) as ToConfirm[];
+    content = `The following action${
+      toConfirm.length > 1 ? "s require" : " requires"
+    } confirmation:${toConfirm
+      .map((action) => {
+        return `\n\n${convertToRenderable(
+          action.args,
+          functionNameToDisplay(action.name)
+        )}`;
+      })
+      .join("")}`;
+  }
+
+  // We split the message into different parts, and then render each part one-by-one
   let match;
   let matches = [];
-  while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
+  while ((match = fullRegex.exec(content)) !== null) {
     if (match[1]) matches.push(match[1]);
     if (match[2]) matches.push(match[2]);
     if (match[3]) matches.push(match[3].trim());
   }
-  // TODO: if it's a function call, hide it from the user
   return (
     <div
       className={classNames(
@@ -469,7 +518,9 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           : props.chatItem.role === "debug"
           ? "bg-green-100"
           : props.chatItem.role === "function"
-          ? "bg-purple-100"
+          ? "bg-green-200"
+          : props.chatItem.role === "confirmation"
+          ? "bg-blue-100"
           : ""
       )}
     >
@@ -478,6 +529,8 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           ? profile?.organizations?.name + " AI"
           : props.chatItem.role === "function"
           ? "Function called"
+          : props.chatItem.role === "confirmation"
+          ? "Confirmation required"
           : props.chatItem.role === "user"
           ? "You"
           : props.chatItem.role === "debug"
@@ -487,7 +540,7 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           : "Unknown"}
       </p>
       {matches.map((text, idx) => {
-        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+        if (feedbackRegex.exec(text) && feedbackRegex.exec(text)!.length > 0) {
           return (
             <div
               key={idx}
@@ -531,13 +584,7 @@ function DevChatItem(props: { chatItem: ChatItem }) {
             >
               <button
                 onClick={() => setSaveSuccessfulFeedback(true)}
-                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2`}
-                style={{
-                  backgroundColor: BrandColourAction,
-                  color: BrandActionTextColour,
-                  // @ts-ignore
-                  "--tw-ring-color": BrandColourAction,
-                }}
+                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 ring-purple-600 bg-purple-600 text-white`}
               >
                 {buttonMatches[1].trim()}
               </button>
@@ -565,34 +612,88 @@ function DevChatItem(props: { chatItem: ChatItem }) {
           </p>
         );
       })}
+      {props.onConfirm &&
+        props.chatItem.role === "confirmation" &&
+        (confirmed === null ? (
+          <div className="my-5 w-full flex flex-col place-items-center gap-y-2">
+            Are you sure you want to continue?
+            <div className="flex flex-row gap-x-8">
+              <button
+                onClick={() => {
+                  setConfirmed(false);
+                  props.onConfirm!(false);
+                }}
+                className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-700 px-4 border border-gray-400 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-gray-100 ring-gray-500 hover:bg-gray-200`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmed(true);
+                  props.onConfirm!(true);
+                }}
+                className={`flex flex-row gap-x-1.5 font-medium place-items-center text-gray-50 px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 bg-blue-500 ring-blue-500 hover:bg-blue-600`}
+              >
+                Confirm
+              </button>
+            </div>
+            <div
+              className={classNames(
+                "flex flex-row place-items-center gap-x-1",
+                saveSuccessfulFeedback ? "visible" : "invisible"
+              )}
+            >
+              <CheckCircleIcon className="h-5 w-5 text-green-500" />
+              <div className="text-sm">Thanks for your feedback!</div>
+            </div>
+          </div>
+        ) : confirmed ? (
+          <div className="my-5 w-full font-semibold flex flex-row justify-center gap-x-1 place-items-center">
+            <CheckCircleIcon className="h-5 w-5 text-green-500" />
+            Confirmed
+          </div>
+        ) : (
+          <div className="my-5 w-full flex flex-row font-semibold justify-center gap-x-2 place-items-center">
+            <XCircleIcon className="h-5 w-5 text-red-500" />
+            Cancelled
+          </div>
+        ))}
     </div>
   );
 }
 
 function Table(props: { chatKeyValueText: string }) {
-  const parsedValues = parseKeyValues(props.chatKeyValueText);
+  let parsedValues = parseTableTags(props.chatKeyValueText);
 
   return (
-    <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-      <table className="min-w-full divide-y divide-gray-300">
-        <tbody className="bg-gray-300 rounded-full">
-          {parsedValues.map((keyValue) => (
-            <tr key={keyValue.key} className="even:bg-[#DADDE3]">
-              <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
-                {keyValue.key}
-              </td>
-              <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
-                {keyValue.value}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="inline-block min-w-full py-4 align-middle sm:px-6 lg:px-8">
+      <div className="min-w-full border border-gray-300">
+        <table className="w-full divide-y divide-gray-300">
+          <caption className="text-md text-gray-900 bg-gray-100 py-2 font-extrabold">
+            {parsedValues.find((keyValue) => keyValue.key === "caption")?.value}
+          </caption>
+          <tbody className="bg-gray-300 rounded-full">
+            {parsedValues.map(
+              (keyValue) =>
+                keyValue.key !== "caption" && (
+                  <tr key={keyValue.key} className="even:bg-[#DADDE3]">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-gray-900">
+                      {keyValue.key}
+                    </td>
+                    <td className="whitespace-wrap px-2 py-2.5 text-sm text-gray-700">
+                      {keyValue.value}
+                    </td>
+                  </tr>
+                )
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-function UserChatItem(props: { chatItem: ChatItem }) {
+function UserChatItem(props: { chatItem: StreamingStepInput }) {
   const { profile } = useProfile();
   const [saveSuccessfulFeedback, setSaveSuccessfulFeedback] = useState(false);
   useEffect(() => {
@@ -602,6 +703,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
       }, 3000);
     }
   }, [saveSuccessfulFeedback]);
+  if (!props.chatItem.content) return <></>;
   let match;
   let matches = [];
   while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
@@ -616,7 +718,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
         {profile?.organizations?.name + " AI"}
       </p>
       {matches.map((text, idx) => {
-        if (confirmRegex.exec(text) && confirmRegex.exec(text)!.length > 0) {
+        if (feedbackRegex.exec(text) && feedbackRegex.exec(text)!.length > 0) {
           return (
             <div
               key={idx}
@@ -660,13 +762,7 @@ function UserChatItem(props: { chatItem: ChatItem }) {
             >
               <button
                 onClick={() => setSaveSuccessfulFeedback(true)}
-                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2`}
-                style={{
-                  backgroundColor: BrandColourAction,
-                  color: BrandActionTextColour,
-                  // @ts-ignore
-                  "--tw-ring-color": BrandColourAction,
-                }}
+                className={`px-4 rounded-md py-2 text-base hover:opacity-90 transition focus:ring-2 focus:ring-offset-2 ring-purple-600 bg-purple-600 text-white`}
               >
                 {buttonMatches[1].trim()}
               </button>
@@ -686,24 +782,26 @@ function UserChatItem(props: { chatItem: ChatItem }) {
           return <Table chatKeyValueText={tableMatches[1]} key={idx} />;
         }
         return (
-          <>
-            <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
-              <p className="flex flex-row gap-x-1.5 text-yellow-800">
-                <LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts
-              </p>
-              <p className="mt-1 text-little whitespace-pre-line text-gray-700">
-                {outputObj.reasoning}
-              </p>
-            </div>
+          <div key={idx} className="w-full">
+            {outputObj.reasoning && (
+              <div className="bg-yellow-100 rounded-md px-4 py-2 border border-yellow-300 w-full">
+                <p className="flex flex-row gap-x-1.5 text-yellow-800">
+                  <LightBulbIcon className="h-5 w-5 text-yellow-600" /> Thoughts
+                </p>
+                <p className="mt-1 text-little whitespace-pre-line text-gray-700">
+                  {outputObj.reasoning}
+                </p>
+              </div>
+            )}
             {outputObj.tellUser && (
               <p
                 key={idx}
-                className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line"
+                className="px-2 mt-3 text-base text-gray-900 whitespace-pre-line w-full"
               >
                 {outputObj.tellUser}
               </p>
             )}
-          </>
+          </div>
         );
       })}
     </div>

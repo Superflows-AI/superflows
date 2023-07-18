@@ -11,7 +11,7 @@ import {
   ArrowPathIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { classNames, getNumRows, parseKeyValues } from "../lib/utils";
+import { classNames, getNumRows, parseTableTags } from "../lib/utils";
 import { LoadingSpinner } from "./loadingspinner";
 
 const BrandName = "Apollo";
@@ -343,7 +343,7 @@ function ChatItem(props: {
 }
 
 function Table(props: { chatKeyValueText: string }) {
-  const parsedValues = parseKeyValues(props.chatKeyValueText);
+  const parsedValues = parseTableTags(props.chatKeyValueText);
 
   return (
     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">

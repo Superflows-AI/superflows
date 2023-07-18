@@ -1,6 +1,7 @@
 import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
-import { ChatGPTMessage, ChatMessage } from "./models";
+import { ChatGPTMessage } from "./models";
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -15,13 +16,19 @@ export function getNumRows(text: string, textWidth: number): number {
     .reduce((a, b) => a + b);
 }
 
-export function parseKeyValues(
-  keyValueText: string
-): { key: string; value: string }[] {
-  return keyValueText.split("<br/>").map((line) => {
+export function parseTableTags(text: string): { key: string; value: string }[] {
+  const captionRegex = /<caption>(.*?)<\/caption>/;
+  const caption = {
+    key: "caption",
+    value: text.match(captionRegex)?.[1] ?? "",
+  };
+  text = text.replace(captionRegex, "");
+
+  const rows = text.split("<br/>").map((line) => {
     const [key, ...value] = line.split(":");
     return { key: key.trim(), value: value.join(":").trim() };
   });
+  return [caption, ...rows];
 }
 
 export function removeEmptyCharacters(text: string): string {
@@ -55,12 +62,6 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
       throw error;
     }
   }
-}
-
-export function camelToCapitalizedWords(camelCaseStr: string): string {
-  return camelCaseStr
-    .replace(/([A-Z])/g, " $1") // Add a space before each uppercase letter
-    .replace(/^./, (match) => match.toUpperCase()); // Capitalize the first letter
 }
 
 export function unpackAndCall<Args extends object>(
@@ -106,9 +107,13 @@ export function stripTrailingAndCurly(str: string) {
 }
 
 export function convertToRenderable(
-  functionOutput: Record<string, any> | any[]
+  functionOutput: Record<string, any> | any[],
+  caption?: string
 ): string {
-  let output = "";
+  let output = "<table>";
+  if (caption) {
+    output += `<caption>${caption}</caption>`;
+  }
   if (Array.isArray(functionOutput)) {
     if (
       typeof functionOutput[0] === "object" &&
@@ -116,21 +121,17 @@ export function convertToRenderable(
     ) {
       // Format: [{a,b}, {a,b}]
       functionOutput.forEach((item) => {
-        output += "<table>";
         Object.entries(item).forEach(([key, value]) => {
-          output += `${camelToCapitalizedWords(key)}: ${
+          output += `${functionNameToDisplay(key)}: ${
             typeof value === "object" ? JSON.stringify(value) : value
           }<br/>`;
         });
-        output += "</table>";
       });
     } else {
       // Format: [x, y, z]
-      output += "<table>";
       functionOutput.forEach((val) => {
-        output += `Value: ${camelToCapitalizedWords(val)}<br/>`;
+        output += `Value: ${functionNameToDisplay(val)}<br/>`;
       });
-      output += "</table>";
     }
   } else {
     // Format: {data: {a, b}}
@@ -138,14 +139,14 @@ export function convertToRenderable(
       functionOutput = functionOutput.data;
     }
     // Format: {a, b}
-    output += "<table>";
     Object.entries(functionOutput).forEach(([key, value]) => {
-      output += `${camelToCapitalizedWords(key)}: ${
+      output += `${functionNameToDisplay(key)}: ${
         typeof value === "object" ? JSON.stringify(value) : value
       }<br/>`;
     });
-    output += "</table>";
+    output = output.slice(0, -5);
   }
+  output += "</table>";
   return output;
 }
 
@@ -259,12 +260,6 @@ export function splitPath(path: string): string[] {
   return path.split("/").filter((ele) => ele !== "");
 }
 
-interface Chunk {
-  path: (string | number)[];
-  dataType: "Object" | "Array" | "Primitive";
-  data: any;
-}
-
 export function chunkKeyValuePairs(
   obj: { [key: string]: any },
   chunkSize: number
@@ -304,4 +299,18 @@ export function deepMerge(
     }
   }
   return obj1;
+}
+
+export function functionNameToDisplay(name: string): string {
+  let result = name
+    // Insert a space before all camelCased and PascalCased characters
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Replace underscores with a space
+    .replace(/_/g, " ")
+    // Convert all text to lower case
+    .toLowerCase()
+    // Capitalize the first letter of each word
+    .replace(/\b[a-z](?=[a-z]{1})/g, (letter) => letter.toUpperCase());
+
+  return result;
 }

@@ -26,14 +26,16 @@ export default function getMessages(
     if (action.parameters && Array.isArray(action.parameters)) {
       action.parameters.forEach((param) => {
         const p = param as unknown as OpenAPIV3_1.ParameterObject;
-        const schema = p.schema as OpenAPIV3_1.SchemaObject;
-        const enums = schema.enum;
+        const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+        const enums = schema?.enum ?? null;
         // TODO: Deal with very long enums better - right now we are just ignoring them
-        paramString += `\n- ${p.name} (${schema.type}${
-          enums && enums.length < 20 ? `: ${enums}` : ""
-        })${p.description ? `: ${p.description}` : ""}. ${
-          p.required ? "REQUIRED" : ""
-        }`;
+        paramString += `\n- ${p.name} (${
+          schema && schema.type ? schema.type : ""
+        }${enums && enums.length < 20 ? `: ${enums}` : ""})${
+          p.description
+            ? `: ${p.description}${p.description.endsWith(".") ? "" : "."}`
+            : ""
+        } ${p.required ? "REQUIRED" : ""}`;
       });
     }
     if (
@@ -65,7 +67,7 @@ export default function getMessages(
       });
     }
     numberedActions += `${i}. ${action.name}: ${action.description}.${
-      paramString ? " PARAMETERS: " + paramString : ""
+      paramString ? " PARAMETERS: " + paramString : "PARAMETERS: None."
     }\n`;
     i++;
   });
@@ -86,27 +88,26 @@ You MUST exclusively use the functions listed below in the "commands" output. TH
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}".
 ${numberedActions}
 
-To use the output of a prior command, stop issuing commands and set "Completed: false". You will be prompted for the next step once the function returns.
+To use the output of a previous command for a command, simply stop outputting commands - you will be prompted for the next step once the function returns.
 
-Aim to complete the task in the smallest number of steps. Be as concise as possible in your responses. 
+Aim to complete the task in the smallest number of steps possible. Be very concise in your responses. 
 
-Think and talk to the user in the following language: ${language}. This should ONLY affect the Reasoning, Plan & Tell user outputs. NOT the commands or completed.
+Think and talk to the user in the following language: ${language}. This should ONLY affect the Reasoning, Plan & Tell user outputs. NOT the commands.
 
-Think step-by-step. Respond following the format below, starting with your thoughts (your Reasoning & Plan), optionally anything to tell the user "Tell user", then optionally any "Commands" (you can call multiple, separate with a newline), then whether you are "Completed". THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
+Think step-by-step. Respond in the format below, starting with your reasoning, your plan, optionally anything to tell the user "Tell user", then any "Commands" (you can call multiple, separate with a newline). THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 
-Reasoning: reasoning behind the plan. Be concise. If the task isn't possible, or you need more information from the user, ask here and then skip the plan and commands entirely.
+Reasoning: reason about how to achieve the user's request. Be concise.
 
-Plan:
+Plan: (optional)
 - short bulleted
 - list that conveys
 - long-term plan
 
-Tell user: (optional) tell the user something. E.g. if you're answering a question, write the answer to the user here.
+Tell user: tell the user something. If you need to ask the user a question, do so here.
 
 Commands: (optional)
-FUNCTION_NAME_1(PARAM_NAME_1=PARAM_VALUE_1, PARAM_NAME_2=PARAM_VALUE_2, ...)
-
-Completed: (true or false or question) set to true when the above commands, when executed, would achieve the task set by the user. Alternatively, if the task isn't possible and you need to ask a clarifying question, set to question. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!`,
+FUNCTION_1(PARAM_1=VALUE_1, PARAM_2=VALUE_2, ...)
+FUNCTION_2(PARAM_3=VALUE_3 ...)`,
     },
     ...userCopilotMessages,
   ];

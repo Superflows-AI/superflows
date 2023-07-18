@@ -1,10 +1,4 @@
-import { NextRequest } from "next/server";
-import {
-  ActionTagJoinActions,
-  ChatMessage,
-  Organization,
-  OrgJoinIsPaid,
-} from "../types";
+import { ActionTagJoinActions, DBChatMessage } from "../types";
 import { ChatGPTMessage } from "../models";
 
 export async function getActiveActionTagsAndActions(
@@ -43,7 +37,7 @@ export async function getConversation(
   console.log("jsonResponse", jsonResponse);
   if (jsonResponse && jsonResponse.length > 0) {
     // @ts-ignore
-    return (jsonResponse as ChatMessage[])
+    return (jsonResponse as DBChatMessage[])
       .sort((m1, m2) => m1.conversation_index - m2.conversation_index)
       .map((m) =>
         m.role !== "function"

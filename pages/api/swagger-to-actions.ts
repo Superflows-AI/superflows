@@ -56,9 +56,8 @@ export default async function handler(
     if ("info" in swagger)
       swagger.info.version = swagger.info.version ?? "1.0.0";
     // @ts-ignore
-    dereferencedSwagger = await SwaggerParser.dereference(swagger, {
+    dereferencedSwagger = await SwaggerParser.validate(swagger, {
       dereference: { circular: "ignore" },
-      validate: { schema: false, spec: false },
     });
   } catch (err) {
     res.status(400).json({ message: "Not a valid OpenAPI spec", error: err });
