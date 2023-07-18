@@ -1,29 +1,39 @@
-import { Fragment } from "react";
+import React, { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
-import {
-  EllipsisHorizontalIcon,
-  EllipsisVerticalIcon,
-} from "@heroicons/react/24/outline";
+import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import classNames from "classnames";
 
-export interface Item {
+export type Item = (
+  | {
+      onClick: () => void;
+    }
+  | {
+      href: string;
+    }
+) & {
   name: string;
-  onClick: () => void;
-}
+  Icon?: React.ReactNode;
+};
 
 export default function FlyoutMenu(props: {
   items: Item[];
   getClassName?: (open: boolean) => string;
+  buttonClassName?: string;
+  Icon?: React.ReactNode;
+  popoverClassName?: string;
+  title?: string;
 }) {
   return (
     <Popover className={classNames("relative")}>
       {({ open }) => (
         <div className={props.getClassName ? props.getClassName(open) : ""}>
-          <Popover.Button className="inline-flex items-center gap-x-1 text-sm font-semibold text-gray-100 hover:bg-gray-950 rounded-md transition">
-            <EllipsisHorizontalIcon
-              className="h-9 w-9 p-1"
-              aria-hidden="true"
-            />
+          <Popover.Button className={props.buttonClassName ?? ""}>
+            {props.Icon ?? (
+              <EllipsisHorizontalIcon
+                className="h-9 w-9 p-1"
+                aria-hidden="true"
+              />
+            )}
           </Popover.Button>
 
           <Transition
@@ -36,19 +46,44 @@ export default function FlyoutMenu(props: {
             leaveTo="opacity-0 translate-y-1"
           >
             <Popover.Panel className="absolute left-1/2 z-10 flex w-screen max-w-min -translate-x-1/2 px-4">
-              <div className="w-40 shrink rounded-xl bg-white py-4 px-1 text-sm font-semibold leading-6 text-gray-900 shadow-lg ring-1 ring-gray-900/5">
-                {props.items.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      item.onClick();
-                    }}
-                    className="block p-2 hover:bg-gray-200 w-full text-left px-3 rounded"
-                  >
-                    {item.name}
-                  </button>
-                ))}
+              <div
+                className={classNames(
+                  "shrink rounded-xl bg-white py-3 px-1 text-sm font-semibold leading-6 text-gray-900 shadow-lg ring-1 ring-gray-900/5",
+                  props.popoverClassName ?? ""
+                )}
+              >
+                {props.title && (
+                  <h1 className="text-lg px-6 pb-1.5 pt-1 border-b font-base border-gray-300">
+                    {props.title}
+                  </h1>
+                )}
+                {props.items.map((item) => {
+                  if ("onClick" in item)
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          item.onClick();
+                        }}
+                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row gap-x-2"
+                      >
+                        {item.Icon ?? ""}
+                        {item.name}
+                      </button>
+                    );
+                  else
+                    return (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row gap-x-2 font-normal"
+                      >
+                        {item.Icon ?? ""}
+                        {item.name}
+                      </a>
+                    );
+                })}
               </div>
             </Popover.Panel>
           </Transition>

@@ -21,6 +21,7 @@ const supabase = createClient<Database>(
 const CreateOrgZod = z.object({
   user_id: z.string(),
   org_name: z.string(),
+  description: z.string(),
 });
 type CreateOrgType = z.infer<typeof CreateOrgZod>;
 
@@ -41,7 +42,11 @@ export default async function handler(
   const api_key = generateApiKey();
   const { data, error } = await supabase
     .from("organizations")
-    .insert({ name: req.body.org_name, api_key })
+    .insert({
+      name: req.body.org_name,
+      api_key,
+      description: req.body.description,
+    })
     .select();
   if (error) throw new Error(error.message);
   if (data === null) {

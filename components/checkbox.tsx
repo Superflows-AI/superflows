@@ -13,7 +13,7 @@ export default function Checkbox(props: {
         props.onChange(!props.checked);
       }}
     >
-      <div className="mr-2 text-sm">
+      <div className="mr-2 text-xs md:text-sm">
         {props.label && (
           <>
             <label className="font-medium text-gray-300 cursor-pointer select-none">

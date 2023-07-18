@@ -1,13 +1,11 @@
-import Head from "next/head";
 import { Navbar } from "../components/navbar";
 import Playground from "../components/playground";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import React, { useEffect } from "react";
 import SignInComponent from "../components/signIn";
 import { useProfile } from "../components/contextManagers/profile";
-import CreateOrgScreen from "../components/onboarding/createOrg";
 import Headers from "../components/headers";
-import { LoadingSpinner } from "../components/loadingspinner";
+import { LoadingPage, LoadingSpinner } from "../components/loadingspinner";
 import { useRouter } from "next/router";
 
 export default function App() {
@@ -47,6 +45,7 @@ function Dashboard() {
 
   // TODO: Improve the way we generate join links for orgs
   useEffect(() => {
+    // If they have a query param, check and store the join link locally
     if (Object.keys(router.query).length > 0) {
       const { org_id } = router.query;
       if (org_id && typeof org_id === "string") {
@@ -55,18 +54,31 @@ function Dashboard() {
       }
     }
   }, [router]);
+  useEffect(() => {
+    // Once they're signed in, check if they have an org_id in localstorage
+    const org_id = localStorage.getItem("org_id");
+    if (org_id !== null) {
+      localStorage.removeItem("org_id");
+      (async () => {
+        const profileUpdateRes = await supabase
+          .from("profiles")
+          .update({ org_id: org_id })
+          .eq("id", profile?.id);
+        if (profileUpdateRes.error) throw profileUpdateRes.error;
+        await refreshProfile();
+        await router.push("/onboarding");
+      })();
+    } else if (profile?.org_id === null) {
+      router.push("/onboarding");
+    }
+  }, [profile, router]);
 
-  return !session ? (
-    !isDev ? (
-      <SignInComponent />
-    ) : (
-      <div className="bg-gray-800 h-screen w-screen flex justify-center place-items-center">
-        <LoadingSpinner classes={"h-20 w-20 text-gray-300"} />
-      </div>
-    )
-  ) : profile?.org_id === null ? (
-    <CreateOrgScreen />
-  ) : (
+  if (!profile?.org_id) {
+    if (!isDev) return <SignInComponent />;
+    else return <LoadingPage />;
+  }
+
+  return (
     <div>
       <div className="min-h-screen flex flex-col max-h-screen">
         <Navbar current={"Playground"} />

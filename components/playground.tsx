@@ -62,7 +62,7 @@ export default function Playground() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 top-16 z-50 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
+      <div className="fixed bottom-0 left-0 top-16 z-10 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
         <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
           <div className="mt-6">
             <h2 className="text-gray-200 font-medium">User description</h2>
@@ -100,7 +100,7 @@ export default function Playground() {
           testMode={!!testModeEnabled}
         />
       </main>
-      <div className="fixed bottom-0 right-0 top-16 z-50 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
+      <div className="absolute z-0 bottom-0 right-0 top-16 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
         <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
           <div className="mt-6">
             <SelectBox
