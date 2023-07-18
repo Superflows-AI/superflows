@@ -193,7 +193,8 @@ export default async function handler(
 
   const properties = schema ? propertiesFromSchema(schema) : null;
 
-  if (schema && properties) {
+  // TODO - deal with arrays (probably better off overhauling the JSON structure rather than trying to split and rejoin arrays)
+  if (schema && properties && schema.type === "object") {
     const allJson = await mockWithChunkedResponse(
       schema,
       matchingAction,
@@ -205,7 +206,6 @@ export default async function handler(
       orgInfo
     );
 
-    console.log("allJson", JSON.stringify(allJson, null, 2));
     res.status(responseCode ? Number(responseCode) : 200).json(allJson);
     return;
   }

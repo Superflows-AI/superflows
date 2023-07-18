@@ -64,6 +64,7 @@ export type RequestMethod =
   | "OPTIONS";
 
 export interface OpenAPISchema {
+  type?: "array" | "object"; // More are probably valid
   properties?: { [key: string]: any };
   required?: string[];
   items?: {
