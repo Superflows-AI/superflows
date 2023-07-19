@@ -31,7 +31,7 @@ function OnboardingContent() {
     }
   }, [profile]);
 
-  if (profile === undefined) {
+  if (profile === undefined || profile?.organizations?.name) {
     return <LoadingPage />;
   } else {
     // Create an organization

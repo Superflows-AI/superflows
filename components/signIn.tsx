@@ -75,7 +75,7 @@ export default function SignInComponent(props: {
                 style: {
                   input: { color: "white", borderColor: "#9ca3af" },
                   divider: { background: "#9ca3af" },
-                  message: { color: "#cbd5e1" },
+                  message: { color: "#e2e8f0", fontSize: "1.125rem" },
                   label: { color: "#6b7280" },
                   anchor: { color: "#6b7280" },
                 },
