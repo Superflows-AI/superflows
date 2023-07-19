@@ -8,6 +8,7 @@ import { Navbar } from "../components/navbar";
 import SignInComponent from "../components/signIn";
 import { Action, ActionTagJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -103,3 +104,5 @@ export function RepliesPage() {
     </div>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;

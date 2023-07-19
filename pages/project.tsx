@@ -8,6 +8,7 @@ import classNames from "classnames";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import SelectBox from "../components/selectBox";
 import { Database } from "../lib/database.types";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -267,3 +268,5 @@ function Dashboard() {
     </div>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;

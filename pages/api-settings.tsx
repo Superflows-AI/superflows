@@ -14,6 +14,7 @@ import {
 import classNames from "classnames";
 import { generateApiKey } from "../lib/apiKey";
 import WarningModal from "../components/warningModal";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -130,3 +131,5 @@ function Dashboard() {
     </>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;
