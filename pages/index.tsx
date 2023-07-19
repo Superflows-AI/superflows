@@ -1,15 +1,10 @@
 import { Navbar } from "../components/navbar";
 import Playground from "../components/playground";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
-import React, { useEffect } from "react";
-import SignInComponent from "../components/signIn";
+import React from "react";
 import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
 import { LoadingPage } from "../components/loadingspinner";
 import { useRouter } from "next/router";
-import { Database } from "../lib/database.types";
-import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { GetServerSidePropsContext } from "next";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
@@ -23,8 +18,13 @@ export default function App() {
 
 function Dashboard() {
   const { profile } = useProfile();
+  const router = useRouter();
 
-  if (!profile?.org_id) return <LoadingPage />;
+  if (profile === undefined) return <LoadingPage />;
+  else if (!profile?.org_id) {
+    router.push("/onboarding");
+    return <LoadingPage />;
+  }
 
   return (
     <div>

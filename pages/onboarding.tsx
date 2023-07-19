@@ -27,11 +27,11 @@ function OnboardingContent() {
         email: profile.email_address,
         org: profile.organizations.name,
       });
-      router.push("/actions");
+      router.push("/actions", undefined, { shallow: true });
     }
   }, [profile]);
 
-  if (profile === null) {
+  if (profile === undefined) {
     return <LoadingPage />;
   } else {
     // Create an organization
