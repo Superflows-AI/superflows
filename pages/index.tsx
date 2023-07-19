@@ -7,6 +7,7 @@ import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
 import { LoadingPage } from "../components/loadingspinner";
 import { useRouter } from "next/router";
+import { Database } from "../lib/database.types";
 
 export default function App() {
   return (
@@ -21,26 +22,26 @@ function Dashboard() {
   const session = useSession();
   const router = useRouter();
   const { profile, refreshProfile } = useProfile();
-  const supabase = useSupabaseClient();
+  const supabase = useSupabaseClient<Database>();
   const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
-    (async () => {
-      if (isDev && !session) {
-        const res = await supabase.auth.signInWithPassword({
-          email: "localuser@gmail.com",
-          password: "password",
-        });
-        if (!res.data.session) {
-          const res2 = await supabase.auth.signUp({
-            email: "localuser@gmail.com",
-            password: "password",
-            options: { data: { full_name: "Local User" } },
-          });
-        }
-        await refreshProfile();
-      }
-    })();
+    // (async () => {
+    //   if (isDev && !session) {
+    //     const res = await supabase.auth.signInWithPassword({
+    //       email: "localuser@gmail.com",
+    //       password: "password",
+    //     });
+    //     if (!res.data.session) {
+    //       const res2 = await supabase.auth.signUp({
+    //         email: "localuser@gmail.com",
+    //         password: "password",
+    //         options: { data: { full_name: "Local User" } },
+    //       });
+    //     }
+    //     await refreshProfile();
+    //   }
+    // })();
   }, [session, refreshProfile, supabase]);
 
   // TODO: Improve the way we generate join links for orgs
@@ -62,7 +63,7 @@ function Dashboard() {
       (async () => {
         const profileUpdateRes = await supabase
           .from("profiles")
-          .update({ org_id: org_id })
+          .update({ org_id: Number(org_id) })
           .eq("id", profile?.id);
         if (profileUpdateRes.error) throw profileUpdateRes.error;
         await refreshProfile();
@@ -73,8 +74,10 @@ function Dashboard() {
     }
   }, [profile, router]);
 
+  if (profile === undefined) return <LoadingPage />;
+
   if (!profile?.org_id) {
-    if (!isDev) return <SignInComponent view={"sign_up"} />;
+    if (isDev) return <SignInComponent view={"sign_up"} />;
     else return <LoadingPage />;
   }
 
