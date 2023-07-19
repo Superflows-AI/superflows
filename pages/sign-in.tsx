@@ -5,9 +5,9 @@ import { useProfile } from "../components/contextManagers/profile";
 import { Database } from "../lib/database.types";
 import React, { useEffect } from "react";
 import SignInComponent from "../components/signIn";
-import { pageGetServerSideProps } from "../components/getServerSideProps";
 import { GetServerSidePropsContext } from "next";
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
+import posthog from "posthog-js";
 
 export default function App() {
   return (
@@ -26,6 +26,12 @@ function Dashboard() {
   const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
+    if (profile) {
+      posthog.identify(profile.id, {
+        name: profile.full_name,
+        email: profile.email_address,
+      });
+    }
     (async () => {
       if (isDev && !session) {
         const res = await supabase.auth.signInWithPassword({
@@ -39,43 +45,38 @@ function Dashboard() {
             options: { data: { full_name: "Local User" } },
           });
         }
-        await refreshProfile();
       }
     })();
-  }, [session, refreshProfile, supabase]);
+  }, [profile, session, refreshProfile, supabase]);
 
   // TODO: Improve the way we generate join links for orgs
-  useEffect(() => {
-    // If they have a query param, check and store the join link locally
-    if (Object.keys(router.query).length > 0) {
-      const { org_id } = router.query;
-      if (org_id && typeof org_id === "string") {
-        localStorage.setItem("org_id", org_id);
-        router.push("/");
-      }
-    }
-  }, [router]);
-  useEffect(() => {
-    // Once they're signed in, check if they have an org_id in localstorage
-    const org_id = localStorage.getItem("org_id");
-    console.log("WHAT", profile?.org_id);
-    if (org_id !== null) {
-      localStorage.removeItem("org_id");
-      (async () => {
-        const profileUpdateRes = await supabase
-          .from("profiles")
-          .update({ org_id: Number(org_id) })
-          .eq("id", profile?.id);
-        if (profileUpdateRes.error) throw profileUpdateRes.error;
-        await refreshProfile();
-        await router.push("/onboarding");
-      })();
-    } else if (profile?.org_id === null) {
-      router.push("/onboarding");
-    } else if (profile?.org_id) {
-      router.push("/");
-    }
-  }, [profile, router]);
+  // useEffect(() => {
+  //   // If they have a query param, check and store the join link locally
+  //   if (Object.keys(router.query).length > 0) {
+  //     const { org_id } = router.query;
+  //     if (org_id && typeof org_id === "string") {
+  //       localStorage.setItem("org_id", org_id);
+  //       router.push("/");
+  //     }
+  //   }
+  // }, [router]);
+  // useEffect(() => {
+  //   // Once they're signed in, check if they have an org_id in localstorage
+  //   const org_id = localStorage.getItem("org_id");
+  //   console.log("WHAT", profile?.org_id);
+  //   if (org_id !== null) {
+  //     localStorage.removeItem("org_id");
+  //     (async () => {
+  //       const profileUpdateRes = await supabase
+  //         .from("profiles")
+  //         .update({ org_id: Number(org_id) })
+  //         .eq("id", profile?.id);
+  //       if (profileUpdateRes.error) throw profileUpdateRes.error;
+  //       await refreshProfile();
+  //       await router.push("/onboarding");
+  //     })();
+  //   }
+  // }, [profile, router]);
 
   return <SignInComponent view={"sign_up"} />;
 }
@@ -89,13 +90,13 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // TODO: Once the new join links are done, we can add this redirect back in
+  // If we are signed in, redirect to the onboarding page
   // if (session) {
   //   return {
-  //       redirect: {
-  //           destination: "/onboarding",
-  //       }
-  //   }
+  //     redirect: {
+  //       destination: "/onboarding",
+  //     },
+  //   };
   // }
 
   return {
