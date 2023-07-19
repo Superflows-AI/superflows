@@ -14,6 +14,7 @@ import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
 import { Navbar } from "../components/navbar";
 import { Database } from "../lib/database.types";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -118,3 +119,5 @@ function Dashboard() {
     </div>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;

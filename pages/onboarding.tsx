@@ -5,6 +5,7 @@ import { useProfile } from "../components/contextManagers/profile";
 import posthog from "posthog-js";
 import { LoadingPage } from "../components/loadingspinner";
 import { useRouter } from "next/router";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function Onboarding() {
   return (
@@ -17,14 +18,10 @@ export default function Onboarding() {
 
 function OnboardingContent() {
   const { profile } = useProfile();
-  const [onboardingStep, setOnboardingStep] = React.useState<number>(1);
   const router = useRouter();
-  // TODO: Add when there are presets
-  // const [isOwnAPI, setIsOwnAPI] = React.useState<boolean>(false);
 
   useEffect(() => {
     if (profile?.organizations?.name) {
-      // setOnboardingStep(2);
       posthog.identify(profile.id, {
         name: profile.full_name,
         email: profile.email_address,
@@ -34,12 +31,9 @@ function OnboardingContent() {
     }
   }, [profile]);
 
-  if (profile === undefined) {
+  if (profile === null) {
     return <LoadingPage />;
-  } else if (profile === null) {
-    router.push("/");
-    return <LoadingPage />;
-  } else if (onboardingStep === 1) {
+  } else {
     // Create an organization
     return (
       <CreateOrgScreen
@@ -48,8 +42,7 @@ function OnboardingContent() {
         }}
       />
     );
-  } else {
-    // Explanation of how Superflows works
-    return <LoadingPage />;
   }
 }
+
+export const getServerSideProps = pageGetServerSideProps;
