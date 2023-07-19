@@ -69,7 +69,7 @@ export function RepliesPage() {
     setActionTagsJoinActions(actionTagRes.data);
   }, [profile, supabase]);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.org_id) return;
     loadActions();
   }, [profile]);
 
