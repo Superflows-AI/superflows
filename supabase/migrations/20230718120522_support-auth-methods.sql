@@ -2,7 +2,7 @@ alter table "public"."organizations" add column "auth_header" text not null defa
 
 alter table "public"."organizations" add column "auth_scheme" text default 'Bearer'::text;
 
-alter table "public"."organizations" add constraint "organizations_auth_header_check" CHECK ((auth_header = ANY (ARRAY['Authorization'::text, 'Proxy-Authorization'::text, 'x-api-key'::text]))) not valid;
+alter table "public"."organizations" add constraint "organizations_auth_header_check" CHECK ((auth_header = ANY (ARRAY['Authorization'::text, 'Proxy-Authorization'::text, 'x-api-key'::text, 'apiKey'::text]))) not valid;
 
 alter table "public"."organizations" validate constraint "organizations_auth_header_check";
 
