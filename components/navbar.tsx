@@ -11,6 +11,7 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
+import { useProfile } from "./contextManagers/profile";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -24,6 +25,7 @@ const navigation = [
 export function Navbar(props: { current: string }) {
   const [warningOpen, setWarningOpen] = useState<boolean>(false);
   const supabase = useSupabaseClient();
+  const { refreshProfile } = useProfile();
 
   return (
     <>
@@ -32,7 +34,10 @@ export function Navbar(props: { current: string }) {
         description={
           "Are you sure you want to sign out of your Superflows account?"
         }
-        action={() => supabase.auth.signOut()}
+        action={async () => {
+          await supabase.auth.signOut();
+          await refreshProfile();
+        }}
         actionColour={"purple"}
         actionName={"Sign out"}
         open={warningOpen}
