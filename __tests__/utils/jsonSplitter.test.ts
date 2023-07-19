@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { jsonReconstruct, jsonSplitter } from "../../lib/utils";
-// import jiraSpec from "../testData/jira-openapi-spec.json";
-import reddit from "../testData/askReddit.json";
+import reddit from "../testData/linuxReddit.json";
+import pokemon from "../testData/pokemon.json";
 
 describe("Parse output", () => {
   it("simple object", () => {
@@ -82,7 +82,7 @@ describe("Parse output", () => {
     expect(res).toEqual(obj);
   });
 
-  it("very complex object", () => {
+  it("more complex object", () => {
     const obj = {
       "200": {
         description: "Returned if the request is successful.",
@@ -300,20 +300,28 @@ describe("Parse output", () => {
     expect(res).toEqual(obj);
   });
 
-  it("ask Reddit ", () => {
+  it("data structure contains empty arrays and lists ", () => {
+    const obj = {
+      name: "John",
+      age: 30,
+      city: "New York",
+      children: [],
+      parents: {},
+    };
+    const split = jsonSplitter(obj);
+    const res = jsonReconstruct(split);
+    expect(res).toEqual(obj);
+  });
+
+  it("reddit json", () => {
     const split = jsonSplitter(reddit);
     const res = jsonReconstruct(split);
-    storeData(res, "result.json");
     expect(res).toEqual(reddit);
   });
+
+  it("pokemon json", () => {
+    const split = jsonSplitter(pokemon);
+    const res = jsonReconstruct(split);
+    expect(res).toEqual(pokemon);
+  });
 });
-
-const fs = require("fs");
-
-const storeData = (data, path) => {
-  try {
-    fs.writeFileSync(path, JSON.stringify(data));
-  } catch (err) {
-    console.error(err);
-  }
-};

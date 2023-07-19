@@ -327,12 +327,15 @@ export function jsonSplitter(
 ): Chunk[] {
   if (Array.isArray(json)) {
     let chunks: Chunk[] = [];
+    if (json.length === 0) chunks.push({ path, data: [], dataType: "Array" });
     for (let i = 0; i < json.length; i++) {
       chunks.push(...jsonSplitter(json[i], [...path, i]));
     }
     return chunks.map((chunk) => ({ ...chunk, dataType: "Array" }));
   } else if (typeof json === "object" && json !== null) {
     let chunks: Chunk[] = [];
+    if (Object.keys(json).length === 0)
+      chunks.push({ path, data: {}, dataType: "Object" });
     for (let key in json) {
       chunks.push(...jsonSplitter(json[key], [...path, key]));
     }
