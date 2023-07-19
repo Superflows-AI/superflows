@@ -28,10 +28,10 @@ export default function SignInComponent(props: {
         <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col place-items-center">
           <div className="w-full rounded-md px-10 py-6 bg-gray-800 border border-gray-400 shadow shadow-gray-200">
             <h2 className="mb-1 text-center text-3xl tracking-tight text-gray-50">
-              Get Started
+              {props.view === "sign_up" ? "Get Started" : "Welcome Back"}
             </h2>
             <p className={"w-full text-center text-sm mb-6 text-gray-500"}>
-              Create a free account
+              {props.view === "sign_up" ? "Create a free account" : "Sign in"}
             </p>
             <Auth
               supabaseClient={supabase}
