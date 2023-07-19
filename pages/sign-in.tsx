@@ -89,6 +89,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // TODO: Once the new join links are done, we can add this redirect back in
   // if (session) {
   //   return {
   //       redirect: {
