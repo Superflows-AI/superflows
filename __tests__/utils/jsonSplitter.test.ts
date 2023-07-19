@@ -2,12 +2,38 @@ import { describe, expect, it } from "@jest/globals";
 import { jsonReconstruct, jsonSplitter } from "../../lib/utils";
 import reddit from "../testData/linuxReddit.json";
 import pokemon from "../testData/pokemon.json";
+import { Chunk } from "../../lib/models";
 
 describe("Parse output", () => {
   it("simple object", () => {
     const obj = { name: "John", age: 30, city: "New York" };
 
     const split = jsonSplitter(obj);
+    const expectedSplit: Chunk[] = [
+      { path: ["name"], data: "John" },
+      { path: ["age"], data: 30 },
+      { path: ["city"], data: "New York" },
+    ];
+    expect(split).toEqual(expectedSplit);
+    const res = jsonReconstruct(split);
+    expect(res).toStrictEqual(obj);
+  });
+  it("single nested object", () => {
+    const obj = {
+      name: "John",
+      age: 30,
+      city: "New York",
+      children: { name: "Steve" },
+    };
+
+    const split = jsonSplitter(obj);
+    const expectedSplit: Chunk[] = [
+      { path: ["name"], data: "John" },
+      { path: ["age"], data: 30 },
+      { path: ["city"], data: "New York" },
+      { path: ["children", "name"], data: "Steve" },
+    ];
+    expect(split).toEqual(expectedSplit);
     const res = jsonReconstruct(split);
     expect(res).toStrictEqual(obj);
   });

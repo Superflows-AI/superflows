@@ -9,9 +9,11 @@ import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action, Organization } from "../../../lib/types";
 import {
+  transformProperties,
   chunkKeyValuePairs,
   deepMerge,
   exponentialRetryWrapper,
+  jsonSplitter,
   splitPath,
 } from "../../../lib/utils";
 
@@ -190,22 +192,36 @@ export default async function handler(
 
   const properties = schema ? propertiesFromSchema(schema) : null;
 
-  // TODO - deal with arrays (probably better off overhauling the JSON structure rather than trying to split and rejoin arrays)
-  if (schema && properties && schema.type === "object") {
-    const allJson = await mockWithChunkedResponse(
-      schema,
-      matchingAction,
-      queryParams,
-      slug,
+  if (properties) {
+    const requestParameters = [
+      ...jsonSplitter(pathParameters),
+      ...jsonSplitter(queryParams),
+      ...jsonSplitter(req.body),
+    ];
+    const prompt = apiMockPrompt(
+      matchingAction?.path ?? slug.join("/"),
       method,
-      pathParameters,
-      req,
+      requestParameters,
+      transformProperties(jsonSplitter(properties)),
       orgInfo
     );
 
-    res.status(responseCode ? Number(responseCode) : 200).json(allJson);
+    const openAiResponse = await exponentialRetryWrapper(
+      getOpenAIResponse,
+      [prompt, {}, "3"],
+      3
+    );
+
+    console.log("\n\n\n\nMock Prompt:\n\n", prompt[1].content, "\n\n\n\n");
+    console.log("\n\n\n\nopen AI ERPSONE:\n\n", openAiResponse, "\n\n\n\n");
+    res.status(responseCode ? Number(responseCode) : 200).json(openAiResponse);
     return;
   }
+
+  res
+    .status(responseCode ? Number(responseCode) : 200)
+    .json({ message: "No properties found" });
+  return;
 
   // Hierarchy of fallbacks if we don't have full schema etc
   const fallback =

@@ -1,6 +1,6 @@
 import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
-import { ChatGPTMessage } from "./models";
+import { ChatGPTMessage, Chunk, Properties, Property } from "./models";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
@@ -315,33 +315,26 @@ export function functionNameToDisplay(name: string): string {
   return result;
 }
 
-interface Chunk {
-  path: (string | number)[];
-  dataType: "Object" | "Array" | "Primitive";
-  data: any;
-}
-
 export function jsonSplitter(
   json: any,
   path: (string | number)[] = []
 ): Chunk[] {
   if (Array.isArray(json)) {
     let chunks: Chunk[] = [];
-    if (json.length === 0) chunks.push({ path, data: [], dataType: "Array" });
+    if (json.length === 0) chunks.push({ path, data: [] });
     for (let i = 0; i < json.length; i++) {
       chunks.push(...jsonSplitter(json[i], [...path, i]));
     }
     return chunks.map((chunk) => ({ ...chunk, dataType: "Array" }));
   } else if (typeof json === "object" && json !== null) {
     let chunks: Chunk[] = [];
-    if (Object.keys(json).length === 0)
-      chunks.push({ path, data: {}, dataType: "Object" });
+    if (Object.keys(json).length === 0) chunks.push({ path, data: {} });
     for (let key in json) {
       chunks.push(...jsonSplitter(json[key], [...path, key]));
     }
-    return chunks.map((chunk) => ({ ...chunk, dataType: "Object" }));
+    return chunks;
   } else {
-    return [{ path, data: json, dataType: "Primitive" }];
+    return [{ path, data: json }];
   }
 }
 
@@ -362,4 +355,48 @@ export function jsonReconstruct(chunks: Chunk[]): any {
   }
 
   return root;
+}
+
+// export function groupByPath(chunks: Chunk[]) {
+//   const grouped = Object.values(
+//     chunks.reduce((group: { [key: string]: Chunk[] }, chunk) => {
+//       const path = JSON.stringify(chunk.path.slice(0, -1)); // the last element is the actual key
+//       group[path] = group[path] ?? [];
+//       group[path].push(chunk);
+//       return group;
+//     }, {})
+//   );
+
+//   const formatted = grouped.map((group) => {
+//     return {
+//       fieldName: group[0].path[group[0].path.length - 1],
+//       type: group.find((item) => item.path[item.path.length - 2] === "type"),
+//       description: group.find(
+//         (item) => item.path[item.path.length - 2] === "description"
+//       ),
+//     };
+//   });
+//   return formatted;
+// }
+
+export function transformProperties(chunks: Chunk[]): Properties {
+  // TODO: this loses all information about the path
+  const properties: Properties = {};
+  for (const chunk of chunks) {
+    const fieldName = chunk.path[chunk.path.length - 2];
+    const chunkType = chunk.path[chunk.path.length - 1];
+
+    const existingProperty = properties[fieldName] ?? {};
+
+    if (["type", "description"].includes(chunkType.toString())) {
+      properties[fieldName] = { ...existingProperty, [chunkType]: chunk.data };
+    }
+  }
+  return properties;
+}
+
+export function chunkToString(chunk: Chunk): string {
+  // maybe
+  if (chunk.path.length === 0) return "";
+  return `${chunk.path.join(".")}: ${chunk.data}`;
 }

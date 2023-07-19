@@ -1,13 +1,17 @@
-import { ChatGPTMessage, OpenAPISchema, RequestMethod } from "../models";
-import { objectNotEmpty } from "../utils";
+import {
+  ChatGPTMessage,
+  Chunk,
+  OpenAPISchema,
+  Properties,
+  RequestMethod,
+} from "../models";
+import { chunkToString, objectNotEmpty } from "../utils";
 
 export default function apiMockPrompt(
   path: string,
   requestMethod: RequestMethod,
-  pathParameters: { [key: string]: any },
-  queryParameters: { [key: string]: any },
-  requestBodyParameters: { [key: string]: any },
-  expectedResponseType: OpenAPISchema | object,
+  requestParameters: Chunk[] | null,
+  responseType: Properties | null,
   orgInfo?: {
     name: string;
     description: string;
@@ -30,106 +34,60 @@ Your task is to generate a mock API response to the user's request.`,
       role: "user",
       content: `
 I am sending a ${requestMethod} request to the ${path} endpoint${
-        objectNotEmpty({
-          ...queryParameters,
-          ...pathParameters,
-          ...requestBodyParameters,
-        })
+        requestParameters
           ? ` with parameters:
-${JSON.stringify({
-  ...queryParameters,
-  ...pathParameters,
-  ...requestBodyParameters,
-})}`
+${requestParameters.map((param) => chunkToString(param)).join("\n")}`
           : " with no parameters."
       }
 
 ${
-  objectNotEmpty(expectedResponseType)
-    ? `Your response should be JSON of a specific type. Below are 2 examples of how to generate a response from a type.
+  responseType
+    ? `There are specific fields that I want to be returned in the response.
+
+  Below is an example of how to generate your response from these fields.
 
 -- EXAMPLE 1 --
 
-Type:
-{
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "id": {
-        "type": "integer",
-        "description": "The id of the customer",
-      },
-      "name": {
-        "type": "string",
-        "description": "the name of the customer",
-        "nullable": true
-      },
-      "birthday": {
-        "type": "string",
-        "description": "The customer's birthday",
-        "nullable": true
-      }
-    }
-  }
-}
-Response:
-[
-  {
-    "id": 123,
-    "name": "John Doe",
-    "birthday": "1990-01-01"
-  }
-]
+Fields
+---
+
+Name {"type": "string", "description": "The user's name"}
+Age {"type": "integer", "description": "The user's age"}
+City {"type": "string", "description": "The user's city"}
+
+Response
+---
+
+Name: John
+Age: 25
+City: New York
 
 -- EXAMPLE 2 --
 
-Type:
-{
-  "type": "object",
-  "items": {
-    "type": "object",
-    "required": [
-      "dateCreated",
-      "id"
-    ],
-    "properties": {
-      "dateCreated": {
-        "type": "string",
-        "format": "date-time"
-      },
-      "id": {
-        "type": "string"
-      },
-      "message": {
-        "type": "string",
-        "nullable": true
-      }
-      "notes": {
-        "type": "string",
-        "nullable": true
-      }
-    }
-  }
-}
-Response:
-{
-  "dateCreated": "2021-01-01T00:00:00.000Z",
-  "id": "123",
-  "message": "Hello world!",
-  "notes": null
-}
+Company name {"type": "number", "description": "The name of the company"}
+Annual earnings {"type": "integer", "description": "The earnings of the company"}
+CEO name {"type": "string", "description": "the name of the ceo"}
+
+Response
+---
+
+company name: Apply
+Annual earnings: 1000000
+CEO name: Tim Cook
 
 -- END OF EXAMPLES --
 
-Provide a valid JSON response of the type given below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Include only JSON. All fields in the "Type" must be included.
+Fields
+---
 
-Type:
-${JSON.stringify(expectedResponseType, null, 2)}.
+${Object.entries(responseType)
+  .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+  .join("\n")}
 
-Response:
+Response
+---
 `
-    : "Your response should be a valid JSON. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Include only the JSON. Do not include any extra information."
+    : ""
 }
 `,
     },

@@ -95,3 +95,18 @@ export interface OpenAPISchema {
     required?: string[];
   };
 }
+
+export interface Chunk {
+  path: (string | number)[];
+  data: any;
+}
+
+export interface Property {
+  fieldName: string;
+  type: string;
+  description: string;
+}
+
+export interface Properties {
+  [key: string | number]: { type?: string; description?: string };
+}
