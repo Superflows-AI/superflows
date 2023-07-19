@@ -12,6 +12,7 @@ import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
 import { useProfile } from "./contextManagers/profile";
+import { useRouter } from "next/router";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -26,6 +27,7 @@ export function Navbar(props: { current: string }) {
   const [warningOpen, setWarningOpen] = useState<boolean>(false);
   const supabase = useSupabaseClient();
   const { refreshProfile } = useProfile();
+  const router = useRouter();
 
   return (
     <>
@@ -37,6 +39,7 @@ export function Navbar(props: { current: string }) {
         action={async () => {
           await supabase.auth.signOut();
           await refreshProfile();
+          await router.push("/sign-in");
         }}
         actionColour={"purple"}
         actionName={"Sign out"}

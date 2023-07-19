@@ -56,7 +56,7 @@ export default function App({
       router.events.off("routeChangeComplete", handleRouteChange);
     };
   }, []);
-  console.log("pageProps.initialSession", pageProps.initialSession);
+
   return (
     <SessionContextProvider
       supabaseClient={supabase}
