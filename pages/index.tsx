@@ -5,7 +5,7 @@ import React, { useEffect } from "react";
 import SignInComponent from "../components/signIn";
 import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
-import { LoadingPage, LoadingSpinner } from "../components/loadingspinner";
+import { LoadingPage } from "../components/loadingspinner";
 import { useRouter } from "next/router";
 
 export default function App() {
@@ -74,7 +74,7 @@ function Dashboard() {
   }, [profile, router]);
 
   if (!profile?.org_id) {
-    if (!isDev) return <SignInComponent />;
+    if (!isDev) return <SignInComponent view={"sign_up"} />;
     else return <LoadingPage />;
   }
 

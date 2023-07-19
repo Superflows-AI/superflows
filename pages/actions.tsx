@@ -22,7 +22,7 @@ function Dashboard() {
   const session = useSession();
 
   return !session ? (
-    <SignInComponent />
+    <SignInComponent view={"sign_in"} />
   ) : (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Actions"} />
