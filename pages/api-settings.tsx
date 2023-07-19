@@ -40,7 +40,7 @@ function Dashboard() {
   }, [profile]);
 
   return !session ? (
-    <SignInComponent />
+    <SignInComponent view={"sign_in"} />
   ) : (
     <>
       <WarningModal
