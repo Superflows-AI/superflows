@@ -33,32 +33,30 @@ export default function SignInComponent(props: {
             <p className={"w-full text-center text-sm mb-6 text-gray-500"}>
               Create a free account
             </p>
-            {redirectUrl && (
-              <Auth
-                supabaseClient={supabase}
-                providers={["google"]}
-                view={props.view}
-                redirectTo={redirectUrl}
-                appearance={{
-                  theme: ThemeSupa,
-                  variables: {
-                    default: {
-                      colors: {
-                        brand: "#a855f7",
-                        brandAccent: "#9333ea",
-                      },
+            <Auth
+              supabaseClient={supabase}
+              providers={["google"]}
+              view={props.view}
+              redirectTo={redirectUrl ?? ""}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: "#a855f7",
+                      brandAccent: "#9333ea",
                     },
                   },
-                  style: {
-                    input: { color: "white", borderColor: "#9ca3af" },
-                    divider: { background: "#9ca3af" },
-                    message: { color: "#cbd5e1" },
-                    label: { color: "#6b7280" },
-                    anchor: { color: "#6b7280" },
-                  },
-                }}
-              />
-            )}
+                },
+                style: {
+                  input: { color: "white", borderColor: "#9ca3af" },
+                  divider: { background: "#9ca3af" },
+                  message: { color: "#cbd5e1" },
+                  label: { color: "#6b7280" },
+                  anchor: { color: "#6b7280" },
+                },
+              }}
+            />
           </div>
         </div>
       </div>
