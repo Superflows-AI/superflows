@@ -3,7 +3,6 @@ import CreateOrgScreen from "../components/onboarding/createOrg";
 import Headers from "../components/headers";
 import { useProfile } from "../components/contextManagers/profile";
 import posthog from "posthog-js";
-import ActionsExplanationPage from "../components/onboarding/actionsExplanation";
 import { LoadingPage } from "../components/loadingspinner";
 import { useRouter } from "next/router";
 
@@ -28,13 +27,17 @@ function OnboardingContent() {
       // setOnboardingStep(2);
       posthog.identify(profile.id, {
         name: profile.full_name,
+        email: profile.email_address,
         org: profile.organizations.name,
       });
       router.push("/actions");
     }
   }, [profile]);
 
-  if (!profile) {
+  if (profile === undefined) {
+    return <LoadingPage />;
+  } else if (profile === null) {
+    router.push("/");
     return <LoadingPage />;
   } else if (onboardingStep === 1) {
     // Create an organization
@@ -47,6 +50,6 @@ function OnboardingContent() {
     );
   } else {
     // Explanation of how Superflows works
-    return <ActionsExplanationPage />;
+    return <LoadingPage />;
   }
 }

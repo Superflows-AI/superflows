@@ -14,16 +14,18 @@ type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
 };
 
 const ProfileContext = createContext<{
-  profile: ProfilesRow | null;
+  profile: ProfilesRow | null | undefined;
   refreshProfile: () => Promise<void>;
-}>({ profile: null, refreshProfile: async () => {} });
+}>({ profile: undefined, refreshProfile: async () => {} });
 
 export function ProfileContextProvider(props: {
   children: JSX.Element;
   supabase: ReturnType<typeof createClient<Database>>;
   disabled: boolean;
 }) {
-  const [profile, setProfile] = useState<ProfilesRow | null>(null);
+  const [profile, setProfile] = useState<ProfilesRow | null | undefined>(
+    undefined
+  );
 
   const refreshProfile = useCallback(async (): Promise<void> => {
     if (props.disabled || !props.supabase || !setProfile) return;
