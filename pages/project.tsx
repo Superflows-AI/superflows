@@ -168,10 +168,11 @@ function Dashboard() {
               <div className="col-start-1 flex flex-col place-items-start pr-4">
                 <h2 className="text-lg text-gray-200">Authentication header</h2>
                 <p className="text-gray-400 text-sm">
-                  Set up how to set a HTTP header to authenticate with your API.
+                  Set up how authentication headers are set on HTTP requests to
+                  your API.
                 </p>
               </div>
-              <div className="relative mb-8 col-span-2 flex flex-row place-items-center gap-x-3 mt-6 justify-end text-gray-200 text-xl">
+              <div className="relative mb-4 col-span-2 flex flex-row place-items-center gap-x-3 mt-6 justify-end text-gray-200 text-xl">
                 <SelectBox
                   options={[
                     {
@@ -185,6 +186,10 @@ function Dashboard() {
                     {
                       id: "x-api-key",
                       name: "x-api-key",
+                    },
+                    {
+                      id: "apiKey",
+                      name: "apiKey",
                     },
                   ]}
                   selected={profile?.organizations?.auth_header ?? null}
@@ -251,12 +256,11 @@ function Dashboard() {
                   includeNull={true}
                 />
                 <div className="relative h-16 flex place-items-center">
-                  <code className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-700 px-8 border border-gray-300 text-gray-200 rounded-md text-base font-normal">
-                    {"< YOUR-API-KEY-GOES-HERE >"}
+                  <code className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-9 text-gray-500 rounded-md text-base font-normal">
+                    {"< AUTH PARAMETERS/API-KEY HERE >"}
                   </code>
-                  <p className="absolute -bottom-8 text-sm w-full mt-3 flex text-center justify-center place-items-baseline text-gray-500">
-                    Set in the playground or when sending a request to the
-                    Superflows API.
+                  <p className="absolute -bottom-3 text-sm w-full mt-3 flex text-center justify-center place-items-baseline text-gray-300">
+                    These are sent in each request to the Superflows API.
                   </p>
                 </div>
               </div>

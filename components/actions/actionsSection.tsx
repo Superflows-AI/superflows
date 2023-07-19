@@ -163,7 +163,7 @@ export default function PageActionsSection(props: {
                 className="inline text-sky-500 hover:underline"
                 onClick={() => setUploadModalOpen(true)}
               >
-                upload an OpenAPI API specification.
+                upload an OpenAPI specification.
               </button>
             </p>
           </div>
