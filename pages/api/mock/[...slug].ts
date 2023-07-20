@@ -198,7 +198,7 @@ export default async function handler(
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   if (properties) {
-    const newChunks = await getMockedProperties(
+    const gptResultAsJson = await getMockedProperties(
       properties,
       matchingAction?.path ?? slug.join("/"),
       method,
@@ -206,14 +206,9 @@ export default async function handler(
       orgInfo
     );
 
-    res.status(responseCode ? Number(responseCode) : 200).json(newChunks);
+    res.status(responseCode ? Number(responseCode) : 200).json(gptResultAsJson);
     return;
   }
-
-  // res
-  //   .status(responseCode ? Number(responseCode) : 200)
-  //   .json({ message: "No properties found" });
-  // return;
 
   // Hierarchy of fallbacks if we don't have full schema etc
   const fallback =
@@ -263,6 +258,7 @@ export async function getMockedProperties(
     primitiveOnly,
     orgInfo
   );
+  console.log("Prompt: ", prompt[1].content);
 
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,

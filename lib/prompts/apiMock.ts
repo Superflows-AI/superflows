@@ -80,7 +80,7 @@ CEO name: Tim Cook
 
 -- END OF EXAMPLES --
 
-Provide a response for the type given below. Include only the fields below. Follow the format from the examples above. 
+Provide a response for the type given below. Include only the fields below. Follow the format exactly from the examples above. Do not output json.
 
 Fields
 ---

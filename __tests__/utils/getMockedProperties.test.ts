@@ -53,81 +53,64 @@ lastName: Smith
     );
     expect(res).toEqual({ firstName: "John", lastName: "Smith" });
   });
-  //   it("more complex test case", async () => {
-  //     const openAiResponse = `
-  // elements: ele
+  // it("nested object", async () => {
+  //   const openAiResponse = `
   // browserSdkVersion: 1
   // dateCreated: 2021-01-01
   // cdn: nice-cdn
   // csp: nice-csp
   // `;
 
-  //     const properties = {
-  //       browserSdk: {
-  //         type: "object",
-  //         properties: {
-  //           choices: {
-  //             type: "array",
-  //             items: {
-  //               type: "array",
-  //               elements: {
-  //                 type: "string",
-  //               },
-  //             },
-  //           },
+  //   const properties = {
+  //     browserSdkVersion: {
+  //       type: "string",
+  //     },
+  //     dateCreated: {
+  //       type: "string",
+  //     },
+  //     dsn: {
+  //       type: "object",
+  //       properties: {
+  //         cdn: {
+  //           type: "string",
+  //         },
+  //         csp: {
+  //           type: "string",
   //         },
   //       },
-  //       browserSdkVersion: {
-  //         type: "string",
-  //       },
-  //       dateCreated: {
-  //         type: "string",
-  //       },
-  //       dsn: {
-  //         type: "object",
-  //         properties: {
-  //           cdn: {
-  //             type: "string",
-  //           },
-  //           csp: {
-  //             type: "string",
-  //           },
-  //         },
-  //       },
-  //     };
+  //     },
+  //   };
 
-  //     const expectedOutput = {
-  //       browserSdk: {
-  //         choices: ["ele"], // might be wrong
-  //       },
-  //       browserSdkVersion: "1",
-  //       dateCreated: "2021-01-01",
-  //       dsn: {
-  //         cdn: "nice-cdn",
-  //         csp: "nice-csp",
-  //       },
-  //     };
+  //   const expectedOutput = {
+  //     browserSdkVersion: "1",
+  //     dateCreated: "2021-01-01",
+  //     dsn: {
+  //       cdn: "nice-cdn",
+  //       csp: "nice-csp",
+  //     },
+  //   };
 
-  //     (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+  //   (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
 
-  //     const res = await getMockedProperties(
-  //       properties,
-  //       "/api/v1/Status/fullname/123",
-  //       "GET",
-  //       [
-  //         {
-  //           path: ["id"],
-  //           data: "The user's id",
-  //         },
-  //       ]
-  //     );
-  //     console.log("HI tHERE", JSON.stringify(res));
-  //     // const actualOput = {
-  //     //   browserSdk: { properties: { choices: { items: { elements: "ele" } } } },
-  //     //   browserSdkVersion: "1",
-  //     //   dateCreated: "2021-01-01",
-  //     //   dsn: { properties: { cdn: "nice-cdn", csp: "nice-csp" } },
-  //     // };
-  //     expect(res).toEqual(expectedOutput);
-  //   });
+  //   const res = await getMockedProperties(
+  //     properties,
+  //     "/api/v1/Status/fullname/123",
+  //     "GET",
+  //     [
+  //       {
+  //         path: ["id"],
+  //         data: "The user's id",
+  //       },
+  //     ]
+  //   );
+  //   // const actualOutput = {
+  //   //   browserSdk: { properties: { choices: { items: { elements: "ele" } } } },
+  //   //   browserSdkVersion: "1",
+  //   //   dateCreated: "2021-01-01",
+  //   //   dsn: { properties: { cdn: "nice-cdn", csp: "nice-csp" } },
+  //   // };
+
+  //   // DOE
+  //   expect(res).toEqual(expectedOutput);
+  // });
 });

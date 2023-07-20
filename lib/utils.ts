@@ -440,7 +440,7 @@ export function addGPTdataToProperties(
   gptOutput.split("\n").forEach((line) => {
     const [key, value] = line.split(":").map((s) => s.trim());
     if (key in properties) {
-      properties[key].data = value;
+      properties[key].data = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
     }
   });
 
