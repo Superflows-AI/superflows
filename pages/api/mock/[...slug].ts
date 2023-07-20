@@ -1,23 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
-import JSON5 from "json5";
 
 const dJSON = require("dirty-json");
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { OpenAPISchema, RequestMethod } from "../../../lib/models";
+import { Chunk, OpenAPISchema, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
-import { Action, Organization } from "../../../lib/types";
+import { Action } from "../../../lib/types";
 import {
-  transformProperties,
-  chunkKeyValuePairs,
-  deepMerge,
-  exponentialRetryWrapper,
-  jsonSplitter,
-  splitPath,
   addGPTdataToProperties,
-  propertiesToChunks,
+  exponentialRetryWrapper,
   jsonReconstruct,
+  jsonSplitter,
+  propertiesToChunks,
+  splitPath,
+  transformProperties,
 } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -193,43 +190,20 @@ export default async function handler(
   const schema =
     (response.content?.["application/json"]?.schema as OpenAPISchema) ?? null;
 
+  const requestParameters = [
+    ...jsonSplitter(pathParameters),
+    ...jsonSplitter(queryParams),
+    ...jsonSplitter(req.body),
+  ];
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   if (properties) {
-    const requestParameters = [
-      ...jsonSplitter(pathParameters),
-      ...jsonSplitter(queryParams),
-      ...jsonSplitter(req.body),
-    ];
-
-    const chunks = jsonSplitter(properties);
-    const transformed = transformProperties(chunks);
-    const primitiveOnly = Object.entries(transformed)
-      .filter(
-        ([key, value]) =>
-          value.type?.toLowerCase() !== "object" &&
-          value.type?.toLowerCase() !== "array"
-      )
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-
-    const prompt = apiMockPrompt(
+    const newChunks = await getMockedProperties(
+      properties,
       matchingAction?.path ?? slug.join("/"),
       method,
       requestParameters,
-      primitiveOnly,
       orgInfo
-    );
-
-    const openAiResponse = await exponentialRetryWrapper(
-      getOpenAIResponse,
-      [prompt, {}, "3"],
-      3
-    );
-
-    const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
-
-    const newChunks = propertiesToChunks(
-      Object.assign({}, transformed, readded)
     );
 
     res
@@ -267,104 +241,33 @@ export default async function handler(
   res.status(responseCode ? Number(responseCode) : 200).json(json);
 }
 
-function propertiesFromSchema(schema: OpenAPISchema) {
-  return schema.properties
-    ? schema.properties
-    : schema.items?.properties
-    ? schema.items?.properties
-    : null;
-}
-
-async function mockWithChunkedResponse(
-  schema: OpenAPISchema,
-  matchingAction: Action | null,
-  queryParams: Partial<{ [key: string]: string | string[] }>,
-  slug: string[],
+export async function getMockedProperties(
+  properties: { [key: string]: any },
+  requestPath: string,
   method: RequestMethod,
-  pathParameters: { [name: string]: string },
-  req: NextApiRequest,
-  orgInfo: any
-) {
-  // This should be a load of key-value pairs so it should not be too hard to split up but possible alternative structures
-  const chunkedProperties = chunkKeyValuePairs(
-    propertiesFromSchema(schema)!,
-    5
-  );
-
-  const allJson = await Promise.all(
-    chunkedProperties.map((chunk) =>
-      mockResponse(
-        subsampleSchemaProperties(schema, chunk),
-        matchingAction,
-        queryParams,
-        slug,
-        method,
-        pathParameters,
-        req.body,
-        orgInfo
-      )
-    )
-  );
-
-  return allJson.reduce((acc, obj) => deepMerge(acc, obj), {});
-}
-
-function subsampleSchemaProperties(
-  schema: OpenAPISchema,
-  propertiesSubset: { [key: string]: any }
-) {
-  let responseTypeSubset: OpenAPISchema = {};
-  let required: string[] | undefined;
-
-  if (schema.properties) {
-    required = schema.required?.filter((item: string) =>
-      Object.keys(propertiesSubset).includes(item)
-    );
-    responseTypeSubset = {
-      ...schema,
-      properties: propertiesSubset,
-      required,
-    };
-  } else if (schema.items?.properties) {
-    if (schema.items.required) {
-      required = schema.items.required.filter((item: string) =>
-        Object.keys(propertiesSubset).includes(item)
-      );
-    }
-
-    responseTypeSubset = {
-      ...schema,
-      items: {
-        ...schema.items,
-        properties: propertiesSubset,
-        required,
-      },
-    };
+  requestParameters: Chunk[],
+  orgInfo?: {
+    name: string;
+    description: string;
   }
-  return responseTypeSubset;
-}
-
-async function mockResponse(
-  responseType: OpenAPISchema | object,
-  matchingAction: Action | null,
-  queryParams: Partial<{ [key: string]: string | string[] }>,
-  slug: string[],
-  method: RequestMethod,
-  pathParameters: { [name: string]: string },
-  requestBodyParameters: { [key: string]: any },
-  orgInfo: Organization
 ) {
+  const chunks = jsonSplitter(properties);
+  const transformed = transformProperties(chunks);
+  const primitiveOnly = Object.entries(transformed)
+    .filter(
+      ([key, value]) =>
+        value.type?.toLowerCase() !== "object" &&
+        value.type?.toLowerCase() !== "array"
+    )
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
   const prompt = apiMockPrompt(
-    matchingAction?.path ?? slug.join("/"),
+    requestPath,
     method,
-    pathParameters,
-    queryParams,
-    requestBodyParameters,
-    responseType,
+    requestParameters,
+    primitiveOnly,
     orgInfo
   );
-
-  console.log("\n\n\n\nMock Prompt:\n\n", prompt[1].content, "\n\n\n\n");
 
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
@@ -372,26 +275,16 @@ async function mockResponse(
     3
   );
 
-  let json;
+  const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
 
-  try {
-    // JSON5 means we don't have to enforce double quotes and no trailing commas
-    json = JSON5.parse(openAiResponse);
-  } catch (e) {
-    // The dirty json parser is opinionated and imperfect but can e.g. parse this:
-    // {
-    //   "a": 1,
-    //   "b": 2,,
-    //   "c": 3
-    // }
-    try {
-      json = dJSON.parse(openAiResponse);
-    } catch (e) {
-      console.log(
-        `Failed to parse response as JSON. The response was: ${openAiResponse}`
-      );
-      throw e;
-    }
-  }
-  return json;
+  const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
+  return jsonReconstruct(newChunks);
+}
+
+function propertiesFromSchema(schema: OpenAPISchema) {
+  return schema.properties
+    ? schema.properties
+    : schema.items?.properties
+    ? schema.items?.properties
+    : null;
 }
