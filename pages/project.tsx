@@ -41,7 +41,7 @@ function Dashboard() {
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Project"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mt-12 bg-gray-850 rounded-md px-6 py-4">
+        <div className="mt-8 bg-gray-850 rounded-md px-6 py-4">
           <h1 className="text-xl text-gray-100">Project Info</h1>
           <p className="text-gray-400 mt-2">
             The Superflows AI uses this to tailor the AI to your project.

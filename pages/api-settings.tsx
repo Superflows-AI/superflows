@@ -60,7 +60,7 @@ function Dashboard() {
       <div className="min-h-screen bg-gray-800">
         <Navbar current={"API"} />
         <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mt-12 bg-gray-850 rounded-md px-6 pt-4 pb-6">
+          <div className="mt-8 bg-gray-850 rounded-md px-6 pt-4 pb-6">
             <h2 className="text-xl text-gray-100">Superflows API key</h2>
             <p className="mt-1 text-gray-400">
               The Superflows API is secured behind a gateway which requires an
