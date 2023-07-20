@@ -23,14 +23,16 @@ import {
   openAiCost,
 } from "../../../lib/utils";
 import {
+  DBChatMessageToGPT,
   getActiveActionTagsAndActions,
-  getConversation,
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import {
   httpRequestFromAction,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
+import { getLanguage } from "../../../lib/language";
+import { Database } from "../../../lib/database.types";
 
 export const config = {
   runtime: "edge",
@@ -43,7 +45,6 @@ const AnswersZod = z.object({
   conversation_id: z.nullable(z.number()),
   user_description: OptionalStringZod,
   user_api_key: OptionalStringZod,
-  language: OptionalStringZod,
   stream: z.optional(z.boolean()),
   test_mode: z.optional(z.boolean()),
 });
@@ -77,7 +78,7 @@ if (
 }
 
 // Bring me my Bow of burning gold:
-const supabase = createClient(
+const supabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
@@ -203,11 +204,19 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the past conversation from the DB
+    let language: string | null = null;
     let previousMessages: ChatGPTMessage[] = [];
     let conversationId: number;
     if (requestData.conversation_id) {
       conversationId = requestData.conversation_id;
-      const conversation = await getConversation(requestData.conversation_id);
+      const convResp = await supabase
+        .from("chat_messages")
+        .select()
+        .eq("conversation_id", requestData.conversation_id)
+        .order("conversation_index", { ascending: true });
+      if (convResp.error) throw new Error(convResp.error.message);
+      const conversation = convResp.data.map(DBChatMessageToGPT);
+
       if (!conversation) {
         return new Response(
           JSON.stringify({
@@ -217,6 +226,9 @@ export default async function handler(req: NextRequest) {
         );
       }
       previousMessages = conversation;
+
+      // If the language is set for any message in the conversation, use that
+      language = convResp.data.find((m) => !!m.language)?.language ?? null;
     } else {
       const convoInsertRes = await supabase
         .from("conversations")
@@ -227,6 +239,10 @@ export default async function handler(req: NextRequest) {
         throw new Error(convoInsertRes.error.message);
       }
       conversationId = convoInsertRes.data.id;
+    }
+    // If the language is not set, try to detect it using detectlanguage.com
+    if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
+      language = await getLanguage(requestData.user_input);
     }
     const newUserMessage: ChatGPTMessage = {
       role: "user",
@@ -243,6 +259,7 @@ export default async function handler(req: NextRequest) {
         conversation_id: conversationId,
         org_id: org.id,
         conversation_index: previousMessages.length - 1,
+        language,
       });
     if (insertedChatMessagesRes.error) {
       throw new Error(insertedChatMessagesRes.error.message);
@@ -272,7 +289,8 @@ export default async function handler(req: NextRequest) {
           activeActions,
           org!,
           conversationId,
-          previousMessages
+          previousMessages,
+          language
         );
         const insertedChatMessagesRes = await supabase
           .from("chat_messages")
@@ -282,6 +300,7 @@ export default async function handler(req: NextRequest) {
               org_id: org!.id,
               conversation_id: conversationId,
               conversation_index: previousMessages.length + idx,
+              language,
             }))
           );
         if (insertedChatMessagesRes.error)
@@ -340,7 +359,8 @@ async function Angela( // Good ol' Angela
   actions: Action[],
   org: Organization,
   conversationId: number,
-  previousMessages: ChatGPTMessage[]
+  previousMessages: ChatGPTMessage[],
+  language: string | null
 ): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -371,7 +391,7 @@ async function Angela( // Good ol' Angela
         actions,
         reqData.user_description,
         org,
-        reqData.language ?? "English"
+        language
       );
       console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");

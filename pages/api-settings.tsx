@@ -1,15 +1,12 @@
 import React, { useEffect } from "react";
 import { Navbar } from "../components/navbar";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
-import SignInComponent from "../components/signIn";
 import Headers from "../components/headers";
 import { useProfile } from "../components/contextManagers/profile";
 import {
   ArrowPathIcon,
-  CheckCircleIcon,
   EyeIcon,
   EyeSlashIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import classNames from "classnames";
 import { generateApiKey } from "../lib/apiKey";
@@ -26,8 +23,7 @@ export default function App() {
 }
 
 function Dashboard() {
-  const session = useSession();
-  const { profile, refreshProfile } = useProfile();
+  const { profile } = useProfile();
   const supabase = useSupabaseClient();
   const [token, setToken] = React.useState<string>("");
   const [showKey, setShowKey] = React.useState<boolean>(false);
@@ -40,9 +36,7 @@ function Dashboard() {
     }
   }, [profile]);
 
-  return !session ? (
-    <SignInComponent view={"sign_in"} />
-  ) : (
+  return (
     <>
       <WarningModal
         title={"Deactivate previous API key?"}

@@ -25,7 +25,6 @@ import { ToConfirm } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
 
 export default function PlaygroundChatbot(props: {
-  language: "English" | "Espanol";
   userApiKey: string;
   submitReady: boolean;
   userDescription: string;
@@ -106,7 +105,6 @@ export default function PlaygroundChatbot(props: {
         body: JSON.stringify({
           user_input: chat[chat.length - 1].content,
           conversation_id: conversationId,
-          language: props.language,
           user_api_key: props.userApiKey,
           user_description: props.userDescription,
           stream: true,
@@ -166,7 +164,6 @@ export default function PlaygroundChatbot(props: {
       setUsageLevel,
       killSwitchClicked.current,
       alreadyRunning.current,
-      props.language,
       props.testMode,
     ]
   );

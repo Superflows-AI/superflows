@@ -1,31 +1,12 @@
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
-import SelectBox from "./selectBox";
 import Toggle from "./toggle";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
-const languageOptions: {
-  id: string;
-  name: "English" | "Espanol";
-  icon: ReactNode;
-}[] = [
-  {
-    id: "EN",
-    name: "English",
-    icon: <img alt="US" className="h-4 mr-2" src={"us.jpg"} />,
-  },
-  {
-    id: "ES",
-    name: "Espanol",
-    icon: <img alt="Spain" className="h-4 mr-2" src={"spain.jpg"} />,
-  },
-];
-
 export default function Playground() {
   const supabase = useSupabaseClient();
-  const [language, setLanguage] = useState<string>("EN");
   const [userDescription, setUserDescription] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
   const [testModeEnabled, setTestModeEnabled] = useState<boolean | null>(null);
@@ -85,10 +66,6 @@ export default function Playground() {
       </div>
       <main className="fixed inset-x-40 md:inset-x-56 lg:inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
-          language={
-            languageOptions.find((item) => item.id === language)?.name ??
-            "English"
-          }
           userApiKey={userApiKey}
           userDescription={userDescription}
           submitReady={
@@ -101,16 +78,7 @@ export default function Playground() {
         />
       </main>
       <div className="absolute z-0 bottom-0 right-0 top-16 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
-        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
-          <div className="mt-6">
-            <SelectBox
-              title="Language"
-              options={languageOptions}
-              theme={"dark"}
-              selected={language}
-              setSelected={setLanguage}
-            />
-          </div>
+        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pt-6 pb-4">
           <div className="relative">
             <div className="peer flex flex-col place-items- gap-y-1 text-sm text-gray-200 font-bold">
               <div className="flex flex-row gap-x-1 place-items-center">
@@ -158,42 +126,3 @@ export default function Playground() {
     </>
   );
 }
-
-// function Card(props: {
-//   active: boolean;
-//   handleStateChange: (action: MockAction) => void;
-//   action: MockAction;
-// }) {
-//   return (
-//     <button
-//       onClick={() => props.handleStateChange(props.action)}
-//       className={classNames(
-//         props.active
-//           ? "border-purple-700 ring-2 ring-purple-700"
-//           : "border-gray-700",
-//         "relative flex cursor-pointer rounded-lg border p-2.5 shadow-sm focus:outline-none text-left bg-gray-900 hover:bg-gray-950"
-//       )}
-//     >
-//       <div className="flex flex-col w-full max-h-32 truncate">
-//         <span
-//           className="font-medium text-gray-200"
-//           style={{ maxWidth: "calc(100% - 2rem)" }}
-//         >
-//           {props.action.name}
-//         </span>
-//         <span className="mt-1 text-sm text-gray-400 truncate whitespace-pre-wrap">
-//           {props.action.description}
-//         </span>
-//       </div>
-//       <span className="flex-shrink-0 rounded-full bg-900">
-//         <CheckCircleIcon
-//           className={classNames(
-//             !props.active ? "invisible" : "",
-//             "h-5 w-5 text-purple-700"
-//           )}
-//           aria-hidden="true"
-//         />
-//       </span>
-//     </button>
-//   );
-// }

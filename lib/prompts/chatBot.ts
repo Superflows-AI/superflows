@@ -10,7 +10,7 @@ export default function getMessages(
     name: string;
     description: string;
   },
-  language: string
+  language: string | null
 ): ChatGPTMessage[] {
   let userDescriptionSection = "";
   if (userDescription) {
@@ -92,20 +92,22 @@ To use the output of a previous command for a command, simply stop outputting co
 
 Aim to complete the task in the smallest number of steps possible. Be very concise in your responses. 
 
-Think and talk to the user in the following language: ${language}. This should ONLY affect the Reasoning, Plan & Tell user outputs. NOT the commands.
+Think and talk to the user in ${
+        language ?? "the same language the user writes in"
+      }. This should ONLY affect the Reasoning & Tell user outputs. NOT the commands. And DO NOT translate the keywords: Reasoning, Plan, Tell user or Commands.
 
-Think step-by-step. Respond in the format below, starting with your reasoning, your plan, optionally anything to tell the user "Tell user", then any "Commands" (you can call multiple, separate with a newline). THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
+Think step-by-step. Respond in the format below. Start with your reasoning, your plan, anything to tell the user, then any commands (you can call multiple, separate with a newline). Each section is optional - only output it if you need to. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 
 Reasoning: reason about how to achieve the user's request. Be concise.
 
-Plan: (optional)
+Plan:
 - short bulleted
 - list that conveys
 - long-term plan
 
 Tell user: tell the user something. If you need to ask the user a question, do so here.
 
-Commands: (optional)
+Commands:
 FUNCTION_1(PARAM_1=VALUE_1, PARAM_2=VALUE_2, ...)
 FUNCTION_2(PARAM_3=VALUE_3 ...)`,
     },

@@ -1,11 +1,10 @@
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCallback, useEffect, useState } from "react";
 import PageActionsSection from "../components/actions/actionsSection";
 import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { Navbar } from "../components/navbar";
-import SignInComponent from "../components/signIn";
 import { Action, ActionTagJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
@@ -20,11 +19,7 @@ export default function App() {
 }
 
 function Dashboard() {
-  const session = useSession();
-
-  return !session ? (
-    <SignInComponent view={"sign_in"} />
-  ) : (
+  return (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Actions"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6">

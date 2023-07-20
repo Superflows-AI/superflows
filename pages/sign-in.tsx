@@ -8,6 +8,7 @@ import SignInComponent from "../components/signIn";
 import { GetServerSidePropsContext } from "next";
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import posthog from "posthog-js";
+import { LoadingPage } from "../components/loadingspinner";
 
 export default function App() {
   return (
@@ -26,14 +27,25 @@ function Dashboard() {
   const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
-    if (profile) {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN") {
+        router.push("/onboarding");
+      } else if (event === "USER_UPDATED") {
+        // Only called if the user updates their password
+        router.push("/");
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (profile && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       posthog.identify(profile.id, {
         name: profile.full_name,
         email: profile.email_address,
       });
     }
-    (async () => {
-      if (isDev && !session) {
+    if (isDev && !session) {
+      (async () => {
         const res = await supabase.auth.signInWithPassword({
           email: "localuser@gmail.com",
           password: "password",
@@ -45,8 +57,8 @@ function Dashboard() {
             options: { data: { full_name: "Local User" } },
           });
         }
-      }
-    })();
+      })();
+    }
   }, [profile, session, refreshProfile, supabase]);
 
   // TODO: Improve the way we generate join links for orgs
@@ -78,6 +90,7 @@ function Dashboard() {
   //   }
   // }, [profile, router]);
 
+  if (isDev) return <LoadingPage />;
   return <SignInComponent view={"sign_up"} />;
 }
 
@@ -89,15 +102,6 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
-  // If we are signed in, redirect to the onboarding page
-  // if (session) {
-  //   return {
-  //     redirect: {
-  //       destination: "/onboarding",
-  //     },
-  //   };
-  // }
 
   return {
     props: {
