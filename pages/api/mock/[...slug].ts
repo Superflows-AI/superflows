@@ -266,6 +266,8 @@ export async function getMockedProperties(
     3
   );
 
+  if (openAiResponse.length === 0) return { message: "Call to openai failed" };
+
   const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
   const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
   return jsonReconstruct(newChunks);
