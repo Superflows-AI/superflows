@@ -14,6 +14,7 @@ import {
 import classNames from "classnames";
 import { generateApiKey } from "../lib/apiKey";
 import WarningModal from "../components/warningModal";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -40,7 +41,7 @@ function Dashboard() {
   }, [profile]);
 
   return !session ? (
-    <SignInComponent />
+    <SignInComponent view={"sign_in"} />
   ) : (
     <>
       <WarningModal
@@ -130,3 +131,5 @@ function Dashboard() {
     </>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;

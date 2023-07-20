@@ -1,88 +1,86 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { useRouter } from "next/router";
 
 function getRedirectUrl(): string {
-  return location.origin + "/";
+  return location.origin + "/onboarding/";
 }
 
-export default function SignInComponent() {
+export default function SignInComponent(props: {
+  view: "sign_in" | "sign_up" | "update_password";
+}) {
   const supabase = useSupabaseClient();
-  const [signIn, setSignIn] = React.useState(true);
-  async function signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: getRedirectUrl() },
+  const router = useRouter();
+  const [redirectUrl, setRedirectUrl] = React.useState<string | null>(null);
+  const [view, setView] = React.useState<
+    "sign_in" | "sign_up" | "update_password"
+  >(props.view);
+
+  useEffect(() => {
+    const url = getRedirectUrl();
+    setRedirectUrl(url);
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setView("update_password");
+      } else if (event === "SIGNED_IN") {
+        router.push("/onboarding");
+      } else if (event === "USER_UPDATED") {
+        router.push("/");
+      }
     });
-    if (error) console.error("Error signing into Google:" + error);
-  }
+  }, []);
 
   return (
     <>
-      <div className="flex min-h-full flex-col justify-center py-28 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-screen bg-gray-850 flex-col justify-center py-20 sm:px-6 lg:px-8">
+        <a
+          href={"https://superflows.ai"}
+          className="absolute top-5 left-5 text-center sm:text-lg lg:text-xl text-white"
+        >
+          Superflows
+        </a>
         <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col place-items-center">
-          <div>
-            <h1 className="text-center sm:text-4xl md:text-5xl xl:text-5xl">
-              Superflows
-            </h1>
-          </div>
-          <h2 className="mt-4 text-center text-2xl tracking-tight text-gray-900">
-            Sign {signIn ? "in to your account" : "up for a Superflows account"}
-          </h2>
-        </div>
-
-        <div className="mt-12 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-16 px-4 shadow border border-1 border-gray-100 sm:rounded-lg sm:px-10">
-            <button
-              className="tracking-tight font-light text-xl bg-white hover:bg-gray-100 text-gray-500 border border-1 border-gray-300 rounded w-full py-4 flex flex-row justify-center place-items-center"
-              onClick={signInWithGoogle}
-            >
-              <img src="/google.svg" className="h-7 w-7 mr-2.5" />
-              Sign {signIn ? "in" : "up"} with Google
-            </button>
-
-            {/* ALLOW email and password sign-in */}
-            {/*import { Auth, ThemeSupa } from "@supabase/auth-ui-react";*/}
-            {/*<Auth*/}
-            {/*  supabaseClient={props.supabaseClient}*/}
-            {/*  theme="default"*/}
-            {/*  providers={["google"]}*/}
-            {/*  appearance={{*/}
-            {/*    theme: ThemeSupa,*/}
-            {/*    variables: {*/}
-            {/*      default: {*/}
-            {/*        colors: {*/}
-            {/*          brand: "#fb923c",*/}
-            {/*          brandAccent: "#f97316",*/}
-            {/*        },*/}
-            {/*      },*/}
-            {/*    },*/}
-            {/*  }}*/}
-            {/*/>*/}
-          </div>
-          <div className="mt-8 text-center">
-            {signIn ? (
-              <>
-                Or, if you&apos;re new around here -{" "}
-                <button
-                  onClick={() => setSignIn(false)}
-                  className="inline text-purple-600 hover:text-purple-500 hover:underline cursor-pointer"
-                >
-                  sign up here
-                </button>
-                .
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  onClick={() => setSignIn(true)}
-                  className="inline text-purple-600 hover:text-purple-500 hover:underline cursor-pointer"
-                >
-                  Sign in here
-                </button>
-                .
-              </>
-            )}
+          <div className="w-full rounded-md px-10 py-6 bg-gray-800 border border-gray-400 shadow shadow-gray-200">
+            <h2 className="mb-1 text-center text-3xl tracking-tight text-gray-50">
+              {view === "sign_up"
+                ? "Get Started"
+                : view === "update_password"
+                ? "Update your password"
+                : "Welcome Back"}
+            </h2>
+            <p className={"w-full text-center text-sm mb-6 text-gray-500"}>
+              {view === "sign_up"
+                ? "Create a free account"
+                : view === "update_password"
+                ? "Enter your new password below"
+                : "Sign in"}
+            </p>
+            <Auth
+              supabaseClient={supabase}
+              providers={["google"]}
+              view={view}
+              redirectTo={redirectUrl ?? ""}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: "#a855f7",
+                      brandAccent: "#9333ea",
+                    },
+                  },
+                },
+                style: {
+                  input: { color: "white", borderColor: "#9ca3af" },
+                  divider: { background: "#9ca3af" },
+                  message: { color: "#e2e8f0", fontSize: "1.125rem" },
+                  label: { color: "#6b7280" },
+                  anchor: { color: "#6b7280" },
+                },
+              }}
+            />
           </div>
         </div>
       </div>

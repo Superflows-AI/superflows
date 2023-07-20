@@ -12,11 +12,14 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
   const { profile, refreshProfile } = useProfile();
 
   return (
-    <div className="min-h-screen flex flex-col max-h-screen justify-center place-items-center w-screen bg-gray-800 gap-y-8">
+    <div className="relative min-h-screen flex flex-col max-h-screen justify-center place-items-center w-screen bg-gray-800 gap-y-8 px-3 md:px-8">
+      <p className="absolute top-5 left-5 text-center sm:text-lg lg:text-xl text-white">
+        Superflows
+      </p>
       <div className="flex flex-col place-items-center">
         <h1 className="text-4xl font-medium text-white">Create Project</h1>
         {/*<p className="text-gray-400 mt-2">*/}
-        {/*  Thank you for creating a Superflows account!*/}
+        {/*Thank you for creating a Superflows account!*/}
         {/*</p>*/}
       </div>
       <div className="bg-gray-850 rounded-md px-6 py-4 max-w-5xl">

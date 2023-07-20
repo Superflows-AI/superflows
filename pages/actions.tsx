@@ -8,6 +8,7 @@ import { Navbar } from "../components/navbar";
 import SignInComponent from "../components/signIn";
 import { Action, ActionTagJoinActions } from "../lib/types";
 import { classNames } from "../lib/utils";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 
 export default function App() {
   return (
@@ -22,7 +23,7 @@ function Dashboard() {
   const session = useSession();
 
   return !session ? (
-    <SignInComponent />
+    <SignInComponent view={"sign_in"} />
   ) : (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Actions"} />
@@ -68,7 +69,7 @@ export function RepliesPage() {
     setActionTagsJoinActions(actionTagRes.data);
   }, [profile, supabase]);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.org_id) return;
     loadActions();
   }, [profile]);
 
@@ -103,3 +104,5 @@ export function RepliesPage() {
     </div>
   );
 }
+
+export const getServerSideProps = pageGetServerSideProps;

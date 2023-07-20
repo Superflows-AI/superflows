@@ -58,16 +58,11 @@ export default function App({
   }, []);
 
   return (
-    <ProfileContextProvider
-      supabase={supabase}
-      // disabled={true}
-      // TODO: Revert this!
-      disabled={!!pageProps.initialSession}
+    <SessionContextProvider
+      supabaseClient={supabase}
+      initialSession={pageProps.initialSession}
     >
-      <SessionContextProvider
-        supabaseClient={supabase}
-        initialSession={pageProps.initialSession}
-      >
+      <ProfileContextProvider supabase={supabase}>
         {POSTHOG_ENABLED ? (
           <PostHogProvider client={posthog}>
             <Component key={router.asPath} {...pageProps} />
@@ -79,7 +74,7 @@ export default function App({
             <SentryUserManager />
           </>
         )}
-      </SessionContextProvider>
-    </ProfileContextProvider>
+      </ProfileContextProvider>
+    </SessionContextProvider>
   );
 }
