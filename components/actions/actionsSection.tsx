@@ -1,4 +1,8 @@
-import { DocumentArrowUpIcon, PlusIcon } from "@heroicons/react/24/outline";
+import {
+  DocumentArrowUpIcon,
+  EllipsisHorizontalIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import {
   SupabaseClient,
   useSupabaseClient,
@@ -81,7 +85,7 @@ export default function PageActionsSection(props: {
           <div className="flex flex-row gap-x-2 place-items-center">
             {profile && (
               <button
-                className="flex flex-row place-items-center gap-x-1 bg-green-900 text-white font-medium text-sm py-1.5 px-2 rounded hover:bg-green-800 focus:ring-2"
+                className="flex flex-row place-items-center gap-x-1 bg-green-900 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded hover:bg-green-800 focus:ring-2"
                 onClick={async () => {
                   const res = await supabase
                     .from("action_tags")
@@ -102,14 +106,16 @@ export default function PageActionsSection(props: {
                   props.setActionTags(newActionTags);
                 }}
               >
-                <PlusIcon className="text-gray-200 w-5 h-5" /> Add tag
+                <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" /> Add
+                tag
               </button>
             )}
             <button
-              className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
+              className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
               onClick={() => setUploadModalOpen(true)}
             >
-              <DocumentArrowUpIcon className="text-gray-200 w-5 h-5" /> Upload
+              <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
+              Upload
             </button>
           </div>
         </div>
@@ -157,7 +163,7 @@ export default function PageActionsSection(props: {
                 className="inline text-sky-500 hover:underline"
                 onClick={() => setUploadModalOpen(true)}
               >
-                upload an OpenAPI API specification.
+                upload an OpenAPI specification.
               </button>
             </p>
           </div>
@@ -325,12 +331,22 @@ function ActionsSection(props: {
                   },
                 },
               ]}
+              buttonClassName={
+                "inline-flex items-center gap-x-1 text-sm font-semibold text-gray-100 hover:bg-gray-950 rounded-md transition"
+              }
+              Icon={
+                <EllipsisHorizontalIcon
+                  className="h-9 w-9 p-1"
+                  aria-hidden="true"
+                />
+              }
               getClassName={(open) => {
                 if (open) return "";
                 return !props.actionTagJoinActions.actions.some((a) => a.active)
                   ? "opacity-60"
                   : "";
               }}
+              popoverClassName={"w-40"}
             />
           </div>
         </div>
@@ -386,7 +402,7 @@ function ActionsSection(props: {
                   if (res.data === null || res.data.length === 0)
                     throw new Error("Expected >0 rows to be updated");
                 }}
-                className="relative flex max-w-full w-full items-center justify-between space-x-3 p-6"
+                className="relative flex max-w-full w-full items-center justify-between gap-x-1 md:gap-x-3 p-3 md:p-6"
               >
                 <div className="flex flex-col select-none max-w-[calc(100%-3.75rem)]">
                   <p
@@ -432,6 +448,16 @@ function ActionsSection(props: {
                       },
                     },
                   ]}
+                  buttonClassName={
+                    "inline-flex items-center gap-x-1 text-sm font-semibold text-gray-100 hover:bg-gray-950 rounded-md transition"
+                  }
+                  Icon={
+                    <EllipsisHorizontalIcon
+                      className="h-8 w-8 p-0.5 md:h-9 md:w-9 md:p-1"
+                      aria-hidden="true"
+                    />
+                  }
+                  popoverClassName={"w-40"}
                 />
               </div>
             </li>

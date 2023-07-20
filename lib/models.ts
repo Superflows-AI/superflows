@@ -68,7 +68,12 @@ export type StreamingStep = StreamingStepInput & { id: number };
 export interface ActionToHttpRequest {
   action: Action;
   parameters: Record<string, unknown>;
-  organization: { api_host: string; id: number };
+  organization: {
+    api_host: string;
+    id: number;
+    auth_scheme: string | null;
+    auth_header: string;
+  };
   userApiKey?: string;
   stream?: (input: StreamingStepInput) => void;
 }

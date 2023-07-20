@@ -38,8 +38,12 @@ export async function httpRequestFromAction({
   // TODO: Only application/json supported for now(!!)
   headers["Content-Type"] = "application/json";
   headers["Accept"] = "application/json";
+  // TODO: Support other auth headers (e.g. setting gtm-accountid as well as Bearer token)
   if (userApiKey) {
-    headers["Authorization"] = `Bearer ${userApiKey}`;
+    const scheme = organization.auth_scheme
+      ? organization.auth_scheme + " "
+      : "";
+    headers[organization.auth_header] = `${scheme}${userApiKey}`;
   }
 
   if (organization.api_host.includes("api/mock"))

@@ -17,10 +17,10 @@ export default function SelectBoxOptionDropdownWithCheckboxes(props: {
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
-        <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-gray-850 px-3 py-1.5 text-sm font-medium text-gray-300 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-900">
+        <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-gray-850 px-3 py-1.5 text-xs md:text-sm font-medium text-gray-300 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-900">
           {props.title}
           <ChevronDownIcon
-            className="-mr-1 h-5 w-5 text-gray-400"
+            className="-mr-1 w-4 h-4 md:w-5 md:h-5 text-gray-400"
             aria-hidden="true"
           />
         </Menu.Button>

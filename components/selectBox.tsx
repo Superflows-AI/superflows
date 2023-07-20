@@ -16,7 +16,12 @@ export default function SelectBox(props: {
   setSelected: (selected: string) => void;
   theme?: "light" | "dark";
   size?: "small" | "base";
+  includeNull?: boolean;
 }) {
+  /**
+   * selected: the id of the selected option
+   * setSelected: a function that takes the id of the selected option
+   */
   // Defaults
   const theme = props.theme ?? "light";
   const size = props.size ?? "small";
@@ -42,6 +47,8 @@ export default function SelectBox(props: {
                 "relative w-full cursor-default rounded-md py-1.5 pl-3 pr-10 text-left shadow-sm ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-purple-600 sm:leading-6",
                 theme === "light"
                   ? "bg-gray-50 text-gray-900 ring-purple-300"
+                  : props.selected === null
+                  ? "bg-gray-700 text-gray-400 ring-gray-300"
                   : "bg-gray-700 text-gray-50 ring-gray-300",
                 size === "small"
                   ? "text-sm py-1.5"
@@ -51,7 +58,8 @@ export default function SelectBox(props: {
               <div className="flex flex-row place-items-center gap-x-1">
                 {props.options.find((o) => props.selected === o.id)?.icon}
                 <span className="block truncate">
-                  {props.options.find((o) => props.selected === o.id)?.name}
+                  {props.options.find((o) => props.selected === o.id)?.name ??
+                    "Select an option"}
                 </span>
               </div>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -71,12 +79,12 @@ export default function SelectBox(props: {
             >
               <Listbox.Options
                 className={classNames(
-                  "absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
+                  "absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-gray-700 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
                   size === "small" ? "text-sm" : size === "base" && "text-base"
                 )}
               >
                 {props.options
-                  .filter((o) => o.id)
+                  .filter((o) => o.id || props.includeNull)
                   .map((option, idx) => (
                     <Listbox.Option
                       key={idx}

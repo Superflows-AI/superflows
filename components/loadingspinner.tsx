@@ -25,3 +25,11 @@ export function LoadingSpinner({ classes }: { classes: string }) {
     </svg>
   );
 }
+
+export function LoadingPage() {
+  return (
+    <div className="bg-gray-800 h-screen w-screen flex justify-center place-items-center">
+      <LoadingSpinner classes={"h-20 w-20 text-gray-300"} />
+    </div>
+  );
+}

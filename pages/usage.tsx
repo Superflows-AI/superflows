@@ -105,7 +105,7 @@ function Dashboard() {
     <div className="bg-gray-800 min-h-screen">
       <Navbar current={"Usage"} />
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800  place-items-center">
-        <div className="mt-12 bg-gray-850 rounded-md px-6 py-4 overflow-visible w-4/5 ">
+        <div className="mt-12 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
           <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
           <p className="text-gray-400 mt-2">
             {`The total cost from the OpenAI API for your organization is $${

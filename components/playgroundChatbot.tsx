@@ -411,7 +411,7 @@ export default function PlaygroundChatbot(props: {
             )}
           >
             {
-              "You need to add actions (Actions tab) and API hostname (API tab) or enable test mode."
+              "You need to add actions (Actions tab) and API hostname (Project tab) or enable test mode."
             }
           </p>
           {loading && (
