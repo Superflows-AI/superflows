@@ -206,16 +206,14 @@ export default async function handler(
       orgInfo
     );
 
-    res
-      .status(responseCode ? Number(responseCode) : 200)
-      .json(jsonReconstruct(newChunks));
+    res.status(responseCode ? Number(responseCode) : 200).json(newChunks);
     return;
   }
 
-  res
-    .status(responseCode ? Number(responseCode) : 200)
-    .json({ message: "No properties found" });
-  return;
+  // res
+  //   .status(responseCode ? Number(responseCode) : 200)
+  //   .json({ message: "No properties found" });
+  // return;
 
   // Hierarchy of fallbacks if we don't have full schema etc
   const fallback =
@@ -227,14 +225,11 @@ export default async function handler(
   console.log(
     "Could not find properties in schema, mocking whole response body in one prompt"
   );
-  const json = await mockResponse(
+  const json = await getMockedProperties(
     fallback,
-    matchingAction,
-    queryParams,
-    slug,
+    matchingAction?.path ?? slug.join("/"),
     method,
-    pathParameters,
-    req.body,
+    requestParameters,
     orgInfo
   );
 
@@ -250,12 +245,12 @@ export async function getMockedProperties(
     name: string;
     description: string;
   }
-) {
+): Promise<Record<string, any>> {
   const chunks = jsonSplitter(properties);
   const transformed = transformProperties(chunks);
   const primitiveOnly = Object.entries(transformed)
     .filter(
-      ([key, value]) =>
+      ([_, value]) =>
         value.type?.toLowerCase() !== "object" &&
         value.type?.toLowerCase() !== "array"
     )
@@ -276,7 +271,6 @@ export async function getMockedProperties(
   );
 
   const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
-
   const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
   return jsonReconstruct(newChunks);
 }

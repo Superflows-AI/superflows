@@ -338,8 +338,8 @@ export function jsonSplitter(
   }
 }
 
-export function jsonReconstruct(chunks: Chunk[]): any {
-  let root: any = {};
+export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
+  let root: Record<string, any> = {};
 
   for (let chunk of chunks) {
     let layer = root;
