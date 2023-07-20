@@ -136,6 +136,7 @@ export interface Database {
           conversation_index: number;
           created_at: string;
           id: number;
+          language: string | null;
           name: string | null;
           org_id: number;
           role: string;
@@ -146,6 +147,7 @@ export interface Database {
           conversation_index: number;
           created_at?: string;
           id?: number;
+          language?: string | null;
           name?: string | null;
           org_id: number;
           role: string;
@@ -156,6 +158,7 @@ export interface Database {
           conversation_index?: number;
           created_at?: string;
           id?: number;
+          language?: string | null;
           name?: string | null;
           org_id?: number;
           role?: string;

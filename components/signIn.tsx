@@ -24,10 +24,6 @@ export default function SignInComponent(props: {
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setView("update_password");
-      } else if (event === "SIGNED_IN") {
-        router.push("/onboarding");
-      } else if (event === "USER_UPDATED") {
-        router.push("/");
       }
     });
   }, []);
