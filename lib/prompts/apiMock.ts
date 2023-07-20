@@ -44,16 +44,16 @@ ${
   responseType
     ? `There are specific fields that I want to be returned in the response.
 
-  Below is an example of how to generate your response from these fields.
+Below is an example of how to generate your response from these fields.
 
 -- EXAMPLE 1 --
 
 Fields
 ---
 
-Name {"type": "string", "description": "The user's name"}
-Age {"type": "integer", "description": "The user's age"}
-City {"type": "string", "description": "The user's city"}
+Name (type: string, description: The user's name)
+Age (type: integer, description: The user's age)
+City (type: string, description: The user's city)
 
 Response
 ---
@@ -64,24 +64,29 @@ City: New York
 
 -- EXAMPLE 2 --
 
-Company name {"type": "number", "description": "The name of the company"}
-Annual earnings {"type": "integer", "description": "The earnings of the company"}
-CEO name {"type": "string", "description": "the name of the ceo"}
+Fields
+---
+
+Company name (type= number, description = The name of the company)
+Annual earnings (type= integer, description = The earnings of the company)
+CEO name (type= string, description = the name of the ceo)
 
 Response
 ---
 
-company name: Apply
+Company name: Apply
 Annual earnings: 1000000
 CEO name: Tim Cook
 
 -- END OF EXAMPLES --
 
+Provide a response for the type given below. Include only the fields below. Follow the format from the examples above. 
+
 Fields
 ---
 
 ${Object.entries(responseType)
-  .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+  .map(([k, v]) => `${k} (type = ${v.type}, description = ${v.description})`)
   .join("\n")}
 
 Response

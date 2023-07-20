@@ -15,6 +15,9 @@ import {
   exponentialRetryWrapper,
   jsonSplitter,
   splitPath,
+  addGPTdataToProperties,
+  propertiesToChunks,
+  jsonReconstruct,
 } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -198,11 +201,22 @@ export default async function handler(
       ...jsonSplitter(queryParams),
       ...jsonSplitter(req.body),
     ];
+
+    const chunks = jsonSplitter(properties);
+    const transformed = transformProperties(chunks);
+    const primitiveOnly = Object.entries(transformed)
+      .filter(
+        ([key, value]) =>
+          value.type?.toLowerCase() !== "object" &&
+          value.type?.toLowerCase() !== "array"
+      )
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
     const prompt = apiMockPrompt(
       matchingAction?.path ?? slug.join("/"),
       method,
       requestParameters,
-      transformProperties(jsonSplitter(properties)),
+      primitiveOnly,
       orgInfo
     );
 
@@ -212,9 +226,15 @@ export default async function handler(
       3
     );
 
-    console.log("\n\n\n\nMock Prompt:\n\n", prompt[1].content, "\n\n\n\n");
-    console.log("\n\n\n\nopen AI ERPSONE:\n\n", openAiResponse, "\n\n\n\n");
-    res.status(responseCode ? Number(responseCode) : 200).json(openAiResponse);
+    const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
+
+    const newChunks = propertiesToChunks(
+      Object.assign({}, transformed, readded)
+    );
+
+    res
+      .status(responseCode ? Number(responseCode) : 200)
+      .json(jsonReconstruct(newChunks));
     return;
   }
 

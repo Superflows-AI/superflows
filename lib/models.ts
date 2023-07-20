@@ -108,5 +108,10 @@ export interface Property {
 }
 
 export interface Properties {
-  [key: string | number]: { type?: string; description?: string };
+  [key: string | number]: {
+    type?: string;
+    description?: string;
+    path: (string | number)[];
+    data?: any;
+  };
 }

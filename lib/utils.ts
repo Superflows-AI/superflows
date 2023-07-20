@@ -386,7 +386,7 @@ export function transformProperties(chunks: Chunk[]): Properties {
     const fieldName = chunk.path[chunk.path.length - 2];
     const chunkType = chunk.path[chunk.path.length - 1];
 
-    const existingProperty = properties[fieldName] ?? {};
+    const existingProperty = properties[fieldName] ?? { path: chunk.path };
 
     if (["type", "description"].includes(chunkType.toString())) {
       properties[fieldName] = { ...existingProperty, [chunkType]: chunk.data };
@@ -399,4 +399,29 @@ export function chunkToString(chunk: Chunk): string {
   // maybe
   if (chunk.path.length === 0) return "";
   return `${chunk.path.join(".")}: ${chunk.data}`;
+}
+
+export function addGPTdataToProperties(
+  properties: Properties,
+  input: string
+): Properties {
+  // Split the string into lines, then iterate over each line
+  //TODO THIS IS ALWAYS  STRING
+  input.split("\n").forEach((line) => {
+    const [key, value] = line.split(":").map((s) => s.trim());
+
+    // If the key exists in the properties object, add the "data" field
+    if (key in properties) {
+      properties[key].data = value;
+    }
+  });
+
+  return properties;
+}
+
+export function propertiesToChunks(properties: Properties): Chunk[] {
+  return Object.values(properties).map((prop) => ({
+    path: prop.path.slice(0, -1), // Not sure about this
+    data: prop.data,
+  }));
 }
