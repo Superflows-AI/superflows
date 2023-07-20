@@ -105,15 +105,17 @@ function Dashboard() {
   return (
     <div className="bg-gray-800 min-h-screen">
       <Navbar current={"Usage"} />
-      <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800  place-items-center">
-        <div className="mt-12 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
+      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
+        <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
           <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
           <p className="text-gray-400 mt-2">
             {`The total cost from the OpenAI API for your organization is $${
               Math.round(sum * 100) / 100
             }`}
           </p>
-          {!loading && <DatesBarGraph data={cost} />}
+          <div className="max-w-5xl mx-auto">
+            {!loading && <DatesBarGraph data={cost} />}
+          </div>
         </div>
       </div>
     </div>
