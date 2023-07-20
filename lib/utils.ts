@@ -415,7 +415,7 @@ export function transformProperties(chunks: Chunk[]): Properties {
 
     const existingProperty = properties[fieldName] ?? { path: chunk.path };
 
-    if (["type", "description"].includes(chunkType.toString())) {
+    if (["type", "description"].includes(chunkType?.toString() ?? "")) {
       properties[fieldName] = { ...existingProperty, [chunkType]: chunk.data };
     }
   }
