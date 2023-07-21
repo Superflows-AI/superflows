@@ -2,20 +2,8 @@ import "jest";
 import { getOpenAIResponse } from "../../lib/queryOpenAI";
 import { getMockedProperties } from "../../pages/api/mock/[...slug]";
 
-// jest.mock("../lib/queries", () => {
-//   return {
-//     __esModule: true,
-//     ...jest.requireActual("../lib/queries"),
-//   };
-// });
 jest.mock("../../lib/queryOpenAI");
 
-// beforeEach(async () => {
-//   return await clearTables();
-// });
-// afterEach(async () => {
-//   return await clearTables();
-// });
 // This resets the number of times called counts between tests
 afterEach(() => {
   jest.clearAllMocks();

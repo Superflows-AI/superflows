@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-const dJSON = require("dirty-json");
+import { OpenAPIV3_1 } from "openapi-types";
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { Chunk, OpenAPISchema, RequestMethod } from "../../../lib/models";
+import { Chunk, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action } from "../../../lib/types";
@@ -12,6 +12,7 @@ import {
   exponentialRetryWrapper,
   jsonReconstruct,
   jsonSplitter,
+  objectNotEmpty,
   propertiesToChunks,
   splitPath,
   transformProperties,
@@ -61,11 +62,12 @@ export function processMultipleMatches(
 
   if (matchWithParams.length === 1) return matchWithParams;
 
-  throw new Error(
+  console.error(
     `Failed to match slug: "${slug}" to single action. Candidate paths: ${matches.map(
       (match) => match.path
-    )}`
+    )}. Returning first match.`
   );
+  return [matches[0]];
 }
 
 export function getMatchingAction(
@@ -134,6 +136,7 @@ export default async function handler(
 ): Promise<void> {
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
+  // Used below to extract path parameters
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
   const method = req.method as RequestMethod;
@@ -181,20 +184,26 @@ export default async function handler(
   // Search for a 2xx response starting at 200
   const response =
     matchingAction && matchingAction.responses
-      ? ((responseCode = Object.entries(matchingAction.responses).find(
-          ([key, value]) => Number(key) >= 200 && Number(key) < 300
-        )?.[0]),
+      ? ((responseCode = Object.keys(matchingAction.responses).find(
+          (key) => Number(key) >= 200 && Number(key) < 300
+        )),
         responses[responseCode ?? ""] ?? {})
       : {};
 
   const schema =
-    (response.content?.["application/json"]?.schema as OpenAPISchema) ?? null;
+    (response.content?.["application/json"]
+      ?.schema as OpenAPIV3_1.SchemaObject) ?? null;
 
-  const requestParameters = [
-    ...jsonSplitter(pathParameters),
-    ...jsonSplitter(queryParams),
-    ...jsonSplitter(req.body),
-  ];
+  const requestParameters =
+    objectNotEmpty(pathParameters) ||
+    objectNotEmpty(queryParams) ||
+    objectNotEmpty(req.body)
+      ? [
+          ...jsonSplitter(pathParameters),
+          ...jsonSplitter(queryParams),
+          ...jsonSplitter(req.body),
+        ]
+      : null;
 
   // TODO: properties can be set as array or object by the schema, currently not
   // dealing with this
@@ -238,7 +247,7 @@ export async function getMockedProperties(
   properties: { [key: string]: any },
   requestPath: string,
   method: RequestMethod,
-  requestParameters: Chunk[],
+  requestParameters: Chunk[] | null,
   orgInfo?: {
     name: string;
     description: string;
@@ -276,10 +285,9 @@ export async function getMockedProperties(
   return jsonReconstruct(newChunks);
 }
 
-function propertiesFromSchema(schema: OpenAPISchema) {
-  return schema.properties
-    ? schema.properties
-    : schema.items?.properties
-    ? schema.items?.properties
-    : null;
+function propertiesFromSchema(schema: OpenAPIV3_1.SchemaObject) {
+  if (schema.properties) return schema.properties;
+  if ("items" in schema && schema.items && "properties" in schema.items)
+    return schema.items.properties;
+  return null;
 }

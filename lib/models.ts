@@ -91,25 +91,9 @@ export interface ParsedOutput {
   completed: boolean;
 }
 
-export interface OpenAPISchema {
-  type?: "array" | "object"; // More are probably valid
-  properties?: { [key: string]: any };
-  required?: string[];
-  items?: {
-    properties?: { [key: string]: any };
-    required?: string[];
-  };
-}
-
 export interface Chunk {
   path: (string | number)[];
   data: any;
-}
-
-export interface Property {
-  fieldName: string;
-  type: string;
-  description: string;
 }
 
 export interface Properties {

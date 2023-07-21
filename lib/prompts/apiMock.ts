@@ -1,11 +1,5 @@
-import {
-  ChatGPTMessage,
-  Chunk,
-  OpenAPISchema,
-  Properties,
-  RequestMethod,
-} from "../models";
-import { chunkToString, objectNotEmpty } from "../utils";
+import { ChatGPTMessage, Chunk, Properties, RequestMethod } from "../models";
+import { chunkToString } from "../utils";
 
 export default function apiMockPrompt(
   path: string,
@@ -44,16 +38,16 @@ ${
   responseType
     ? `There are specific fields that I want to be returned in the response.
 
-Below is an example of how to generate your response from these fields.
+Below are two examples of how to generate your response from these fields.
 
 -- EXAMPLE 1 --
 
 Fields
 ---
 
-Name (type: string, description: The user's name)
-Age (type: integer, description: The user's age)
-City (type: string, description: The user's city)
+Name (string): The user's name
+Age (integer): The user's age
+City (string): where the user lives
 
 Response
 ---
@@ -67,9 +61,9 @@ City: New York
 Fields
 ---
 
-Company name (type= number, description = The name of the company)
-Annual earnings (type= integer, description = The earnings of the company)
-CEO name (type= string, description = the name of the ceo)
+Company name (string): The name of the company
+Annual earnings (integer): The company's annual earnings (USD)
+CEO name (string): The name of the CEO
 
 Response
 ---
@@ -86,7 +80,7 @@ Fields
 ---
 
 ${Object.entries(responseType)
-  .map(([k, v]) => `${k} (type = ${v.type}, description = ${v.description})`)
+  .map(([k, v]) => `${k} (${v.type}): ${v.description ?? "no description"}`)
   .join("\n")}
 
 Response

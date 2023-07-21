@@ -1,6 +1,6 @@
 import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
-import { ChatGPTMessage, Chunk, Properties, Property } from "./models";
+import { ChatGPTMessage, Chunk, Properties } from "./models";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
@@ -260,47 +260,6 @@ export function splitPath(path: string): string[] {
   return path.split("/").filter((ele) => ele !== "");
 }
 
-export function chunkKeyValuePairs(
-  obj: { [key: string]: any },
-  chunkSize: number
-) {
-  const keys = Object.keys(obj);
-  let results = [];
-
-  for (let i = 0; i < keys.length; i += chunkSize) {
-    const chunkKeys = keys.slice(i, i + chunkSize);
-    const chunk = chunkKeys.reduce((result, key) => {
-      // @ts-ignore
-      result[key] = obj[key];
-      return result;
-    }, {});
-
-    results.push(chunk);
-  }
-
-  return results;
-}
-
-export function deepMerge(
-  obj1: { [k: string]: any },
-  obj2: { [k: string]: any }
-): { [k: string]: any } {
-  for (let key in obj2) {
-    if (obj2.hasOwnProperty(key)) {
-      if (
-        obj1[key] &&
-        typeof obj2[key] === "object" &&
-        !Array.isArray(obj2[key])
-      ) {
-        deepMerge(obj1[key], obj2[key]);
-      } else {
-        obj1[key] = obj2[key];
-      }
-    }
-  }
-  return obj1;
-}
-
 export function functionNameToDisplay(name: string): string {
   let result = name
     // Insert a space before all camelCased and PascalCased characters
@@ -319,11 +278,11 @@ export function jsonSplitter(
   json: any,
   path: (string | number)[] = []
 ): Chunk[] {
-  /*
-  Breaks down JSON into individual chunks of data. Each "Chunk" ia defined by its path
+  /**
+  Breaks down JSON into individual chunks of data. Each "Chunk" is defined by its path
   (i.e. where it is positioned in the json). And the data itself.
   E.g. The chunk for the field 'b' in the json {a: {b: 1}} => [{path: ["a", "b"], data: 1}
-  */
+  **/
 
   if (Array.isArray(json)) {
     let chunks: Chunk[] = [];
@@ -345,10 +304,10 @@ export function jsonSplitter(
 }
 
 export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
-  /*
+  /**
   Takes Chunks outputted by jsonSplitter and reconstructs the original JSON.
   So jsonReconstruct(jsonSplitter(anyJson)) === anyJson
-  */
+  **/
 
   let root: Record<string, any> = {};
 
@@ -368,46 +327,24 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
   return root;
 }
 
-// export function groupByPath(chunks: Chunk[]) {
-//   const grouped = Object.values(
-//     chunks.reduce((group: { [key: string]: Chunk[] }, chunk) => {
-//       const path = JSON.stringify(chunk.path.slice(0, -1)); // the last element is the actual key
-//       group[path] = group[path] ?? [];
-//       group[path].push(chunk);
-//       return group;
-//     }, {})
-//   );
-
-//   const formatted = grouped.map((group) => {
-//     return {
-//       fieldName: group[0].path[group[0].path.length - 1],
-//       type: group.find((item) => item.path[item.path.length - 2] === "type"),
-//       description: group.find(
-//         (item) => item.path[item.path.length - 2] === "description"
-//       ),
-//     };
-//   });
-//   return formatted;
-// }
-
 export function transformProperties(chunks: Chunk[]): Properties {
-  /*
-  Once a 'properties' field has been deconstructed into chunks. It looks e.g. like this:
+  /**
+  Once a 'properties' field has been deconstructed into chunks, it looks like this:
 
   { path: [ 'id', 'type' ], data: 'integer' },
   { path: [ 'id', 'description' ], data: 'Customer id' },
   { path: [ 'id', 'format' ], data: 'int64' },
 
-  We need to give this information to gpt3 in the form: 
-  variableName (type: ..., description: ...)
+  We need to give this information to GPT in the form: 
+  variableName (<type>): <description>
 
   So we transform it into a key value pair where the key is the name of the variable and 
   the value is an object containing the type and description (and the path for later use)
 
   e.g. for the above example:
   { id: { type: 'integer', description: 'Customer id', path: [ 'id' ] } }
+  **/
 
-  */
   const properties: Properties = {};
   for (const chunk of chunks) {
     const fieldName = chunk.path[chunk.path.length - 2];
@@ -423,7 +360,6 @@ export function transformProperties(chunks: Chunk[]): Properties {
 }
 
 export function chunkToString(chunk: Chunk): string {
-  // maybe
   if (chunk.path.length === 0) return "";
   return `${chunk.path.join(".")}: ${chunk.data}`;
 }
@@ -432,10 +368,10 @@ export function addGPTdataToProperties(
   properties: Properties,
   gptOutput: string
 ): Properties {
-  /*
+  /**
   Add the data outputted by gpt to the properties object. 
   TODO: currently always treats data as a string.
-  */
+  **/
 
   gptOutput.split("\n").forEach((line) => {
     const [key, value] = line.split(":").map((s) => s.trim());
@@ -448,9 +384,9 @@ export function addGPTdataToProperties(
 }
 
 export function propertiesToChunks(properties: Properties): Chunk[] {
-  /*
+  /**
   The reverse transformation to that done by transformProperties 
-  */
+  **/
   return Object.values(properties).map((prop) => ({
     path: prop.path.slice(0, -1), // Not sure about this
     data: prop.data,
