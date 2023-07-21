@@ -50,7 +50,7 @@ export interface ChatGPTParams {
   user?: string;
 }
 
-export type RequestMethods =
+export type RequestMethod =
   | "GET"
   | "POST"
   | "PUT"
@@ -89,4 +89,18 @@ export interface ParsedOutput {
   commands: FunctionCall[];
   // Only valid when streaming is complete. Don't use while streaming
   completed: boolean;
+}
+
+export interface Chunk {
+  path: (string | number)[];
+  data: any;
+}
+
+export interface Properties {
+  [key: string | number]: {
+    type?: string;
+    description?: string;
+    path: (string | number)[];
+    data?: any;
+  };
 }

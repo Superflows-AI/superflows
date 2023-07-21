@@ -1,14 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
-import JSON5 from "json5";
+import tokenizer from "gpt-tokenizer";
 
-const dJSON = require("dirty-json");
+import { OpenAPIV3_1 } from "openapi-types";
 
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { NextApiRequest, NextApiResponse } from "next";
-import { RequestMethods } from "../../../lib/models";
+import { Chunk, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action } from "../../../lib/types";
-import { exponentialRetryWrapper, splitPath } from "../../../lib/utils";
+import {
+  addGPTdataToProperties,
+  exponentialRetryWrapper,
+  jsonReconstruct,
+  jsonSplitter,
+  objectNotEmpty,
+  propertiesToChunks,
+  splitPath,
+  transformProperties,
+} from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -42,7 +52,6 @@ export function processMultipleMatches(
     return split[split.length - 1] === slug[slug.length - 1];
   });
   if (matchEnd.length === 1) return matchEnd;
-
   const paramMatcher = (slugSegment: string, pathSegment: string) =>
     (pathSegment.includes("{") && pathSegment.includes("}")) ||
     slugSegment === pathSegment;
@@ -55,17 +64,18 @@ export function processMultipleMatches(
 
   if (matchWithParams.length === 1) return matchWithParams;
 
-  throw new Error(
+  console.error(
     `Failed to match slug: "${slug}" to single action. Candidate paths: ${matches.map(
       (match) => match.path
-    )}`
+    )}. Returning first match.`
   );
+  return [matches[0]];
 }
 
 export function getMatchingAction(
   org_id: number,
   actions: Action[],
-  method: RequestMethods,
+  method: RequestMethod,
   slug: string[]
 ): Action | null {
   // Note: Assumes you have already filtered by request method
@@ -113,32 +123,25 @@ export function getPathParameters(
   return variables;
 }
 
+// Bring me my Bow of burning gold:
+const supabase = createClient(
+  // Bring me my arrows of desire:
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  // Bring me my Spear: O clouds unfold!
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  // Bring me my Chariot of fire!
+);
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
+  // Used below to extract path parameters
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
-  const method = req.method as RequestMethods;
-
-  // Authenticate the user
-  const authUserSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-    {
-      global: { headers: { Authorization: req.headers.authorization ?? "" } },
-    }
-  );
-  // Bring me my Bow of burning gold:
-  const supabase = createClient(
-    // Bring me my arrows of desire:
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    // Bring me my Spear: O clouds unfold!
-    process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
-    // Bring me my Chariot of fire!
-  );
+  const method = req.method as RequestMethod;
 
   // Authenticate that the user is allowed to use this API
   let token = (req.headers["Authorization"] as string)
@@ -159,8 +162,13 @@ export default async function handler(
     .eq("org_id", org_id)
     .eq("request_method", method.toLowerCase())
     .eq("active", true);
-
   if (error) throw new Error(error.message);
+
+  const { data: orgData, error: orgError } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("id", org_id);
+  if (orgError) throw orgError;
 
   const matchingAction = org_id
     ? getMatchingAction(org_id, actions, method, slug)
@@ -171,65 +179,123 @@ export default async function handler(
       ? getPathParameters(matchingAction.path, slug)
       : {};
 
+  const orgInfo = orgData.length === 1 ? orgData[0] : undefined;
   const responses = matchingAction?.responses as { [key: string]: any };
 
   let responseCode;
   // Search for a 2xx response starting at 200
   const response =
     matchingAction && matchingAction.responses
-      ? ((responseCode = Object.entries(matchingAction.responses).find(
-          ([key, value]) => Number(key) >= 200 && Number(key) < 300
-        )?.[0]),
+      ? ((responseCode = Object.keys(matchingAction.responses).find(
+          (key) => Number(key) >= 200 && Number(key) < 300
+        )),
         responses[responseCode ?? ""] ?? {})
       : {};
 
-  const expectedResponseType =
-    response.content?.["application/json"]?.schema ?? response;
+  const schema =
+    (response.content?.["application/json"]
+      ?.schema as OpenAPIV3_1.SchemaObject) ?? null;
 
-  const { data: orgData, error: orgError } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", org_id);
-  if (orgError) throw orgError;
+  const requestParameters =
+    objectNotEmpty(pathParameters) ||
+    objectNotEmpty(queryParams) ||
+    objectNotEmpty(req.body)
+      ? [
+          ...jsonSplitter(pathParameters),
+          ...jsonSplitter(queryParams),
+          ...jsonSplitter(req.body),
+        ]
+      : null;
 
-  const orgInfo = orgData.length === 1 ? orgData[0] : undefined;
+  // TODO: properties can be set as array or object by the schema, currently not
+  // dealing with this
+  const properties = schema ? propertiesFromSchema(schema) : null;
 
-  const prompt = apiMockPrompt(
+  if (properties) {
+    const gptResultAsJson = await getMockedProperties(
+      properties,
+      matchingAction?.path ?? slug.join("/"),
+      method,
+      requestParameters,
+      orgInfo
+    );
+
+    res.status(responseCode ? Number(responseCode) : 200).json(gptResultAsJson);
+    return;
+  }
+
+  // Hierarchy of fallbacks if we don't have full schema etc
+  const fallback =
+    response.content?.["application/json"].schema ||
+    response.content?.["application/json"] ||
+    response.content ||
+    response;
+
+  console.log(
+    "Could not find properties in schema, mocking whole response body in one prompt"
+  );
+  const json = await getMockedProperties(
+    fallback,
     matchingAction?.path ?? slug.join("/"),
     method,
-    pathParameters,
-    queryParams,
-    req.body,
-    expectedResponseType,
+    requestParameters,
     orgInfo
   );
-  console.log("Mock Prompt:", prompt);
+
+  res.status(responseCode ? Number(responseCode) : 200).json(json);
+}
+
+export async function getMockedProperties(
+  properties: { [key: string]: any },
+  requestPath: string,
+  method: RequestMethod,
+  requestParameters: Chunk[] | null,
+  orgInfo?: {
+    name: string;
+    description: string;
+  }
+): Promise<Record<string, any>> {
+  const chunks = jsonSplitter(properties);
+  const transformed = transformProperties(chunks);
+  const primitiveOnly = Object.entries(transformed)
+    .filter(
+      ([_, value]) =>
+        value.type?.toLowerCase() !== "object" &&
+        value.type?.toLowerCase() !== "array"
+    )
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+  const prompt = apiMockPrompt(
+    requestPath,
+    method,
+    requestParameters,
+    primitiveOnly,
+    orgInfo
+  );
+  console.log("Prompt: ", prompt[1].content);
+
+  const encoded = tokenizer.encodeChat(
+    prompt as ChatMessage[],
+    "gpt-3.5-turbo"
+  );
+  const nTokens = encoded.length;
+
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
-    [prompt, {}, "3"],
+    [prompt, {}, nTokens < 4000 ? "3" : "3-16k"],
     3
   );
 
-  let json;
-  try {
-    // JSON5 means we don't have to enforce double quotes and no trailing commas
-    json = JSON5.parse(openAiResponse);
-  } catch (e) {
-    // The dirty json parser is opinionated and imperfect but can e.g. parse this:
-    // {
-    //   "a": 1,
-    //   "b": 2,,
-    //   "c": 3
-    // }
-    try {
-      json = dJSON.parse(openAiResponse);
-    } catch (e) {
-      console.log(
-        `Failed to parse response as JSON. The response was: ${openAiResponse}`
-      );
-      throw e;
-    }
-  }
+  if (openAiResponse.length === 0) return { message: "Call to openai failed" };
 
-  res.status(responseCode ? Number(responseCode) : 200).json(json);
+  const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
+  const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
+  return jsonReconstruct(newChunks);
+}
+
+function propertiesFromSchema(schema: OpenAPIV3_1.SchemaObject) {
+  if (schema.properties) return schema.properties;
+  if ("items" in schema && schema.items && "properties" in schema.items)
+    return schema.items.properties;
+  return null;
 }
