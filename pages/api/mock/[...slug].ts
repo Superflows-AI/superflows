@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import tokenizer from "gpt-tokenizer";
 
 import { OpenAPIV3_1 } from "openapi-types";
 
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Chunk, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
@@ -272,9 +274,15 @@ export async function getMockedProperties(
   );
   console.log("Prompt: ", prompt[1].content);
 
+  const encoded = tokenizer.encodeChat(
+    prompt as ChatMessage[],
+    "gpt-3.5-turbo"
+  );
+  const nTokens = encoded.length;
+
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
-    [prompt, {}, "3"],
+    [prompt, {}, nTokens < 4000 ? "3" : "3-16k"],
     3
   );
 
