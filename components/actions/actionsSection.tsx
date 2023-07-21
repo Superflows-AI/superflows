@@ -2,6 +2,7 @@ import {
   DocumentArrowUpIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   SupabaseClient,
@@ -32,6 +33,8 @@ export default function PageActionsSection(props: {
   const [open, setUploadModalOpen] = useState<boolean>(false);
   const [includeInactive, setIncludeInactive] = useState<boolean>(true);
   const [numActiveActions, setNumActiveActions] = useState<number>(0);
+  const [deleteAllActionsModelOpen, setDeleteAllActionsModalOpen] =
+    useState<boolean>(false);
 
   useEffect(() => {
     setNumActiveActions(
@@ -61,6 +64,23 @@ export default function PageActionsSection(props: {
         setOpen={setUploadModalOpen}
         loadActions={props.loadActions}
       />
+      <WarningModal
+        title={`Clear all actions?`}
+        description={
+          "Are you sure you want to delete all actions? Once you delete them you can't get it back. There's no undo button."
+        }
+        action={async () => {
+          props.setActionTags([]);
+          const res = await supabase
+            .from("action_tags")
+            .delete()
+            .match({ org_id: profile?.org_id });
+          if (res.error) throw res.error;
+        }}
+        open={deleteAllActionsModelOpen}
+        setOpen={setDeleteAllActionsModalOpen}
+      />
+
       <div className="mt-5 mx-5 mb-20">
         <div className="flex w-full place-items-end justify-between gap-x-2">
           <div className="flex flex-row gap-x-6 place-items-center">
@@ -106,8 +126,8 @@ export default function PageActionsSection(props: {
                   props.setActionTags(newActionTags);
                 }}
               >
-                <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" /> Add
-                tag
+                <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />
+                Add tag
               </button>
             )}
             <button
@@ -116,6 +136,13 @@ export default function PageActionsSection(props: {
             >
               <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
               Upload
+            </button>
+            <button
+              className="flex flex-row place-items-center gap-x-1 bg-red-800 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-red-700 focus:ring-2"
+              onClick={() => setDeleteAllActionsModalOpen(true)}
+            >
+              <XMarkIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
+              Clear all
             </button>
           </div>
         </div>
