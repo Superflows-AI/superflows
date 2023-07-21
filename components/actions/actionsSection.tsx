@@ -138,8 +138,16 @@ export default function PageActionsSection(props: {
               Upload
             </button>
             <button
-              className="flex flex-row place-items-center gap-x-1 bg-red-800 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-red-700 focus:ring-2"
-              onClick={() => setDeleteAllActionsModalOpen(true)}
+              className={classNames(
+                "flex flex-row place-items-center gap-x-1 bg-red-800 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded  ",
+                props.actionTags.length > 0
+                  ? "hover:bg-red-700 focus:ring-2"
+                  : "cursor-not-allowed opacity-50"
+              )}
+              onClick={() =>
+                props.actionTags.length > 0 &&
+                setDeleteAllActionsModalOpen(true)
+              }
             >
               <XMarkIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
               Clear all
