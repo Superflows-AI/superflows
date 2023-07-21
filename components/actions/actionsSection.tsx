@@ -2,7 +2,7 @@ import {
   DocumentArrowUpIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
-  XMarkIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import {
   SupabaseClient,
@@ -65,7 +65,7 @@ export default function PageActionsSection(props: {
         loadActions={props.loadActions}
       />
       <WarningModal
-        title={`Clear all actions?`}
+        title={`Delete all actions?`}
         description={
           "Are you sure you want to delete all actions? Once you delete them you can't get it back. There's no undo button."
         }
@@ -139,9 +139,9 @@ export default function PageActionsSection(props: {
             </button>
             <button
               className={classNames(
-                "flex flex-row place-items-center gap-x-1 bg-red-800 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded  ",
+                "flex flex-row place-items-center gap-x-1 bg-gray-900 text-red-700 font-medium text-xs md:text-sm py-1.5 px-4 rounded  ",
                 props.actionTags.length > 0
-                  ? "hover:bg-red-700 focus:ring-2"
+                  ? "hover:text-white hover:bg-red-700 focus:ring-2"
                   : "cursor-not-allowed opacity-50"
               )}
               onClick={() =>
@@ -149,8 +149,8 @@ export default function PageActionsSection(props: {
                 setDeleteAllActionsModalOpen(true)
               }
             >
-              <XMarkIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
-              Clear all
+              <TrashIcon className=" w-4 h-4 md:w-5 md:h-5" />
+              Delete all
             </button>
           </div>
         </div>
