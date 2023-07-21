@@ -18,6 +18,14 @@ const uppy = new Uppy({
   },
 });
 
+interface SwaggerParserErrorType {
+  instancePath: string;
+  keyword: string;
+  message: string;
+  params: Record<string, any>;
+  schemaPath: string;
+}
+
 export default function UploadModal(props: {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -25,7 +33,10 @@ export default function UploadModal(props: {
 }) {
   const { profile } = useProfile();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string>("");
+  const [error, setError] = React.useState<{
+    message: string;
+    error: Record<string, any>;
+  } | null>(null);
 
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -51,7 +62,7 @@ export default function UploadModal(props: {
       setIsLoading(false);
       const resJson = await res.json();
       if (res.status !== 200) {
-        setError(resJson.message);
+        setError(resJson);
         uppy.removeFile(file.id);
         return;
       }
@@ -94,7 +105,28 @@ export default function UploadModal(props: {
         )}
       </div>
       <div className="py-3 h-6 text-base text-red-500 flex place-items-center justify-center">
-        {error}
+        {error && `${error.message}. Error messages below.`}
+      </div>
+      <div className="mt-2 flex flex-col max-h-60 bg-red-200 rounded overflow-y-auto">
+        {error &&
+          Object.entries(error.error).map(([key, value]) => {
+            if (isNaN(Number(key))) return;
+            const errorEle = value as SwaggerParserErrorType;
+            return (
+              <div
+                key={key}
+                className="py-3 px-4 border-b border-red-700 bg-red-200 text-base text-red-500 flex flex-col"
+              >
+                <div className="font-mono text-xs text-gray-500 break-words">
+                  {errorEle.instancePath}
+                </div>
+                <div className="text-red-600">{errorEle.message}</div>
+                <div className="text-red-400 text-sm">
+                  {JSON.stringify(errorEle.params, undefined, 2)}
+                </div>
+              </div>
+            );
+          })}
       </div>
     </Modal>
   );
