@@ -38,15 +38,9 @@ export default function UploadModal(props: {
     error: Record<string, any>;
   } | null>(null);
 
-  // This is a hack to prevent the effect from running twice in development
-  // It's because React strict mode runs in development, which renders everything
-  // twice to check for bugs/side effects
-  const didRunEffect = useRef(false);
-
   useEffect(() => {
-    if (!profile || didRunEffect.current) return;
-    didRunEffect.current = true;
-    uppy.on("file-added", async (file) => {
+    if (!profile) return;
+    uppy.once("file-added", async (file) => {
       setIsLoading(true);
       const text = await file.data.text();
       const res = await fetch("/api/swagger-to-actions", {
