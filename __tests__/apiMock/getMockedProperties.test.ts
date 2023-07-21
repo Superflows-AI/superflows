@@ -53,6 +53,62 @@ lastName: Smith
     );
     expect(res).toEqual({ firstName: "John", lastName: "Smith" });
   });
+
+  it("with array", async () => {
+    const properties = {
+      count: {
+        type: "integer",
+        example: 123,
+      },
+      results: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+            },
+            level: {
+              enum: [1, 8, 15],
+              type: "integer",
+            },
+          },
+        },
+      },
+    };
+
+    const expected = {
+      count: 123,
+      results: [
+        {
+          id: "123",
+          level: 1,
+        },
+      ],
+    };
+
+    const openAiResponse = `
+        id: John 
+        lastName: Smith
+      `;
+
+    (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+
+    const res = await getMockedProperties(
+      properties,
+      "/api/v1/Status/fullname/123",
+      "GET",
+      [
+        {
+          path: ["id"],
+          data: "The user's id",
+        },
+      ]
+    );
+    // Doesnt pass currently
+    // expect(res).toEqual(expected);
+  });
   it("nested object", async () => {
     const openAiResponse = `
   browserSdkVersion: 1

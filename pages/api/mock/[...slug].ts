@@ -195,6 +195,9 @@ export default async function handler(
     ...jsonSplitter(queryParams),
     ...jsonSplitter(req.body),
   ];
+
+  // TODO: properties can be set as array or object by the schema, currently not
+  // dealing with this
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   if (properties) {
