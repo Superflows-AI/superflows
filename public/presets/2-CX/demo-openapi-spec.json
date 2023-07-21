@@ -1,0 +1,493 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Product Analytics Demo API",
+    "description": "",
+    "version": "v1"
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/api/v1/segments": {
+      "post": {
+        "operationId": "createSegment",
+        "tags": ["Segments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "segmentType": {
+                    "type": "string",
+                    "enum": ["account", "user"],
+                    "description": "Should the segment be on the account level or the user level?"
+                  }
+                },
+                "required": ["name", "segmentType"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSegments",
+        "description": "List all customer segments",
+        "tags": ["Segments"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "segmentType": {
+                        "type": "string",
+                        "enum": ["account", "user"]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSegment",
+        "tags": ["Segments"],
+        "description": "Delete a segment, either by name or by id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/segments/{id}/filter": {
+      "post": {
+        "operationId": "filterSegment",
+        "tags": ["Segment"],
+        "description": "Filter a segment by a specific filter. Available filters:\ncompanySize (min: number, max: number), creationDate (start: Date, end: Date), industry (industryName: string), creationDate (start: Date, end: Date), contractValue (min: number, max: number), lastPaymentDate (start: Date, end: Date), healthRank (min: number, max: number), conversionLikelihood (min: number, max: number), lastActivityDate (start: Date, end: Date)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/Segment/{id}/column": {
+      "get": {
+        "tags": ["Segment"],
+        "summary": "List all columns available for this segment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": ["string", "number", "date"]
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "params": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": ["string", "number", "date"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Segment"],
+        "operationId": "addColumn",
+        "summary": "Add a column to a segment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["string", "number", "date", "boolean"]
+                  }
+                },
+                "required": ["name", "type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/reports": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "List all customer success reports",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "columns": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": ["string", "number", "date"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Reports"],
+        "summary": "Create a new report for an existing segment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reportName": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "segmentId": {
+                    "type": "string"
+                  },
+                  "metricAggregation": {
+                    "type": "string",
+                    "enum": ["sum", "count", "avg", "min", "max"],
+                    "default": "count"
+                  },
+                  "timeframeDays": {
+                    "type": "number",
+                    "enum": [1, 7, 14, 30, 90, 180, 365],
+                    "default": 14
+                  },
+                  "columns": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["string", "number", "date"]
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": ["reportName", "segmentId", "columns"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/events/search": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Search for events",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["event_property", "or", "date"]
+                        },
+                        "name": {
+                          "type": "string",
+                          "enum": ["event_type"]
+                        },
+                        "eq": {
+                          "type": "string",
+                          "enum": ["note", "campaign_touch", "alert", "task"]
+                        },
+                        "term": {
+                          "type": "string",
+                          "enum": ["date"]
+                        },
+                        "joker": {
+                          "type": "string",
+                          "enum": ["today", "yesterday", "last_30_days"]
+                        },
+                        "gte": {
+                          "type": "integer"
+                        },
+                        "or": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["event_property", "or", "date"]
+                              },
+                              "name": {
+                                "type": "string",
+                                "enum": ["event_type"]
+                              },
+                              "eq": {
+                                "type": "string",
+                                "enum": [
+                                  "note",
+                                  "campaign_touch",
+                                  "alert",
+                                  "task"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "required": ["type"]
+                    }
+                  },
+                  "fields": {
+                    "type": "array",
+                    "enum": ["[]"],
+                    "description": "Always leave this empty i.e. []"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "The maximum number of accounts to return in the result set. If there are more results, you should use Paging to cycle through the result set. The max value for count is 1000"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "description": "Page number (0 is the 1st-page)"
+                  }
+                },
+                "required": ["terms", "fields", "count", "offset"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "integer"
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "Type of event: campaign_touch is a campaigns event, alert is a health change and task is a task-related event - created, updated, completed",
+                            "enum": ["note", "campaign_touch", "alert", "task"]
+                          },
+                          "note_content": {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "type": "string"
+                              },
+                              "user_name": {
+                                "type": "string"
+                              },
+                              "note_id": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
