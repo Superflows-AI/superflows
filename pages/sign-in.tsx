@@ -26,17 +26,51 @@ function Dashboard() {
   const supabase = useSupabaseClient<Database>();
   const isDev = process.env.NODE_ENV === "development";
 
+  // When the page loads, check if they have a join_id query param and store in localStorage
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    // If they have a query param, check and store the join link locally
+    if (Object.keys(router.query).length > 0) {
+      const { join_id } = router.query;
+      if (join_id && typeof join_id === "string") {
+        localStorage.setItem("join_id", join_id);
+        router.push("/sign-in");
+      }
+    }
+  }, [router]);
+
+  // When they sign in, check if they have a join_id in localStorage and join the org if they do
+  useEffect(() => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN") {
-        router.push("/onboarding");
+        await refreshProfile();
+        if (!profile?.org_id) {
+          if (!localStorage.getItem("join_id")) {
+            await router.push("/onboarding");
+            return;
+          } else {
+            const join_id = localStorage.getItem("join_id");
+            await fetch("/api/join-org", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                join_id,
+                user_id: session?.user.id,
+              }),
+            });
+            localStorage.removeItem("join_id");
+          }
+        }
+        await router.push("/");
       } else if (event === "USER_UPDATED") {
         // Only called if the user updates their password
-        router.push("/");
+        await router.push("/");
       }
     });
   }, []);
 
+  // Auto-sign in as local user in dev mode
   useEffect(() => {
     if (profile && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       posthog.identify(profile.id, {
@@ -60,35 +94,6 @@ function Dashboard() {
       })();
     }
   }, [profile, session, refreshProfile, supabase]);
-
-  // TODO: Improve the way we generate join links for orgs
-  // useEffect(() => {
-  //   // If they have a query param, check and store the join link locally
-  //   if (Object.keys(router.query).length > 0) {
-  //     const { org_id } = router.query;
-  //     if (org_id && typeof org_id === "string") {
-  //       localStorage.setItem("org_id", org_id);
-  //       router.push("/");
-  //     }
-  //   }
-  // }, [router]);
-  // useEffect(() => {
-  //   // Once they're signed in, check if they have an org_id in localstorage
-  //   const org_id = localStorage.getItem("org_id");
-  //   console.log("WHAT", profile?.org_id);
-  //   if (org_id !== null) {
-  //     localStorage.removeItem("org_id");
-  //     (async () => {
-  //       const profileUpdateRes = await supabase
-  //         .from("profiles")
-  //         .update({ org_id: Number(org_id) })
-  //         .eq("id", profile?.id);
-  //       if (profileUpdateRes.error) throw profileUpdateRes.error;
-  //       await refreshProfile();
-  //       await router.push("/onboarding");
-  //     })();
-  //   }
-  // }, [profile, router]);
 
   if (isDev) return <LoadingPage />;
   return <SignInComponent view={"sign_up"} />;

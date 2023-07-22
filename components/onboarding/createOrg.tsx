@@ -18,9 +18,6 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
       </p>
       <div className="flex flex-col place-items-center">
         <h1 className="text-4xl font-medium text-white">Create Project</h1>
-        {/*<p className="text-gray-400 mt-2">*/}
-        {/*Thank you for creating a Superflows account!*/}
-        {/*</p>*/}
       </div>
       <div className="bg-gray-850 rounded-md px-6 py-4 max-w-5xl">
         {/*<h1 className="text-xl text-gray-100">Create project</h1>*/}
@@ -83,6 +80,7 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
               }
               setLoading(true);
               props.completeStep();
+              await refreshProfile();
               const res = await fetch("/api/create-org", {
                 method: "POST",
                 headers: {

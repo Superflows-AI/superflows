@@ -19,42 +19,35 @@ const supabase = createClient<Database>(
   process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
 );
 
-const CreateOrgZod = z.object({
-  user_id: z.string(),
-  org_name: z.string(),
-  description: z.string(),
-});
-type CreateOrgType = z.infer<typeof CreateOrgZod>;
+const JoinOrgZod = z.object({ join_id: z.string(), user_id: z.string() });
+type JoinOrgType = z.infer<typeof JoinOrgZod>;
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
-  console.log("create-org.ts: req.method", req.body);
+  console.log("join-org.ts: req.method", req.body);
   if (req.method !== "POST") {
     res.status(405).json({
       error: "Only POST requests allowed",
     });
     return;
   }
-  if (!isValidBody<CreateOrgType>(req.body, CreateOrgZod)) {
+  if (!isValidBody<JoinOrgType>(req.body, JoinOrgZod)) {
     res.status(400).send({ message: "Invalid request body" });
     return;
   }
-  const api_key = generateApiKey();
+
   const { data, error } = await supabase
     .from("organizations")
-    .insert({
-      name: req.body.org_name,
-      api_key,
-      description: req.body.description,
-      join_link_id: uuidv4(),
-    })
-    .select();
+    .select("id")
+    .eq("join_link_id", req.body.join_id);
   if (error) throw new Error(error.message);
   if (data === null) {
     throw new Error("No data returned from organizations insert");
   }
+  console.log("join-org.ts: data", data);
+
   const profileResp = await supabase
     .from("profiles")
     .update({ org_id: data[0].id })
@@ -63,12 +56,6 @@ export default async function handler(
   if (profileResp.error) throw profileResp.error;
   if (profileResp.data === null)
     throw new Error("No data returned from profiles update");
-
-  const isPaidResp = await supabase
-    .from("is_paid")
-    .insert({ org_id: data[0].id })
-    .eq("id", req.body.user_id);
-  if (isPaidResp.error) throw isPaidResp.error;
 
   res.status(200).send({ success: true });
 }

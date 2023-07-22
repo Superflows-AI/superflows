@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { OrgJoinIsPaid } from "../../lib/types";
 import { useSession } from "@supabase/auth-helpers-react";
+import { useRouter } from "next/router";
 
 type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
   organizations: OrgJoinIsPaid | null;
@@ -27,6 +28,7 @@ export function ProfileContextProvider(props: {
     undefined
   );
   const session = useSession();
+  const router = useRouter();
 
   const refreshProfile = useCallback(async (): Promise<void> => {
     if (!session || !props.supabase || !setProfile) return;
@@ -34,7 +36,12 @@ export function ProfileContextProvider(props: {
       .from("profiles")
       .select("*, organizations(*, is_paid(*))")
       .single();
-    if (error) console.error(error.message);
+    if (error) {
+      console.error(error.message);
+      await props.supabase.auth.signOut();
+      await router.push("/sign-in");
+      return;
+    }
     setProfile(data);
   }, [session, setProfile, props.supabase]);
 
