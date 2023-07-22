@@ -237,6 +237,7 @@ export interface Database {
           created_at: string | null;
           description: string;
           id: number;
+          join_link_id: string | null;
           name: string;
         };
         Insert: {
@@ -247,6 +248,7 @@ export interface Database {
           created_at?: string | null;
           description?: string;
           id?: number;
+          join_link_id?: string | null;
           name?: string;
         };
         Update: {
@@ -257,6 +259,7 @@ export interface Database {
           created_at?: string | null;
           description?: string;
           id?: number;
+          join_link_id?: string | null;
           name?: string;
         };
         Relationships: [];

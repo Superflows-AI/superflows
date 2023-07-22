@@ -13,9 +13,13 @@ export const pageGetServerSideProps = async (
   } = await supabase.auth.getSession();
 
   if (!session) {
+    const { query } = ctx;
     return {
       redirect: {
-        destination: "/sign-in",
+        destination:
+          "join_id" in query
+            ? `/sign-in/?join_id=${query.join_id}`
+            : "/sign-in",
         permanent: false,
       },
     };
