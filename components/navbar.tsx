@@ -126,52 +126,41 @@ export function Navbar(props: { current: string }) {
                   popoverClassName={"w-48 z-50"}
                   title={"Support"}
                 />
-                <FlyoutMenu
-                  items={[
-                    {
-                      name: "Manage team",
-                      href: "/team",
-                      Icon: (
-                        <UsersIcon className="h-6 w-6" aria-hidden="true" />
-                      ),
-                    },
-                    {
-                      name: "Sign out",
-                      onClick: () => setWarningOpen(true),
-                      Icon: (
-                        <ArrowRightOnRectangleIcon
-                          className="h-6 w-6"
-                          aria-hidden="true"
-                        />
-                      ),
-                    },
-                  ]}
-                  getClassName={() =>
-                    "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                  }
-                  buttonClassName={
-                    "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
-                  }
-                  Icon={
-                    <Cog6ToothIcon
-                      className="h-5 w-5 md:h-6 md:w-6"
-                      aria-hidden="true"
-                    />
-                  }
-                  popoverClassName={"w-48 z-50"}
-                />
                 {process.env.NODE_ENV !== "development" && (
-                  <button
-                    type="button"
-                    className="rounded-full bg-gray-800 hover:bg-gray-900 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    onClick={() => setWarningOpen(true)}
-                  >
-                    <span className="sr-only">Sign out</span>
-                    <ArrowRightOnRectangleIcon
-                      className="h-5 w-5 md:h-6 md:w-6"
-                      aria-hidden="true"
-                    />
-                  </button>
+                  <FlyoutMenu
+                    items={[
+                      {
+                        name: "Manage team",
+                        href: "/team",
+                        Icon: (
+                          <UsersIcon className="h-6 w-6" aria-hidden="true" />
+                        ),
+                      },
+                      {
+                        name: "Sign out",
+                        onClick: () => setWarningOpen(true),
+                        Icon: (
+                          <ArrowRightOnRectangleIcon
+                            className="h-6 w-6"
+                            aria-hidden="true"
+                          />
+                        ),
+                      },
+                    ]}
+                    getClassName={() =>
+                      "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                    }
+                    buttonClassName={
+                      "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
+                    }
+                    Icon={
+                      <Cog6ToothIcon
+                        className="h-5 w-5 md:h-6 md:w-6"
+                        aria-hidden="true"
+                      />
+                    }
+                    popoverClassName={"w-48 z-50"}
+                  />
                 )}
               </div>
             </div>
