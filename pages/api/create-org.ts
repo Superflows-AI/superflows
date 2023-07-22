@@ -30,7 +30,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
-  console.log("create-org.ts: req.method", req.body);
   if (req.method !== "POST") {
     res.status(405).json({
       error: "Only POST requests allowed",
