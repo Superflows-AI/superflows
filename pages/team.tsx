@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Profile } from "../lib/types";
 import classNames from "classnames";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { LoadingSpinner } from "../components/loadingspinner";
 
 export default function App() {
   return (
@@ -24,8 +25,8 @@ function Dashboard() {
   const [token, setToken] = React.useState<string>("");
   const [copyFeedback, setCopyFeedback] = React.useState<boolean>(false);
   const [teamMembers, setTeamMembers] = React.useState<
-    Pick<Profile, "full_name" | "email_address" | "avatar_url">[]
-  >([]);
+    Pick<Profile, "full_name" | "email_address" | "avatar_url">[] | null
+  >(null);
 
   useEffect(() => {
     if (profile) {
@@ -83,28 +84,34 @@ function Dashboard() {
                   Email
                 </div>
               </div>
-              {teamMembers.map((member, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-6 place-items-center w-full"
-                >
-                  <div className="text-gray-300 bg-gray-600 w-full h-full text-center flex justify-center place-items-center">
-                    {member.avatar_url && (
-                      <img
-                        src={member.avatar_url}
-                        className="rounded-full h-8 border border-gray-300"
-                        alt={"Profile image"}
-                      />
-                    )}
+              {teamMembers ? (
+                teamMembers.map((member, idx) => (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-6 place-items-center w-full"
+                  >
+                    <div className="text-gray-300 bg-gray-600 w-full h-full text-center flex justify-center place-items-center">
+                      {member.avatar_url && (
+                        <img
+                          src={member.avatar_url}
+                          className="rounded-full h-8 border border-gray-300"
+                          alt={"Profile image"}
+                        />
+                      )}
+                    </div>
+                    <div className="col-span-2 text-gray-300 bg-gray-600 w-full text-center py-1.5">
+                      {member.full_name}
+                    </div>
+                    <div className="text-gray-300 col-span-3 bg-gray-600 w-full text-center py-1.5">
+                      {member.email_address}
+                    </div>
                   </div>
-                  <div className="col-span-2 text-gray-300 bg-gray-600 w-full text-center py-1.5">
-                    {member.full_name}
-                  </div>
-                  <div className="text-gray-300 col-span-3 bg-gray-600 w-full text-center py-1.5">
-                    {member.email_address}
-                  </div>
+                ))
+              ) : (
+                <div className=" w-full flex place-items-center justify-center py-3">
+                  <LoadingSpinner classes="h-10 text-gray-500" />
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

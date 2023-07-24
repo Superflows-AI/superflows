@@ -3,8 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { z } from "zod";
 import { isValidBody } from "../../lib/utils";
-import { generateApiKey } from "../../lib/apiKey";
-import { v4 as uuidv4 } from "uuid";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -45,7 +43,6 @@ export default async function handler(
   if (data === null) {
     throw new Error("No data returned from organizations insert");
   }
-  console.log("join-org.ts: data", data);
 
   const profileResp = await supabase
     .from("profiles")
