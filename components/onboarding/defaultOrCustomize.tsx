@@ -39,7 +39,9 @@ export default function DefaultOrCustom(props: {
           </div>
           <div className="flex flex-row w-full justify-center">
             <p className="mt-3 text-center text-little sm:text-base text-gray-400 max-w-md">
-              You can always configure your own API later.
+              You can configure your own API later.
+              <br />
+              <b>Est time: 1 min</b>
             </p>
           </div>
         </div>
