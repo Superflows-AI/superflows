@@ -1,8 +1,5 @@
-import { CheckBadgeIcon } from "@heroicons/react/24/outline";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { Database } from "../../lib/database.types";
+import React from "react";
 
-const features = ["Requires OpenAPI spec", "", ""];
 export default function DefaultOrCustom(props: {
   setUsePreset: (use: boolean) => void;
   nextStep: () => void;
@@ -15,9 +12,6 @@ export default function DefaultOrCustom(props: {
             <h1 className="mb-4 text-center text-gray-50 font-semibold text-2xl sm:text-3xl md:text-4xl">
               Quickstart
             </h1>
-            {/*<p className="text-center text-lg sm:text-xl md:text-xl text-gray-200 mb-10">*/}
-            {/*  Try Superflows now with preset config.*/}
-            {/*</p>*/}
             <p className="mt-1 text-center text-base sm:text-lg text-gray-300 max-w-md">
               Best if you want to try out Superflows quickly or don&apos;t have
               an OpenAPI specification to hand.
@@ -56,15 +50,6 @@ export default function DefaultOrCustom(props: {
               Ideal if you have your OpenAPI specification and want to see how
               it performs on your API.
             </p>
-            {/*{features.map((featureDescription, idx) => (*/}
-            {/*  <div key={idx} className="flex flex-row gap-x-3">*/}
-            {/*    <CheckBadgeIcon*/}
-            {/*      className="shrink-0 h-7 w-7 text-emerald-400"*/}
-            {/*      aria-hidden="true"*/}
-            {/*    />*/}
-            {/*    <p className="text-base">{featureDescription}</p>*/}
-            {/*  </div>*/}
-            {/*))}*/}
           </div>
           <div className="mt-8 flex flex-row justify-center">
             <button
