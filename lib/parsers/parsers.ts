@@ -124,7 +124,7 @@ export function parseFunctionCall(text: string) {
       arrayRegex.test(argMatch[2])
     ) {
       try {
-        value = JSON.parse(argMatch[2].replace(/'/g, '"'));
+        value = JSON.parse(argMatch[2].replaceAll(/'/g, '"'));
       } catch (e) {
         value = argMatch[2];
       }
