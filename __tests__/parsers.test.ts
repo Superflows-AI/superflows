@@ -117,6 +117,22 @@ describe("parseFunctionCall", () => {
     };
     expect(output).toStrictEqual(expectedOutput);
   });
+  it("object passed to function", () => {
+    const str = `create_goal(gtmhub-accountId='64b94e50c1815107739582f9', goal={"title": "Close sales"}, ownerIds=['64b94e50c1815107739582fa'], sessionId='64b94e50c1815107739582fc')`;
+    const output = parseFunctionCall(str);
+    const expectedOutput = {
+      name: "create_goal",
+      args: {
+        "gtmhub-accountId": "64b94e50c1815107739582f9",
+        goal: { title: "Close sales" },
+        ownerIds: ["64b94e50c1815107739582fa"],
+        sessionId: "64b94e50c1815107739582fc",
+      },
+    };
+    console && console.log(output);
+    expect(output).toStrictEqual(expectedOutput);
+  });
+
   it("correctly parses function with floating point argument", () => {
     const str = `set_coordinates(x=3.14, y=0.98)`;
     const output = parseFunctionCall(str);
