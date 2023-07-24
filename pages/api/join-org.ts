@@ -13,8 +13,8 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL === undefined) {
 }
 
 const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SERVICE_LEVEL_KEY_SUPABASE
 );
 
 const JoinOrgZod = z.object({ join_id: z.string(), user_id: z.string() });
