@@ -32,7 +32,7 @@ export default function SignInComponent(props: {
     <>
       <div className="relative flex min-h-screen bg-gray-850 flex-col justify-center py-20 sm:px-6 lg:px-8">
         <a
-          href={location.origin}
+          href={"/"}
           className="absolute top-5 left-5 text-center sm:text-lg lg:text-xl text-white"
         >
           Superflows

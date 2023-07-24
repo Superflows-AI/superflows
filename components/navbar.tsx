@@ -62,7 +62,7 @@ export function Navbar(props: { current: string }) {
               <div className="flex items-center">
                 <a
                   className="text-base sm:text-lg md:text-xl text-white font-medium"
-                  href={location.origin}
+                  href={"/"}
                 >
                   Superflows
                 </a>

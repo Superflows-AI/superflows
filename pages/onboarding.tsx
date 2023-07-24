@@ -41,8 +41,7 @@ function OnboardingContent() {
     }
   }, [profile]);
 
-  // if (profile === undefined || profile?.organizations?.name) {
-  if (profile === undefined) {
+  if (profile === undefined || profile?.organizations?.name) {
     return <LoadingPage />;
   } else if (onboardingStep === 0) {
     return (
