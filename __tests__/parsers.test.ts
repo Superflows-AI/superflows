@@ -129,7 +129,6 @@ describe("parseFunctionCall", () => {
         sessionId: "64b94e50c1815107739582fc",
       },
     };
-    console && console.log(output);
     expect(output).toStrictEqual(expectedOutput);
   });
 

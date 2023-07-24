@@ -1,5 +1,4 @@
 import { FunctionCall, ParsedOutput } from "../models";
-import JSON5 from "json5";
 
 function getSectionText(
   inputStr: string,
@@ -125,7 +124,7 @@ export function parseFunctionCall(text: string) {
       arrayRegex.test(argMatch[2])
     ) {
       try {
-        value = JSON5.parse(argMatch[2]);
+        value = JSON.parse(argMatch[2].replace(/'/g, '"'));
       } catch (e) {
         value = argMatch[2];
       }
