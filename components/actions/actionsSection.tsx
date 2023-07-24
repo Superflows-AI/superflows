@@ -22,6 +22,21 @@ import WarningModal from "../warningModal";
 import EditActionModal from "./editActionModal";
 import EditActionTagModal from "./editActionTagModal";
 import UploadModal from "./uploadModal";
+import { LoadingPage, LoadingSpinner } from "../loadingspinner";
+
+const presets = [
+  {
+    id: 1,
+    name: "CRM",
+    description: "A set of actions for interacting with a CRM.",
+  },
+  {
+    id: 2,
+    name: "Product analytics",
+    description:
+      "A set of actions for interacting with a product analytics tool.",
+  },
+];
 
 export default function PageActionsSection(props: {
   actionTags: ActionTagJoinActions[];
@@ -29,12 +44,13 @@ export default function PageActionsSection(props: {
   loadActions: () => Promise<void>;
 }) {
   const supabase = useSupabaseClient();
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const [open, setUploadModalOpen] = useState<boolean>(false);
   const [includeInactive, setIncludeInactive] = useState<boolean>(true);
   const [numActiveActions, setNumActiveActions] = useState<number>(0);
   const [deleteAllActionsModelOpen, setDeleteAllActionsModalOpen] =
     useState<boolean>(false);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   useEffect(() => {
     setNumActiveActions(
@@ -45,6 +61,12 @@ export default function PageActionsSection(props: {
     );
   }, [props.actionTags]);
 
+  if (isLoading)
+    return (
+      <div className="h-[calc(100vh-4rem)] w-full flex place-items-center justify-center">
+        <LoadingSpinner classes={"h-20 w-20 text-gray-500"} />
+      </div>
+    );
   return (
     <>
       {numActiveActions > 20 && (
@@ -193,14 +215,94 @@ export default function PageActionsSection(props: {
               You have no actions.
             </h2>
             <p>
-              Add them manually or{" "}
               <button
                 className="inline text-sky-500 hover:underline"
                 onClick={() => setUploadModalOpen(true)}
               >
-                upload an OpenAPI specification.
-              </button>
+                Upload an OpenAPI specification
+              </button>{" "}
+              or try out a preset below.
             </p>
+            <div className="mt-8 grid grid-cols-2 gap-x-2">
+              {presets.map((preset) => (
+                <button
+                  key={preset.id}
+                  className="px-12 py-6 bg-gray-900 hover:bg-gray-800 rounded-md border border-gray-600"
+                  onClick={async () => {
+                    // Add spec
+                    if (isLoading || !profile) return;
+                    setIsLoading(true);
+                    const specRes = await fetch(
+                      `/presets/${preset.id}/demo-openapi-spec.json`
+                    );
+                    const spec = await specRes.json();
+                    await fetch("/api/swagger-to-actions", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        org_id: profile.org_id,
+                        swagger: spec,
+                      }),
+                    });
+
+                    // Enable all actions
+                    await supabase
+                      .from("actions")
+                      .update({ active: true })
+                      .eq("org_id", profile.org_id);
+                    await props.loadActions();
+
+                    // If not already set, set the org name & description
+                    let toUpdate: Record<string, any> = {};
+                    if (!profile.organizations?.name) {
+                      toUpdate.name = spec.info.title;
+                    }
+                    if (!profile.organizations?.description) {
+                      toUpdate.description = spec.info.description;
+                    }
+                    if (Object.keys(toUpdate).length > 0) {
+                      await supabase
+                        .from("organizations")
+                        .update(toUpdate)
+                        .eq("id", profile.org_id);
+                    }
+
+                    // Add preset suggestions
+                    const suggRes = await fetch(
+                      `/presets/${preset.id}/suggestions.json`
+                    );
+                    const suggestions = (await suggRes.json()) as string[];
+                    const convRes = await supabase
+                      .from("conversations")
+                      // Match number of new conversations to the number of suggestions in the file
+                      .insert(
+                        suggestions.map((_) => ({
+                          org_id: profile.org_id,
+                        }))
+                      )
+                      .select();
+                    if (convRes.error) throw convRes.error;
+                    const chatRes = await supabase.from("chat_messages").insert(
+                      convRes.data.map((conv, idx) => ({
+                        org_id: conv.org_id,
+                        conversation_id: conv.id,
+                        role: "user",
+                        content: suggestions[idx],
+                        conversation_index: 0,
+                      }))
+                    );
+                    if (chatRes.error) throw chatRes.error;
+                    await refreshProfile();
+
+                    setIsLoading(false);
+                  }}
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

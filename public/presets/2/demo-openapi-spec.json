@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Product Analytics Demo API",
-    "description": "",
+    "title": "Product Analytics Preset",
+    "description": "Product Analytics Preset is a preset for a simple product analytics platform.",
     "version": "v1"
   },
   "components": {
