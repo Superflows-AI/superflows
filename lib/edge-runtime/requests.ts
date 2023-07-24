@@ -81,7 +81,9 @@ export async function httpRequestFromAction({
     const required = schema.required ?? [];
     required.forEach((key: string) => {
       if (!body[key]) {
-        throw new Error(`Required parameter "${key}" is not provided`);
+        throw new Error(
+          `Required parameter "${key}" not provided to action: ${action.name}`
+        );
       }
     });
 

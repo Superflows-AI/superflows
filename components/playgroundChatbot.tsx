@@ -506,9 +506,9 @@ function DevChatItem(props: {
     const toConfirm = JSON.parse(props.chatItem.content) as ToConfirm[];
     content = `The following action${
       toConfirm.length > 1 ? "s require" : " requires"
-    } confirmation:${toConfirm
+    } confirmation:\n\n${toConfirm
       .map((action, idx) => {
-        return `\n\n${convertToRenderable(
+        return `${convertToRenderable(
           action.args,
           functionNameToDisplay(action.name)
         )}`;
