@@ -8,13 +8,13 @@ if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
 }
 
-if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === undefined) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined!");
+if (process.env.NEXT_PUBLIC_SUPABASE_URL === undefined) {
+  throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined!");
 }
 
 const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SERVICE_LEVEL_KEY_SUPABASE
 );
 
 const JoinOrgZod = z.object({ join_id: z.string(), user_id: z.string() });
