@@ -17,8 +17,12 @@ export default function Onboarding() {
 }
 
 function OnboardingContent() {
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const router = useRouter();
+
+  useEffect(() => {
+    refreshProfile();
+  }, []);
 
   useEffect(() => {
     if (profile?.organizations?.name) {

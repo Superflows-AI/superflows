@@ -5,7 +5,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/router";
 
 function getRedirectUrl(): string {
-  return location.origin + "/onboarding/";
+  return location.origin + "/sign-in/";
 }
 
 export default function SignInComponent(props: {
