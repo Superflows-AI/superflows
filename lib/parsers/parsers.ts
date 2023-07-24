@@ -95,8 +95,9 @@ export function getLastSectionName(gptString: string): string {
 
 export function parseFunctionCall(text: string) {
   const functionCallRegex = /(\w+)\(([^)]*)\)/;
-  const argumentRegex = /([\w-]+)=({.*}?|[^,]+)/g;
+  const argumentRegex = /([\w-]+)=({.*?}|'.*?'|".*?"|\[.*?\]|[^,]*)/g;
   const dictionaryRegex = /{(.*?)}/g;
+  const arrayRegex = /\[(.*?)\]/g;
 
   const functionCallMatch = text.match(functionCallRegex);
   if (!functionCallMatch) {
@@ -118,8 +119,15 @@ export function parseFunctionCall(text: string) {
       value = argMatch[2].slice(1, -1);
     } else if (/^(true|false)$/.test(argMatch[2])) {
       value = argMatch[2] === "true";
-    } else if (dictionaryRegex.test(argMatch[2])) {
-      value = argMatch[2];
+    } else if (
+      dictionaryRegex.test(argMatch[2]) ||
+      arrayRegex.test(argMatch[2])
+    ) {
+      try {
+        value = JSON.parse(argMatch[2].replaceAll(/'/g, '"'));
+      } catch (e) {
+        value = argMatch[2];
+      }
     } else {
       value = argMatch[2];
     }
