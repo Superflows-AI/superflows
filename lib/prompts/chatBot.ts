@@ -2,6 +2,130 @@ import { ChatGPTMessage } from "../models";
 import { Action } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
 
+export function formatDescription(
+  description: string | undefined | null
+): string {
+  let des = removeMarkdownLinks(description?.trim() ?? "");
+  if (des.length > 0) {
+    if (!des.endsWith(".")) des += ".";
+    des = ": " + des;
+  }
+  return des;
+}
+
+type typeType =
+  | OpenAPIV3_1.ArraySchemaObjectType
+  | OpenAPIV3_1.NonArraySchemaObjectType
+  | (
+      | OpenAPIV3_1.ArraySchemaObjectType
+      | OpenAPIV3_1.NonArraySchemaObjectType
+    )[];
+export function getType(
+  type: typeType | undefined,
+  enums: any[] | undefined
+): typeType | string {
+  if (enums && enums.length < 10) {
+    // TODO: Deal with long enums better - right now we are just ignoring them
+    //  E.g. in posthog's api, there are location enums with >500 values
+    //  Possible solution: offline, ask GPT to describe/summarize the enum values
+    //  and put it as the description
+    return enums.map((e) => JSON.stringify(e)).join(" | ");
+  }
+  if (!type) return "any";
+  return type;
+}
+
+function removeMarkdownLinks(text: string): string {
+  // This regular expression looks for markdown links and captures the link text separately
+  const regex = /\[([^\]]+)]\([^)]*\)/g;
+  // Replace the Markdown links with just the link text
+  return text.replace(regex, "$1");
+}
+
+export function formatReqBodySchema(
+  schema: OpenAPIV3_1.SchemaObject | undefined,
+  nestingLevel: number = 0,
+  isRequired: boolean = false
+): string {
+  if (!schema) return "";
+  let paramString = "";
+  if (schema.type === "object") {
+    const properties = schema.properties as {
+      [name: string]: OpenAPIV3_1.SchemaObject;
+    };
+
+    const required = schema?.required ?? [];
+
+    Object.entries(properties).forEach(([key, value]) => {
+      // Throw out readonly attributes
+      if (value.readOnly) return;
+
+      paramString +=
+        `\n${"\t".repeat(nestingLevel)}- ${key} ` +
+        formatReqBodySchema(value, nestingLevel + 1, required.includes(key));
+    });
+  } else if (schema.type === "array") {
+    const items = schema.items as OpenAPIV3_1.SchemaObject;
+    if (items.type === "object") {
+      // Arrays of objects require special handling
+      paramString += `(object[])${formatDescription(schema.description)}${
+        isRequired ? " REQUIRED" : ""
+      }${formatReqBodySchema(items, nestingLevel, false)}`;
+    } else {
+      // Arrays of non-objects (incl. other arrays)
+      const des = formatDescription(
+        schema.description || `array of ${items.description}`
+      );
+      paramString += `(${getType(items.type, items.enum)}[])${des}${
+        isRequired ? " REQUIRED" : ""
+      }`;
+    }
+  } else {
+    paramString += `(${getType(schema.type, schema.enum)})${formatDescription(
+      schema.description
+    )}${isRequired ? " REQUIRED" : ""}`;
+  }
+  return paramString;
+}
+
+export function getActionDescriptions(actions: Action[]) {
+  if (actions.length === 0) {
+    console.error("No actions provided to getActionDescriptions!");
+    return "";
+  }
+  let i = 1;
+  let numberedActions = "";
+
+  actions.forEach((action: Action) => {
+    let paramString = "";
+    // For parameters
+    if (action.parameters && Array.isArray(action.parameters)) {
+      action.parameters.forEach((param) => {
+        const p = param as unknown as OpenAPIV3_1.ParameterObject;
+        const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+        paramString += `\n- ${p.name} (${getType(
+          schema.type,
+          schema.enum
+        )})${formatDescription(p.description)}${p.required ? " REQUIRED" : ""}`;
+      });
+    }
+    const reqBody = action.request_body_contents as unknown as {
+      [media: string]: OpenAPIV3_1.MediaTypeObject;
+    };
+    // TODO: Support content-types other than application/json
+    if (reqBody && "application/json" in reqBody) {
+      paramString += formatReqBodySchema(reqBody["application/json"].schema);
+    } else if (Object.keys(action.request_body_contents ?? {}).length > 0) {
+      console.error(`No application/json in request body for ${action.name}.`);
+    }
+    numberedActions += `${i}. ${action.name}${formatDescription(
+      action.description
+    )} ${paramString ? "PARAMETERS:" + paramString : "PARAMETERS: None."}\n`;
+    i++;
+  });
+  return numberedActions;
+}
+
 export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
   actions: Action[],
@@ -17,60 +141,7 @@ export default function getMessages(
     userDescriptionSection = `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`;
   }
 
-  let i = 1;
-  let numberedActions = "";
-
-  actions.forEach((action: Action) => {
-    let paramString = "";
-    // For parameters
-    if (action.parameters && Array.isArray(action.parameters)) {
-      action.parameters.forEach((param) => {
-        const p = param as unknown as OpenAPIV3_1.ParameterObject;
-        const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
-        const enums = schema?.enum ?? null;
-        // TODO: Deal with very long enums better - right now we are just ignoring them
-        paramString += `\n- ${p.name} (${
-          schema && schema.type ? schema.type : ""
-        }${enums && enums.length < 20 ? `: ${enums}` : ""})${
-          p.description
-            ? `: ${p.description}${p.description.endsWith(".") ? "" : "."}`
-            : ""
-        } ${p.required ? "REQUIRED" : ""}`;
-      });
-    }
-    if (
-      action.request_body_contents &&
-      typeof action.request_body_contents === "object" &&
-      // TODO: Content-types other than application/json aren't supported
-      "application/json" in action.request_body_contents
-    ) {
-      const body = action.request_body_contents["application/json"];
-
-      // @ts-ignore
-      const properties = body.schema.properties as {
-        [name: string]: OpenAPIV3_1.SchemaObject;
-      };
-
-      const required =
-        ((body as { schema: any })?.schema?.required as string[]) ?? null;
-
-      Object.entries(properties).forEach(([key, value]) => {
-        // Throw out readonly attributes
-        if (value.readOnly) return;
-        const enums = value.enum;
-        // TODO: Deal with very long enums better - right now we are just ignoring them
-        paramString += `\n- ${key} (${value.type}${
-          enums && enums.length < 20 ? `: ${enums}` : ""
-        })${value.description ? `: ${value.description}` : ""} ${
-          required && required.includes(key) ? "REQUIRED" : ""
-        }`;
-      });
-    }
-    numberedActions += `${i}. ${action.name}: ${action.description}.${
-      paramString ? " PARAMETERS: " + paramString : "PARAMETERS: None."
-    }\n`;
-    i++;
-  });
+  const numberedActions = getActionDescriptions(actions);
   return [
     {
       role: "system",
