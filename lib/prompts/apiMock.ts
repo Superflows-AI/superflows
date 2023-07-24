@@ -34,6 +34,8 @@ ${requestParameters.map((param) => chunkToString(param)).join("\n")}`
           : " with no parameters."
       }
 
+Today's date is ${new Date().toISOString().split("T")[0]}.
+
 ${
   responseType
     ? `There are specific fields that I want to be returned in the response.

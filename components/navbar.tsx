@@ -62,7 +62,7 @@ export function Navbar(props: { current: string }) {
               <div className="flex items-center">
                 <a
                   className="text-base sm:text-lg md:text-xl text-white font-medium"
-                  href={"https://superflows.ai"}
+                  href={location.origin}
                 >
                   Superflows
                 </a>
@@ -91,7 +91,6 @@ export function Navbar(props: { current: string }) {
                   items={[
                     {
                       name: "Read the docs",
-                      // TODO: change to docs
                       href: "https://docs.superflows.ai",
                       Icon: (
                         <DocumentTextIcon
