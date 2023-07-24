@@ -68,11 +68,21 @@ export default function Playground() {
         <PlaygroundChatbot
           userApiKey={userApiKey}
           userDescription={userDescription}
-          submitReady={
-            numActions > 0 &&
-            ((!!profile?.organizations?.api_host &&
-              profile?.organizations?.api_host.length > 0) ||
-              !!testModeEnabled)
+          submitErrorMessage={
+            !numActions ||
+            (!profile?.organizations?.api_host && !testModeEnabled)
+              ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
+                  numActions ||
+                  profile?.organizations?.api_host ||
+                  testModeEnabled
+                    ? ""
+                    : " and"
+                }${
+                  profile?.organizations?.api_host || testModeEnabled
+                    ? "."
+                    : " an API host (Project tab) or enable test mode."
+                }`
+              : ""
           }
           testMode={!!testModeEnabled}
         />
