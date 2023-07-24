@@ -32,7 +32,6 @@ type GetTeamType = z.infer<typeof GetTeamZod>;
 const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest): Promise<Response> {
-  // Handle non-GET requests
   if (req.method !== "GET") {
     return new Response(
       JSON.stringify({
@@ -58,10 +57,13 @@ export default async function handler(req: NextRequest): Promise<Response> {
 
   if (error) {
     console.error(error.message);
-    return new Response(JSON.stringify({ message: "Error fetching data" }), {
-      status: 500,
-      headers,
-    });
+    return new Response(
+      JSON.stringify({ message: "Error fetching data: " + error.message }),
+      {
+        status: 500,
+        headers,
+      }
+    );
   }
   if (data === null) {
     console.error("No data returned from organizations select");
