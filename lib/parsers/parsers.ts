@@ -93,7 +93,7 @@ export function getLastSectionName(gptString: string): string {
   }
 }
 
-export function parseFunctionCall(text: string) {
+export function parseFunctionCall(text: string): FunctionCall {
   const functionCallRegex = /(\w+)\(([^)]*)\)/;
   const argumentRegex = /([\w-]+)=({.*?}|'.*?'|".*?"|\[.*?\]|[^,]*)/g;
   const dictionaryRegex = /{(.*?)}/g;

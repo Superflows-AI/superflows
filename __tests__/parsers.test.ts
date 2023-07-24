@@ -102,6 +102,66 @@ describe("Parse output", () => {
     expect(output.commands).toStrictEqual([]);
     expect(output.completed).toBe(false);
   });
+  it("long output, parsing commands properly", () => {
+    const gptOut =
+      "Reasoning:\n" +
+      "In order to generate a report showing the most active users in the last 30 days from the construction industry, we will need to create a segment for this specific group of users. Then, we will add necessary columns to this segment. After that, we can generate a report from this segment.\n" +
+      "\n" +
+      "Plan:\n" +
+      "- Create a segment for users in the construction industry.\n" +
+      "- Filter this segment to include only users who have been active in the last 30 days.\n" +
+      "- Add necessary columns to this new segment (like user activity and user industry).\n" +
+      "- Finally, create a report for this segment.\n" +
+      "\n" +
+      "Tell user:\n" +
+      "I'm going to create a report that shows the most active users in the last 30 days from the construction industry. I'll start by creating and setting up a new segment for these users.\n" +
+      "\n" +
+      "Commands:\n" +
+      'create_segment(name="Active Construction Users", segmentType="user")\n' +
+      'create_report(reportName="Active Construction Users Report", description="Report showing most active construction industry users in last 30 days.", segmentId="{{id}}", timeframeDays=30, columns=[{"name": "User Activity","type": "number"},{"name": "User Industry","type": "string"}])';
+    const output = parseOutput(gptOut);
+    expect(output).toStrictEqual({
+      reasoning:
+        "In order to generate a report showing the most active users in the last 30 days from the construction industry, we will need to create a segment for this specific group of users. Then, we will add necessary columns to this segment. After that, we can generate a report from this segment.",
+      plan:
+        "- Create a segment for users in the construction industry.\n" +
+        "- Filter this segment to include only users who have been active in the last 30 days.\n" +
+        "- Add necessary columns to this new segment (like user activity and user industry).\n" +
+        "- Finally, create a report for this segment.",
+      tellUser:
+        "I'm going to create a report that shows the most active users in the last 30 days from the construction industry. I'll start by creating and setting up a new segment for these users.",
+      commands: [
+        {
+          name: "create_segment",
+          args: {
+            name: "Active Construction Users",
+            segmentType: "user",
+          },
+        },
+        {
+          name: "create_report",
+          args: {
+            reportName: "Active Construction Users Report",
+            description:
+              "Report showing most active construction industry users in last 30 days.",
+            segmentId: "{{id}}",
+            timeframeDays: 30,
+            columns: [
+              {
+                name: "User Activity",
+                type: "number",
+              },
+              {
+                name: "User Industry",
+                type: "string",
+              },
+            ],
+          },
+        },
+      ],
+      completed: false,
+    });
+  });
 });
 
 describe("parseFunctionCall", () => {
@@ -198,6 +258,31 @@ describe("parseFunctionCall", () => {
       "Invalid function call format: " + str
     );
   });
+  it("array of dictionaries", () => {
+    const commandText =
+      'create_report(reportName="Active Construction Users Report", description="Report showing most active construction industry users in last 30 days.", segmentId="{{id}}", timeframeDays=30, columns=[{"name": "User Activity","type": "number"},{"name": "User Industry","type": "string"}])';
+    const output = parseFunctionCall(commandText);
+    const expectedOutput = {
+      name: "create_report",
+      args: {
+        reportName: "Active Construction Users Report",
+        description:
+          "Report showing most active construction industry users in last 30 days.",
+        segmentId: "{{id}}",
+        timeframeDays: 30,
+        columns: [
+          {
+            name: "User Activity",
+            type: "number",
+          },
+          {
+            name: "User Industry",
+            type: "string",
+          },
+        ],
+      },
+    };
+  });
 });
 
 describe("Parse GPT Streaming output", () => {
@@ -223,7 +308,7 @@ data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.c
     const output = parseGPTStreamedData(exStr);
     expect(output).toStrictEqual(["[DONE]"]);
   });
-  it("Done", () => {
+  it("Done in 2nd chunk", () => {
     const exStr = `data: {"id":"chatcmpl-7W2geutswow6tPpTjHSJZMDcKFoAY","object":"chat.completion.chunk","created":1687871180,"model":"gpt-3.5-turbo-0613","choices":[{"index":0,"delta":{"content":"."},"finish_reason":null}]}
 
 data: [DONE]`;
