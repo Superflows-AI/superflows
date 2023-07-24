@@ -115,13 +115,16 @@ export function Navbar(props: { current: string }) {
                     "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                   }
                   buttonClassName={
-                    "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
+                    "rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
                   }
                   Icon={
-                    <QuestionMarkCircleIcon
-                      className="h-5 w-5 md:h-6 md:w-6"
-                      aria-hidden="true"
-                    />
+                    <div className="flex flex-row place-items-center gap-x-1 text-sm">
+                      <QuestionMarkCircleIcon
+                        className="h-5 w-5 md:h-6 md:w-6"
+                        aria-hidden="true"
+                      />
+                      Help
+                    </div>
                   }
                   popoverClassName={"w-48 z-50"}
                   title={"Support"}
