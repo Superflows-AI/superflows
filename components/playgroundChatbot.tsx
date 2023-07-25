@@ -326,15 +326,22 @@ export default function PlaygroundChatbot(props: {
               let contentString = "";
               const functionJsonResponse = JSON.parse(chatItem.content) as Json;
               if (
-                Array.isArray(functionJsonResponse) &&
-                functionJsonResponse.length === 0
+                // Empty array
+                (Array.isArray(functionJsonResponse) &&
+                  functionJsonResponse.length === 0) ||
+                // Empty object
+                (functionJsonResponse &&
+                  typeof functionJsonResponse === "object" &&
+                  Object.entries(functionJsonResponse).length === 0)
               ) {
-                contentString = "No data returned";
-              } else if (
-                functionJsonResponse &&
-                typeof functionJsonResponse === "object" &&
-                Object.entries(functionJsonResponse).length === 0
-              ) {
+                if (
+                  devChatContents[idx - 1].role === "function" ||
+                  devChatContents[idx + 1].role === "function"
+                ) {
+                  // If the function call is adjacent to other function calls we don't need to tell them it
+                  // was empty - otherwise we get a lot of empty messages clogging up the chat interface
+                  return <div key={idx + chatItem.content} />;
+                }
                 contentString = "No data returned";
               } else if (
                 functionJsonResponse &&
