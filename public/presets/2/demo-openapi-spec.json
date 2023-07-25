@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Product Analytics Preset",
-    "description": "Product Analytics Preset is a preset for a simple product analytics platform.",
+    "title": "Customer Analytics Preset",
+    "description": "A basic customer analytics platform. The user can view the reports you generate on the reports page - tell them this when you create a report.",
     "version": "v1"
   },
   "components": {
@@ -21,7 +21,8 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Segment name"
                   },
                   "segmentType": {
                     "type": "string",
@@ -67,10 +68,12 @@
                     "type": "object",
                     "properties": {
                       "id": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Segment id"
                       },
                       "name": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Segment name"
                       },
                       "segmentType": {
                         "type": "string",
@@ -97,11 +100,13 @@
                 "properties": {
                   "id": {
                     "type": "string",
-                    "nullable": true
+                    "nullable": true,
+                    "description": "ID of the segment to delete"
                   },
                   "name": {
                     "type": "string",
-                    "nullable": true
+                    "nullable": true,
+                    "description": "Name of the segment to delete"
                   }
                 }
               }
@@ -126,7 +131,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Segment id"
             }
           }
         ],
@@ -147,7 +153,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Segment id"
             }
           }
         ],
@@ -158,30 +165,36 @@
               "application/json": {
                 "schema": {
                   "type": "array",
+                  "description": "Array of columns available for this segment",
                   "items": {
                     "type": "object",
                     "properties": {
                       "name": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Column name"
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["string", "number", "date"]
+                        "enum": ["string", "number", "date"],
+                        "description": "Column type"
                       },
                       "description": {
                         "type": "string"
                       },
                       "params": {
                         "type": "array",
+                        "description": "Array of parameters for this column",
                         "items": {
                           "type": "object",
                           "properties": {
                             "name": {
-                              "type": "string"
+                              "type": "string",
+                              "description": "Parameter name"
                             },
                             "type": {
                               "type": "string",
-                              "enum": ["string", "number", "date"]
+                              "enum": ["string", "number", "date"],
+                              "description": "Parameter type"
                             }
                           }
                         }
@@ -197,14 +210,15 @@
       "post": {
         "tags": ["Segment"],
         "operationId": "addColumn",
-        "summary": "Add a column to a segment",
+        "summary": "Add a column to a segment. This allows you to compare the values of this column across a segment in a report.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Segment id"
             }
           }
         ],
@@ -216,11 +230,13 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Column name"
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["string", "number", "date", "boolean"]
+                    "enum": ["string", "number", "date", "boolean"],
+                    "description": "Column type"
                   }
                 },
                 "required": ["name", "type"]
@@ -247,6 +263,7 @@
               "application/json": {
                 "schema": {
                   "type": "array",
+                  "description": "Array of report objects",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -254,7 +271,8 @@
                         "type": "string"
                       },
                       "name": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Report name"
                       },
                       "description": {
                         "type": "string"
@@ -300,29 +318,35 @@
                     "type": "string"
                   },
                   "segmentId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "ID of the segment to create the report for"
                   },
                   "metricAggregation": {
                     "type": "string",
                     "enum": ["sum", "count", "avg", "min", "max"],
-                    "default": "count"
+                    "default": "count",
+                    "description": "Aggregation function for the metric"
                   },
                   "timeframeDays": {
                     "type": "number",
                     "enum": [1, 7, 14, 30, 90, 180, 365],
-                    "default": 14
+                    "default": 14,
+                    "description": "Timeframe for the report in days"
                   },
                   "columns": {
                     "type": "array",
+                    "description": "Columns to include in the report",
                     "items": {
                       "type": "object",
                       "properties": {
                         "name": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Column name"
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["string", "number", "date"]
+                          "enum": ["string", "number", "date"],
+                          "description": "Column type"
                         }
                       }
                     }
