@@ -4,6 +4,7 @@ import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
 import Toggle from "./toggle";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { classNames } from "../lib/utils";
 
 export default function Playground() {
   const supabase = useSupabaseClient();
@@ -112,7 +113,12 @@ export default function Playground() {
             </div>
           </div>
         </div>
-        <div className="fixed bottom-0 right-0 w-40 md:w-56 lg:w-72 bg-gray-900 py-4 px-4">
+        <div
+          className={classNames(
+            "fixed bottom-0 right-0 w-40 md:w-56 lg:w-72 bg-gray-900 py-4 px-4 transition-opacity",
+            testModeEnabled ? "opacity-0" : "opacity-100"
+          )}
+        >
           <h2 className="text-gray-100 text-little font-semibold">
             Your API Key
           </h2>

@@ -11,7 +11,7 @@ export const PRESETS = [
   },
   {
     id: 2,
-    name: "Customer analytics",
+    name: "Customer analytics platform",
     description:
       "A set of actions for interacting with a customer analytics tool.",
   },

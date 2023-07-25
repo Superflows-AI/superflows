@@ -102,8 +102,11 @@ export default function ChoosePreset(props: { onBackClick: () => void }) {
               const userDescRes = await fetch(
                 `${presetLoc}/user_description.json`
               );
-              const userDesc = (await userDescRes.json()) as string;
-              localStorage.setItem("userDescription", userDesc);
+              // If the file doesn't exist, don't set the user description
+              if (userDescRes.status === 200) {
+                const userDesc = (await userDescRes.json()) as string;
+                localStorage.setItem("userDescription", userDesc);
+              }
 
               // Set test mode to true
               localStorage.setItem("testMode", "true");
