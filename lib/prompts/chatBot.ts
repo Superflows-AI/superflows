@@ -5,6 +5,7 @@ import { OpenAPIV3_1 } from "openapi-types";
 export function formatDescription(
   description: string | undefined | null
 ): string {
+  /** Formats a parameter description for GPT. **/
   let des = removeMarkdownLinks(description?.trim() ?? "");
   if (des.length > 0) {
     if (!des.endsWith(".")) des += ".";
@@ -47,13 +48,14 @@ export function formatReqBodySchema(
   nestingLevel: number = 0,
   isRequired: boolean = false
 ): string {
+  /** Recursive function to parse an OpenAPI Schema object into a Superflows GPT-able string.
+   * Only works for requestBody right now since readOnly parameters are ignored. **/
   if (!schema) return "";
   let paramString = "";
   if (schema.type === "object") {
     const properties = schema.properties as {
       [name: string]: OpenAPIV3_1.SchemaObject;
     };
-
     const required = schema?.required ?? [];
 
     Object.entries(properties).forEach(([key, value]) => {
@@ -88,7 +90,9 @@ export function formatReqBodySchema(
   return paramString;
 }
 
-export function getActionDescriptions(actions: Action[]) {
+export function getActionDescriptions(actions: Action[]): string {
+  /** Gets the GPT-readable numbered list of actions, their parameters
+   *  and their descriptions. **/
   if (actions.length === 0) {
     console.error("No actions provided to getActionDescriptions!");
     return "";
