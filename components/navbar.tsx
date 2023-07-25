@@ -15,6 +15,8 @@ import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
 import { useProfile } from "./contextManagers/profile";
 import { useRouter } from "next/router";
+import { SuperflowsButton } from "superflows-chatui";
+console.log("HI", SuperflowsButton);
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -60,6 +62,7 @@ export function Navbar(props: { current: string }) {
             {/*</button>*/}
             <div className="flex h-16 items-center justify-between px-4 sm:px-0">
               <div className="flex items-center">
+                <SuperflowsButton superflowsApiKey="" />
                 <a
                   className="text-base sm:text-lg md:text-xl text-white font-medium"
                   href={"https://superflows.ai"}

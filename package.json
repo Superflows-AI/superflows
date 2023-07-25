@@ -44,6 +44,7 @@
     "recharts": "^2.7.2",
     "sse.js": "^0.6.1",
     "supabase": "^1.68.6",
+    "superflows-chatui": "file:../chat-ui/superflows-chatui-1.0.0.tgz",
     "swagger-typescript-api": "^12.0.4",
     "uuid": "^9.0.0",
     "zod": "^3.21.4"
