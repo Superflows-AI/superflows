@@ -146,6 +146,7 @@
     "/api/v1/Segment/{id}/column": {
       "get": {
         "tags": ["Segment"],
+        "operationId": "listColumns",
         "summary": "List all columns available for this segment",
         "parameters": [
           {
@@ -254,6 +255,7 @@
     "/api/v1/reports": {
       "get": {
         "tags": ["Reports"],
+        "operationId": "listReports",
         "summary": "List all customer success reports",
         "parameters": [],
         "responses": {
