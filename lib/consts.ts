@@ -11,8 +11,8 @@ export const PRESETS = [
   },
   {
     id: 2,
-    name: "Product analytics",
+    name: "Customer analytics",
     description:
-      "A set of actions for interacting with a product analytics tool.",
+      "A set of actions for interacting with a customer analytics tool.",
   },
 ];
