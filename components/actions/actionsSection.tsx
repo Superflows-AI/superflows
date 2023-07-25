@@ -206,7 +206,7 @@ export default function PageActionsSection(props: {
             <h2 className={"text-2xl text-gray-300 font-medium mb-8"}>
               You have no actions
             </h2>
-            <div className="grid grid-cols-2 gap-x-4">
+            <div className="grid grid-cols-2 gap-x-4 px-3 md:px-6">
               <div className="border border-gray-500 rounded-md py-4 px-8">
                 <h3 className="text-xl text-gray-300 mb-4">
                   Configure your API
@@ -220,7 +220,7 @@ export default function PageActionsSection(props: {
                   </button>
                 </p>
               </div>
-              <div className="border border-gray-500 rounded-md py-4 px-8">
+              <div className="border border-gray-500 rounded-md py-4 px-2 sm:px-4 md:px-8">
                 <h3 className="text-xl text-gray-300 mb-4">
                   Use a preset configuration
                 </h3>
@@ -228,7 +228,7 @@ export default function PageActionsSection(props: {
                   {PRESETS.map((preset) => (
                     <button
                       key={preset.id}
-                      className="px-10 py-4 bg-gray-900 hover:bg-gray-800 text-gray-400 rounded-md border border-gray-600"
+                      className="px-4 md:px-10 py-4 bg-gray-900 hover:bg-gray-800 text-base md:text-lg text-gray-400 rounded-md border border-gray-600"
                       onClick={async () => {
                         // Add spec
                         if (isLoading || !profile) return;
@@ -274,8 +274,11 @@ export default function PageActionsSection(props: {
                         const userDescRes = await fetch(
                           `/presets/${preset.id}/user_description.json`
                         );
-                        const userDesc = (await userDescRes.json()) as string;
-                        localStorage.setItem("userDescription", userDesc);
+                        // If the file doesn't exist, don't set the user description
+                        if (userDescRes.status === 200) {
+                          const userDesc = (await userDescRes.json()) as string;
+                          localStorage.setItem("userDescription", userDesc);
+                        }
 
                         // Set test mode to true
                         localStorage.setItem("testMode", "true");
