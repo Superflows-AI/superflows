@@ -7,6 +7,8 @@ import Uppy from "@uppy/core";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import { LoadingSpinner } from "../loadingspinner";
+import { parse, stringify } from "yaml";
+import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 const uppy = new Uppy({
   autoProceed: true,
@@ -14,7 +16,7 @@ const uppy = new Uppy({
   restrictions: {
     maxNumberOfFiles: 1,
     maxFileSize: 100_000_000,
-    allowedFileTypes: ["application/json"],
+    allowedFileTypes: ["application/json", ".yaml", ".txt"],
   },
 });
 
@@ -44,6 +46,21 @@ export default function UploadModal(props: {
       if (isLoading) return;
       setIsLoading(true);
       const text = await file.data.text();
+      let json: Record<string, any>;
+      try {
+        // First, try JSON
+        json = JSON.parse(text);
+      } catch (e) {
+        try {
+          // Try yaml
+          json = parse(text);
+        } catch (e) {
+          setError({ message: "Invalid JSON or YAML uploaded", error: {} });
+          setIsLoading(false);
+          uppy.removeFile(file.id);
+          return;
+        }
+      }
       const res = await fetch("/api/swagger-to-actions", {
         method: "POST",
         headers: {
@@ -51,7 +68,7 @@ export default function UploadModal(props: {
         },
         body: JSON.stringify({
           org_id: profile.org_id,
-          swagger: JSON.parse(text),
+          swagger: json,
         }),
       });
       setIsLoading(false);
@@ -71,13 +88,17 @@ export default function UploadModal(props: {
       <div className="mt-3 text-center sm:mt-5">
         <Dialog.Title
           as="h3"
-          className="text-2xl font-semibold leading-6 text-gray-100"
+          className="text-2xl font-semibold leading-6 text-gray-100 flex flex-row gap-x-2 justify-center place-items-center"
         >
           Upload OpenAPI spec
         </Dialog.Title>
         <div className="mt-4">
           <p className="text-sm text-gray-400">
-            Upload your OpenAPI spec to generate actions.
+            Upload your OpenAPI spec as{" "}
+            <code className="font-mono rounded bg-gray-850 p-0.5">json</code>,{" "}
+            <code className="font-mono rounded bg-gray-850 p-0.5">yaml</code> or{" "}
+            <code className="font-mono rounded bg-gray-850 p-0.5">txt</code> to
+            generate actions.
           </p>
         </div>
       </div>
@@ -100,7 +121,26 @@ export default function UploadModal(props: {
         )}
       </div>
       <div className="py-3 h-6 text-base text-red-500 flex place-items-center justify-center">
-        {error && `${error.message}. Error messages below.`}
+        {error ? (
+          `${error.message}.${
+            error.error && Object.keys(error.error).length > 0
+              ? " Error messages below."
+              : ""
+          }`
+        ) : (
+          <div className="text-gray-300 text-little">
+            Don&apos;t have an OpenAPI spec?{" "}
+            <a
+              className="no-underline hover:underline text-[#05aadc] cursor-pointer"
+              href="https://swagger.io/tools/open-source/getting-started/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Find out more here
+            </a>
+            .
+          </div>
+        )}
       </div>
       <div className="mt-2 flex flex-col max-h-60 bg-red-200 rounded overflow-y-auto">
         {error &&

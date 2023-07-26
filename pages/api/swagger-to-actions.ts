@@ -58,7 +58,6 @@ export default async function handler(
     // @ts-ignore
     dereferencedSwagger = await SwaggerParser.validate(swagger, {
       dereference: { circular: "ignore" },
-      // validate: { schema: false },
     });
   } catch (err) {
     console.error("Error validating swagger", err);
