@@ -16,7 +16,7 @@ import WarningModal from "./warningModal";
 import { useProfile } from "./contextManagers/profile";
 import { useRouter } from "next/router";
 import { SuperflowsButton } from "superflows-chatui";
-console.log("HI", SuperflowsButton);
+import { Database } from "../lib/database.types";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -29,7 +29,7 @@ const navigation = [
 
 export function Navbar(props: { current: string }) {
   const [warningOpen, setWarningOpen] = useState<boolean>(false);
-  const supabase = useSupabaseClient();
+  const supabase = useSupabaseClient<Database>();
   const { refreshProfile } = useProfile();
   const router = useRouter();
 
@@ -54,15 +54,8 @@ export function Navbar(props: { current: string }) {
       <div className="fixed top-0 inset-x-0 border-b border-gray-700 z-10">
         <Disclosure as="nav" className="bg-gray-800">
           <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            {/*<button*/}
-            {/*  className={"fixed top-2 left-2 hover:bg-gray-700 rounded-md p-2"}*/}
-            {/*  onClick={() => setOpen(true)}*/}
-            {/*>*/}
-            {/*  <SparklesIcon className="h-6 w-6 text-white" aria-hidden="true" />*/}
-            {/*</button>*/}
-            <div className="flex h-16 items-center justify-between px-4 sm:px-0">
+            <div className="flex h-16 items-center justify-between  sm:px-0">
               <div className="flex items-center">
-                <SuperflowsButton superflowsApiKey="" />
                 <a
                   className="text-base sm:text-lg md:text-xl text-white font-medium"
                   href={"https://superflows.ai"}
@@ -89,65 +82,43 @@ export function Navbar(props: { current: string }) {
                   ))}
                 </div>
               </div>
-              <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
-                <FlyoutMenu
-                  items={[
-                    {
-                      name: "Read the docs",
-                      // TODO: change to docs
-                      href: "https://docs.superflows.ai",
-                      Icon: (
-                        <DocumentTextIcon
-                          className="h-6 w-6"
-                          aria-hidden="true"
-                        />
-                      ),
-                    },
-                    {
-                      name: "Ask in Slack",
-                      href: "https://join.slack.com/t/superflowsusers/shared_invite/zt-1z8ls9rp3-bSohOrMKOsX8zJOUcDy07g",
-                      Icon: <SlackIcon aria-hidden="true" />,
-                    },
-                    {
-                      name: "Add a Github issue",
-                      href: "https://github.com/Superflows-AI/superflows",
-                      Icon: <GitHubIcon aria-hidden="true" />,
-                    },
-                  ]}
-                  getClassName={() =>
-                    "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                  }
-                  buttonClassName={
-                    "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
-                  }
-                  Icon={
-                    <QuestionMarkCircleIcon
-                      className="h-5 w-5 md:h-6 md:w-6"
-                      aria-hidden="true"
-                    />
-                  }
-                  popoverClassName={"w-48 z-50"}
-                  title={"Support"}
+
+              <div className="gap-x-10 flex pl-96 z-1">
+                <SuperflowsButton
+                  superflowsApiKey={process.env.NEXT_PUBLIC_SUPERFLOWS_API_KEY!}
+                  AIname="Superflows"
+                  buttonStyling="w-8 h-8 text-gray-400 hover:text-gray-200"
+                  styling={{
+                    brandColor: "rgb(17 24 39)",
+                    sidebarHeaderTextColor: "light",
+                  }}
+                  hostname={process.env.NEXT_PUBLIC_SUPERFLOWS_HOST_NAME!}
+                  testMode={true}
+                  devMode={true}
                 />
-                {process.env.NODE_ENV !== "development" && (
+                <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
                   <FlyoutMenu
                     items={[
                       {
-                        name: "Manage team",
-                        href: "/team",
+                        name: "Read the docs",
+                        // TODO: change to docs
+                        href: "https://docs.superflows.ai",
                         Icon: (
-                          <UsersIcon className="h-6 w-6" aria-hidden="true" />
-                        ),
-                      },
-                      {
-                        name: "Sign out",
-                        onClick: () => setWarningOpen(true),
-                        Icon: (
-                          <ArrowRightOnRectangleIcon
+                          <DocumentTextIcon
                             className="h-6 w-6"
                             aria-hidden="true"
                           />
                         ),
+                      },
+                      {
+                        name: "Ask in Slack",
+                        href: "https://join.slack.com/t/superflowsusers/shared_invite/zt-1z8ls9rp3-bSohOrMKOsX8zJOUcDy07g",
+                        Icon: <SlackIcon aria-hidden="true" />,
+                      },
+                      {
+                        name: "Add a Github issue",
+                        href: "https://github.com/Superflows-AI/superflows",
+                        Icon: <GitHubIcon aria-hidden="true" />,
                       },
                     ]}
                     getClassName={() =>
@@ -157,14 +128,51 @@ export function Navbar(props: { current: string }) {
                       "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
                     }
                     Icon={
-                      <Cog6ToothIcon
+                      <QuestionMarkCircleIcon
                         className="h-5 w-5 md:h-6 md:w-6"
                         aria-hidden="true"
                       />
                     }
                     popoverClassName={"w-48 z-50"}
+                    title={"Support"}
                   />
-                )}
+                  {process.env.NODE_ENV !== "development" && (
+                    <FlyoutMenu
+                      items={[
+                        {
+                          name: "Manage team",
+                          href: "/team",
+                          Icon: (
+                            <UsersIcon className="h-6 w-6" aria-hidden="true" />
+                          ),
+                        },
+                        {
+                          name: "Sign out",
+                          onClick: () => setWarningOpen(true),
+                          Icon: (
+                            <ArrowRightOnRectangleIcon
+                              className="h-6 w-6"
+                              aria-hidden="true"
+                            />
+                          ),
+                        },
+                      ]}
+                      getClassName={() =>
+                        "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                      }
+                      buttonClassName={
+                        "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
+                      }
+                      Icon={
+                        <Cog6ToothIcon
+                          className="h-5 w-5 md:h-6 md:w-6"
+                          aria-hidden="true"
+                        />
+                      }
+                      popoverClassName={"w-48 z-50"}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

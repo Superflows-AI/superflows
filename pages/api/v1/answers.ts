@@ -274,7 +274,8 @@ export default async function handler(req: NextRequest) {
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
-          error: "No active actions found",
+          error:
+            "You have no active actions set for your organization. Add them if you have access to the superflows dashboard or reach out to your IT team.",
         }),
         { status: 404, headers }
       );
