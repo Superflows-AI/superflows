@@ -16,21 +16,6 @@ export function getNumRows(text: string, textWidth: number): number {
     .reduce((a, b) => a + b);
 }
 
-export function parseTableTags(text: string): { key: string; value: string }[] {
-  const captionRegex = /<caption>(.*?)<\/caption>/;
-  const caption = {
-    key: "caption",
-    value: text.match(captionRegex)?.[1] ?? "",
-  };
-  text = text.replace(captionRegex, "");
-
-  const rows = text.split("<br/>").map((line) => {
-    const [key, ...value] = line.split(":");
-    return { key: key.trim(), value: value.join(":").trim() };
-  });
-  return [caption, ...rows];
-}
-
 export function removeEmptyCharacters(text: string): string {
   return text.replace("\u0000", "");
 }
