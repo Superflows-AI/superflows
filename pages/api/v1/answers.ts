@@ -8,13 +8,9 @@ import {
   ActionToHttpRequest,
   ChatGPTMessage,
   ChatGPTParams,
-  FunctionCall,
   StreamingStepInput,
 } from "../../../lib/models";
-import {
-  parseGPTStreamedData,
-  parseOutput,
-} from "../../../lib/parsers/parsers";
+import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
@@ -33,6 +29,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { getLanguage } from "../../../lib/language";
 import { Database } from "../../../lib/database.types";
+import { FunctionCall, parseOutput } from "superflows-chatui";
 
 export const config = {
   runtime: "edge",

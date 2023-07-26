@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { splitContentByParts } from "../components/playgroundChatbot";
+import { splitContentByParts } from "superflows-chatui";
 
 describe("splitContentByParts", () => {
   it("Does nothing to simple string", () => {

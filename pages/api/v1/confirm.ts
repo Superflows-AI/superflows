@@ -8,11 +8,11 @@ import {
   httpRequestFromAction,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
-import { parseOutput } from "../../../lib/parsers/parsers";
 import { Database } from "../../../lib/database.types";
 import { Ratelimit } from "@upstash/ratelimit";
 import { ToConfirm } from "./answers";
 import { ChatGPTMessage } from "../../../lib/models";
+import { parseOutput } from "superflows-chatui";
 
 export const config = {
   runtime: "edge",
@@ -23,7 +23,6 @@ const OptionalStringZod = z.optional(z.string());
 const ConfirmZod = z.object({
   conversation_id: z.number(),
   user_api_key: OptionalStringZod,
-  org_id: z.number(),
   confirm: z.boolean(),
   test_mode: z.optional(z.boolean()),
 });
@@ -201,7 +200,7 @@ export default async function handler(req: NextRequest) {
             const action = await supabase
               .from("actions")
               .select("*")
-              .eq("org_id", requestData.org_id)
+              .eq("org_id", org!.id)
               .eq("id", param.actionId)
               .single()
               .then((res) => res.data!);
@@ -218,7 +217,7 @@ export default async function handler(req: NextRequest) {
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
-        .eq("org_id", requestData.org_id)
+        .eq("org_id", org!.id)
         .eq("conversation_id", requestData.conversation_id)
         .eq("role", "assistant")
         .order("created_at", { ascending: false })
@@ -231,7 +230,7 @@ export default async function handler(req: NextRequest) {
           const action = await supabase
             .from("actions")
             .select("*")
-            .eq("org_id", requestData.org_id)
+            .eq("org_id", org!.id)
             .eq("name", command.name)
             .single()
             .then((res) => res.data!);
