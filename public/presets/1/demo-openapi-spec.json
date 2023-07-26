@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "CRM Demo API",
-    "description": "",
+    "title": "CRM Preset",
+    "description": "CRM Preset is a preset for a simple CRM system.",
     "version": "v1"
   },
   "paths": {

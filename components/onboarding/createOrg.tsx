@@ -3,8 +3,12 @@ import { useProfile } from "../contextManagers/profile";
 import { LoadingSpinner } from "../loadingspinner";
 import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 import classNames from "classnames";
+import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 
-export default function CreateOrgScreen(props: { completeStep: () => void }) {
+export default function CreateOrgScreen(props: {
+  completeStep: () => void;
+  onBackClick: () => void;
+}) {
   const [orgName, setOrgName] = useState<string>("");
   const [orgDescription, setOrgDescription] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -16,6 +20,12 @@ export default function CreateOrgScreen(props: { completeStep: () => void }) {
       <p className="absolute top-5 left-5 text-center sm:text-lg lg:text-xl text-white">
         Superflows
       </p>
+      <button
+        className="absolute bottom-10 left-10 rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600 border border-gray-500 flex flex-row place-items-center gap-x-1 p-3"
+        onClick={props.onBackClick}
+      >
+        <ChevronLeftIcon className="h-5 w-5" /> Back
+      </button>
       <div className="flex flex-col place-items-center">
         <h1 className="text-4xl font-medium text-white">Create Project</h1>
       </div>

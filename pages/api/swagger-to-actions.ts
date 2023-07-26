@@ -88,11 +88,11 @@ export default async function handler(
   }
 
   console.log("Adding paths...");
+  let actionInserts: Database["public"]["Tables"]["actions"]["Insert"][] = [];
   for (const [path, pathObj] of Object.entries(dereferencedSwagger.paths)) {
     if (pathObj === undefined) {
       continue;
     }
-    let actionInserts: Database["public"]["Tables"]["actions"]["Insert"][] = [];
 
     for (const [method, methodObj] of Object.entries(pathObj)) {
       if (typeof methodObj === "string") {
@@ -156,26 +156,24 @@ export default async function handler(
         responses: methodObj?.responses ?? null,
       });
     }
-    // Don't insert if already in database (previously uploaded this swagger file)
-    const actionResp = await supabase
-      .from("actions")
-      .select("*")
-      .eq("org_id", orgId)
-      .in(
-        "name",
-        actionInserts.map((action) => action.name)
-      );
-    if (actionResp.error) throw actionResp.error;
-    const existingActionNames = actionResp.data.map((action) => action.name);
-    actionInserts = actionInserts.filter(
-      (action) => !existingActionNames.includes(action.name!)
+  }
+  // Don't insert if already in database (previously uploaded this swagger file)
+  const actionResp = await supabase
+    .from("actions")
+    .select("*")
+    .eq("org_id", orgId)
+    .in(
+      "name",
+      actionInserts.map((action) => action.name)
     );
-    const actionInsertResp = await supabase
-      .from("actions")
-      .insert(actionInserts);
-    if (actionInsertResp.error) {
-      throw actionInsertResp.error;
-    }
+  if (actionResp.error) throw actionResp.error;
+  const existingActionNames = actionResp.data.map((action) => action.name);
+  actionInserts = actionInserts.filter(
+    (action) => !existingActionNames.includes(action.name!)
+  );
+  const actionInsertResp = await supabase.from("actions").insert(actionInserts);
+  if (actionInsertResp.error) {
+    throw actionInsertResp.error;
   }
 
   res.status(200).send({ success: true });

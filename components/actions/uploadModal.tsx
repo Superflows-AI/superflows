@@ -40,7 +40,8 @@ export default function UploadModal(props: {
 
   useEffect(() => {
     if (!profile) return;
-    uppy.once("file-added", async (file) => {
+    uppy.on("file-added", async (file) => {
+      if (isLoading) return;
       setIsLoading(true);
       const text = await file.data.text();
       const res = await fetch("/api/swagger-to-actions", {

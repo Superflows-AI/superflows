@@ -1,5 +1,6 @@
 import { ChatGPTMessage, Chunk, Properties, RequestMethod } from "../models";
 import { chunkToString } from "../utils";
+import { PRESETS } from "../consts";
 
 export default function apiMockPrompt(
   path: string,
@@ -17,9 +18,14 @@ export default function apiMockPrompt(
     {
       role: "system",
       content: `The user is sending a request to ${
-        orgInfo ? `${orgInfo.name}'s` : "an"
+        orgInfo && !PRESETS.map((p) => p.name).includes(orgInfo.name)
+          ? `${orgInfo.name}'s`
+          : "an"
       } API. ${
-        orgInfo ? orgInfo.description : ""
+        orgInfo &&
+        !PRESETS.map((p) => p.description).includes(orgInfo.description)
+          ? orgInfo.description
+          : ""
       } However, they do not have access to the real API.
 
 Your task is to generate a mock API response to the user's request.`,
@@ -33,6 +39,8 @@ I am sending a ${requestMethod} request to the ${path} endpoint${
 ${requestParameters.map((param) => chunkToString(param)).join("\n")}`
           : " with no parameters."
       }
+
+Today's date is ${new Date().toISOString().split("T")[0]}.
 
 ${
   responseType

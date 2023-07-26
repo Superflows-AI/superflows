@@ -26,7 +26,7 @@ import { Json } from "../lib/database.types";
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;
-  submitReady: boolean;
+  submitErrorMessage: string;
   userDescription: string;
   testMode: boolean;
 }) {
@@ -87,7 +87,8 @@ export default function PlaygroundChatbot(props: {
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
   const killSwitchClicked = useRef(false);
-  const submitButtonClickable = props.submitReady && userText.length > 3;
+  const submitButtonClickable =
+    !props.submitErrorMessage && userText.length > 3;
 
   const onChatSubmit = useCallback(
     async (chat: StreamingStepInput[]) => {
@@ -325,15 +326,22 @@ export default function PlaygroundChatbot(props: {
               let contentString = "";
               const functionJsonResponse = JSON.parse(chatItem.content) as Json;
               if (
-                Array.isArray(functionJsonResponse) &&
-                functionJsonResponse.length === 0
+                // Empty array
+                (Array.isArray(functionJsonResponse) &&
+                  functionJsonResponse.length === 0) ||
+                // Empty object
+                (functionJsonResponse &&
+                  typeof functionJsonResponse === "object" &&
+                  Object.entries(functionJsonResponse).length === 0)
               ) {
-                contentString = "No data returned";
-              } else if (
-                functionJsonResponse &&
-                typeof functionJsonResponse === "object" &&
-                Object.entries(functionJsonResponse).length === 0
-              ) {
+                if (
+                  devChatContents[idx - 1].role === "function" ||
+                  devChatContents[idx + 1].role === "function"
+                ) {
+                  // If the function call is adjacent to other function calls we don't need to tell them it
+                  // was empty - otherwise we get a lot of empty messages clogging up the chat interface
+                  return <div key={idx + chatItem.content} />;
+                }
                 contentString = "No data returned";
               } else if (
                 functionJsonResponse &&
@@ -404,12 +412,10 @@ export default function PlaygroundChatbot(props: {
           <p
             className={classNames(
               "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-sm font-semibold",
-              props.submitReady ? "invisible" : "visible"
+              !props.submitErrorMessage ? "invisible" : "visible"
             )}
           >
-            {
-              "You need to add actions (Actions tab) and API hostname (Project tab) or enable test mode."
-            }
+            {props.submitErrorMessage}
           </p>
           {loading && (
             <div className="flex justify-center items-center space-x-4 ">
@@ -457,10 +463,32 @@ export default function PlaygroundChatbot(props: {
   );
 }
 
-const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([^<]+)/g;
+const fullRegex = /(<button>.*?<\/button>)|(<table>.*?<\/table>)|([\s\S]+?)/g;
 let feedbackRegex = /<button>Feedback<\/button>/;
 let buttonRegex = /<button>(?![^<]*<button>)(.*?)<\/button>/;
 let tableRegex = /<table>(.*?)<\/table>/;
+
+export function splitContentByParts(content: string): string[] {
+  /** We split the message into different parts (based on whether they're a <table>, <button> or just text),
+   * and then render parts one-by-one **/
+  let match;
+  let matches = [];
+  while ((match = fullRegex.exec(content)) !== null) {
+    if (match[1]) matches.push(match[1]);
+    if (match[2]) matches.push(match[2]);
+    if (match[3]) {
+      // This is because the 3rd match group is lazy, so only captures 1 character at a time
+      const prev = matches[matches.length - 1];
+      if (
+        matches.length === 0 ||
+        (prev.startsWith("<") && prev.endsWith(">"))
+      ) {
+        matches.push(match[3]);
+      } else matches[matches.length - 1] += match[3];
+    }
+  }
+  return matches;
+}
 
 function DevChatItem(props: {
   chatItem: StreamingStepInput;
@@ -485,9 +513,9 @@ function DevChatItem(props: {
     const toConfirm = JSON.parse(props.chatItem.content) as ToConfirm[];
     content = `The following action${
       toConfirm.length > 1 ? "s require" : " requires"
-    } confirmation:${toConfirm
-      .map((action) => {
-        return `\n\n${convertToRenderable(
+    } confirmation:\n\n${toConfirm
+      .map((action, idx) => {
+        return `${convertToRenderable(
           action.args,
           functionNameToDisplay(action.name)
         )}`;
@@ -495,14 +523,8 @@ function DevChatItem(props: {
       .join("")}`;
   }
 
-  // We split the message into different parts, and then render each part one-by-one
-  let match;
-  let matches = [];
-  while ((match = fullRegex.exec(content)) !== null) {
-    if (match[1]) matches.push(match[1]);
-    if (match[2]) matches.push(match[2]);
-    if (match[3]) matches.push(match[3].trim());
-  }
+  const matches = splitContentByParts(content);
+
   return (
     <div
       className={classNames(
@@ -701,13 +723,8 @@ function UserChatItem(props: { chatItem: StreamingStepInput }) {
     }
   }, [saveSuccessfulFeedback]);
   if (!props.chatItem.content) return <></>;
-  let match;
-  let matches = [];
-  while ((match = fullRegex.exec(props.chatItem.content)) !== null) {
-    if (match[1]) matches.push(match[1]);
-    if (match[2]) matches.push(match[2]);
-    if (match[3]) matches.push(match[3].trim());
-  }
+  const matches = splitContentByParts(props.chatItem.content);
+
   const outputObj = parseOutput(props.chatItem.content);
   return (
     <div className="py-4 px-1.5 rounded flex flex-col bg-gray-200 text-left place-items-baseline">

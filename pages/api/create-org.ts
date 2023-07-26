@@ -69,5 +69,5 @@ export default async function handler(
     .eq("id", req.body.user_id);
   if (isPaidResp.error) throw isPaidResp.error;
 
-  res.status(200).send({ success: true });
+  res.status(200).send({ success: true, data: data[0] });
 }
