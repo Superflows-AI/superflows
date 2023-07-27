@@ -77,19 +77,6 @@ export interface ActionToHttpRequest {
   userApiKey?: string;
   stream?: (input: StreamingStepInput) => void;
 }
-export interface FunctionCall {
-  name: string;
-  args: { [key: string]: any };
-}
-
-export interface ParsedOutput {
-  reasoning: string;
-  plan: string;
-  tellUser: string;
-  commands: FunctionCall[];
-  // Only valid when streaming is complete. Don't use while streaming
-  completed: boolean;
-}
 
 export interface Chunk {
   path: (string | number)[];
