@@ -55,7 +55,7 @@ export default function UploadModal(props: {
           // Try yaml
           json = parse(text);
         } catch (e) {
-          setError({ message: "Invalid JSON or YAML uploaded", error: {} });
+          setError({ message: "Uploaded file contents has invalid format: must be JSON or YAML", error: {} });
           setIsLoading(false);
           uppy.removeFile(file.id);
           return;
