@@ -15,6 +15,7 @@ import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
 import { useProfile } from "./contextManagers/profile";
 import { useRouter } from "next/router";
+import { SuperflowsButton, SuperflowsSidebar } from "@superflows/chat-ui-react";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -106,7 +107,7 @@ export function Navbar(props: { current: string }) {
                     },
                     {
                       name: "Add a Github issue",
-                      href: "https://github.com/Superflows-AI/superflows",
+                      href: "https://github.com/Superflows-AI/superflows/issues/new",
                       Icon: <GitHubIcon aria-hidden="true" />,
                     },
                   ]}
@@ -127,6 +128,21 @@ export function Navbar(props: { current: string }) {
                   }
                   popoverClassName={"w-48 z-50"}
                   title={"Support"}
+                />
+                <SuperflowsButton
+                  superflowsApiKey={"sfk-87196dc0-f67f-44fe-890a-ea7d0d0eb1a8"}
+                  hostname={"http://localhost:3000"}
+                  AIname={"Superflows"}
+                  suggestions={[
+                    "When am I meeting Alex from Acme Inc?",
+                    "What's the status of the deal with B Corp? Who's leading it?",
+                    "What's the most valuable open opportunity?",
+                  ]}
+                  buttonStyling={
+                    "text-gray-400 hover:text-gray-300 transition h-7 w-7 hover:bg-gray-850 p-1 rounded-md"
+                  }
+                  devMode={false}
+                  mockApiResponses={true}
                 />
                 {process.env.NODE_ENV !== "development" && (
                   <FlyoutMenu
