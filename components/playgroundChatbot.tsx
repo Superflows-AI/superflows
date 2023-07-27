@@ -14,7 +14,7 @@ import {
   UserChatItem,
   convertToRenderable,
   functionNameToDisplay,
-} from "superflows-chatui";
+} from "@superflows/chat-ui-react";
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;

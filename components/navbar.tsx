@@ -15,7 +15,7 @@ import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
 import { useProfile } from "./contextManagers/profile";
 import { useRouter } from "next/router";
-import { SuperflowsButton } from "superflows-chatui";
+import { SuperflowsButton } from "@superflows/chat-ui-react";
 import { Database } from "../lib/database.types";
 
 const navigation = [

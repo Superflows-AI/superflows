@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { splitContentByParts } from "superflows-chatui";
+import { splitContentByParts } from "@superflows/chat-ui-react";
 
 describe("splitContentByParts", () => {
   it("Does nothing to simple string", () => {

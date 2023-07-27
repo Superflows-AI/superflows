@@ -29,7 +29,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { getLanguage } from "../../../lib/language";
 import { Database } from "../../../lib/database.types";
-import { FunctionCall, parseOutput } from "superflows-chatui";
+import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
   runtime: "edge",
