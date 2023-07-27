@@ -46,6 +46,7 @@ const AnswersZod = z.object({
   user_description: OptionalStringZod,
   user_api_key: OptionalStringZod,
   stream: z.optional(z.boolean()),
+  mock_api_responses: z.optional(z.boolean()),
   test_mode: z.optional(z.boolean()),
 });
 type AnswersType = z.infer<typeof AnswersZod>;
@@ -177,12 +178,15 @@ export default async function handler(req: NextRequest) {
       });
     }
 
-    // Override api_host if test_mode is set to true
-    if (org && requestData.test_mode) {
+    // Override api_host if mock_api_responses is set to true
+    if (org && requestData.mock_api_responses) {
       const currentHost =
         req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
       org.api_host = currentHost + "/api/mock";
-      console.log("Test mode enabled: overriding api_host to", org.api_host);
+      console.log(
+        "Mocking API responses: overriding api_host to",
+        org.api_host
+      );
     }
     if (!org?.api_host) {
       return new Response(
