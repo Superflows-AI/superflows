@@ -20,7 +20,7 @@ export default function PlaygroundChatbot(props: {
   userApiKey: string;
   submitErrorMessage: string;
   userDescription: string;
-  testMode: boolean;
+  mockAPIresponses: boolean;
 }) {
   // This is a hack to prevent the effect from running twice in development
   // It's because React strict mode runs in development, which renders everything
@@ -101,7 +101,7 @@ export default function PlaygroundChatbot(props: {
           user_api_key: props.userApiKey,
           user_description: props.userDescription,
           stream: true,
-          test_mode: props.testMode,
+          mock_api_responses: props.mockAPIresponses,
         }),
       });
 
@@ -157,7 +157,7 @@ export default function PlaygroundChatbot(props: {
       setUsageLevel,
       killSwitchClicked.current,
       alreadyRunning.current,
-      props.testMode,
+      props.mockAPIresponses,
     ]
   );
 
@@ -174,7 +174,7 @@ export default function PlaygroundChatbot(props: {
           conversation_id: conversationId,
           user_api_key: props.userApiKey,
           confirm: confirm,
-          test_mode: props.testMode,
+          mock_api_responses: props.mockAPIresponses,
         }),
       });
 
@@ -213,7 +213,7 @@ export default function PlaygroundChatbot(props: {
       setLoading,
       props.userApiKey,
       profile,
-      props.testMode,
+      props.mockAPIresponses,
     ]
   );
 

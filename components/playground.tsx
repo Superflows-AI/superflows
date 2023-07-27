@@ -10,13 +10,15 @@ export default function Playground() {
   const supabase = useSupabaseClient();
   const [userDescription, setUserDescription] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
-  const [testModeEnabled, setTestModeEnabled] = useState<boolean | null>(null);
+  const [mockApiResponses, setMockApiResponses] = useState<boolean | null>(
+    null
+  );
 
   const { profile } = useProfile();
   const [numActions, setNumActions] = useState<number>(0);
 
   useEffect(() => {
-    setTestModeEnabled(localStorage.getItem("testMode") === "true");
+    setMockApiResponses(localStorage.getItem("testMode") === "true");
     localStorage.getItem("userApiKey") &&
       setUserApiKey(localStorage.getItem("userApiKey") as string);
     localStorage.getItem("userDescription") &&
@@ -24,9 +26,9 @@ export default function Playground() {
   }, []);
 
   useEffect(() => {
-    if (testModeEnabled !== null)
-      localStorage.setItem("testMode", testModeEnabled.toString());
-  }, [testModeEnabled]);
+    if (mockApiResponses !== null)
+      localStorage.setItem("testMode", mockApiResponses.toString());
+  }, [mockApiResponses]);
 
   useEffect(() => {
     (async () => {
@@ -71,21 +73,21 @@ export default function Playground() {
           userDescription={userDescription}
           submitErrorMessage={
             !numActions ||
-            (!profile?.organizations?.api_host && !testModeEnabled)
+            (!profile?.organizations?.api_host && !mockApiResponses)
               ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
                   numActions ||
                   profile?.organizations?.api_host ||
-                  testModeEnabled
+                  mockApiResponses
                     ? ""
                     : " and"
                 }${
-                  profile?.organizations?.api_host || testModeEnabled
+                  profile?.organizations?.api_host || mockApiResponses
                     ? "."
-                    : " an API host (Project tab) or enable test mode."
+                    : " an API host (Project tab) or enable mocking API responses."
                 }`
               : ""
           }
-          testMode={!!testModeEnabled}
+          mockAPIresponses={!!mockApiResponses}
         />
       </main>
       <div className="absolute z-0 bottom-0 right-0 top-16 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
@@ -93,30 +95,30 @@ export default function Playground() {
           <div className="relative">
             <div className="peer flex flex-col place-items- gap-y-1 text-sm text-gray-200 font-bold">
               <div className="flex flex-row gap-x-1 place-items-center">
-                Test mode
+                Mock API Responses
                 <QuestionMarkCircleIcon className="h-4 w-4 text-gray-300" />
               </div>
               <div className="flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border border-gray-300 w-full">
-                {testModeEnabled !== null && (
+                {mockApiResponses !== null && (
                   <Toggle
-                    enabled={testModeEnabled}
+                    enabled={mockApiResponses}
                     size={"sm"}
-                    setEnabled={setTestModeEnabled}
-                    sr={"Test mode"}
+                    setEnabled={setMockApiResponses}
+                    sr={"Mock API Responses"}
                   />
                 )}
               </div>
             </div>
             <div className="popup top-20 font-normal text-sm">
-              Test mode mocks the API response, so you can use the playground
-              without connecting to your API.
+              This mocks API responses using GPT, meaning you can use the
+              playground without connecting to your API.
             </div>
           </div>
         </div>
         <div
           className={classNames(
             "fixed bottom-0 right-0 w-40 md:w-56 lg:w-72 bg-gray-900 py-4 px-4 transition-opacity",
-            testModeEnabled ? "opacity-0" : "opacity-100"
+            mockApiResponses ? "opacity-0" : "opacity-100"
           )}
         >
           <h2 className="text-gray-100 text-little font-semibold">

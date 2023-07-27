@@ -116,9 +116,7 @@ export default function PageActionsSection(props: {
               <button
                 className={classNames(
                   "flex flex-row place-items-center gap-x-1 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded focus:ring-2",
-                  props.actionTags.length > 0
-                    ? "bg-green-900 hover:bg-green-800"
-                    : "bg-gray-900 hover:bg-gray-950"
+                  "bg-gray-900 hover:bg-gray-950"
                 )}
                 onClick={async () => {
                   const res = await supabase
