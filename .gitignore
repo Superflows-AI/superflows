@@ -1,5 +1,6 @@
 .vscode/
 local/
+install-sidebar.sh
 
 .idea/
 # Logs

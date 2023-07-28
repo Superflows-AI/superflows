@@ -8,9 +8,7 @@
   "paths": {
     "/api/v1/Customers": {
       "post": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -37,9 +35,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "responses": {
           "200": {
             "description": "Success",
@@ -57,9 +53,7 @@
         }
       },
       "put": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -88,9 +82,7 @@
     },
     "/api/v1/Customers/{id}": {
       "get": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "parameters": [
           {
             "name": "id",
@@ -116,9 +108,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "parameters": [
           {
             "name": "id",
@@ -139,9 +129,7 @@
     },
     "/api/v1/Customers/search": {
       "get": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "summary": "Method to list customers that meet the search criteria provided. You can use Firstname, Secondname and Lastname but it is not exclusive.",
         "parameters": [
           {
@@ -171,9 +159,7 @@
     },
     "/api/v1/Customers/location": {
       "get": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "summary": "Method to list customers that meet the search criteria provided. You can use Address line1, Address line2, City, State but it is not exclusive.",
         "parameters": [
           {
@@ -203,9 +189,7 @@
     },
     "/api/v1/Status/fullname/{value}": {
       "get": {
-        "tags": [
-          "Customers"
-        ],
+        "tags": ["Customers"],
         "parameters": [
           {
             "name": "value",
@@ -264,10 +248,7 @@
         "additionalProperties": false
       },
       "AuthenticateRequest": {
-        "required": [
-          "password",
-          "username"
-        ],
+        "required": ["password", "username"],
         "type": "object",
         "properties": {
           "username": {

@@ -33,21 +33,18 @@ export async function httpRequestFromAction({
   if (!organization.api_host) {
     throw new Error("API host has not been provided");
   }
+  console.log("parameters", parameters);
 
   const headers: Record<string, string> = {};
   // TODO: Only application/json supported for now(!!)
   headers["Content-Type"] = "application/json";
   headers["Accept"] = "application/json";
-  // TODO: Support other auth headers (e.g. setting gtm-accountid as well as Bearer token)
   if (userApiKey) {
     const scheme = organization.auth_scheme
       ? organization.auth_scheme + " "
       : "";
     headers[organization.auth_header] = `${scheme}${userApiKey}`;
   }
-
-  if (organization.api_host.includes("api/mock"))
-    headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {
     method: action.request_method,
@@ -82,7 +79,9 @@ export async function httpRequestFromAction({
     required.forEach((key: string) => {
       if (!body[key]) {
         throw new Error(
-          `Required parameter "${key}" not provided to action: ${action.name}`
+          `Required parameter "${key}" not provided to action: ${
+            action.name
+          } out of ${JSON.stringify(Object.keys(body))}`
         );
       }
     });

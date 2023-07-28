@@ -52,7 +52,7 @@ export function formatReqBodySchema(
    * Only works for requestBody right now since readOnly parameters are ignored. **/
   if (!schema) return "";
   let paramString = "";
-  if (schema.type === "object") {
+  if (schema.type === "object" && schema.properties) {
     const properties = schema.properties as {
       [name: string]: OpenAPIV3_1.SchemaObject;
     };
@@ -84,7 +84,7 @@ export function formatReqBodySchema(
     }
   } else {
     paramString += `(${getType(schema.type, schema.enum)})${formatDescription(
-      schema.description
+      schema.description ?? schema.format
     )}${isRequired ? " REQUIRED" : ""}`;
   }
   return paramString;
