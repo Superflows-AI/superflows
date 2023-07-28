@@ -181,7 +181,6 @@ export default function PlaygroundChatbot(props: {
         body: JSON.stringify({
           conversation_id: conversationId,
           user_api_key: props.userApiKey,
-          org_id: profile!.organizations!.id,
           confirm: confirm,
           mock_api_responses: props.mockAPIresponses,
         }),

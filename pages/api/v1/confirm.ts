@@ -23,7 +23,6 @@ const OptionalStringZod = z.optional(z.string());
 const ConfirmZod = z.object({
   conversation_id: z.number(),
   user_api_key: OptionalStringZod,
-  org_id: z.number(),
   confirm: z.boolean(),
   mock_api_responses: z.optional(z.boolean()),
   test_mode: z.optional(z.boolean()),
@@ -205,7 +204,7 @@ export default async function handler(req: NextRequest) {
             const action = await supabase
               .from("actions")
               .select("*")
-              .eq("org_id", requestData.org_id)
+              .eq("org_id", org!.id)
               .eq("id", param.actionId)
               .single()
               .then((res) => res.data!);
@@ -222,7 +221,7 @@ export default async function handler(req: NextRequest) {
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
-        .eq("org_id", requestData.org_id)
+        .eq("org_id", org!.id)
         .eq("conversation_id", requestData.conversation_id)
         .eq("role", "assistant")
         .order("created_at", { ascending: false })
@@ -235,7 +234,7 @@ export default async function handler(req: NextRequest) {
           const action = await supabase
             .from("actions")
             .select("*")
-            .eq("org_id", requestData.org_id)
+            .eq("org_id", org!.id)
             .eq("name", command.name)
             .single()
             .then((res) => res.data!);
