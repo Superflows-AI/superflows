@@ -46,6 +46,9 @@ export async function httpRequestFromAction({
     headers[organization.auth_header] = `${scheme}${userApiKey}`;
   }
 
+  if (organization.api_host.includes("api/mock"))
+    headers["org_id"] = organization.id.toString();
+
   const requestOptions: RequestInit = {
     method: action.request_method,
     headers: headers,
@@ -106,6 +109,10 @@ export async function httpRequestFromAction({
         throw new Error(
           `Parameter "${param.name}" in ${param.in} is not provided by LLM`
         );
+      }
+      if (!parameters[param.name]) {
+        console.log("Parameter not provided:", param.name);
+        continue;
       }
       if (param.in === "path") {
         url = url.replace(
