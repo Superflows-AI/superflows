@@ -7,8 +7,7 @@ import Uppy from "@uppy/core";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import { LoadingSpinner } from "../loadingspinner";
-import { parse, stringify } from "yaml";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { parse } from "yaml";
 
 const uppy = new Uppy({
   autoProceed: true,
@@ -40,8 +39,11 @@ export default function UploadModal(props: {
     error: Record<string, any>;
   } | null>(null);
 
+  const alreadyRun = useRef<boolean | null>(null);
+
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || alreadyRun.current) return;
+    alreadyRun.current = true;
     uppy.on("file-added", async (file) => {
       if (isLoading) return;
       setIsLoading(true);
@@ -55,7 +57,11 @@ export default function UploadModal(props: {
           // Try yaml
           json = parse(text);
         } catch (e) {
-          setError({ message: "Uploaded file contents has invalid format: must be JSON or YAML", error: {} });
+          setError({
+            message:
+              "Uploaded file contents has invalid format: must be JSON or YAML",
+            error: {},
+          });
           setIsLoading(false);
           uppy.removeFile(file.id);
           return;

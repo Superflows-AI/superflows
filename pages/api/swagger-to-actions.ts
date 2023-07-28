@@ -29,7 +29,7 @@ export const config = {
 
 const SwaggerEndpointZod = z.object({
   org_id: z.number(),
-  swagger: z.union([z.record(z.any()), z.array(z.any())]),
+  swagger: z.record(z.any()),
 });
 type SwaggerEndpointType = z.infer<typeof SwaggerEndpointZod>;
 
@@ -55,9 +55,23 @@ export default async function handler(
     // Allow info.version = null(!!)
     if ("info" in swagger)
       swagger.info.version = swagger.info.version ?? "1.0.0";
+    if (swagger.swagger && swagger.swagger.startsWith("2.")) {
+      res.status(400).json({
+        message: "Swagger version 2 not supported",
+        // This format is used to display errors in the UI
+        error: {
+          "1": {
+            message:
+              "Swagger version 2 not supported: convert to version 3: https://stackoverflow.com/questions/59749513/how-to-convert-openapi-2-0-to-openapi-3-0",
+          },
+        },
+      });
+      return;
+    }
     // @ts-ignore
     dereferencedSwagger = await SwaggerParser.validate(swagger, {
       dereference: { circular: "ignore" },
+      validate: { spec: false },
     });
   } catch (err) {
     console.error("Error validating swagger", err);

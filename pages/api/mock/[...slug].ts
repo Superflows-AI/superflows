@@ -226,7 +226,7 @@ export default async function handler(
 
   // Hierarchy of fallbacks if we don't have full schema etc
   const fallback =
-    response.content?.["application/json"].schema ||
+    response.content?.["application/json"]?.schema ||
     response.content?.["application/json"] ||
     response.content ||
     response;

@@ -77,6 +77,10 @@ export default function SignInComponent(props: {
                 },
               }}
             />
+            <p className="text-xs text-gray-400 text-center">
+              There are issues with sign-in on Safari - please use another
+              browser!
+            </p>
           </div>
         </div>
       </div>

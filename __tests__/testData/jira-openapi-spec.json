@@ -480,7 +480,7 @@
             "name": "generateChangelog",
             "in": "query",
             "description": "Whether to generate a changelog for this update.",
-            "schema": { "type": "boolean", "default": true },
+            "schema": { "type": "boolean", "default": true }
           }
         ],
         "requestBody": {

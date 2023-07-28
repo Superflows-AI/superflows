@@ -1,0 +1,3089 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PostgREST API",
+    "description": "standard public schema",
+    "version": "10.2.0 (e07807d)"
+  },
+  "externalDocs": {
+    "description": "PostgREST Documentation",
+    "url": "https://postgrest.org/en/v10.2/api.html"
+  },
+  "paths": {
+    "/chat_messages": {
+      "get": {
+        "tags": ["chat_messages"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "content",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "conversation_index",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "integer"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/chat_messages"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/chat_messages"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/chat_messages"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["chat_messages"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "chat_messages",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "chat_messages"
+      },
+      "delete": {
+        "tags": ["chat_messages"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "content",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "conversation_index",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "integer"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["chat_messages"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "content",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "conversation_index",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "integer"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "chat_messages",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/chat_messages"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "chat_messages"
+      }
+    },
+    "/usage": {
+      "get": {
+        "tags": ["usage"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "double precision"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/usage"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/usage"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/usage"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/is_paid": {
+      "get": {
+        "tags": ["is_paid"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "is_premium",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "boolean"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/is_paid"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/is_paid"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/is_paid"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/actions": {
+      "get": {
+        "tags": ["actions"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "boolean"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "action_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text",
+              "enum": ["http"]
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "request_body_contents",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "responses",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "request_method",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["get", "post", "put", "patch", "delete"]
+            }
+          },
+          {
+            "name": "keys_to_keep",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "jsonb"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/actions"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/actions"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/actions"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["actions"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "actions",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "actions"
+      },
+      "delete": {
+        "tags": ["actions"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "boolean"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "action_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "request_body_contents",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "responses",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "request_method",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "keys_to_keep",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "jsonb"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["actions"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "boolean"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "action_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "request_body_contents",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "responses",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "json"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "request_method",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "keys_to_keep",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "jsonb"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "actions",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/actions"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "actions"
+      }
+    },
+    "/action_tags": {
+      "get": {
+        "tags": ["action_tags"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/action_tags"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/action_tags"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/action_tags"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["action_tags"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "action_tags",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "action_tags"
+      },
+      "delete": {
+        "tags": ["action_tags"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["action_tags"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "action_tags",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/action_tags"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "action_tags"
+      }
+    },
+    "/profiles": {
+      "get": {
+        "tags": ["profiles"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "updated_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone"
+            }
+          },
+          {
+            "name": "full_name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "avatar_url",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "email_address",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/profiles"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/profiles"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/profiles"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["profiles"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "profiles",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "profiles"
+      },
+      "delete": {
+        "tags": ["profiles"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "updated_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone"
+            }
+          },
+          {
+            "name": "full_name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "avatar_url",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "email_address",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["profiles"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "updated_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone"
+            }
+          },
+          {
+            "name": "full_name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "avatar_url",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "email_address",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "profiles",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/profiles"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "profiles"
+      }
+    },
+    "/organizations": {
+      "get": {
+        "tags": ["organizations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "api_host",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_header",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_scheme",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "join_link_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/organizations"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/organizations"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/organizations"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["organizations"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "organizations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "organizations"
+      },
+      "delete": {
+        "tags": ["organizations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "api_host",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_header",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_scheme",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "join_link_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["organizations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "api_key",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "api_host",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_header",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "auth_scheme",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          },
+          {
+            "name": "join_link_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "text"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "organizations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/organizations"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "organizations"
+      }
+    },
+    "/conversations": {
+      "get": {
+        "tags": ["conversations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/conversations"
+                  }
+                }
+              },
+              "application/vnd.pgrst.object+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/conversations"
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/conversations"
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial Content",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": ["conversations"],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "description": "Filtering Columns",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "conversations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "conversations"
+      },
+      "delete": {
+        "tags": ["conversations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        }
+      },
+      "patch": {
+        "tags": ["conversations"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          },
+          {
+            "name": "created_at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "timestamp with time zone",
+              "readOnly": true
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "bigint"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "conversations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            },
+            "application/vnd.pgrst.object+json": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            },
+            "text/csv": {
+              "schema": {
+                "$ref": "#/components/schemas/conversations"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "conversations"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "chat_messages": {
+        "required": [
+          "content",
+          "conversation_id",
+          "conversation_index",
+          "created_at",
+          "id",
+          "org_id",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "role": {
+            "type": "string",
+            "format": "text"
+          },
+          "content": {
+            "type": "string",
+            "format": "text"
+          },
+          "conversation_index": {
+            "type": "integer",
+            "format": "integer"
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          },
+          "conversation_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `conversations.id`.<fk table='conversations' column='id'/>",
+            "format": "bigint"
+          },
+          "name": {
+            "type": "string",
+            "format": "text"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "timestamp with time zone",
+            "default": "now()",
+            "readOnly": true
+          },
+          "language": {
+            "type": "string",
+            "format": "text"
+          }
+        }
+      },
+      "usage": {
+        "required": ["date", "org_id", "usage"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "usage": {
+            "type": "number",
+            "format": "double precision"
+          }
+        }
+      },
+      "is_paid": {
+        "required": ["id", "is_premium", "org_id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          },
+          "is_premium": {
+            "type": "boolean",
+            "format": "boolean",
+            "default": false
+          }
+        }
+      },
+      "actions": {
+        "required": ["action_type", "active", "description", "name"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "active": {
+            "type": "boolean",
+            "format": "boolean",
+            "default": false
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          },
+          "tag": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `action_tags.id`.<fk table='action_tags' column='id'/>",
+            "format": "bigint"
+          },
+          "action_type": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "path": {
+            "type": "string",
+            "format": "text"
+          },
+          "request_body_contents": {
+            "type": "object",
+            "format": "json"
+          },
+          "parameters": {
+            "type": "object",
+            "format": "json"
+          },
+          "responses": {
+            "type": "object",
+            "format": "json"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "timestamp with time zone",
+            "default": "now()",
+            "readOnly": true
+          },
+          "request_method": {
+            "type": "string",
+            "format": "text"
+          },
+          "keys_to_keep": {
+            "type": "object",
+            "format": "jsonb"
+          }
+        }
+      },
+      "action_tags": {
+        "required": ["description", "id", "name"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "created_at": {
+            "type": "string",
+            "format": "timestamp with time zone",
+            "default": "now()",
+            "readOnly": true
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          }
+        }
+      },
+      "profiles": {
+        "required": ["full_name", "id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "timestamp with time zone"
+          },
+          "full_name": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "avatar_url": {
+            "type": "string",
+            "format": "text"
+          },
+          "email_address": {
+            "type": "string",
+            "format": "text"
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          }
+        }
+      },
+      "organizations": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint"
+          },
+          "name": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "created_at": {
+            "type": "string",
+            "format": "timestamp with time zone",
+            "default": "now()",
+            "readOnly": true
+          },
+          "api_key": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "api_host": {
+            "type": "string",
+            "format": "text",
+            "default": ""
+          },
+          "auth_header": {
+            "type": "string",
+            "format": "text",
+            "default": "Authorization"
+          },
+          "auth_scheme": {
+            "type": "string",
+            "format": "text",
+            "default": "Bearer"
+          },
+          "join_link_id": {
+            "type": "string",
+            "format": "text"
+          }
+        }
+      },
+      "conversations": {
+        "required": ["created_at", "id", "org_id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Primary Key.<pk/>",
+            "format": "bigint",
+            "readOnly": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "timestamp with time zone",
+            "default": "now()",
+            "readOnly": true
+          },
+          "org_id": {
+            "type": "integer",
+            "description": "Note:\nThis is a Foreign Key to `organizations.id`.<fk table='organizations' column='id'/>",
+            "format": "bigint"
+          }
+        }
+      }
+    },
+    "parameters": {
+      "preferParams": {
+        "name": "Prefer",
+        "in": "header",
+        "description": "Preference",
+        "schema": {
+          "type": "string",
+          "enum": ["params=single-object"]
+        }
+      },
+      "preferReturn": {
+        "name": "Prefer",
+        "in": "header",
+        "description": "Preference",
+        "schema": {
+          "type": "string",
+          "enum": ["return=representation", "return=minimal", "return=none"]
+        }
+      },
+      "preferCount": {
+        "name": "Prefer",
+        "in": "header",
+        "description": "Preference",
+        "schema": {
+          "type": "string",
+          "enum": ["count=none"]
+        }
+      },
+      "preferPost": {
+        "name": "Prefer",
+        "in": "header",
+        "description": "Preference",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "return=representation",
+            "return=minimal",
+            "return=none",
+            "resolution=ignore-duplicates",
+            "resolution=merge-duplicates"
+          ]
+        }
+      },
+      "select": {
+        "name": "select",
+        "in": "query",
+        "description": "Filtering Columns",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "on_conflict": {
+        "name": "on_conflict",
+        "in": "query",
+        "description": "On Conflict",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "order": {
+        "name": "order",
+        "in": "query",
+        "description": "Ordering",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "rowFilter.chat_messages.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.chat_messages.role": {
+        "name": "role",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.chat_messages.content": {
+        "name": "content",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.chat_messages.conversation_index": {
+        "name": "conversation_index",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "integer"
+        }
+      },
+      "rowFilter.chat_messages.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.chat_messages.conversation_id": {
+        "name": "conversation_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.chat_messages.name": {
+        "name": "name",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.chat_messages.created_at": {
+        "name": "created_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone",
+          "readOnly": true
+        }
+      },
+      "rowFilter.chat_messages.language": {
+        "name": "language",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.usage.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.usage.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.usage.date": {
+        "name": "date",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "rowFilter.usage.usage": {
+        "name": "usage",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "double precision"
+        }
+      },
+      "rowFilter.is_paid.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.is_paid.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.is_paid.is_premium": {
+        "name": "is_premium",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "boolean"
+        }
+      },
+      "rowFilter.actions.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.actions.name": {
+        "name": "name",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.actions.description": {
+        "name": "description",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.actions.active": {
+        "name": "active",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "boolean"
+        }
+      },
+      "rowFilter.actions.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.actions.tag": {
+        "name": "tag",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.actions.action_type": {
+        "name": "action_type",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.actions.path": {
+        "name": "path",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.actions.request_body_contents": {
+        "name": "request_body_contents",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "json"
+        }
+      },
+      "rowFilter.actions.parameters": {
+        "name": "parameters",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "json"
+        }
+      },
+      "rowFilter.actions.responses": {
+        "name": "responses",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "json"
+        }
+      },
+      "rowFilter.actions.created_at": {
+        "name": "created_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone",
+          "readOnly": true
+        }
+      },
+      "rowFilter.actions.request_method": {
+        "name": "request_method",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.actions.keys_to_keep": {
+        "name": "keys_to_keep",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "jsonb"
+        }
+      },
+      "rowFilter.action_tags.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.action_tags.name": {
+        "name": "name",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.action_tags.description": {
+        "name": "description",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.action_tags.created_at": {
+        "name": "created_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone",
+          "readOnly": true
+        }
+      },
+      "rowFilter.action_tags.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.profiles.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "rowFilter.profiles.updated_at": {
+        "name": "updated_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone"
+        }
+      },
+      "rowFilter.profiles.full_name": {
+        "name": "full_name",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.profiles.avatar_url": {
+        "name": "avatar_url",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.profiles.email_address": {
+        "name": "email_address",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.profiles.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.organizations.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.organizations.name": {
+        "name": "name",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.created_at": {
+        "name": "created_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone",
+          "readOnly": true
+        }
+      },
+      "rowFilter.organizations.api_key": {
+        "name": "api_key",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.description": {
+        "name": "description",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.api_host": {
+        "name": "api_host",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.auth_header": {
+        "name": "auth_header",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.auth_scheme": {
+        "name": "auth_scheme",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.organizations.join_link_id": {
+        "name": "join_link_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "text"
+        }
+      },
+      "rowFilter.conversations.id": {
+        "name": "id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      },
+      "rowFilter.conversations.created_at": {
+        "name": "created_at",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "timestamp with time zone",
+          "readOnly": true
+        }
+      },
+      "rowFilter.conversations.org_id": {
+        "name": "org_id",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "bigint"
+        }
+      }
+    },
+    "requestBodies": {
+      "body.chat_messages": {
+        "description": "chat_messages",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/chat_messages"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/chat_messages"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/chat_messages"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.usage": {
+        "description": "usage",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/usage"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/usage"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/usage"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.is_paid": {
+        "description": "is_paid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/is_paid"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/is_paid"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/is_paid"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.actions": {
+        "description": "actions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/actions"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/actions"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/actions"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.action_tags": {
+        "description": "action_tags",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/action_tags"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/action_tags"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/action_tags"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.profiles": {
+        "description": "profiles",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/profiles"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/profiles"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/profiles"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.organizations": {
+        "description": "organizations",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/organizations"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/organizations"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/organizations"
+            }
+          }
+        },
+        "required": false
+      },
+      "body.conversations": {
+        "description": "conversations",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/conversations"
+            }
+          },
+          "application/vnd.pgrst.object+json": {
+            "schema": {
+              "$ref": "#/components/schemas/conversations"
+            }
+          },
+          "text/csv": {
+            "schema": {
+              "$ref": "#/components/schemas/conversations"
+            }
+          }
+        },
+        "required": false
+      }
+    }
+  }
+}
