@@ -11,8 +11,9 @@ import {
   ArrowPathIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { classNames, getNumRows, parseTableTags } from "../lib/utils";
+import { classNames, getNumRows } from "../lib/utils";
 import { LoadingSpinner } from "./loadingspinner";
+import { parseTableTags } from "@superflows/chat-ui-react";
 
 const BrandName = "Apollo";
 const BrandColour = "#ffffff";

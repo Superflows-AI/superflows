@@ -394,7 +394,14 @@ async function Angela( // Good ol' Angela
     );
   }
 
-  let mostRecentParsedOutput = parseOutput("");
+  let mostRecentParsedOutput = {
+    reasoning: "",
+    plan: "",
+    tellUser: "",
+    commands: [] as FunctionCall[],
+    completed: false,
+  };
+
   let numOpenAIRequests = 0;
   let totalCost = 0;
   let awaitingConfirmation = false;
