@@ -27,6 +27,7 @@ export function ProfileContextProvider(props: {
   const [profile, setProfile] = useState<ProfilesRow | null | undefined>(
     undefined
   );
+  const [pathname, setPathname] = useState<string | null>(null);
   const session = useSession();
   const router = useRouter();
 
@@ -46,8 +47,11 @@ export function ProfileContextProvider(props: {
   }, [session, setProfile, props.supabase]);
 
   useEffect(() => {
-    if (session) refreshProfile();
-  }, [session]);
+    if (session && router.pathname !== pathname) {
+      refreshProfile();
+      setPathname(router.pathname);
+    }
+  }, [session, router]);
 
   return (
     <ProfileContext.Provider value={{ profile, refreshProfile }}>

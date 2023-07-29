@@ -23,6 +23,8 @@ import { LoadingSpinner } from "./loadingspinner";
 import Toggle from "./toggle";
 import { ToConfirm } from "../pages/api/v1/answers";
 import { Json } from "../lib/database.types";
+import suggestions1 from "../public/presets/1/suggestions.json";
+import suggestions2 from "../public/presets/2/suggestions.json";
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;
@@ -66,14 +68,25 @@ export default function PlaygroundChatbot(props: {
         profile?.organizations!.is_paid.length === 0 ||
         !profile?.organizations!.is_paid[0].is_premium
       ) {
-        // Below is the number of messages sent by the organization's users
+        // Below is the number of 1st messages sent by the organization's users
         const usageRes = await supabase
           .from("chat_messages")
-          .select("*", { count: "exact", head: true })
+          .select("*", { count: "exact" })
           .eq("org_id", profile?.organizations!.id)
+          .eq("conversation_index", 0)
           .eq("role", "user");
         if (usageRes.error) throw new Error(JSON.stringify(usageRes));
-        const numQueriesMade = usageRes.count ?? 0;
+        let numQueriesMade = usageRes.count ?? 0;
+        const messagesSent = usageRes.data.map((message) => message.content);
+        // This accounts for the suggestions of a preset. The preset adds 3 messages to the DB
+        if (
+          numQueriesMade &&
+          (suggestions1.every((s) => messagesSent.includes(s)) ||
+            suggestions2.every((s) => messagesSent.includes(s)))
+        ) {
+          // 3 suggestions, so reduce by 3
+          numQueriesMade -= 3;
+        }
         setUsageLevel(numQueriesMade);
       }
     })();

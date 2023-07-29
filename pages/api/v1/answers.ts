@@ -33,6 +33,8 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { getLanguage } from "../../../lib/language";
 import { Database } from "../../../lib/database.types";
+import suggestions1 from "../../../public/presets/1/suggestions.json";
+import suggestions2 from "../../../public/presets/2/suggestions.json";
 
 export const config = {
   runtime: "edge",
@@ -148,17 +150,28 @@ export default async function handler(req: NextRequest) {
 
     // Check that the user hasn't surpassed the usage limit
     if (
-      process.env.VERCEL_ENV === "production" &&
+      process.env.NODE_ENV === "production" &&
       (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
     ) {
-      // Below is the number of messages sent by the organization's users
+      // Below is the number of first messages sent by the organization's users
       const usageRes = await supabase
         .from("chat_messages")
-        .select("*", { count: "estimated", head: true })
+        .select("*", { count: "estimated" })
+        .eq("conversation_index", 0)
         .eq("org_id", org.id)
         .eq("role", "user");
       if (usageRes.error) throw new Error(usageRes.error.message);
-      const numQueriesMade = usageRes.count ?? 0;
+      let numQueriesMade = usageRes.count ?? 0;
+      const messagesSent = usageRes.data.map((message) => message.content);
+      // This accounts for the suggestions of a preset. The preset adds 3 messages to the DB
+      if (
+        numQueriesMade &&
+        (suggestions1.every((s) => messagesSent.includes(s)) ||
+          suggestions2.every((s) => messagesSent.includes(s)))
+      ) {
+        // 3 suggestions, so reduce by 3
+        numQueriesMade -= 3;
+      }
       if (numQueriesMade >= USAGE_LIMIT) {
         return new Response(
           JSON.stringify({
