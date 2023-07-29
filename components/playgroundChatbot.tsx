@@ -280,10 +280,9 @@ export default function PlaygroundChatbot(props: {
         id={"scrollable-chat-contents"}
       >
         {profile &&
-          process.env.VERCEL_ENV === "production" &&
+          process.env.NODE_ENV === "production" &&
           (profile?.organizations!.is_paid.length === 0 ||
-            !profile?.organizations!.is_paid[0].is_premium ||
-            USAGE_LIMIT <= usageLevel) && (
+            !profile?.organizations!.is_paid[0].is_premium) && (
             <div
               className={classNames(
                 "absolute top-28 inset-x-0 flex flex-col justify-center place-items-center text-xl",
