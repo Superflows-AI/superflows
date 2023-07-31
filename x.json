@@ -1,0 +1,386 @@
+[
+  {
+    "id": "64b966a4edccdcaae785f1c7",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "Number of deals closed",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": -1
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "last",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-20T16:53:56.378Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  },
+  {
+    "id": "64c4f161c7d477662580b407",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "finish quantive demo",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": 0
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "average",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-29T11:00:49.769Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  },
+  {
+    "id": "64c507afc7d477662580b42e",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "testing",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": 0
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "average",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-29T12:35:59.613Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  },
+  {
+    "id": "64c5084dcc4e82bb72970f34",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "testing1",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": 0
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "average",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-29T12:38:37.935Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  },
+  {
+    "id": "64c516160dcedbd7dad08107",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "New KPI",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": 0
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "sum",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-29T13:37:26.68Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  },
+  {
+    "id": "64c7b8cf148461c07066bab9",
+    "accountId": "64b94e50c1815107739582f9",
+    "name": "Increase NRR to 110% by end of Q3",
+    "description": "",
+    "formatting": {
+      "prefix": "",
+      "suffix": "",
+      "fractionSize": 0
+    },
+    "targetOperator": "should_increase",
+    "aggregation": "average",
+    "createdById": "64b94e50c1815107739582fa",
+    "dateCreated": "2023-07-31T13:36:15.532Z",
+    "ownerId": "64b94e50c1815107739582fa",
+    "ownerIds": ["64b94e50c1815107739582fa"],
+    "groups": [],
+    "groupsOrder": null,
+    "access": {
+      "inherits": true,
+      "permissions": [
+        {
+          "principalId": "64b94e50c1815107739582fa",
+          "principalKind": "user",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        },
+        {
+          "principalId": "64b94e50c1815107739582f9",
+          "principalKind": "account",
+          "grant": {
+            "general": ["read"]
+          }
+        },
+        {
+          "principalId": "573d93d9ed915d00052efb6b",
+          "principalKind": "role",
+          "grant": {
+            "general": [
+              "read",
+              "update",
+              "delete",
+              "create",
+              "modifyPermissions"
+            ]
+          }
+        }
+      ],
+      "ownerPermissions": {
+        "grant": {
+          "general": ["read", "update", "delete", "create", "modifyPermissions"]
+        }
+      }
+    },
+    "isOwner": true,
+    "currentUserAllowedActions": null
+  }
+]

@@ -33,7 +33,7 @@ export default function PageActionsSection(props: {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
   const [open, setUploadModalOpen] = useState<boolean>(false);
-  const [includeInactive, setIncludeInactive] = useState<boolean>(true);
+  const [showInactive, setShowInactive] = useState<boolean>(true);
   const [numActiveActions, setNumActiveActions] = useState<number>(0);
   const [deleteAllActionsModelOpen, setDeleteAllActionsModalOpen] =
     useState<boolean>(false);
@@ -95,14 +95,14 @@ export default function PageActionsSection(props: {
           <div className="flex flex-row gap-x-6 place-items-center">
             <Checkbox
               onChange={(checked) => {
-                setIncludeInactive(checked);
+                setShowInactive(checked);
               }}
-              checked={includeInactive}
+              checked={showInactive}
               label={"Show inactive"}
             />
             {props.actionTags.length > 0 && (
               <DropdownWithCheckboxes
-                title={"Enable HTTP method"}
+                title={"Activate by HTTP method"}
                 items={actionTagsToToggleItems(
                   props.actionTags,
                   props.setActionTags,
@@ -139,7 +139,7 @@ export default function PageActionsSection(props: {
                 }}
               >
                 <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />
-                Add tag
+                Add group
               </button>
             )}
             <button
@@ -169,13 +169,14 @@ export default function PageActionsSection(props: {
         {props.actionTags.length > 0 ? (
           props.actionTags
             .filter((actionTag) => {
-              if (includeInactive) return true;
+              if (showInactive) return true;
               return actionTag.actions.some((action) => action.active);
             })
             .map((actionTag: ActionTagJoinActions) => (
               <ActionsSection
                 key={actionTag.id}
                 actionTagJoinActions={actionTag}
+                showInactive={showInactive}
                 setActionTag={(actionTag: ActionTagJoinActions) => {
                   const copy = [...props.actionTags];
                   const agIndex = props.actionTags.findIndex(
@@ -330,6 +331,7 @@ function ActionsSection(props: {
   actionTagJoinActions: ActionTagJoinActions;
   setActionTag: (actionTag: ActionTagJoinActions) => void;
   deleteActionTag: () => void;
+  showInactive: boolean;
 }) {
   const supabase = useSupabaseClient();
 
@@ -378,9 +380,9 @@ function ActionsSection(props: {
         }}
       />
       <WarningModal
-        title={`Delete action tag and all its actions: "${props.actionTagJoinActions.name}"?`}
+        title={`Delete action group and all its actions: "${props.actionTagJoinActions.name}"?`}
         description={
-          "Are you sure you want to delete this action tag and all its actions? Once you delete it you can't get it back. There's no undo button."
+          "Are you sure you want to delete this action group and all its actions? Once you delete it you can't get it back. There's no undo button."
         }
         action={props.deleteActionTag}
         open={deleteActionTag}
@@ -474,11 +476,11 @@ function ActionsSection(props: {
             <FlyoutMenu
               items={[
                 {
-                  name: "Edit Tag",
+                  name: "Edit Group",
                   onClick: () => setEditActionTag(true),
                 },
                 {
-                  name: "Delete Tag",
+                  name: "Delete Group",
                   onClick: () => {
                     setDeleteActionTag(true);
                   },
@@ -529,92 +531,94 @@ function ActionsSection(props: {
             "relative mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 rounded-md"
           )}
         >
-          {actions.map((action, index) => (
-            <li
-              key={index}
-              className={classNames(
-                "group col-span-1 rounded-lg border cursor-pointer",
-                action.active
-                  ? "bg-gray-900 border-purple-500 shadow shadow-purple-800/60 hover:shadow-md hover:shadow-purple-800/60"
-                  : "bg-gray-850 border-gray-700 hover:border-gray-400 hover:shadow-md hover:shadow-gray-300/20"
-              )}
-            >
-              <div
-                onClick={async () => {
-                  const newActionTag = { ...props.actionTagJoinActions };
-
-                  newActionTag.actions[index].active =
-                    !newActionTag.actions[index].active;
-                  props.setActionTag(newActionTag);
-                  const res = await supabase
-                    .from("actions")
-                    .update({ active: newActionTag.actions[index].active })
-                    .eq("id", action.id)
-                    .select();
-                  if (res.error) throw res.error;
-                  if (res.data === null || res.data.length === 0)
-                    throw new Error("Expected >0 rows to be updated");
-                }}
-                className="relative flex max-w-full w-full items-center justify-between gap-x-1 md:gap-x-3 p-3 md:p-6"
+          {actions
+            .filter((a) => props.showInactive || a.active)
+            .map((action, index) => (
+              <li
+                key={index}
+                className={classNames(
+                  "group col-span-1 rounded-lg border cursor-pointer",
+                  action.active
+                    ? "bg-gray-900 border-purple-500 shadow shadow-purple-800/60 hover:shadow-md hover:shadow-purple-800/60"
+                    : "bg-gray-850 border-gray-700 hover:border-gray-400 hover:shadow-md hover:shadow-gray-300/20"
+                )}
               >
-                <div className="flex flex-col select-none max-w-[calc(100%-3.75rem)]">
-                  <p
-                    className={classNames(
-                      "truncate max-h-20 text-xs font-mono whitespace-pre-line",
-                      action.active ? "text-gray-400" : "text-gray-500"
-                    )}
-                  >
-                    {action.request_method?.toUpperCase()} {action.path}
-                  </p>
-                  <h3
-                    className={classNames(
-                      "font-medium whitespace-wrap break-words",
-                      action.active ? "text-gray-100" : "text-gray-400"
-                    )}
-                  >
-                    {action.name}
-                  </h3>
-                  {action.description !==
-                    `${action.request_method?.toUpperCase()} ${
-                      action.path
-                    }` && (
-                    <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
-                      {action.description}
+                <div
+                  onClick={async () => {
+                    const newActionTag = { ...props.actionTagJoinActions };
+
+                    newActionTag.actions[index].active =
+                      !newActionTag.actions[index].active;
+                    props.setActionTag(newActionTag);
+                    const res = await supabase
+                      .from("actions")
+                      .update({ active: newActionTag.actions[index].active })
+                      .eq("id", action.id)
+                      .select();
+                    if (res.error) throw res.error;
+                    if (res.data === null || res.data.length === 0)
+                      throw new Error("Expected >0 rows to be updated");
+                  }}
+                  className="relative flex max-w-full w-full items-center justify-between gap-x-1 md:gap-x-3 p-3 md:p-6"
+                >
+                  <div className="flex flex-col select-none max-w-[calc(100%-3.75rem)]">
+                    <p
+                      className={classNames(
+                        "truncate max-h-20 text-xs font-mono whitespace-pre-line",
+                        action.active ? "text-gray-400" : "text-gray-500"
+                      )}
+                    >
+                      {action.request_method?.toUpperCase()} {action.path}
                     </p>
-                  )}
+                    <h3
+                      className={classNames(
+                        "font-medium whitespace-wrap break-words",
+                        action.active ? "text-gray-100" : "text-gray-400"
+                      )}
+                    >
+                      {action.name}
+                    </h3>
+                    {action.description !==
+                      `${action.request_method?.toUpperCase()} ${
+                        action.path
+                      }` && (
+                      <p className="mt-1 truncate max-h-20 text-sm text-gray-500 whitespace-pre-line">
+                        {action.description}
+                      </p>
+                    )}
+                  </div>
+                  <FlyoutMenu
+                    getClassName={(open: boolean) =>
+                      open ? "visible" : "invisible group-hover:visible"
+                    }
+                    items={[
+                      {
+                        name: "Edit",
+                        onClick: () => {
+                          setEditActionIndex(index);
+                        },
+                      },
+                      {
+                        name: "Delete",
+                        onClick: () => {
+                          setDeleteActionIndex(index);
+                        },
+                      },
+                    ]}
+                    buttonClassName={
+                      "inline-flex items-center gap-x-1 text-sm font-semibold text-gray-100 hover:bg-gray-950 rounded-md transition"
+                    }
+                    Icon={
+                      <EllipsisHorizontalIcon
+                        className="h-8 w-8 p-0.5 md:h-9 md:w-9 md:p-1"
+                        aria-hidden="true"
+                      />
+                    }
+                    popoverClassName={"w-40"}
+                  />
                 </div>
-                <FlyoutMenu
-                  getClassName={(open: boolean) =>
-                    open ? "visible" : "invisible group-hover:visible"
-                  }
-                  items={[
-                    {
-                      name: "Edit",
-                      onClick: () => {
-                        setEditActionIndex(index);
-                      },
-                    },
-                    {
-                      name: "Delete",
-                      onClick: () => {
-                        setDeleteActionIndex(index);
-                      },
-                    },
-                  ]}
-                  buttonClassName={
-                    "inline-flex items-center gap-x-1 text-sm font-semibold text-gray-100 hover:bg-gray-950 rounded-md transition"
-                  }
-                  Icon={
-                    <EllipsisHorizontalIcon
-                      className="h-8 w-8 p-0.5 md:h-9 md:w-9 md:p-1"
-                      aria-hidden="true"
-                    />
-                  }
-                  popoverClassName={"w-40"}
-                />
-              </div>
-            </li>
-          ))}
+              </li>
+            ))}
           <li
             onClick={async () => {
               const exampleLen = actions.length;
