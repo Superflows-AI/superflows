@@ -34,9 +34,14 @@ export default function EditActionGroupModal(props: {
               aria-hidden="true"
             />
           </div>
-          <Dialog.Title as="h3" className="text-xl leading-6 text-gray-100">
-            Edit Action Tag
-          </Dialog.Title>
+          <div>
+            <Dialog.Title as="h3" className="text-xl leading-6 text-gray-100">
+              Edit Action Group
+            </Dialog.Title>
+            <p className="mt-1 text-sm text-gray-500">
+              These are called <i>tags</i> in OpenAPI terminology.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -117,16 +122,17 @@ export default function EditActionGroupModal(props: {
               {localActionGroup.description.length}/300
             </div>
           )}
-        <div className="absolute top-3 right-3">
-          <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full" />
-          <div className={classNames("right-0 -top-36 w-64 popup")}>
-            Give instructions & information to the AI writing the reply.
-            <br />
-            <br />
-            E.g. &ldquo;Book a call, my calendar link is:
-            https://calendly.com/...&rdquo;
-          </div>
-        </div>
+        {/* TODO: Can add a tooltip here */}
+        {/*<div className="absolute top-3 right-3">*/}
+        {/*  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full" />*/}
+        {/*  <div className={classNames("right-0 -top-36 w-64 popup")}>*/}
+        {/*    Give instructions & information to the AI writing the reply.*/}
+        {/*    <br />*/}
+        {/*    <br />*/}
+        {/*    E.g. &ldquo;Book a call, my calendar link is:*/}
+        {/*    https://calendly.com/...&rdquo;*/}
+        {/*  </div>*/}
+        {/*</div>*/}
         <div
           className={classNames(
             "absolute pointer-events-none left-4 top-3 peer-focus:scale-75 peer-focus:-translate-y-5/8 text-gray-400 select-none transition duration-300",
