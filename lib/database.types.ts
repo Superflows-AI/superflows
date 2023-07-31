@@ -337,7 +337,16 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      count_user_messages: {
+        Args: {
+          organisation_id: number;
+          presets: string[];
+        };
+        Returns: {
+          date: string;
+          count: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
