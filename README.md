@@ -1,6 +1,6 @@
 # Superflows
 
-Superflows adds a Copilot to your SaaS product to help your users get the most out of it.
+Superflows adds a Copilot to your SaaS product to help your users get the most out of it. You can test our cloud version for free on our Dashboard via our [landing page](https://www.superflows.ai/) and learn more on our [documentation pages](https://docs.superflows.ai/).
 
 ## Status
 
