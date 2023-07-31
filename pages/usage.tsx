@@ -30,6 +30,7 @@ export default function App() {
   );
 }
 
+console.log("hiiii", process.env.NEXT_PUBLIC_IS_IN_CLOUD);
 function Dashboard() {
   if (
     process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
