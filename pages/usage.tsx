@@ -30,15 +30,27 @@ export default function App() {
   );
 }
 
+function Dashboard() {
+  if (
+    process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
+    process.env.NEXT_PUBLIC_IS_IN_CLOUD == "true"
+  )
+    return <DashboardNumMessages />;
+  return <DashboardCost />;
+}
+
 const formatDate = timeFormat("%Y-%m-%d");
 
 const msToDay = 1000 * 60 * 60 * 24;
 
-function DatesBarGraph(props: { data: { date: string; count: number }[] }) {
+function DatesBarGraph(props: {
+  data: { date: string; value: number }[];
+  ylabel: string;
+}) {
   if (!props.data || props.data.length == 0) return null;
 
   const chartData = props.data
-    .map((d) => ({ date: Date.parse(d.date) / msToDay, value: d.count }))
+    .map((d) => ({ date: Date.parse(d.date) / msToDay, value: d.value }))
     .sort((a, b) => a.date - b.date);
 
   const xRange = chartData[chartData.length - 1].date - chartData[0].date;
@@ -68,13 +80,18 @@ function DatesBarGraph(props: { data: { date: string; count: number }[] }) {
           />
           <YAxis allowDecimals={false}>
             <Label
-              value="Number of questions"
+              value={props.ylabel}
               angle={-90}
               position="insideLeft"
               offset={-5}
             />
           </YAxis>
-          <Tooltip labelFormatter={intToDate} />
+          <Tooltip
+            labelFormatter={intToDate}
+            formatter={(value) =>
+              `${Math.round((value as number) * 100) / 100}`
+            }
+          />
 
           <Bar dataKey="value" fill="#8884d8" />
         </ComposedChart>
@@ -83,12 +100,12 @@ function DatesBarGraph(props: { data: { date: string; count: number }[] }) {
   );
 }
 
-function Dashboard() {
+function DashboardNumMessages() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
   const [numUserMessages, setNumUserMessages] = useState([{}] as {
     date: string;
-    count: number;
+    value: number;
   }[]);
   const [totalMessages, setTotalMessages] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -104,7 +121,7 @@ function Dashboard() {
 
       if (error) throw new Error(error.message);
 
-      setNumUserMessages(data);
+      setNumUserMessages(data.map((d) => ({ date: d.date, value: d.count })));
       setTotalMessages(data.reduce((acc, curr) => acc + curr.count, 0));
       setLoading(false);
     })();
@@ -122,7 +139,53 @@ function Dashboard() {
               }`}
           </p>
           <div className="max-w-5xl mx-auto">
-            {!loading && <DatesBarGraph data={numUserMessages} />}
+            {!loading && (
+              <DatesBarGraph
+                data={numUserMessages}
+                ylabel="Number of messages"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardCost() {
+  // It's getting WET in here
+  const supabase = useSupabaseClient<Database>();
+  const { profile, refreshProfile } = useProfile();
+  const [cost, setCost] = useState([{}] as { date: string; value: number }[]);
+  const [sum, setSum] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const res = await supabase
+        .from("usage")
+        .select("*")
+        .eq("org_id", profile?.org_id);
+      if (res.error) throw res.error;
+      setCost(res.data.map((d) => ({ date: d.date, value: d.usage })));
+      setSum(res.data.reduce((acc, curr) => acc + curr.usage, 0));
+      setLoading(false);
+    })();
+  }, [profile, refreshProfile, supabase]);
+  return (
+    <div className="bg-gray-800 min-h-screen">
+      <Navbar current={"Usage"} />
+      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
+        <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
+          <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
+          <p className="text-gray-400 mt-2">
+            {`The total cost from the OpenAI API for your organization is $${
+              Math.round(sum * 100) / 100
+            }`}
+          </p>
+          <div className="max-w-5xl mx-auto">
+            {!loading && <DatesBarGraph data={cost} ylabel="Cost (USD)" />}
           </div>
         </div>
       </div>
