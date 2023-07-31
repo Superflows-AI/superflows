@@ -31,6 +31,8 @@ export default function App() {
 }
 
 function Dashboard() {
+  // The cloud version of the app is priced based on number of user queries.
+  // The self-hosted version will cost per request to openai
   if (
     process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
     process.env.NEXT_PUBLIC_IS_IN_CLOUD == "true"
@@ -131,18 +133,18 @@ function DashboardNumMessages() {
       <Navbar current={"Usage"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
-          <h1 className="text-xl text-gray-100">Superflows usage</h1>
-          <p className="text-gray-400 mt-2">
-            {!loading &&
-              `The total number of questions asked by your organisation is ${
-                Math.round(totalMessages * 100) / 100
-              }`}
-          </p>
+          <div className="text-center">
+            <h1 className="text-2xl text-gray-100">Superflows usage</h1>
+            <p className="text-gray-200 mt-2 text-xl font-bold text-purple-500">
+              {!loading &&
+                `Total user queries: ${Math.round(totalMessages * 100) / 100}`}
+            </p>
+          </div>
           <div className="max-w-5xl mx-auto">
             {!loading && (
               <DatesBarGraph
                 data={numUserMessages}
-                ylabel="Number of messages"
+                ylabel="Number of user queries"
               />
             )}
           </div>
@@ -178,12 +180,12 @@ function DashboardCost() {
       <Navbar current={"Usage"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
-          <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
-          <p className="text-gray-400 mt-2">
-            {`The total cost from the OpenAI API for your organization is $${
-              Math.round(sum * 100) / 100
-            }`}
-          </p>
+          <div className="place-items-center m-auto  text-center">
+            <h1 className="text-2xl text-gray-100">OpenAI API usage </h1>
+            <p className="text-gray-200 mt-2 text-xl font-bold text-purple-500">
+              {`Total Cost $${Math.round(sum * 100) / 100}`}
+            </p>
+          </div>
           <div className="max-w-5xl mx-auto">
             {!loading && <DatesBarGraph data={cost} ylabel="Cost (USD)" />}
           </div>
