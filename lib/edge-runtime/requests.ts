@@ -116,6 +116,7 @@ export async function httpRequestFromAction({
 
     console.log("actionParameters:", JSON.stringify(actionParameters));
     for (const param of actionParameters) {
+      console.log(`processing param: ${JSON.stringify(param)}`);
       if (param.required && !parameters[param.name]) {
         throw new Error(
           `Parameter "${param.name}" in ${param.in} is not provided by LLM`
