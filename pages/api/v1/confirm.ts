@@ -8,11 +8,11 @@ import {
   httpRequestFromAction,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
-import { parseOutput } from "../../../lib/parsers/parsers";
 import { Database } from "../../../lib/database.types";
 import { Ratelimit } from "@upstash/ratelimit";
 import { ToConfirm } from "./answers";
 import { ChatGPTMessage } from "../../../lib/models";
+import { parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
   runtime: "edge",

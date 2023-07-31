@@ -8,13 +8,9 @@ import {
   ActionToHttpRequest,
   ChatGPTMessage,
   ChatGPTParams,
-  FunctionCall,
   StreamingStepInput,
 } from "../../../lib/models";
-import {
-  parseGPTStreamedData,
-  parseOutput,
-} from "../../../lib/parsers/parsers";
+import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
@@ -35,6 +31,7 @@ import { getLanguage } from "../../../lib/language";
 import { Database } from "../../../lib/database.types";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
+import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
   runtime: "edge",
@@ -291,7 +288,8 @@ export default async function handler(req: NextRequest) {
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
-          error: "No active actions found",
+          error:
+            "You have no active actions set for your organization. Add them if you have access to the superflows dashboard or reach out to your IT team.",
         }),
         { status: 404, headers }
       );
@@ -396,7 +394,14 @@ async function Angela( // Good ol' Angela
     );
   }
 
-  let mostRecentParsedOutput = parseOutput("");
+  let mostRecentParsedOutput = {
+    reasoning: "",
+    plan: "",
+    tellUser: "",
+    commands: [] as FunctionCall[],
+    completed: false,
+  };
+
   let numOpenAIRequests = 0;
   let totalCost = 0;
   let awaitingConfirmation = false;

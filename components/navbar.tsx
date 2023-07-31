@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import { Disclosure } from "@headlessui/react";
 import {
   ArrowRightOnRectangleIcon,
@@ -7,14 +6,15 @@ import {
   QuestionMarkCircleIcon,
   UsersIcon,
 } from "@heroicons/react/24/outline";
-import { classNames } from "../lib/utils";
-import Link from "next/link";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useState } from "react";
+import { classNames } from "../lib/utils";
+import { useProfile } from "./contextManagers/profile";
 import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
-import { useProfile } from "./contextManagers/profile";
-import { useRouter } from "next/router";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -106,7 +106,7 @@ export function Navbar(props: { current: string }) {
                     },
                     {
                       name: "Add a Github issue",
-                      href: "https://github.com/Superflows-AI/superflows",
+                      href: "https://github.com/Superflows-AI/superflows/issues/new",
                       Icon: <GitHubIcon aria-hidden="true" />,
                     },
                   ]}

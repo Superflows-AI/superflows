@@ -1,9 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import {
-  parseFunctionCall,
-  parseGPTStreamedData,
-  parseOutput,
-} from "../lib/parsers/parsers";
+import { parseGPTStreamedData } from "../lib/parsers/parsers";
+import { parseFunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 describe("Parse output", () => {
   it("should not error", () => {
