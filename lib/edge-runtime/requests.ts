@@ -33,7 +33,9 @@ export async function httpRequestFromAction({
   if (!organization.api_host) {
     throw new Error("API host has not been provided");
   }
-  console.log("parameters", parameters);
+
+  console.log("Constructing http request for action:", JSON.stringify(action));
+  console.log("parameters:", parameters);
 
   const headers: Record<string, string> = {};
   // TODO: Only application/json supported for now(!!)
@@ -58,6 +60,9 @@ export async function httpRequestFromAction({
   if (action.request_method !== "GET" && action.request_body_contents) {
     const reqBodyContents =
       action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
+
+    console.log("reqBodyContents:", reqBodyContents);
+
     if (!("application/json" in reqBodyContents)) {
       throw new Error(
         "Only application/json request body contents are supported for now"
@@ -66,8 +71,11 @@ export async function httpRequestFromAction({
     const applicationJson = reqBodyContents[
       "application/json"
     ] as OpenAPIV3.MediaTypeObject;
+
     const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
+    console.log("schema:", JSON.stringify(schema));
     const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
+    console.log("properties:", JSON.stringify(properties));
     const bodyArray = Object.entries(properties).map(([name, property]) => {
       // Throw out readonly attributes
       if (property.readOnly) return undefined;
@@ -75,6 +83,8 @@ export async function httpRequestFromAction({
         return { [name]: parameters[name] };
       }
     });
+    console.log("bodyArray:", JSON.stringify(bodyArray));
+
     const body = Object.assign({}, ...bodyArray);
 
     // Check all required params are present
@@ -88,7 +98,6 @@ export async function httpRequestFromAction({
         );
       }
     });
-
     requestOptions.body = JSON.stringify(body);
   }
 
@@ -104,6 +113,8 @@ export async function httpRequestFromAction({
     const queryParams = new URLSearchParams();
     const actionParameters =
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
+
+    console.log("actionParameters:", JSON.stringify(actionParameters));
     for (const param of actionParameters) {
       if (param.required && !parameters[param.name]) {
         throw new Error(

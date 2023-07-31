@@ -188,6 +188,10 @@ export default async function handler(req: NextRequest) {
       });
     }
 
+    console.log(
+      `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`
+    );
+
     // Override api_host if mock_api_responses is set to true
     if (org && requestData.mock_api_responses) {
       const currentHost =
@@ -222,6 +226,9 @@ export default async function handler(req: NextRequest) {
     let previousMessages: ChatGPTMessage[] = [];
     let conversationId: number;
     if (requestData.conversation_id) {
+      console.log(
+        `Conversation ID provided: ${requestData.conversation_id}. Fetching previous messages`
+      );
       conversationId = requestData.conversation_id;
       const convResp = await supabase
         .from("chat_messages")
@@ -244,6 +251,7 @@ export default async function handler(req: NextRequest) {
       // If the language is set for any message in the conversation, use that
       language = convResp.data.find((m) => !!m.language)?.language ?? null;
     } else {
+      console.log(`No conversation ID provided. Creating new conversation`);
       const convoInsertRes = await supabase
         .from("conversations")
         .insert({ org_id: org.id })
@@ -294,6 +302,12 @@ export default async function handler(req: NextRequest) {
         { status: 404, headers }
       );
     }
+
+    console.log(
+      `${activeActions.length} active actions found: ${JSON.stringify(
+        activeActions
+      )}`
+    );
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -480,6 +494,7 @@ async function Angela( // Good ol' Angela
       const toConfirm: ToConfirm[] = [];
       // Call endpoints here
       for (const command of mostRecentParsedOutput.commands) {
+        console.log("Processing command: ", command);
         const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);

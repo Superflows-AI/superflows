@@ -124,6 +124,10 @@ export default async function handler(req: NextRequest) {
       });
     }
 
+    console.log(
+      `Got call to confirm with valid request body for conversation ID: ${requestData.conversation_id}`
+    );
+
     // Override api_host if mock_api_responses is set to true
     if (org && requestData.mock_api_responses) {
       const currentHost =
@@ -150,6 +154,12 @@ export default async function handler(req: NextRequest) {
       .eq("org_id", org.id);
     if (countMessagesRes.error) throw new Error(countMessagesRes.error.message);
     const numPastMessages = countMessagesRes.count ?? 0;
+
+    console.log(
+      `Found ${numPastMessages} past messages: ${JSON.stringify(
+        countMessagesRes
+      )}`
+    );
 
     if (!requestData.confirm) {
       if (redis) await redis.json.del(requestData.conversation_id.toString());
@@ -214,10 +224,12 @@ export default async function handler(req: NextRequest) {
             };
           })
         );
+        console.log("Got toExecute from redis:", JSON.stringify(toExecute));
       }
     }
     // If there is no redis data, get the data from the database
     if (toExecute.length === 0) {
+      console.log("No redit data. Getting toExecute from database");
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
@@ -228,7 +240,7 @@ export default async function handler(req: NextRequest) {
         .limit(1);
 
       if (error) throw new Error(error.message);
-
+      console.log("Data from database:", JSON.stringify(data));
       toExecute = await Promise.all(
         parseOutput(data[0].content).commands.map(async (command) => {
           const action = await supabase
@@ -244,21 +256,29 @@ export default async function handler(req: NextRequest) {
           };
         })
       );
+      console.log("Got toExecute from database:", JSON.stringify(toExecute));
     }
 
     const outs: ChatGPTMessage[] = await Promise.all(
       toExecute.map(async (execute, idx) => {
+        console.log("Executing action:", JSON.stringify(execute));
         let output = await httpRequestFromAction({
           action: execute.action,
           parameters: execute.params as Record<string, unknown>,
           organization: org!,
           userApiKey: requestData.user_api_key,
         });
+
+        console.log("http request:", JSON.stringify(output));
+
         const out = {
           role: "function",
           name: execute.action.name,
           content: JSON.stringify(processAPIoutput(output, execute.action)),
         } as ChatGPTMessage;
+
+        console.log("out:", JSON.stringify(out));
+
         const funcRes = await supabase.from("chat_messages").insert({
           ...out,
           conversation_id: requestData.conversation_id,
