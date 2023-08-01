@@ -35,7 +35,7 @@ function Dashboard() {
   // The self-hosted version will cost per request to openai
   if (
     process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
-    process.env.NEXT_PUBLIC_IS_IN_CLOUD == "true"
+    process.env.NEXT_PUBLIC_IS_IN_CLOUD === "true"
   )
     return <DashboardNumMessages />;
   return <DashboardCost />;
