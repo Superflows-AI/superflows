@@ -147,7 +147,9 @@ export default function PlaygroundChatbot(props: {
             if (chunkOfChunk.length === 0) return;
             const data = JSON.parse(chunkOfChunk) as StreamingStep;
             if (conversationId === null) setConversationId(data.id);
-            if (data.role !== outputMessages[outputMessages.length - 1]?.role) {
+            if (
+              data?.role !== outputMessages[outputMessages.length - 1]?.role
+            ) {
               outputMessages.push({ ...data });
             } else {
               outputMessages[outputMessages.length - 1].content += data.content;
