@@ -143,6 +143,7 @@ export default function PlaygroundChatbot(props: {
           // Can be multiple server-side chunks in one client-side chunk,
           // separated by "data:"
           chunkValue.split("data:").forEach((chunkOfChunk) => {
+            console.log("processing chunk: ", chunkOfChunk);
             if (chunkOfChunk.length === 0) return;
             const data = JSON.parse(chunkOfChunk) as StreamingStep;
             if (conversationId === null) setConversationId(data.id);
