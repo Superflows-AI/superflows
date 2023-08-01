@@ -102,7 +102,7 @@ export default function PageActionsSection(props: {
             />
             {props.actionTags.length > 0 && (
               <DropdownWithCheckboxes
-                title={"Activate by HTTP method"}
+                title={"Set active by HTTP method"}
                 items={actionTagsToToggleItems(
                   props.actionTags,
                   props.setActionTags,

@@ -9,6 +9,7 @@ export function AutoGrowingTextArea(props: {
   minHeight?: number;
   maxHeight?: number;
   onBlur?: React.FocusEventHandler<HTMLTextAreaElement>;
+  disabled?: boolean;
 }) {
   const ref = useRef(null);
 
@@ -35,6 +36,7 @@ export function AutoGrowingTextArea(props: {
       onChange={props.onChange}
       onKeyDown={props.onKeyDown ?? (() => {})}
       onBlur={props.onBlur ?? (() => {})}
+      disabled={!!props.disabled}
     />
   );
 }
