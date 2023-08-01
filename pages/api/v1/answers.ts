@@ -350,9 +350,11 @@ export default async function handler(req: NextRequest) {
             .eq("id", data[0].id);
           if (error) throw new Error(error.message);
         } else {
-          const { error: error2 } = await supabase
-            .from("usage")
-            .insert({ org_id: org!.id, usage: cost });
+          const { error: error2 } = await supabase.from("usage").insert({
+            org_id: org!.id,
+            usage: cost,
+            num_user_queries: numUserQueries,
+          });
           if (error2) throw new Error(error2.message);
         }
         controller.close();
