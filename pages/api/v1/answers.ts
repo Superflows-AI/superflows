@@ -156,7 +156,9 @@ export default async function handler(req: NextRequest) {
       process.env.NODE_ENV === "production" &&
       (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
     ) {
-      // Below is the number of first messages sent by the organization's users
+      // The number of first messages sent by the organization's users
+      // This count is just for free tier users. All messages should count to avoid spam.
+      // For paying customers, we only count full AI responses against their usage (see below).
       const usageRes = await supabase
         .from("chat_messages")
         .select("*", { count: "estimated" })
@@ -497,6 +499,8 @@ async function Angela( // Good ol' Angela
 
       mostRecentParsedOutput = parseOutput(rawOutput);
 
+      // We only count a query against a user's quota if the AI selects an action to take.
+      // We don't count it if the AI is just asking for more information, or if the user says 'hi' etc.
       if (
         mostRecentParsedOutput.commands &&
         mostRecentParsedOutput.commands.length > 0
