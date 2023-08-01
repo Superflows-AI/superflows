@@ -122,7 +122,7 @@ export default function PageActionsSection(props: {
                   const res = await supabase
                     .from("action_tags")
                     .insert({
-                      name: "New Tag",
+                      name: "New Group",
                       org_id: profile.org_id,
                     })
                     .select("*");

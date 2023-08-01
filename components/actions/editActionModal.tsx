@@ -9,7 +9,7 @@ import {
   PencilSquareIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Action } from "../../lib/types";
 import {
   classNames,
@@ -97,24 +97,27 @@ export default function EditActionModal(props: {
   setAction: (action: Action) => void;
 }) {
   const saveRef = useRef(null);
-  const [nameValid, setNameValid] = React.useState<boolean>(
+  const [nameValid, setNameValid] = useState<boolean>(
     props.action.name.length > 0 && isAlphaNumericUnderscore(props.action.name)
   );
 
-  const [localAction, setLocalAction] = React.useState<Action>(props.action);
+  const [localAction, setLocalAction] = useState<Action>(props.action);
 
-  const [parametersValidJSON, setParameterValidJSON] =
-    React.useState<boolean>(true);
+  const [parametersValidJSON, setParameterValidJSON] = useState<boolean>(true);
 
-  const [bodyValidJSON, setBodyValidJSON] = React.useState<boolean>(true);
+  const [bodyValidJSON, setBodyValidJSON] = useState<boolean>(true);
 
-  const [responsesValidJSON, setResponsesValidJSON] =
-    React.useState<boolean>(true);
-  console.log("localAction.keys_to_keep", localAction.keys_to_keep);
-  const [includeAllInResposes, setIncludeAllInResponses] =
-    React.useState<boolean>(localAction.keys_to_keep === null);
+  const [responsesValidJSON, setResponsesValidJSON] = useState<boolean>(true);
+  const [includeAllInResposes, setIncludeAllInResponses] = useState<boolean>(
+    localAction.keys_to_keep === null
+  );
   const [inclInResponsesValidJSON, setInclInResponsesValidJSON] =
-    React.useState<boolean>(true);
+    useState<boolean>(true);
+
+  // State variable useful for caching the keys to keep when the checkbox is checked
+  const [cacheKeysToKeep, setCacheKeysToKeep] = useState<string[]>(
+    localAction.keys_to_keep as string[]
+  );
 
   return (
     <Modal open={!!props.action} setOpen={props.close} classNames={"max-w-4xl"}>
@@ -309,13 +312,17 @@ export default function EditActionModal(props: {
             <Checkbox
               onChange={(checked) => {
                 setIncludeAllInResponses(checked);
-                console.log("WHAT? IS GOING ON??");
                 if (checked) {
+                  setCacheKeysToKeep(
+                    (localAction.keys_to_keep as string[]) ?? []
+                  );
                   setLocalAction({ ...localAction, keys_to_keep: null });
                 } else {
-                  setLocalAction({ ...localAction, keys_to_keep: [] });
+                  setLocalAction({
+                    ...localAction,
+                    keys_to_keep: cacheKeysToKeep,
+                  });
                 }
-                console.log(localAction);
               }}
               checked={includeAllInResposes}
               label={""}
@@ -324,9 +331,9 @@ export default function EditActionModal(props: {
             <div className="relative z-10">
               <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-300 transition rounded-full hover:bg-gray-850" />
               <div className={classNames("-top-8 left-12 w-72 popup")}>
-                Some APIs return a lot of data. Often, lots of it is never
-                useful to the AI product assistant. Unchecking this enables
-                cutting out useless data returned from this endpoint.
+                Some APIs return lots of data which isn&apos;t useful to the AI.
+                Unchecking this enables you to cut out useless data returned
+                from this endpoint, which improves the AI&apos;s performance.
               </div>
             </div>
           </div>
@@ -388,7 +395,7 @@ const textToJson = (text: string) => {
 };
 
 function JsonTextBox(props: JsonTextBoxProps) {
-  const [text, setText] = React.useState(
+  const [text, setText] = useState(
     // Just format the text once at the start to prevent formatting mid-editing
     textToJson(JSON.stringify(props.action[props.title]))
   );
