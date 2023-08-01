@@ -187,10 +187,18 @@ export function filterKeys<InputObject extends any>(
       }
       // Array
       if (Array.isArray(value)) {
-        output[key] = value.map((ele) => filterKeys(ele, keysToKeep));
+        // If the array is empty, don't add it
+        const val = value.map((ele) => filterKeys(ele, keysToKeep));
+        if (val.length > 0) {
+          output[key] = val;
+        }
       }
       // Object
-      output[key] = filterKeys(value, keysToKeep);
+      const val = filterKeys(value, keysToKeep);
+      // If the object is empty, don't add it
+      if (Object.keys(val).length > 0) {
+        output[key] = val;
+      }
     });
 
     return output;
