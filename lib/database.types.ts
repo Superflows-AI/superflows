@@ -308,18 +308,21 @@ export interface Database {
         Row: {
           date: string;
           id: number;
+          num_user_queries: number;
           org_id: number;
           usage: number;
         };
         Insert: {
           date?: string;
           id?: number;
+          num_user_queries?: number;
           org_id: number;
           usage: number;
         };
         Update: {
           date?: string;
           id?: number;
+          num_user_queries?: number;
           org_id?: number;
           usage?: number;
         };
@@ -337,16 +340,7 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      count_user_messages: {
-        Args: {
-          organisation_id: number;
-          presets: string[];
-        };
-        Returns: {
-          date: string;
-          count: number;
-        }[];
-      };
+      [_ in never]: never;
     };
     Enums: {
       [_ in never]: never;

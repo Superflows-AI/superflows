@@ -115,16 +115,17 @@ function DashboardNumMessages() {
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      // Count the number of user role messages in chat_messages table
-      const { data, error } = await supabase.rpc("count_user_messages", {
-        organisation_id: profile?.org_id!,
-        presets: presetSuggestions,
-      });
-
-      if (error) throw new Error(error.message);
-
-      setNumUserMessages(data.map((d) => ({ date: d.date, value: d.count })));
-      setTotalMessages(data.reduce((acc, curr) => acc + curr.count, 0));
+      const res = await supabase
+        .from("usage")
+        .select("*")
+        .eq("org_id", profile?.org_id);
+      if (res.error) throw res.error;
+      setNumUserMessages(
+        res.data.map((d) => ({ date: d.date, value: d.num_user_queries }))
+      );
+      setTotalMessages(
+        res.data.reduce((acc, curr) => acc + curr.num_user_queries, 0)
+      );
       setLoading(false);
     })();
   }, [profile, refreshProfile, supabase]);
