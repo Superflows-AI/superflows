@@ -16,6 +16,11 @@ import { Navbar } from "../components/navbar";
 import { Database } from "../lib/database.types";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
 
+import suggestion1 from "../public/presets/1/suggestions.json";
+import suggestion2 from "../public/presets/2/suggestions.json";
+
+const presetSuggestions = [...suggestion1, ...suggestion2];
+
 export default function App() {
   return (
     <>
@@ -25,15 +30,29 @@ export default function App() {
   );
 }
 
+function Dashboard() {
+  // The cloud version of the app is priced based on number of user queries.
+  // The self-hosted version will cost per request to openai
+  if (
+    process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
+    process.env.NEXT_PUBLIC_IS_IN_CLOUD === "true"
+  )
+    return <DashboardNumMessages />;
+  return <DashboardCost />;
+}
+
 const formatDate = timeFormat("%Y-%m-%d");
 
 const msToDay = 1000 * 60 * 60 * 24;
 
-function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
+function DatesBarGraph(props: {
+  data: { date: string; value: number }[];
+  ylabel: string;
+}) {
   if (!props.data || props.data.length == 0) return null;
 
   const chartData = props.data
-    .map((d) => ({ date: Date.parse(d.date) / msToDay, value: d.usage }))
+    .map((d) => ({ date: Date.parse(d.date) / msToDay, value: d.value }))
     .sort((a, b) => a.date - b.date);
 
   const xRange = chartData[chartData.length - 1].date - chartData[0].date;
@@ -61,9 +80,9 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
             domain={[`dataMin - ${offset}`, `dataMax + ${offset}`]}
             tickFormatter={intToDate}
           />
-          <YAxis>
+          <YAxis allowDecimals={false}>
             <Label
-              value="Cost (USD)"
+              value={props.ylabel}
               angle={-90}
               position="insideLeft"
               offset={-5}
@@ -72,7 +91,7 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
           <Tooltip
             labelFormatter={intToDate}
             formatter={(value) =>
-              `$${Math.round((value as number) * 100) / 100}`
+              `${Math.round((value as number) * 100) / 100}`
             }
           />
 
@@ -83,21 +102,76 @@ function DatesBarGraph(props: { data: { date: string; usage: number }[] }) {
   );
 }
 
-function Dashboard() {
+function DashboardNumMessages() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
-  const [cost, setCost] = useState([{}] as { date: string; usage: number }[]);
-  const [sum, setSum] = useState(0);
+  const [numUserMessages, setNumUserMessages] = useState([{}] as {
+    date: string;
+    value: number;
+  }[]);
+  const [totalMessages, setTotalMessages] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!profile) return;
     (async () => {
       const res = await supabase
         .from("usage")
         .select("*")
         .eq("org_id", profile?.org_id);
       if (res.error) throw res.error;
-      setCost(res.data.map((d) => ({ date: d.date, usage: d.usage })));
+      setNumUserMessages(
+        res.data.map((d) => ({ date: d.date, value: d.num_user_queries }))
+      );
+      setTotalMessages(
+        res.data.reduce((acc, curr) => acc + curr.num_user_queries, 0)
+      );
+      setLoading(false);
+    })();
+  }, [profile, refreshProfile, supabase]);
+  return (
+    <div className="bg-gray-800 min-h-screen">
+      <Navbar current={"Usage"} />
+      <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
+        <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
+          <div className="text-center">
+            <h1 className="text-2xl text-gray-100">Superflows usage</h1>
+            <p className="text-gray-200 mt-2 text-xl font-bold text-purple-500">
+              {!loading &&
+                `Total user queries: ${Math.round(totalMessages * 100) / 100}`}
+            </p>
+          </div>
+          <div className="max-w-5xl mx-auto">
+            {!loading && (
+              <DatesBarGraph
+                data={numUserMessages}
+                ylabel="Number of user queries"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardCost() {
+  // It's getting WET in here
+  const supabase = useSupabaseClient<Database>();
+  const { profile, refreshProfile } = useProfile();
+  const [cost, setCost] = useState([{}] as { date: string; value: number }[]);
+  const [sum, setSum] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const res = await supabase
+        .from("usage")
+        .select("*")
+        .eq("org_id", profile?.org_id);
+      if (res.error) throw res.error;
+      setCost(res.data.map((d) => ({ date: d.date, value: d.usage })));
       setSum(res.data.reduce((acc, curr) => acc + curr.usage, 0));
       setLoading(false);
     })();
@@ -107,14 +181,14 @@ function Dashboard() {
       <Navbar current={"Usage"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-gray-800 pb-8 place-items-center">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
-          <h1 className="text-xl text-gray-100">OpenAI API usage </h1>
-          <p className="text-gray-400 mt-2">
-            {`The total cost from the OpenAI API for your organization is $${
-              Math.round(sum * 100) / 100
-            }`}
-          </p>
+          <div className="place-items-center m-auto  text-center">
+            <h1 className="text-2xl text-gray-100">OpenAI API usage </h1>
+            <p className="text-gray-200 mt-2 text-xl font-bold text-purple-500">
+              {`Total Cost $${Math.round(sum * 100) / 100}`}
+            </p>
+          </div>
           <div className="max-w-5xl mx-auto">
-            {!loading && <DatesBarGraph data={cost} />}
+            {!loading && <DatesBarGraph data={cost} ylabel="Cost (USD)" />}
           </div>
         </div>
       </div>

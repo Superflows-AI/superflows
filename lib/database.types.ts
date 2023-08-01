@@ -308,18 +308,21 @@ export interface Database {
         Row: {
           date: string;
           id: number;
+          num_user_queries: number;
           org_id: number;
           usage: number;
         };
         Insert: {
           date?: string;
           id?: number;
+          num_user_queries?: number;
           org_id: number;
           usage: number;
         };
         Update: {
           date?: string;
           id?: number;
+          num_user_queries?: number;
           org_id?: number;
           usage?: number;
         };

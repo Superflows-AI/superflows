@@ -1,5 +1,5 @@
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
 import { Json } from "../lib/database.types";
@@ -31,6 +31,7 @@ export default function PlaygroundChatbot(props: {
 
   const { profile } = useProfile();
 
+  const session = useSession();
   // Get suggestions from past conversations in playground
   const supabase = useSupabaseClient();
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -107,6 +108,7 @@ export default function PlaygroundChatbot(props: {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${profile!.organizations!.api_key}`,
+          sessionToken: session?.access_token ?? "",
         },
         body: JSON.stringify({
           user_input: chat[chat.length - 1].content,

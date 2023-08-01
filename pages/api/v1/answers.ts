@@ -106,12 +106,12 @@ export default async function handler(req: NextRequest) {
     }
 
     // Authenticate that the user is allowed to use this API
-    let token = req.headers
+    let orgApiKey = req.headers
       .get("Authorization")
       ?.replace("Bearer ", "")
       .replace("bearer ", "");
 
-    if (!token) {
+    if (!orgApiKey) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
         status: 401,
         headers,
@@ -120,7 +120,7 @@ export default async function handler(req: NextRequest) {
 
     // Check that the user hasn't surpassed the rate limit
     if (ratelimit) {
-      const { success } = await ratelimit.limit(token);
+      const { success } = await ratelimit.limit(orgApiKey);
       if (!success) {
         return new Response(JSON.stringify({ error: "Rate limit hit" }), {
           status: 429,
@@ -130,11 +130,11 @@ export default async function handler(req: NextRequest) {
     }
 
     let org: OrgJoinIsPaid | null = null;
-    if (token) {
+    if (orgApiKey) {
       const authRes = await supabase
         .from("organizations")
         .select("*, is_paid(*)")
-        .eq("api_key", token);
+        .eq("api_key", orgApiKey);
       if (authRes.error) throw new Error(authRes.error.message);
       org = authRes.data?.[0] ?? null;
     }
@@ -145,12 +145,20 @@ export default async function handler(req: NextRequest) {
       });
     }
 
+    const isPlayground =
+      (req.headers.get("sessionToken") &&
+        (await supabase.auth.getUser(req.headers.get("sessionToken")!))?.data
+          ?.user?.aud === "authenticated") ||
+      false;
+
     // Check that the user hasn't surpassed the usage limit
     if (
       process.env.NODE_ENV === "production" &&
       (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
     ) {
-      // Below is the number of first messages sent by the organization's users
+      // The number of first messages sent by the organization's users
+      // This count is just for free tier users. All messages should count to avoid spam.
+      // For paying customers, we only count full AI responses against their usage (see below).
       const usageRes = await supabase
         .from("chat_messages")
         .select("*", { count: "estimated" })
@@ -312,7 +320,11 @@ export default async function handler(req: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         // Angela gets the answers for us
-        const { nonSystemMessages: allMessages, cost } = await Angela(
+        const {
+          nonSystemMessages: allMessages,
+          cost,
+          numUserQueries,
+        } = await Angela(
           controller,
           requestData,
           activeActions,
@@ -345,13 +357,20 @@ export default async function handler(req: NextRequest) {
         if (data.length > 0) {
           const { error } = await supabase
             .from("usage")
-            .update({ usage: cost + data[0].usage })
+            .update({
+              usage: cost + data[0].usage,
+              num_user_queries: isPlayground
+                ? data[0].num_user_queries
+                : data[0].num_user_queries + numUserQueries,
+            })
             .eq("id", data[0].id);
           if (error) throw new Error(error.message);
         } else {
-          const { error: error2 } = await supabase
-            .from("usage")
-            .insert({ org_id: org!.id, usage: cost });
+          const { error: error2 } = await supabase.from("usage").insert({
+            org_id: org!.id,
+            usage: cost,
+            num_user_queries: numUserQueries,
+          });
           if (error2) throw new Error(error2.message);
         }
         controller.close();
@@ -390,7 +409,11 @@ async function Angela( // Good ol' Angela
   conversationId: number,
   previousMessages: ChatGPTMessage[],
   language: string | null
-): Promise<{ nonSystemMessages: ChatGPTMessage[]; cost: number }> {
+): Promise<{
+  nonSystemMessages: ChatGPTMessage[];
+  cost: number;
+  numUserQueries: number;
+}> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -418,6 +441,7 @@ async function Angela( // Good ol' Angela
 
   let numOpenAIRequests = 0;
   let totalCost = 0;
+  let numUserQueries = 0;
   let awaitingConfirmation = false;
 
   try {
@@ -443,7 +467,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call failed",
         });
-        return { nonSystemMessages, cost: totalCost };
+        return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
 
       // Stream response from OpenAI
@@ -488,6 +512,15 @@ async function Angela( // Good ol' Angela
       totalCost += outCost;
 
       mostRecentParsedOutput = parseOutput(rawOutput);
+
+      // We only count a query against a user's quota if the AI selects an action to take.
+      // We don't count it if the AI is just asking for more information, or if the user says 'hi' etc.
+      if (
+        mostRecentParsedOutput.commands &&
+        mostRecentParsedOutput.commands.length > 0
+      )
+        numUserQueries += 1;
+
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
@@ -543,7 +576,7 @@ async function Angela( // Good ol' Angela
       }
 
       if (mostRecentParsedOutput.completed) {
-        return { nonSystemMessages, cost: totalCost };
+        return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
 
       numOpenAIRequests++;
@@ -552,7 +585,7 @@ async function Angela( // Good ol' Angela
           role: "error",
           content: "OpenAI API call limit reached",
         });
-        return { nonSystemMessages, cost: totalCost };
+        return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
     }
   } catch (e) {
@@ -561,9 +594,9 @@ async function Angela( // Good ol' Angela
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return { nonSystemMessages, cost: totalCost };
+    return { nonSystemMessages, cost: totalCost, numUserQueries };
   }
-  return { nonSystemMessages, cost: totalCost };
+  return { nonSystemMessages, cost: totalCost, numUserQueries };
 }
 
 async function storeActionsAwaitingConfirmation(
