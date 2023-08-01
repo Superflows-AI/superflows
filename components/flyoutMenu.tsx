@@ -23,7 +23,6 @@ export default function FlyoutMenu(props: {
   popoverClassName?: string;
   title?: string;
 }) {
-  const col = "#7d22cd";
   return (
     <Popover className={classNames("relative")}>
       {({ open }) => (
