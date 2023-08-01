@@ -1,4 +1,5 @@
 import {
+  ChatBubbleBottomCenterTextIcon,
   DocumentArrowUpIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
@@ -24,6 +25,7 @@ import EditActionTagModal from "./editActionTagModal";
 import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
 import { PRESETS } from "../../lib/consts";
+import ViewSystemPromptModal from "./viewPromptModal";
 
 export default function PageActionsSection(props: {
   actionTags: ActionTagJoinActions[];
@@ -38,6 +40,7 @@ export default function PageActionsSection(props: {
   const [deleteAllActionsModelOpen, setDeleteAllActionsModalOpen] =
     useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [viewPromptOpen, setViewPromptOpen] = React.useState<boolean>(false);
 
   useEffect(() => {
     setNumActiveActions(
@@ -56,22 +59,18 @@ export default function PageActionsSection(props: {
     );
   return (
     <>
-      {numActiveActions > 20 && (
-        <div
-          className="bg-yellow-200 border-l-4 border-yellow-500 text-yellow-700 p-4"
-          role="alert"
-        >
-          <p className="font-bold">Warning</p>
-          <p>
-            {`${numActiveActions} actions are enabled. Superflows performs best
-            with fewer than 20.`}
-          </p>
-        </div>
-      )}
       <UploadModal
         open={open}
         setOpen={setUploadModalOpen}
         loadActions={props.loadActions}
+      />
+      <ViewSystemPromptModal
+        open={viewPromptOpen}
+        setOpen={setViewPromptOpen}
+        actions={props.actionTags
+          .map((tag) => tag.actions)
+          .flat()
+          .filter((a) => a.active)}
       />
       <WarningModal
         title={`Delete all actions?`}
@@ -90,80 +89,98 @@ export default function PageActionsSection(props: {
         setOpen={setDeleteAllActionsModalOpen}
       />
 
-      <div className="mt-5 mx-5 mb-20">
-        <div className="flex w-full place-items-end justify-between gap-x-2">
-          <div className="flex flex-row gap-x-6 place-items-center">
-            <Checkbox
-              onChange={(checked) => {
-                setShowInactive(checked);
-              }}
-              checked={showInactive}
-              label={"Show inactive"}
-            />
-            {props.actionTags.length > 0 && (
-              <DropdownWithCheckboxes
-                title={"Set active by HTTP method"}
-                items={actionTagsToToggleItems(
-                  props.actionTags,
-                  props.setActionTags,
-                  supabase
-                )}
-              />
-            )}
-          </div>
-          <div className="flex flex-row gap-x-2 place-items-center">
-            {profile && (
-              <button
-                className={classNames(
-                  "flex flex-row place-items-center gap-x-1 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded focus:ring-2",
-                  "bg-gray-900 hover:bg-gray-950"
-                )}
-                onClick={async () => {
-                  const res = await supabase
-                    .from("action_tags")
-                    .insert({
-                      name: "New Group",
-                      org_id: profile.org_id,
-                    })
-                    .select("*");
-                  if (res.error) throw res.error;
-                  if (res.data === null) throw new Error("No data returned");
-                  const newActionTags = [
-                    {
-                      ...res.data[0],
-                      actions: [],
-                    },
-                    ...props.actionTags,
-                  ];
-                  props.setActionTags(newActionTags);
+      <div className="mt-20 mx-5 mb-20">
+        <div className="fixed top-16 border-b border-gray-500 mt-px inset-x-0 px-16 mx-auto bg-gray-800 max-w-7xl pt-5 pb-3 z-10">
+          <div className="flex place-items-end justify-between gap-x-2">
+            <div className="flex flex-row gap-x-6 place-items-center">
+              <Checkbox
+                onChange={(checked) => {
+                  setShowInactive(checked);
                 }}
-              >
-                <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />
-                Add group
-              </button>
-            )}
-            <button
-              className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
-              onClick={() => setUploadModalOpen(true)}
-            >
-              <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
-              Upload
-            </button>
-            <button
-              className={classNames(
-                "flex flex-row place-items-center gap-x-1 bg-gray-900 text-red-700 font-medium text-xs md:text-sm py-1.5 px-4 rounded  ",
-                props.actionTags.length > 0
-                  ? "hover:text-white hover:bg-red-700 focus:ring-2"
-                  : "cursor-not-allowed opacity-50"
+                checked={showInactive}
+                label={"Show inactive"}
+              />
+              {props.actionTags.length > 0 && (
+                <DropdownWithCheckboxes
+                  title={"Set active by HTTP method"}
+                  items={actionTagsToToggleItems(
+                    props.actionTags,
+                    props.setActionTags,
+                    supabase
+                  )}
+                />
               )}
-              onClick={() =>
-                props.actionTags.length > 0 &&
-                setDeleteAllActionsModalOpen(true)
-              }
-            >
-              <TrashIcon className=" w-4 h-4 md:w-5 md:h-5" />
-              Delete all
-            </button>
+            </div>
+            <div className="flex flex-row gap-x-2 place-items-center">
+              {profile && (
+                <button
+                  className={classNames(
+                    "flex flex-row place-items-center gap-x-1 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded focus:ring-2",
+                    "bg-gray-900 hover:bg-gray-950"
+                  )}
+                  onClick={async () => {
+                    const res = await supabase
+                      .from("action_tags")
+                      .insert({
+                        name: "New Group",
+                        org_id: profile.org_id,
+                      })
+                      .select("*");
+                    if (res.error) throw res.error;
+                    if (res.data === null) throw new Error("No data returned");
+                    const newActionTags = [
+                      {
+                        ...res.data[0],
+                        actions: [],
+                      },
+                      ...props.actionTags,
+                    ];
+                    props.setActionTags(newActionTags);
+                  }}
+                >
+                  <PlusIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />
+                  Add group
+                </button>
+              )}
+              <button
+                className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
+                Upload
+              </button>
+              {props.actionTags.length > 0 && (
+                <FlyoutMenu
+                  items={[
+                    {
+                      name: "View system prompt",
+                      Icon: (
+                        <ChatBubbleBottomCenterTextIcon className="w-4 h-4 md:w-5 md:h-5" />
+                      ),
+                      onClick: () => setViewPromptOpen(true),
+                    },
+                    {
+                      name: "Delete all actions",
+                      Icon: <TrashIcon className="w-4 h-4 md:w-5 md:h-5" />,
+                      onClick: () =>
+                        props.actionTags.length > 0 &&
+                        setDeleteAllActionsModalOpen(true),
+                    },
+                  ]}
+                  buttonClassName={
+                    "text-gray-200 rounded bg-gray-900 hover:bg-gray-950"
+                  }
+                  getClassName={() => "block h-8"}
+                  Icon={
+                    <EllipsisHorizontalIcon
+                      className="h-8 w-8 p-0.5"
+                      aria-hidden="true"
+                    />
+                  }
+                  popoverClassName={"w-48"}
+                />
+              )}
+            </div>
           </div>
         </div>
         {props.actionTags.length > 0 ? (
@@ -320,6 +337,18 @@ export default function PageActionsSection(props: {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+        {numActiveActions > 20 && (
+          <div
+            className="fixed bottom-0 inset-x-0 md:mx-10 lg:mx-auto max-w-7xl flex flex-row gap-x-2 bg-yellow-200 border-l-4 border-yellow-500 text-yellow-700 px-4 py-2"
+            role="alert"
+          >
+            <p className="font-bold">Warning:</p>
+            <p>
+              {`${numActiveActions} actions are enabled. Superflows performs best
+            with fewer than 20.`}
+            </p>
           </div>
         )}
       </div>

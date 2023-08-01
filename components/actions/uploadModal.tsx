@@ -64,6 +64,7 @@ export default function UploadModal(props: {
           });
           setIsLoading(false);
           uppy.removeFile(file.id);
+          alreadyRun.current = false;
           return;
         }
       }
@@ -86,6 +87,7 @@ export default function UploadModal(props: {
       }
       await props.loadActions();
       props.setOpen(false);
+      alreadyRun.current = false;
     });
   }, [profile]);
 
