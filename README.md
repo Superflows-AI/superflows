@@ -1,6 +1,24 @@
 # Superflows
 
+We aim to give everyone access to an expert in the software they are using.
+
 Superflows makes it easy to add an assistant to your SaaS product to help your users get the most out of it. You can test our cloud version for free on our Dashboard via our [landing page](https://www.superflows.ai/) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
+
+Setup involves three steps:
+1. Upload API spec and connect your API on the dashboard
+2. Test in our playground
+3. Integrate into your product in a few lines of code
+
+## Features
+
+- Developer dashboard to configure and test your assistant
+- Public API 
+- Frontend UI components 
+- (on cloud version) Team projects with multiple users
+
+### Roadmap
+
+Available on our [documentation page](https://docs.superflows.ai/blog).
 
 ## Status
 
