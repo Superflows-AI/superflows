@@ -47,25 +47,7 @@ export default function Playground() {
   return (
     <>
       <div className="fixed bottom-0 left-0 top-16 z-10 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
-        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pb-4">
-          <div className="mt-6">
-            <h2 className="text-gray-200 font-medium">User description</h2>
-            <p className="text-gray-400 text-sm">
-              With each API request, you can provide a description of the user
-              who is asking the question, any useful information for accessing
-              your API (e.g. user id) and instructions on how to address them.
-            </p>
-            <textarea
-              className="mt-4 w-full h-96 bg-gray-700 border border-gray-600 rounded-md focus:border-purple-700 focus:ring-purple-700 placeholder:text-gray-400 text-gray-200 px-3 py-2 text-sm resize-none"
-              placeholder="E.g. Bill is a salesperson at Acme Corp. His project id is f35ahe2g1p. He's not comfortable with statistical terms, instead use plain English to answer his questions."
-              value={userDescription}
-              onChange={(e) => setUserDescription(e.target.value)}
-              onBlur={() => {
-                localStorage.setItem("userDescription", userDescription);
-              }}
-            />
-          </div>
-        </div>
+        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-gray-700 px-6 pb-4"></div>
       </div>
       <main className="fixed inset-x-40 md:inset-x-56 lg:inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
@@ -93,12 +75,17 @@ export default function Playground() {
       <div className="absolute z-0 bottom-0 right-0 top-16 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
         <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-l border-gray-700 px-6 pt-6 pb-4">
           <div className="relative">
-            <div className="peer flex flex-col place-items- gap-y-1 text-sm text-gray-200 font-bold">
+            <div className="peer flex flex-col gap-y-1 text-sm text-gray-200 font-bold">
               <div className="flex flex-row gap-x-1 place-items-center">
                 Mock API Responses
                 <QuestionMarkCircleIcon className="h-4 w-4 text-gray-300" />
               </div>
-              <div className="flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border border-gray-300 w-full">
+              <div
+                className={classNames(
+                  "flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border w-full",
+                  mockApiResponses ? "border-purple-700" : "border-gray-600"
+                )}
+              >
                 {mockApiResponses !== null && (
                   <Toggle
                     enabled={mockApiResponses}
@@ -109,10 +96,32 @@ export default function Playground() {
                 )}
               </div>
             </div>
-            <div className="popup top-20 font-normal text-sm">
+            <div className="popup -left-2 top-[4.5rem] bg-gray-500 w-64 font-normal text-sm">
               This mocks API responses using GPT, meaning you can use the
               playground without connecting to your API.
             </div>
+          </div>
+          <div className="relative">
+            <div className="peer flex flex-row place-items-center gap-x-1">
+              <h2 className="text-gray-200 text-sm font-bold">
+                User description
+              </h2>
+              <QuestionMarkCircleIcon className="h-4 w-4 text-gray-300" />
+            </div>
+            <p className="popup -left-2 bg-gray-500 w-64 top-8 font-normal text-sm">
+              With each API request, you can provide a description of the user
+              who is asking the question, any useful information for accessing
+              your API (e.g. user id) and instructions on how to address them.
+            </p>
+            <textarea
+              className="mt-1 w-full h-80 bg-gray-700 border border-gray-600 rounded-md focus:border-purple-700 focus:ring-purple-700 placeholder:text-gray-400 text-gray-200 px-3 py-2 text-sm resize-none"
+              placeholder="E.g. Bill is a salesperson at Acme Corp. His project id is f35ahe2g1p. He's not comfortable with statistical terms, instead use plain English to answer his questions."
+              value={userDescription}
+              onChange={(e) => setUserDescription(e.target.value)}
+              onBlur={() => {
+                localStorage.setItem("userDescription", userDescription);
+              }}
+            />
           </div>
         </div>
         <div
