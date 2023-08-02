@@ -80,6 +80,7 @@ export function Navbar(props: { current: string }) {
                       aria-current={
                         item.name === props.current ? "page" : undefined
                       }
+                      shallow
                     >
                       {item.name}
                     </Link>
