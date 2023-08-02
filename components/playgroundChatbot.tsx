@@ -342,7 +342,8 @@ export default function PlaygroundChatbot(props: {
               ) {
                 if (
                   devChatContents[idx - 1].role === "function" ||
-                  devChatContents[idx + 1].role === "function"
+                  (devChatContents[idx + 1] &&
+                    devChatContents[idx + 1].role === "function")
                 ) {
                   // If the function call is adjacent to other function calls we don't need to tell them it
                   // was empty - otherwise we get a lot of empty messages clogging up the chat interface
