@@ -1,6 +1,6 @@
 # Superflows
 
-Superflows makes it easy to add an assistant to your SaaS product to help your users get the most out of it. You can test our cloud version for free on our Dashboard via our [landing page](https://www.superflows.ai/) and learn more on our [documentation pages](https://docs.superflows.ai/).
+Superflows makes it easy to add an assistant to your SaaS product to help your users get the most out of it. You can test our cloud version for free on our Dashboard via our [landing page](https://www.superflows.ai/) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
 
 ## Status
 
