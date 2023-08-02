@@ -284,7 +284,7 @@ export default function PlaygroundChatbot(props: {
       </div>
       {/* Scrollable chat window */}
       <div
-        className="relative flex-1 overflow-y-auto h-full flex flex-col pb-1 pt-36 px-8 md:px-14 lg:px-20"
+        className="relative flex-1 overflow-y-auto h-full flex flex-col pb-1 pt-36 px-8 md:px-10 lg:px-14 xl:px-20"
         id={"scrollable-chat-contents"}
       >
         {profile &&
