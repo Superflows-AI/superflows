@@ -1,15 +1,15 @@
 import { Dialog } from "@headlessui/react";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Modal from "../modal";
 import { Dashboard as UppyDashboard } from "@uppy/react";
 import { useProfile } from "../contextManagers/profile";
-import Uppy from "@uppy/core";
+import Uppy, { UppyFile } from "@uppy/core";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import { LoadingSpinner } from "../loadingspinner";
 import { parse } from "yaml";
 
-const uppy = new Uppy({
+var uppy = new Uppy({
   autoProceed: true,
   allowMultipleUploadBatches: false,
   restrictions: {
@@ -44,8 +44,18 @@ export default function UploadModal(props: {
   useEffect(() => {
     if (!profile || alreadyRun.current) return;
     alreadyRun.current = true;
-    uppy.on("file-added", async (file) => {
+    uppy = new Uppy({
+      autoProceed: true,
+      allowMultipleUploadBatches: false,
+      restrictions: {
+        maxNumberOfFiles: 1,
+        maxFileSize: 100_000_000,
+        allowedFileTypes: ["application/json", ".yaml", ".txt"],
+      },
+    });
+    uppy.on("file-added", async (file: UppyFile) => {
       if (isLoading) return;
+      setError(null);
       setIsLoading(true);
       const text = await file.data.text();
       let json: Record<string, any>;
@@ -64,7 +74,6 @@ export default function UploadModal(props: {
           });
           setIsLoading(false);
           uppy.removeFile(file.id);
-          alreadyRun.current = false;
           return;
         }
       }
@@ -74,7 +83,7 @@ export default function UploadModal(props: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          org_id: profile.org_id,
+          org_id: profile!.org_id,
           swagger: json,
         }),
       });
@@ -87,7 +96,6 @@ export default function UploadModal(props: {
       }
       await props.loadActions();
       props.setOpen(false);
-      alreadyRun.current = false;
     });
   }, [profile]);
 
