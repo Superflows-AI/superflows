@@ -1,32 +1,36 @@
 # Superflows
 
-Superflows makes it easy to add an assistant to your SaaS product to help your users get the most out of it. Our aim is to give everyone access to an expert in the software they are using.
+Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes API calls to answer them.
 
-You can test our cloud version for free on our Dashboard via our [landing page](https://www.superflows.ai/) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
+E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product analytics tool user could ask: "What did users think of the UI change?".
+
+![Superflows-in-action](./public/superflows-in-action.gif)
+
+You can try out the cloud version for free [here](https://dashboard.superflows.ai) or self-host (instructions below). You can learn more on our [documentation pages](https://docs.superflows.ai/).
 
 ## Setup
 
 Setup involves three steps:
 
-1. Upload API spec and connect your API on the dashboard
-2. Test in our playground
+1. Upload API specification
+2. Test in the playground
 3. Integrate into your product in a few lines of code
 
 ## Features
 
-- Developer dashboard to configure and test your assistant
-- Public API 
-- Frontend UI components 
-- (on cloud version) Team projects with multiple users
+- Developer dashboard to configure and test your product assistant
+- Public API
+- Answers in the same language the question is asked in
+- UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
 
 ### Roadmap
 
-Available on our [documentation page](https://docs.superflows.ai/blog).
+Available on our [documentation page](https://docs.superflows.ai/blog/roadmap).
 
 ## Status
 
 - [x] **Alpha**: Not ready for use on production systems.
-- [ ] **Beta**: Ready for use on production systems, but not yet considered stable.
+- [x] **Beta**: Ready for use on production systems, but not yet considered stable.
 - [ ] **Stable**: Ready for use on production systems.
 
 ## Installation
@@ -64,7 +68,4 @@ make run
 
 (Alternatively, if you don't have `make`, use `npm run dev`)
 
-## Using the API
-
-See the API spec [here](https://docs.superflows.ai/docs/category/api-specification).
 
