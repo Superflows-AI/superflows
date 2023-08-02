@@ -49,7 +49,7 @@ export function Navbar(props: { current: string }) {
         setOpen={setWarningOpen}
       />
       <div className="w-full h-16" />
-      <div className="fixed top-0 inset-x-0 border-b border-gray-700 z-10">
+      <div className="fixed top-0 inset-x-0 border-b border-gray-700 z-20">
         <Disclosure as="nav" className="bg-gray-800">
           <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
             {/*<button*/}
