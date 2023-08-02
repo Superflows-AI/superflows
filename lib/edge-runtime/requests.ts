@@ -52,7 +52,7 @@ export async function httpRequestFromAction({
     headers["org_id"] = organization.id.toString();
 
   const requestOptions: RequestInit = {
-    method: action.request_method,
+    method: action.request_method.toUpperCase(),
     headers: headers,
   };
 
@@ -126,6 +126,7 @@ export async function httpRequestFromAction({
         console.log("Parameter not provided:", param.name);
         continue;
       }
+
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
