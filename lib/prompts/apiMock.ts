@@ -10,10 +10,12 @@ export default function apiMockPrompt(
   orgInfo?: {
     name: string;
     description: string;
-  }
+  },
+  isArray: boolean = false
 ): ChatGPTMessage[] {
   // TODO: Maybe add Examples to prompt type as e.g for retrieve_event_counts_for_a_team it's required to infer the shape of
-  //  the array they want back
+  // the array they want back
+  // TODO: randomly select the length of the array rather than hardcoding 3
   return [
     {
       role: "system",
@@ -46,6 +48,12 @@ ${
   responseType
     ? `There are specific fields that I want to be returned in the response.
 
+${
+  isArray
+    ? "These fields form an array. I want the array to be of length 3."
+    : ""
+} 
+
 Below are two examples of how to generate your response from these fields.
 
 -- EXAMPLE 1 --
@@ -60,9 +68,19 @@ City (string): where the user lives
 Response
 ---
 
+${
+  isArray
+    ? `
+Name: [John, Jane, Jack]
+Age: [25, 30, 35]
+City: [New York, London, Paris]
+  `
+    : `
 Name: John
 Age: 25
 City: New York
+`
+}
 
 -- EXAMPLE 2 --
 
@@ -76,13 +94,23 @@ CEO name (string): The name of the CEO
 Response
 ---
 
-Company name: Apply
+${
+  isArray
+    ? `
+Company name: [Apple, Google, Facebook]
+Annual earnings: [1000000, 2000000, 3000000]
+CEO name: [Tim Cook, Sundar Pichai, Mark Zuckerberg]
+`
+    : `
+Company name: Apple
 Annual earnings: 1000000
 CEO name: Tim Cook
+`
+}
 
 -- END OF EXAMPLES --
 
-Provide a response for the type given below. Include only the fields below. Follow the format exactly from the examples above. Do not output json.
+Provide a response for the type given below. Include only the fields below. Follow the format exactly from the examples above. Put each field on a single line. Do not output json.
 
 Fields
 ---

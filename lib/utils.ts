@@ -305,7 +305,6 @@ export function transformProperties(chunks: Chunk[]): Properties {
       }
     }
   }
-
   return properties;
 }
 
@@ -316,16 +315,27 @@ export function chunkToString(chunk: Chunk): string {
 
 export function addGPTdataToProperties(
   properties: Properties,
-  gptOutput: string
+  gptOutput: string,
+  arrayIdx: number | null = null
 ): Properties {
   /**
   Add the data outputted by gpt to the properties object. 
+
+  If working with an array type (and gpt has output a comma separated list of values)
+  pass arrayIdx to select which value in an semi-colon separate  list to use.
+
   TODO: currently always treats data as a string.
   **/
 
   gptOutput.split("\n").forEach((line) => {
-    const [key, value] = line.split(":").map((s) => s.trim());
+    let [key, value] = [
+      line.slice(0, line.indexOf(":")).trim(),
+      line.slice(line.indexOf(":") + 1).trim(),
+    ];
+
     if (key in properties) {
+      value = arrayIdx === null ? value : value.split(",")[arrayIdx].trim(); // Add fallback for if the commaIdx is out of range
+      if (!value) value = "00000";
       properties[key].data = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
     }
   });
