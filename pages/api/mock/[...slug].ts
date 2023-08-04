@@ -17,7 +17,7 @@ import {
   objectNotEmpty,
   propertiesToChunks,
   splitPath,
-  transformProperties,
+  chunksToProperties,
 } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -208,7 +208,7 @@ export default async function handler(
         ]
       : null;
 
-  // TODO: properties can be set as array or object by the schema, currently not
+  // TODO: properties can be set as array or hardCodedProperties by the schema, currently not
   // dealing with this
   const properties = schema ? propertiesFromSchema(schema) : null;
 
@@ -262,31 +262,26 @@ export async function getMockedProperties(
   isArray: boolean = false
 ): Promise<Record<string, any>> {
   const chunks = jsonSplitter(properties);
+  const allProperties = chunksToProperties(chunks);
+  const hardCodedProperties: Properties = {};
+  const propertiesForAi: Properties = {};
 
-  const allProperties = transformProperties(chunks);
-  const propertiesForAi = Object.entries(allProperties)
-    .filter(
-      ([_, value]) =>
-        value.type?.toLowerCase() !== "object" &&
-        value.type?.toLowerCase() !== "array"
-    )
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-
-  // const hardCodedProperties: Properties = {};
-  // const propertiesForAi: Properties = {};
-
-  // for (const [key, value] of Object.entries(allProperties)) {
-  //   const type = value.type?.toLowerCase() ?? "";
-  //   if (["object", "array"].includes(type)) continue;
-  //   if (type === "boolean") {
-  //     value.data = isArray
-  //       ? Array.from({ length: 3 }, () => Math.random() >= 0.5)
-  //       : Math.random() >= 0.5;
-  //     hardCodedProperties[key] = value.data;
-  //   } else {
-  //     propertiesForAi[key] = value;
-  //   }
-  // }
+  for (const [key, value] of Object.entries(allProperties)) {
+    const type = value.type?.toLowerCase() ?? "";
+    if (["hardCodedProperties", "array"].includes(type)) continue;
+    if (type === "boolean") {
+      value.data = isArray
+        ? Array.from({ length: 3 }, () => Math.random() >= 0.5)
+        : Math.random() >= 0.5;
+      hardCodedProperties[key] = {
+        data: value.data,
+        type: "boolean",
+        path: value.path,
+      };
+    } else {
+      propertiesForAi[key] = value;
+    }
+  }
 
   // // take the first half of primitiveOnly
   // const sliced: Properties = Object.keys(propertiesForAi)
@@ -324,39 +319,60 @@ export async function getMockedProperties(
 
   if (isArray)
     return rebuildPropertiesArray(
+      hardCodedProperties,
       propertiesForAi,
       openAiResponse,
       allProperties
     );
-  return rebuildProperties(propertiesForAi, openAiResponse, allProperties);
+  return rebuildProperties(
+    hardCodedProperties,
+    propertiesForAi,
+    openAiResponse,
+    allProperties
+  );
 }
 
 function rebuildProperties(
-  primitiveOnly: Properties,
+  hardCodedProperties: Properties,
+  propertiesForAi: Properties,
   openAiResponse: string,
   transformed: Properties
 ) {
-  const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
-  const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
+  const reAdded = addGPTdataToProperties(propertiesForAi, openAiResponse);
+  const newChunks = propertiesToChunks(
+    Object.assign({}, transformed, { ...reAdded, ...hardCodedProperties })
+  );
   return jsonReconstruct(newChunks);
 }
 
 function rebuildPropertiesArray(
-  primitiveOnly: Properties,
+  hardCodedProperties: Properties,
+  propertiesForAi: Properties,
   openAiResponse: string,
   transformed: Properties
 ) {
   const arrayResponse = [];
+  // Loop through each array element
   for (let idx = 0; idx < 3; idx++) {
+    // Stick the result from the gpt call back on
     const readded = addGPTdataToProperties(
-      { ...primitiveOnly },
+      propertiesForAi,
       openAiResponse,
       idx
     );
+
+    // hardcoded properties are a whole array, so we need to index
+    let hardcodedProperiesIdx: Properties = {};
+    for (let [key, value] of Object.entries(hardCodedProperties)) {
+      hardcodedProperiesIdx[key] = {
+        ...value,
+        data: value.data[idx],
+      };
+    }
+
     const newChunks = propertiesToChunks(
-      Object.assign({}, transformed, readded)
+      Object.assign({}, transformed, { ...readded, ...hardcodedProperiesIdx })
     );
-    console.log("newChunks", newChunks);
     arrayResponse.push(jsonReconstruct(newChunks));
   }
   return arrayResponse;
