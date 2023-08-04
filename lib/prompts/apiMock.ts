@@ -34,8 +34,7 @@ Your task is to generate a mock API response to the user's request.`,
     },
     {
       role: "user",
-      content: `
-I am sending a ${requestMethod} request to the ${path} endpoint${
+      content: `I am sending a ${requestMethod} request to the ${path} endpoint${
         requestParameters
           ? ` with parameters:
 ${requestParameters.map((param) => chunkToString(param)).join("\n")}`
@@ -43,17 +42,14 @@ ${requestParameters.map((param) => chunkToString(param)).join("\n")}`
       }
 
 Today's date is ${new Date().toISOString().split("T")[0]}.
-
 ${
   responseType
     ? `There are specific fields that I want to be returned in the response.
-
 ${
   isArray
     ? "These fields form an array. I want the array to be of length 3."
     : ""
 } 
-
 Below are two examples of how to generate your response from these fields.
 
 -- EXAMPLE 1 --
@@ -110,7 +106,7 @@ CEO name: Tim Cook
 
 -- END OF EXAMPLES --
 
-Provide a response for the type given below. Include only the fields below. Follow the format exactly from the examples above. Put each field on a single line. Do not output json.
+Provide a response for the type given below. Include only the fields below. Follow the format exactly from the examples above. Do not output json.
 
 Fields
 ---

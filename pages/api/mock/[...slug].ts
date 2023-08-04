@@ -208,8 +208,6 @@ export default async function handler(
         ]
       : null;
 
-  // TODO: properties can be set as array or hardCodedProperties by the schema, currently not
-  // dealing with this
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   // Just deal with the first layer of nesting for now
@@ -268,7 +266,7 @@ export async function getMockedProperties(
 
   for (const [key, value] of Object.entries(allProperties)) {
     const type = value.type?.toLowerCase() ?? "";
-    if (["hardCodedProperties", "array"].includes(type)) continue;
+    if (["object", "array"].includes(type)) continue;
     if (type === "boolean") {
       value.data = isArray
         ? Array.from({ length: 3 }, () => Math.random() >= 0.5)
@@ -282,14 +280,6 @@ export async function getMockedProperties(
       propertiesForAi[key] = value;
     }
   }
-
-  // // take the first half of primitiveOnly
-  // const sliced: Properties = Object.keys(propertiesForAi)
-  //   .slice(0, 10)
-  //   .reduce(
-  //     (result, key) => ((result[key] = propertiesForAi[key]), result),
-  //     {} as Properties
-  //   );
 
   const prompt = apiMockPrompt(
     requestPath,
