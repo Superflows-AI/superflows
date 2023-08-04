@@ -244,6 +244,9 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
   So jsonReconstruct(jsonSplitter(anyJson)) === anyJson
   **/
 
+  // Sort by path length (depth) ascending
+  chunks.sort((a, b) => a.path.length - b.path.length);
+
   let root: Record<string, any> = {};
 
   for (let chunk of chunks) {
@@ -342,7 +345,8 @@ export function addGPTdataToProperties(
           [arrayIdx].trim(); // TODO: Add fallback for if the commaIdx is out of range
       }
 
-      if (!value) value = "123";
+      if (!value) return;
+
       value = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
       try {
         value = JSON.parse(value);
