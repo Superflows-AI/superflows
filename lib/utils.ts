@@ -288,9 +288,24 @@ export function transformProperties(chunks: Chunk[]): Properties {
     const existingProperty = properties[fieldName] ?? { path: chunk.path };
 
     if (["type", "description"].includes(chunkType?.toString() ?? "")) {
-      properties[fieldName] = { ...existingProperty, [chunkType]: chunk.data };
+      // If statement below is true when the chunk is an array of primitives. Without this check,
+      // we ask gpt for a value for the key "item" which is part of the schema
+      // structure, not data we want returned.
+      // TODO: this doesn't treat the array as an array currently
+      if (fieldName === "items" && !["object", "array"].includes(chunk.data)) {
+        properties[chunk.path[chunk.path.length - 3]] = {
+          path: chunk.path,
+          [chunkType]: chunk.data,
+        };
+      } else {
+        properties[fieldName] = {
+          ...existingProperty,
+          [chunkType]: chunk.data,
+        };
+      }
     }
   }
+
   return properties;
 }
 
