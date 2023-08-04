@@ -262,7 +262,7 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
   return root;
 }
 
-export function transformProperties(chunks: Chunk[]): Properties {
+export function chunksToProperties(chunks: Chunk[]): Properties {
   /**
   Once a 'properties' field has been deconstructed into chunks, it looks like this:
 
@@ -334,9 +334,20 @@ export function addGPTdataToProperties(
     ];
 
     if (key in properties) {
-      value = arrayIdx === null ? value : value.split(",")[arrayIdx].trim(); // Add fallback for if the commaIdx is out of range
-      if (!value) value = "00000";
-      properties[key].data = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
+      if (arrayIdx !== null) {
+        value = value
+          .replace("[", "")
+          .replaceAll("]", "")
+          .split(",")
+          [arrayIdx].trim(); // TODO: Add fallback for if the commaIdx is out of range
+      }
+
+      if (!value) value = "123";
+      value = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
+      try {
+        value = JSON.parse(value);
+      } catch {}
+      properties[key].data = value;
     }
   });
 
@@ -348,7 +359,7 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
   The reverse transformation to that done by transformProperties 
   **/
   return Object.values(properties).map((prop) => ({
-    path: prop.path.slice(0, -1), // Not sure about this
+    path: prop.path.slice(0, -1),
     data: prop.data,
   }));
 }
