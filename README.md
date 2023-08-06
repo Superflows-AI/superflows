@@ -2,11 +2,20 @@
 
 Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes API calls to answer them.
 
-E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product analytics tool user could ask: "What did users think of the UI change?".
+E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product analytics tool user could ask: "What did users think of the recent UI change?".
 
-![Superflows-in-action](./public/superflows-in-action.gif)
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/cb8254e6a6414f9980fd8362368f4010?sid=f1b2df57-7f89-4213-a926-760eb468eeac" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-You can try out the cloud version for free [here](https://dashboard.superflows.ai) or self-host (instructions below). You can learn more on our [documentation pages](https://docs.superflows.ai/).
+[//]: # (![Superflows-in-action]&#40;./public/superflows-in-action.gif&#41;)
+
+You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
+
+## Features
+
+- Developer dashboard to configure and test your product assistant
+- Public streaming API
+- Answers in the same language the question is asked in
+- UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
 
 ## Setup
 
@@ -16,28 +25,9 @@ Setup involves three steps:
 2. Test in the playground
 3. Integrate into your product in a few lines of code
 
-## Features
-
-- Developer dashboard to configure and test your product assistant
-- Public API
-- Answers in the same language the question is asked in
-- UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
-
 ### Roadmap
 
-Available on our [documentation page](https://docs.superflows.ai/blog/roadmap).
-
-## Status
-
-- [x] **Alpha**: Not ready for use on production systems.
-- [x] **Beta**: Ready for use on production systems, but not yet considered stable.
-- [ ] **Stable**: Ready for use on production systems.
-
-## Installation
-
-```bash
-npm i
-```
+[Available here.](https://docs.superflows.ai/blog/roadmap)
 
 ## Development
 
@@ -47,10 +37,10 @@ You need to be running a local version of [Supabase](https://supabase.io) to dev
 
 (note: if you have used Supabase in other projects before, you may have to `supabase stop` before running `supabase start`)
 
-
 **If using `npm`**
 
 ```bash
+npm i
 npm install supabase --save-dev
 npx supabase start
 ```
@@ -67,5 +57,4 @@ make run
 ```
 
 (Alternatively, if you don't have `make`, use `npm run dev`)
-
 
