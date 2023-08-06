@@ -4,9 +4,7 @@ Superflows makes it easy to add an AI assistant to a software product. This lets
 
 E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product analytics tool user could ask: "What did users think of the recent UI change?".
 
-<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/cb8254e6a6414f9980fd8362368f4010?sid=f1b2df57-7f89-4213-a926-760eb468eeac" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
-
-[//]: # (![Superflows-in-action]&#40;./public/superflows-in-action.gif&#41;)
+[Demo video](https://dashboard.superflows.ai/demo.mp4)
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
 
