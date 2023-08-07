@@ -147,6 +147,7 @@ export default async function handler(req: NextRequest) {
       );
     }
 
+    // Count previous messages in the conversation
     const countMessagesRes = await supabase
       .from("chat_messages")
       .select("*", { count: "exact", head: true })
@@ -162,12 +163,13 @@ export default async function handler(req: NextRequest) {
     );
 
     if (!requestData.confirm) {
+      // Cancel - user said this is incorrect!
       if (redis) await redis.json.del(requestData.conversation_id.toString());
       // Respond with a message from the assistant & add user cancel to GPT history
       const assistantMessage = {
         role: "assistant",
         content:
-          "Reasoning: I've cancelled the actions.\n\nTell user: What would you like me to do instead?",
+          "Tell user: I've cancelled this. What would you like me to do instead?",
       };
 
       const cancelRes = await supabase.from("chat_messages").insert([
@@ -274,11 +276,16 @@ export default async function handler(req: NextRequest) {
         const out = {
           role: "function",
           name: execute.action.name,
-          content: JSON.stringify(processAPIoutput(output, execute.action)),
+          content: JSON.stringify(
+            processAPIoutput(output, execute.action),
+            null,
+            2
+          ),
         } as ChatGPTMessage;
 
         console.log("out:", JSON.stringify(out));
 
+        // Add to DB to ensure state is consistent
         const funcRes = await supabase.from("chat_messages").insert({
           ...out,
           conversation_id: requestData.conversation_id,
