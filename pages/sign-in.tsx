@@ -30,10 +30,14 @@ function Dashboard() {
   useEffect(() => {
     // If they have a query param, check and store the join link locally
     if (Object.keys(router.query).length > 0) {
-      const { join_id } = router.query;
-      if (join_id && typeof join_id === "string") {
-        localStorage.setItem("join_id", join_id);
-        router.push("/sign-in");
+      const query = router.query;
+      Object.entries(query).forEach(([key, value]) => {
+        if (value && typeof value === "string") {
+          localStorage.setItem(key, value);
+        }
+      });
+      if (Object.keys(query).length > 0) {
+        router.push("/sign-in", undefined, { shallow: true });
       }
     }
     // Oddly this is needed for sign up from Google on Firefox. Don't know why, but

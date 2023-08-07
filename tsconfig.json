@@ -17,5 +17,7 @@
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules",
-    "local", "pages/api/local"]
+    "local",
+    "local/local"
+  ]
 }
