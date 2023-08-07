@@ -14,12 +14,15 @@ export const pageGetServerSideProps = async (
 
   if (!session) {
     const { query } = ctx;
+    let redirectPath = "/sign-in";
+    if (query) {
+      const params = new URLSearchParams(query as Record<string, any>);
+      redirectPath += `/?${params}`;
+    }
     return {
       redirect: {
-        destination:
-          "join_id" in query
-            ? `/sign-in/?join_id=${query.join_id}`
-            : "/sign-in",
+        // Below redirects, taking into account the join_id
+        destination: redirectPath,
         permanent: false,
       },
     };

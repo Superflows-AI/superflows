@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
 import { Navbar } from "../components/navbar";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import Headers from "../components/headers";
 import { useProfile } from "../components/contextManagers/profile";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
-import Image from "next/image";
 import { Profile } from "../lib/types";
 import classNames from "classnames";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
@@ -21,7 +20,6 @@ export default function App() {
 
 function Dashboard() {
   const { profile } = useProfile();
-  const supabase = useSupabaseClient();
   const [token, setToken] = React.useState<string>("");
   const [copyFeedback, setCopyFeedback] = React.useState<boolean>(false);
   const [teamMembers, setTeamMembers] = React.useState<
