@@ -242,6 +242,7 @@ export default async function handler(req: NextRequest) {
         .from("chat_messages")
         .select()
         .eq("conversation_id", requestData.conversation_id)
+        .eq("org_id", org.id)
         .order("conversation_index", { ascending: true });
       if (convResp.error) throw new Error(convResp.error.message);
       const conversation = convResp.data.map(DBChatMessageToGPT);

@@ -23,7 +23,9 @@ export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
   if (message.role === "function")
     return {
       role: message.role,
-      content: message.content,
+      // Below conversion to JSON and back to string remove all newlines, indentation etc
+      // which are empty tokens. This can cut tokens by ~half
+      content: JSON.stringify(JSON.parse(message.content)),
       name: message.name!,
     };
   return {
