@@ -9,7 +9,7 @@ import {
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { classNames } from "../lib/utils";
 import { useProfile } from "./contextManagers/profile";
 import FlyoutMenu from "./flyoutMenu";

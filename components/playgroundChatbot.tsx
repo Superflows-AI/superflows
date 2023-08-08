@@ -293,7 +293,7 @@ export default function PlaygroundChatbot(props: {
             !profile?.organizations!.is_paid[0].is_premium) && (
             <div
               className={classNames(
-                "absolute top-28 inset-x-0 flex flex-col justify-center place-items-center text-xl",
+                "absolute top-28 inset-x-0 flex flex-col justify-center place-items-center text-lg",
                 USAGE_LIMIT - usageLevel < 5 ? "text-red-500" : "text-gray-800"
               )}
             >
@@ -302,7 +302,7 @@ export default function PlaygroundChatbot(props: {
                 <b className="inline">
                   {usageLevel}/{USAGE_LIMIT}
                 </b>{" "}
-                of your free-tier queries.
+                of your free-tier limit.
               </p>
               {USAGE_LIMIT <= usageLevel && (
                 <a
