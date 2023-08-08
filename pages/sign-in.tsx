@@ -30,15 +30,13 @@ function Dashboard() {
   useEffect(() => {
     // If they have a query param, check and store the join link locally
     if (Object.keys(router.query).length > 0) {
-      const query = router.query;
-      Object.entries(query).forEach(([key, value]) => {
+      Object.entries(router.query).forEach(([key, value]) => {
         if (value && typeof value === "string") {
           localStorage.setItem(key, value);
         }
       });
-      if (Object.keys(query).length > 0) {
-        router.push("/sign-in", undefined, { shallow: true });
-      }
+      // Redirect to remove the query params from the URL
+      router.push("/sign-in", undefined, { shallow: true });
     }
     // Oddly this is needed for sign up from Google on Firefox. Don't know why, but
     // oauth params aren't grabbed from the URL automagically like on other browsers
