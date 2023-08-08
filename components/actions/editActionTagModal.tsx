@@ -1,24 +1,20 @@
 import { Dialog } from "@headlessui/react";
-import {
-  PencilSquareIcon,
-  QuestionMarkCircleIcon,
-} from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import React, { useRef } from "react";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
-import { ActionTag } from "../../lib/types";
+import { ActionTagJoinActions } from "../../lib/types";
 
 export default function EditActionGroupModal(props: {
-  actionTag: ActionTag;
+  actionTag: ActionTagJoinActions;
   close: () => void;
-  setActionTag: (actionGroup: ActionTag) => void;
+  setActionTag: (actionGroup: ActionTagJoinActions) => void;
 }) {
   const saveRef = useRef(null);
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
-  const [localActionGroup, setLocalActionGroup] = React.useState<ActionTag>(
-    props.actionTag
-  );
+  const [localActionGroup, setLocalActionGroup] =
+    React.useState<ActionTagJoinActions>(props.actionTag);
 
   return (
     <Modal
@@ -58,13 +54,6 @@ export default function EditActionGroupModal(props: {
             {localActionGroup.name.length}/40
           </div>
         )}
-        {/*<div className="absolute top-3 right-3 z-10">*/}
-        {/*  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full hover:bg-gray-50" />*/}
-        {/*  <div className={classNames("-top-8 left-12 w-64 popup")}>*/}
-        {/*    The AI uses this to write this 1-click reply - be descriptive.*/}
-        {/*    E.g.*/}
-        {/*  </div>*/}
-        {/*</div>*/}
         <FloatingLabelInput
           className={classNames(
             "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
