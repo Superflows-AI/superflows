@@ -5,7 +5,8 @@ import { z } from "zod";
 import { Action, OrgJoinIsPaid } from "../../../lib/types";
 import { isValidBody } from "../../../lib/utils";
 import {
-  httpRequestFromAction,
+  constructHttpRequest,
+  makeHttpRequest,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
 import { Database } from "../../../lib/database.types";
@@ -264,12 +265,13 @@ export default async function handler(req: NextRequest) {
     const outs: ChatGPTMessage[] = await Promise.all(
       toExecute.map(async (execute, idx) => {
         console.log("Executing action:", JSON.stringify(execute));
-        let output = await httpRequestFromAction({
+        const { url, requestOptions } = constructHttpRequest({
           action: execute.action,
           parameters: execute.params as Record<string, unknown>,
           organization: org!,
           userApiKey: requestData.user_api_key,
         });
+        let output = await makeHttpRequest(url, requestOptions);
 
         console.log("http request:", JSON.stringify(output));
 
