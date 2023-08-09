@@ -9,14 +9,74 @@ import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useProfile } from "./contextManagers/profile";
 import { LoadingSpinner } from "./loadingspinner";
 import Toggle from "./toggle";
-import {
-  DevChatItem,
-  UserChatItem,
-  convertToRenderable,
-  functionNameToDisplay,
-} from "@superflows/chat-ui-react";
+import { DevChatItem, UserChatItem } from "@superflows/chat-ui-react";
 import suggestions1 from "../public/presets/1/suggestions.json";
 import suggestions2 from "../public/presets/2/suggestions.json";
+
+const CONTENT = {
+  status: 200,
+  message: "Data fetched successfully",
+  data: {
+    graphData: [
+      {
+        label: "January",
+        value: 120,
+      },
+      {
+        label: "February",
+        value: 145,
+      },
+      {
+        label: "March",
+        value: 160,
+      },
+      {
+        label: "April",
+        value: 180,
+      },
+      {
+        label: "May",
+        value: 190,
+      },
+      {
+        label: "June",
+        value: 200,
+      },
+      {
+        label: "July",
+        value: 220,
+      },
+      {
+        label: "August",
+        value: 210,
+      },
+      {
+        label: "September",
+        value: 250,
+      },
+      {
+        label: "October",
+        value: 300,
+      },
+      {
+        label: "November",
+        value: 320,
+      },
+      {
+        label: "December",
+        value: 400,
+      },
+    ],
+  },
+};
+
+const TEST_DATA: StreamingStepInput[] = [
+  {
+    role: "function",
+    name: "getGraphData",
+    content: JSON.stringify(CONTENT),
+  },
+];
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;
@@ -315,6 +375,7 @@ export default function PlaygroundChatbot(props: {
             </div>
           )}
         <div className="mt-6 flex-1 px-1 shrink-0 flex flex-col justify-end gap-y-2">
+          {/* {TEST_DATA.map((chatItem, idx) => { */}
           {devChatContents.map((chatItem, idx) => {
             if (
               devMode ||
@@ -354,10 +415,7 @@ export default function PlaygroundChatbot(props: {
                 functionJsonResponse &&
                 typeof functionJsonResponse === "object"
               ) {
-                contentString = convertToRenderable(
-                  functionJsonResponse,
-                  `${functionNameToDisplay(chatItem?.name ?? "")} result`
-                );
+                contentString = chatItem.content;
               }
               return (
                 <DevChatItem
@@ -370,6 +428,7 @@ export default function PlaygroundChatbot(props: {
               <UserChatItem chatItem={chatItem} key={idx + chatItem.content} />
             );
           })}
+          {/* {devChatContents.length === 0 && suggestions.length > 10 && ( */}
           {devChatContents.length === 0 && suggestions.length > 0 && (
             <div className="py-4 px-1.5">
               <h2 className="ml-2 font-medium">Suggestions</h2>
