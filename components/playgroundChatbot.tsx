@@ -354,10 +354,7 @@ export default function PlaygroundChatbot(props: {
                 functionJsonResponse &&
                 typeof functionJsonResponse === "object"
               ) {
-                contentString = convertToRenderable(
-                  functionJsonResponse,
-                  `${functionNameToDisplay(chatItem?.name ?? "")} result`
-                );
+                contentString = chatItem.content;
               }
               return (
                 <DevChatItem
