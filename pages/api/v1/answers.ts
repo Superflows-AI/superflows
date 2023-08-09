@@ -24,7 +24,8 @@ import {
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import {
-  httpRequestFromAction,
+  constructHttpRequest,
+  makeHttpRequest,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
 import { getLanguage } from "../../../lib/language";
@@ -547,7 +548,9 @@ async function Angela( // Good ol' Angela
             chosenAction.request_method!.toLowerCase()
           )
         ) {
-          let out = await httpRequestFromAction(actionToHttpRequest);
+          const { url, requestOptions } =
+            constructHttpRequest(actionToHttpRequest);
+          let out = await makeHttpRequest(url, requestOptions);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
           const outMessage = {
