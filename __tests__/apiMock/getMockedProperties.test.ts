@@ -15,7 +15,7 @@ firstName: John
 lastName: Smith
 `;
 
-    const properties = {
+    const openApiProperties = {
       firstName: {
         type: "string",
         nullable: false,
@@ -29,7 +29,7 @@ lastName: Smith
     (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
 
     const res = await getMockedProperties(
-      properties,
+      openApiProperties,
       "/api/v1/Status/fullname/123",
       "GET",
       [
@@ -43,66 +43,55 @@ lastName: Smith
   });
 
   it("with array", async () => {
-    const properties = {
-      count: {
+    const openApiProperties = {
+      id: {
+        type: "string",
+      },
+      name: {
         type: "integer",
-        example: 123,
       },
-      results: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            id: {
-              type: "string",
-              format: "uuid",
-            },
-            level: {
-              enum: [1, 8, 15],
-              type: "integer",
-            },
-          },
-        },
-      },
-    };
-
-    const expected = {
-      count: 123,
-      results: [
-        {
-          id: "123",
-          level: 1,
-        },
-      ],
     };
 
     const openAiResponse = `
-        id: John 
-        lastName: Smith
+        id: [1,2,3]
+        name: ['John', 'Eric', 'Martin']
       `;
+
+    const expected = [
+      {
+        id: 1,
+        name: "John",
+      },
+      {
+        id: 2,
+        name: "Eric",
+      },
+      {
+        id: 3,
+        name: "Martin",
+      },
+    ];
 
     (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
 
     const res = await getMockedProperties(
-      properties,
+      openApiProperties,
       "/api/v1/Status/fullname/123",
       "GET",
-      [
-        {
-          path: ["id"],
-          data: "The user's id",
-        },
-      ]
+      null,
+      undefined,
+      true
     );
-    // Doesnt pass currently
-    // expect(res).toEqual(expected);
+    expect(res).toEqual(expected);
   });
   it("nested object", async () => {
+    // TODO: remove properties from here
+    // learney.atlassian.net/browse/SF-2007
     const openAiResponse = `
   browserSdkVersion: 1
   dateCreated: 2021-01-01
-  cdn: nice-cdn
-  csp: nice-csp
+  dsn.properties.cdn: nice-cdn
+  dsn.properties.csp: nice-csp
   `;
 
     const properties = {
@@ -125,16 +114,13 @@ lastName: Smith
       },
     };
 
-    const expectedOutput = {
-      browserSdkVersion: "1",
-      dateCreated: "2021-01-01",
-      dsn: {
-        cdn: "nice-cdn",
-        csp: "nice-csp",
-      },
-    };
-
     (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+
+    const expectedOutput = {
+      browserSdkVersion: 1,
+      dateCreated: "2021-01-01",
+      dsn: { properties: { cdn: "nice-cdn", csp: "nice-csp" } },
+    };
 
     const res = await getMockedProperties(
       properties,
@@ -148,14 +134,6 @@ lastName: Smith
       ]
     );
 
-    // const actualOutput = {
-    //   browserSdk: { properties: { choices: { items: { elements: "ele" } } } },
-    //   browserSdkVersion: "1",
-    //   dateCreated: "2021-01-01",
-    //   dsn: { properties: { cdn: "nice-cdn", csp: "nice-csp" } },
-    // };
-
-    // Doesnt pass currently
-    // expect(res).toEqual(expectedOutput);
+    expect(res).toEqual(expectedOutput);
   });
 });

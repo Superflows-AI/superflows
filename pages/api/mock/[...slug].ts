@@ -211,6 +211,7 @@ export default async function handler(
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   // Just deal with the first layer of nesting for now
+  // If the array is nested it will be mocked as an object
   const isArray = schema?.type === "array";
 
   if (properties) {
@@ -249,7 +250,7 @@ export default async function handler(
 }
 
 export async function getMockedProperties(
-  properties: { [key: string]: any },
+  openApiProperties: { [key: string]: any },
   requestPath: string,
   method: RequestMethod,
   requestParameters: Chunk[] | null,
@@ -259,14 +260,18 @@ export async function getMockedProperties(
   },
   isArray: boolean = false
 ): Promise<Record<string, any>> {
-  const chunks = jsonSplitter(properties);
+  const chunks = jsonSplitter(openApiProperties);
   const allProperties = chunksToProperties(chunks);
+
+  console.log("allProperties", allProperties);
   const hardCodedProperties: Properties = {};
   const propertiesForAi: Properties = {};
 
   for (const [key, value] of Object.entries(allProperties)) {
     const type = value.type?.toLowerCase() ?? "";
     if (["object", "array"].includes(type)) continue;
+    // If the type is boolean we don't really need to ask gpt to mock it
+    // we just randomly choose from true and false
     if (type === "boolean") {
       value.data = isArray
         ? Array.from({ length: 3 }, () => Math.random() >= 0.5)

@@ -285,10 +285,12 @@ export function chunksToProperties(chunks: Chunk[]): Properties {
 
   const properties: Properties = {};
   for (const chunk of chunks) {
-    const fieldName = chunk.path[chunk.path.length - 2];
+    const fieldName = chunk.path.slice(0, -1).join(".");
     const chunkType = chunk.path[chunk.path.length - 1];
 
-    const existingProperty = properties[fieldName] ?? { path: chunk.path };
+    const existingProperty = properties[fieldName] ?? {
+      path: chunk.path.slice(0, -1),
+    };
 
     if (["type", "description"].includes(chunkType?.toString() ?? "")) {
       // If statement below is true when the chunk is an array of primitives. Without this check,
@@ -325,7 +327,7 @@ export function addGPTdataToProperties(
   Add the data outputted by gpt to the properties object. 
 
   If working with an array type (and gpt has output a comma separated list of values)
-  pass arrayIdx to select which value in an semi-colon separate  list to use.
+  pass arrayIdx to select which value in an semi-colon separate list to use.
 
   TODO: currently always treats data as a string.
   **/
@@ -347,6 +349,7 @@ export function addGPTdataToProperties(
 
       if (!value) return;
 
+      // Remove leading or trailing single or double quotes
       value = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
       try {
         value = JSON.parse(value);
@@ -363,7 +366,7 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
   The reverse transformation to that done by transformProperties 
   **/
   return Object.values(properties).map((prop) => ({
-    path: prop.path.slice(0, -1),
+    path: prop.path,
     data: prop.data,
   }));
 }
