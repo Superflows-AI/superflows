@@ -16,11 +16,6 @@ import { Navbar } from "../components/navbar";
 import { Database } from "../lib/database.types";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
 
-import suggestion1 from "../public/presets/1/suggestions.json";
-import suggestion2 from "../public/presets/2/suggestions.json";
-
-const presetSuggestions = [...suggestion1, ...suggestion2];
-
 export default function App() {
   return (
     <>
@@ -31,13 +26,44 @@ export default function App() {
 }
 
 function Dashboard() {
+  const { profile } = useProfile();
   // The cloud version of the app is priced based on number of user queries.
   // The self-hosted version will cost per request to openai
   if (
     process.env.NEXT_PUBLIC_IS_IN_CLOUD &&
     process.env.NEXT_PUBLIC_IS_IN_CLOUD === "true"
-  )
-    return <DashboardNumMessages />;
+  ) {
+    // If premium, show usage in queries
+    if (
+      process.env.NODE_ENV === "development" ||
+      profile?.organizations?.is_paid[0]?.is_premium
+    ) {
+      return <DashboardNumMessages />;
+    } else {
+      // Otherwise show upgrade message
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <Navbar current={"Usage"} />
+          <main className="flex flex-col items-center justify-start py-20 flex-1 px-20 text-center bg-gray-800 w-screen h-screen">
+            <div className="bg-gray-850 rounded-md px-20 lg:px-40 py-10">
+              <h1 className="text-4xl text-gray-200 font-medium">
+                Upgrade to see usage
+              </h1>
+              <p className="mt-2 text-xl text-gray-400">
+                View{" "}
+                <a
+                  href="https://superflows.ai/pricing"
+                  className="text-blue-600 hover:underline"
+                >
+                  pricing page
+                </a>
+              </p>
+            </div>
+          </main>
+        </div>
+      );
+    }
+  }
   return <DashboardCost />;
 }
 
@@ -136,7 +162,7 @@ function DashboardNumMessages() {
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4 overflow-visible max-w-7xl w-full">
           <div className="text-center">
             <h1 className="text-2xl text-gray-100">Superflows usage</h1>
-            <p className="text-gray-200 mt-2 text-xl font-bold text-purple-500">
+            <p className="mt-2 text-xl font-bold text-purple-500">
               {!loading &&
                 `Total user queries: ${Math.round(totalMessages * 100) / 100}`}
             </p>

@@ -420,14 +420,21 @@ function ActionsSection(props: {
       {editActionTag && (
         <EditActionTagModal
           actionTag={props.actionTagJoinActions}
-          setActionTag={async (actionTag: ActionTag) => {
+          setActionTag={async (actionTag: ActionTagJoinActions) => {
             props.setActionTag({
               ...props.actionTagJoinActions,
               ...actionTag,
             });
+            // actionTag includes an .actions property, which shouldn't be included in the update
+            const actionTagWithoutActions = {
+              ...actionTag,
+              actions: undefined,
+            };
+            delete actionTagWithoutActions.actions;
+            // Update the action tag in DB
             const res = await supabase
               .from("action_tags")
-              .update(actionTag)
+              .update(actionTagWithoutActions)
               .match({ id: actionTag.id });
             if (res.error) throw res.error;
           }}

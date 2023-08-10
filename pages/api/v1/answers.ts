@@ -24,7 +24,8 @@ import {
 } from "../../../lib/edge-runtime/utils";
 import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
 import {
-  httpRequestFromAction,
+  constructHttpRequest,
+  makeHttpRequest,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
 import { getLanguage } from "../../../lib/language";
@@ -242,6 +243,7 @@ export default async function handler(req: NextRequest) {
         .from("chat_messages")
         .select()
         .eq("conversation_id", requestData.conversation_id)
+        .eq("org_id", org.id)
         .order("conversation_index", { ascending: true });
       if (convResp.error) throw new Error(convResp.error.message);
       const conversation = convResp.data.map(DBChatMessageToGPT);
@@ -546,7 +548,9 @@ async function Angela( // Good ol' Angela
             chosenAction.request_method!.toLowerCase()
           )
         ) {
-          let out = await httpRequestFromAction(actionToHttpRequest);
+          const { url, requestOptions } =
+            constructHttpRequest(actionToHttpRequest);
+          let out = await makeHttpRequest(url, requestOptions);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
           const outMessage = {
