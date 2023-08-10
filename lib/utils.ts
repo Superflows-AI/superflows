@@ -244,6 +244,9 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
   So jsonReconstruct(jsonSplitter(anyJson)) === anyJson
   **/
 
+  // Sort by path length (depth) ascending
+  chunks.sort((a, b) => a.path.length - b.path.length);
+
   let root: Record<string, any> = {};
 
   for (let chunk of chunks) {
@@ -262,7 +265,7 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
   return root;
 }
 
-export function transformProperties(chunks: Chunk[]): Properties {
+export function chunksToProperties(chunks: Chunk[]): Properties {
   /**
   Once a 'properties' field has been deconstructed into chunks, it looks like this:
 
@@ -282,13 +285,29 @@ export function transformProperties(chunks: Chunk[]): Properties {
 
   const properties: Properties = {};
   for (const chunk of chunks) {
-    const fieldName = chunk.path[chunk.path.length - 2];
+    const fieldName = chunk.path.slice(0, -1).join(".");
     const chunkType = chunk.path[chunk.path.length - 1];
 
-    const existingProperty = properties[fieldName] ?? { path: chunk.path };
+    const existingProperty = properties[fieldName] ?? {
+      path: chunk.path.slice(0, -1),
+    };
 
     if (["type", "description"].includes(chunkType?.toString() ?? "")) {
-      properties[fieldName] = { ...existingProperty, [chunkType]: chunk.data };
+      // If statement below is true when the chunk is an array of primitives. Without this check,
+      // we ask gpt for a value for the key "item" which is part of the schema
+      // structure, not data we want returned.
+      // TODO: this doesn't treat the array as an array currently
+      if (fieldName === "items" && !["object", "array"].includes(chunk.data)) {
+        properties[chunk.path[chunk.path.length - 3]] = {
+          path: chunk.path,
+          [chunkType]: chunk.data,
+        };
+      } else {
+        properties[fieldName] = {
+          ...existingProperty,
+          [chunkType]: chunk.data,
+        };
+      }
     }
   }
   return properties;
@@ -301,17 +320,41 @@ export function chunkToString(chunk: Chunk): string {
 
 export function addGPTdataToProperties(
   properties: Properties,
-  gptOutput: string
+  gptOutput: string,
+  arrayIdx: number | null = null
 ): Properties {
   /**
   Add the data outputted by gpt to the properties object. 
+
+  If working with an array type (and gpt has output a comma separated list of values)
+  pass arrayIdx to select which value in an semi-colon separate list to use.
+
   TODO: currently always treats data as a string.
   **/
 
   gptOutput.split("\n").forEach((line) => {
-    const [key, value] = line.split(":").map((s) => s.trim());
+    let [key, value] = [
+      line.slice(0, line.indexOf(":")).trim(),
+      line.slice(line.indexOf(":") + 1).trim(),
+    ];
+
     if (key in properties) {
-      properties[key].data = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
+      if (arrayIdx !== null) {
+        value = value
+          .replace("[", "")
+          .replaceAll("]", "")
+          .split(",")
+          [arrayIdx].trim(); // TODO: Add fallback for if the commaIdx is out of range
+      }
+
+      if (!value) return;
+
+      // Remove leading or trailing single or double quotes
+      value = value.replace(/^["'](.+(?=["']$))["']$/, "$1");
+      try {
+        value = JSON.parse(value);
+      } catch {}
+      properties[key].data = value;
     }
   });
 
@@ -323,7 +366,7 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
   The reverse transformation to that done by transformProperties 
   **/
   return Object.values(properties).map((prop) => ({
-    path: prop.path.slice(0, -1), // Not sure about this
+    path: prop.path,
     data: prop.data,
   }));
 }

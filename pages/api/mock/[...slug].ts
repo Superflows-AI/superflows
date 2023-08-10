@@ -5,7 +5,7 @@ import { OpenAPIV3_1 } from "openapi-types";
 
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { NextApiRequest, NextApiResponse } from "next";
-import { Chunk, RequestMethod } from "../../../lib/models";
+import { Chunk, Properties, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
 import { getOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action } from "../../../lib/types";
@@ -17,7 +17,7 @@ import {
   objectNotEmpty,
   propertiesToChunks,
   splitPath,
-  transformProperties,
+  chunksToProperties,
 } from "../../../lib/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
@@ -136,6 +136,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
+  console.log("mock api called");
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
   // Used below to extract path parameters
@@ -207,9 +208,11 @@ export default async function handler(
         ]
       : null;
 
-  // TODO: properties can be set as array or object by the schema, currently not
-  // dealing with this
   const properties = schema ? propertiesFromSchema(schema) : null;
+
+  // Just deal with the first layer of nesting for now
+  // If the array is nested it will be mocked as an object
+  const isArray = schema?.type === "array";
 
   if (properties) {
     const gptResultAsJson = await getMockedProperties(
@@ -217,7 +220,8 @@ export default async function handler(
       matchingAction?.path ?? slug.join("/"),
       method,
       requestParameters,
-      orgInfo
+      orgInfo,
+      isArray
     );
 
     res.status(responseCode ? Number(responseCode) : 200).json(gptResultAsJson);
@@ -246,33 +250,50 @@ export default async function handler(
 }
 
 export async function getMockedProperties(
-  properties: { [key: string]: any },
+  openApiProperties: { [key: string]: any },
   requestPath: string,
   method: RequestMethod,
   requestParameters: Chunk[] | null,
   orgInfo?: {
     name: string;
     description: string;
-  }
+  },
+  isArray: boolean = false
 ): Promise<Record<string, any>> {
-  const chunks = jsonSplitter(properties);
-  const transformed = transformProperties(chunks);
-  const primitiveOnly = Object.entries(transformed)
-    .filter(
-      ([_, value]) =>
-        value.type?.toLowerCase() !== "object" &&
-        value.type?.toLowerCase() !== "array"
-    )
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+  const chunks = jsonSplitter(openApiProperties);
+  const allProperties = chunksToProperties(chunks);
+
+  const hardCodedProperties: Properties = {};
+  const propertiesForAi: Properties = {};
+
+  for (const [key, value] of Object.entries(allProperties)) {
+    const type = value.type?.toLowerCase() ?? "";
+    if (["object", "array"].includes(type)) continue;
+    // If the type is boolean we don't really need to ask gpt to mock it
+    // we just randomly choose from true and false
+    if (type === "boolean") {
+      value.data = isArray
+        ? Array.from({ length: 3 }, () => Math.random() >= 0.5)
+        : Math.random() >= 0.5;
+      hardCodedProperties[key] = {
+        data: value.data,
+        type: "boolean",
+        path: value.path,
+      };
+    } else {
+      propertiesForAi[key] = value;
+    }
+  }
 
   const prompt = apiMockPrompt(
     requestPath,
     method,
     requestParameters,
-    primitiveOnly,
-    orgInfo
+    propertiesForAi,
+    orgInfo,
+    isArray
   );
-  console.log("Prompt: ", prompt[1].content);
+  console.log("Prompt:\n", prompt[1].content);
 
   const encoded = tokenizer.encodeChat(
     prompt as ChatMessage[],
@@ -286,11 +307,69 @@ export async function getMockedProperties(
     3
   );
 
+  console.log("Response:\n", openAiResponse);
+
   if (openAiResponse.length === 0) return { message: "Call to openai failed" };
 
-  const readded = addGPTdataToProperties(primitiveOnly, openAiResponse);
-  const newChunks = propertiesToChunks(Object.assign({}, transformed, readded));
+  if (isArray)
+    return rebuildPropertiesArray(
+      hardCodedProperties,
+      propertiesForAi,
+      openAiResponse,
+      allProperties
+    );
+  return rebuildProperties(
+    hardCodedProperties,
+    propertiesForAi,
+    openAiResponse,
+    allProperties
+  );
+}
+
+function rebuildProperties(
+  hardCodedProperties: Properties,
+  propertiesForAi: Properties,
+  openAiResponse: string,
+  transformed: Properties
+) {
+  const reAdded = addGPTdataToProperties(propertiesForAi, openAiResponse);
+  const newChunks = propertiesToChunks(
+    Object.assign({}, transformed, { ...reAdded, ...hardCodedProperties })
+  );
   return jsonReconstruct(newChunks);
+}
+
+function rebuildPropertiesArray(
+  hardCodedProperties: Properties,
+  propertiesForAi: Properties,
+  openAiResponse: string,
+  transformed: Properties
+) {
+  const arrayResponse = [];
+  // Loop through each array element
+  for (let idx = 0; idx < 3; idx++) {
+    // Stick the result from the gpt call back on
+    const readded = addGPTdataToProperties(
+      propertiesForAi,
+      openAiResponse,
+      idx
+    );
+
+    // hardcoded properties are a whole array, so we need to index
+    let hardcodedProperiesIdx: Properties = {};
+    for (let [key, value] of Object.entries(hardCodedProperties)) {
+      hardcodedProperiesIdx[key] = {
+        ...value,
+        data: value.data[idx],
+      };
+    }
+
+    const newChunks = propertiesToChunks(
+      Object.assign({}, transformed, { ...readded, ...hardcodedProperiesIdx })
+    );
+    arrayResponse.push(jsonReconstruct(newChunks));
+  }
+  return arrayResponse;
 }
 
 function propertiesFromSchema(schema: OpenAPIV3_1.SchemaObject) {
