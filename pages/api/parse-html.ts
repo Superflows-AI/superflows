@@ -41,19 +41,12 @@ export default async function handler(
   res.status(200).send(text);
 }
 
-function removeHiddenElements(
+export function removeHiddenElements(
   body: cheerio.Cheerio<cheerio.Element>
 ): cheerio.Cheerio<cheerio.Element> {
   // Absurd, but can't find a better way to remove hidden elements
   const hidden = [
-    '*[style="display:none"]',
-    '*[style="display: none"]',
-    '*[style="display:none;"]',
-    '*[style="display: none;"]',
-    "*[style='display:none']",
-    "*[style='display: none']",
-    "*[style='display:none;']",
-    "*[style='display: none;']",
+    "*[style*=\"display:none\"], *[style*=\"display: none\"], *[style*='display:none'], *[style*='display: none']",
     "script",
     "meta",
   ];
