@@ -263,7 +263,6 @@ export async function getMockedProperties(
   const chunks = jsonSplitter(openApiProperties);
   const allProperties = chunksToProperties(chunks);
 
-  console.log("allProperties", allProperties);
   const hardCodedProperties: Properties = {};
   const propertiesForAi: Properties = {};
 
