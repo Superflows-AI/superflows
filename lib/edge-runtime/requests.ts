@@ -196,10 +196,9 @@ export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit
 ): Promise<any> {
-  // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
-  let responseStatus = 0;
   const response = await fetch(url, requestOptions);
-  responseStatus = response.status;
+  // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
+  const responseStatus = response.status ?? 0;
   if (!response.ok)
     throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
   const responseText = await response.text();
