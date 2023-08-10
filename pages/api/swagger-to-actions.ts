@@ -196,11 +196,14 @@ export function operationIdToFunctionName(
   operationId: string | undefined
 ): string | undefined {
   if (!operationId) return undefined;
-  operationId = operationId
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .toLowerCase();
-  operationId = operationId.replaceAll(" ", "_");
-  return operationId.replaceAll("-", "_");
+  return (
+    operationId
+      // Camel case to snake case
+      .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+      // Replace all non alphanumeric with underscores
+      .replaceAll(/\W/g, "_")
+      .toLowerCase()
+  );
 }
 
 export function requestToFunctionName(
