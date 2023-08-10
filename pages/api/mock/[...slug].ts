@@ -137,7 +137,6 @@ export default async function handler(
   res: NextApiResponse
 ): Promise<void> {
   console.log("mock api called");
-  console.log("mock api called");
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
   // Used below to extract path parameters
@@ -263,6 +262,7 @@ export async function getMockedProperties(
 ): Promise<Record<string, any>> {
   const chunks = jsonSplitter(openApiProperties);
   const allProperties = chunksToProperties(chunks);
+
   const hardCodedProperties: Properties = {};
   const propertiesForAi: Properties = {};
 
