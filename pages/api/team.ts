@@ -1,11 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../lib/database.types";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { isValidBody } from "../../lib/utils";
+import { Database } from "../../lib/database.types";
 
 export const config = {
   runtime: "edge",
+  // Edge gets upset with our use of recharts in chat-ui-react.
+  // TODO: Make it possible to import chat-ui-react without recharts
+  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {

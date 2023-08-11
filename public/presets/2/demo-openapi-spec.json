@@ -252,6 +252,56 @@
         }
       }
     },
+    "/api/v1/Segment/{segment-id}/column/{column-id}": {
+      "get": {
+        "tags": ["Segment"],
+        "operationId": "getData",
+        "summary": "Get the data contained in the column for this segment",
+        "parameters": [
+          {
+            "name": "segment-id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Segment id"
+            }
+          },
+          {
+            "name": "column-id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Column id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "time": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports": {
       "get": {
         "tags": ["Reports"],
