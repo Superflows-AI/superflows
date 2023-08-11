@@ -85,13 +85,23 @@ export function constructHttpRequest({
     // If life seems all empty and useless without it
     const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
     console.log("schema:", JSON.stringify(schema));
-    const properties = schema.properties as OpenAPIV3_1.MediaTypeObject;
+    const properties = schema.properties as {
+      [name: string]: OpenAPIV3_1.SchemaObject;
+    };
     console.log("properties:", JSON.stringify(properties));
+    const required = schema.required ?? [];
     const bodyArray = Object.entries(properties).map(([name, property]) => {
       // Throw out readonly attributes
       if (property.readOnly) return undefined;
       if (parameters[name]) {
         return { [name]: parameters[name] };
+      } else if (
+        // If the parameter is a required enum with 1 value
+        property.enum &&
+        property.enum.length === 1 &&
+        required.includes(name)
+      ) {
+        return { [name]: property.enum[0] };
       }
     });
     console.log("bodyArray:", JSON.stringify(bodyArray));
@@ -101,8 +111,8 @@ export function constructHttpRequest({
 
     // If gladly you'll sweat for it
     // Check all required params are present
-    const required = schema.required ?? [];
     required.forEach((key: string) => {
+      // TODO: This doesn't check nested required fields
       if (!body[key]) {
         // Fret for it
         throw new Error(
@@ -121,11 +131,7 @@ export function constructHttpRequest({
 
   // TODO: accept array for JSON?
   // Set parameters
-  if (
-    action.parameters &&
-    typeof action.parameters === "object" &&
-    Array.isArray(action.parameters)
-  ) {
+  if (action.parameters && Array.isArray(action.parameters)) {
     // If you'll simply go after that thing that you want
     const queryParams = new URLSearchParams();
     const actionParameters =
@@ -135,6 +141,13 @@ export function constructHttpRequest({
     // With all your capacity
     for (const param of actionParameters) {
       console.log(`processing param: ${JSON.stringify(param)}`);
+      // Check for case of required parameter that has enum with 1 value
+      const schema = param.schema as OpenAPIV3.SchemaObject;
+      if (param.required && schema.enum && schema.enum.length === 1) {
+        // Fill in the required parameter with the enum value
+        parameters[param.name] = schema.enum[0];
+      }
+
       if (param.required && !parameters[param.name]) {
         throw new Error(
           `Parameter "${param.name}" in ${param.in} is not provided by LLM`
