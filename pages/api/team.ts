@@ -5,8 +5,8 @@ import { Database } from "../../lib/database.types";
 
 export const config = {
   runtime: "edge",
-  // Edge gets upset with our use of recharts, in chat-ui-react. We don't actually
-  // use functionality from recharts in the edge runtime though, so can ignore
+  // Edge gets upset with our use of recharts in chat-ui-react.
+  // TODO: Make it possible to import chat-ui-react without recharts
   unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
 };
 
