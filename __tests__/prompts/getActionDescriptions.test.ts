@@ -1,5 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
-import { getActionDescriptions } from "../../lib/prompts/chatBot";
+import {
+  formatReqBodySchema,
+  getActionDescriptions,
+} from "../../lib/prompts/chatBot";
 import { Action } from "../../lib/types";
 import {
   exampleRequestBody1,
@@ -140,6 +143,39 @@ describe("getActionDescriptions", () => {
       `1. action1: description1. PARAMETERS:
 - param1 (string): a description.
 - param2 (number): this isn't a description. REQUIRED
+`
+    );
+  });
+  it("param with enum with 1 option", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [
+          {
+            name: "param1",
+            in: "query",
+            required: true,
+            schema: {
+              type: "string",
+              enum: ["alpha"],
+            },
+          },
+          {
+            name: "param2",
+            in: "path",
+            description: "this isn't a description",
+            schema: {
+              type: "number",
+            },
+          },
+        ],
+        request_body_contents: {},
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `1. action1: description1. PARAMETERS:
+- param2 (number): this isn't a description.
 `
     );
   });
@@ -319,6 +355,41 @@ describe("getActionDescriptions", () => {
 - name (string): The name of the dashboard. REQUIRED
 - sharePermissions (object[]): The share permissions for the dashboard. REQUIRED
 \t- type ("user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown"): user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to. REQUIRED
+`
+    );
+  });
+  it("exampleRequestBody with enum with 1 option", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [],
+        request_body_contents: {
+          "application/json": {
+            schema: {
+              required: ["enumProp"],
+              type: "object",
+              properties: {
+                description: {
+                  type: "string",
+                  description: "The description of the dashboard.",
+                },
+                enumProp: {
+                  type: "string",
+                  enum: ["option1"],
+                  description: "enum description",
+                },
+              },
+              additionalProperties: false,
+              description: "Details of a dashboard.",
+            },
+          },
+        },
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `1. action1: description1. PARAMETERS:
+- description (string): The description of the dashboard.
 `
     );
   });
