@@ -4,10 +4,10 @@ import { z } from "zod";
 import { Database } from "../../lib/database.types";
 
 export const config = {
-  runtime: "edge", // for Edge API Routes only
-  unstable_allowDynamic: [
-    "**/node_modules/@superflows/chat-ui-react/**", // use a glob to allow anything in the
-  ],
+  runtime: "edge",
+  // Edge gets upset with our use of recharts, in chat-ui-react. We don't actually
+  // use functionality from recharts in the edge runtime though, so can ignore
+  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {

@@ -16,10 +16,10 @@ import { ChatGPTMessage } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
-  runtime: "edge", // for Edge API Routes only
-  unstable_allowDynamic: [
-    "**/node_modules/@superflows/chat-ui-react/**", // use a glob to allow anything in the
-  ],
+  runtime: "edge",
+  // Edge gets upset with our use of recharts, in chat-ui-react. We don't actually
+  // use functionality from recharts in the edge runtime though, so can ignore
+  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
 };
 
 const OptionalStringZod = z.optional(z.string());
