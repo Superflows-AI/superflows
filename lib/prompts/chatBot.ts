@@ -53,6 +53,7 @@ export function formatReqBodySchema(
   if (!schema) return "";
   let paramString = "";
   if (schema.type === "object" && schema.properties) {
+    // Objects
     const properties = schema.properties as {
       [name: string]: OpenAPIV3_1.SchemaObject;
     };
@@ -62,11 +63,18 @@ export function formatReqBodySchema(
       // Throw out readonly attributes
       if (value.readOnly) return;
 
+      // Below case is cursed - it's for when a required parameter is an enum with only one value
+      // We skip it since there's no decision to be made and it costs tokens
+      if (required.includes(key) && value.enum && value.enum.length === 1) {
+        return;
+      }
+
       paramString +=
         `\n${"\t".repeat(nestingLevel)}- ${key} ` +
         formatReqBodySchema(value, nestingLevel + 1, required.includes(key));
     });
   } else if (schema.type === "array") {
+    // Arrays
     const items = schema.items as OpenAPIV3_1.SchemaObject;
     if (items.type === "object") {
       // Arrays of objects require special handling
@@ -83,6 +91,7 @@ export function formatReqBodySchema(
       }`;
     }
   } else {
+    // Non-object, non-array
     paramString += `(${getType(schema.type, schema.enum)})${formatDescription(
       schema.description ?? schema.format
     )}${isRequired ? " REQUIRED" : ""}`;
@@ -107,6 +116,9 @@ export function getActionDescriptions(actions: Action[]): string {
       action.parameters.forEach((param) => {
         const p = param as unknown as OpenAPIV3_1.ParameterObject;
         const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+        // Below case is cursed: required param with 1 enum. Skip it.
+        if (schema.enum && schema.enum.length === 1 && p.required) return;
+
         paramString += `\n- ${p.name} (${getType(
           schema.type,
           schema.enum
