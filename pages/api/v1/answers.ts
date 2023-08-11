@@ -35,7 +35,10 @@ import suggestions2 from "../../../public/presets/2/suggestions.json";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
-  runtime: "edge",
+  runtime: "edge", // for Edge API Routes only
+  unstable_allowDynamic: [
+    "**/node_modules/@superflows/chat-ui-react/**", // use a glob to allow anything in the
+  ],
 };
 
 const OptionalStringZod = z.optional(z.string());

@@ -1,11 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../lib/database.types";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { isValidBody } from "../../lib/utils";
+import { Database } from "../../lib/database.types";
 
 export const config = {
-  runtime: "edge",
+  runtime: "edge", // for Edge API Routes only
+  unstable_allowDynamic: [
+    "**/node_modules/@superflows/chat-ui-react/**", // use a glob to allow anything in the
+  ],
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
