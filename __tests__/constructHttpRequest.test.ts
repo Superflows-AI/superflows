@@ -135,6 +135,38 @@ describe("constructHttpRequest", () => {
     });
     expect(requestOptions.body).toBe(undefined);
   });
+  it("GET - query param with required enum with 1 value", () => {
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...constActionParams,
+        parameters: [
+          {
+            name: "param",
+            in: "query",
+            required: true,
+            schema: {
+              type: "integer",
+              enum: [1],
+            },
+          },
+        ],
+        path: "/api/mock/confirm",
+        request_method: "GET",
+        request_body_contents: null,
+      },
+      parameters: {},
+      organization,
+      userApiKey: "1234",
+      stream: () => {},
+    });
+    expect(url).toBe("https://api.mock/api/mock/confirm?param=1");
+    expect(requestOptions.method).toBe("GET");
+    expect(requestOptions.headers).toEqual({
+      Accept: "application/json",
+      Authorization: "Bearer 1234",
+    });
+    expect(requestOptions.body).toBe(undefined);
+  });
   it("GET - header param", () => {
     const { url, requestOptions } = constructHttpRequest({
       action: {
@@ -199,6 +231,42 @@ describe("constructHttpRequest", () => {
       Authorization: "Bearer 1234",
     });
     expect(requestOptions.body).toBe(JSON.stringify({ conversation_id: 1 }));
+  });
+  it("POST - body with required enum with 1 value", () => {
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...constActionParams,
+        parameters: null,
+        path: "/api/mock/confirm",
+        request_method: "POST",
+        request_body_contents: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["user_id"],
+              properties: {
+                user_id: {
+                  type: "string",
+                  enum: ["1"],
+                },
+              },
+            },
+          },
+        },
+      },
+      parameters: {},
+      organization,
+      userApiKey: "1234",
+      stream: () => {},
+    });
+    expect(url).toBe("https://api.mock/api/mock/confirm");
+    expect(requestOptions.method).toBe("POST");
+    expect(requestOptions.headers).toEqual({
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: "Bearer 1234",
+    });
+    expect(requestOptions.body).toBe(JSON.stringify({ user_id: "1" }));
   });
   it("POST - nested body", () => {
     const { url, requestOptions } = constructHttpRequest({
