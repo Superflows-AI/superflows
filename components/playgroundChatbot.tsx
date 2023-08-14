@@ -330,7 +330,10 @@ export default function PlaygroundChatbot(props: {
             else if (chatItem.role === "debug") return;
             else if (chatItem.role === "function") {
               let contentString = "";
-              const functionJsonResponse = JSON.parse(chatItem.content) as Json;
+              let functionJsonResponse: Json = {};
+              try {
+                functionJsonResponse = JSON.parse(chatItem.content) as Json;
+              } catch (e) {}
               if (
                 // Empty array
                 (Array.isArray(functionJsonResponse) &&
