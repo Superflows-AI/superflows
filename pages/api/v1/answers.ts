@@ -18,11 +18,12 @@ import {
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
+import { DBChatMessageToGPT } from "../../../lib/edge-runtime/utils";
 import {
-  DBChatMessageToGPT,
-  getActiveActionTagsAndActions,
-} from "../../../lib/edge-runtime/utils";
-import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
+  ActionPlusApiInfo,
+  Organization,
+  OrgJoinIsPaid,
+} from "../../../lib/types";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -204,25 +205,6 @@ export default async function handler(req: NextRequest) {
       `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`
     );
 
-    // Override api_host if mock_api_responses is set to true
-    if (org && requestData.mock_api_responses) {
-      const currentHost =
-        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
-      org.api_host = currentHost + "/api/mock";
-      console.log(
-        "Mocking API responses: overriding api_host to",
-        org.api_host
-      );
-    }
-    if (!org?.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: "No API host found - add an API host on the API settings page",
-        }),
-        { status: 400, headers }
-      );
-    }
-
     // TODO: Add non-streaming API support (although the UX is 10x worse)
     if (requestData.stream === false) {
       return new Response(
@@ -301,20 +283,54 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the active actions from the DB which we can choose between
-    const actionsWithTags = await getActiveActionTagsAndActions(org.id);
-    const activeActions = actionsWithTags!
-      .map((tag) => tag.actions)
+    // Below gets the action tags and actions that are active
+    const actionTagResp = await supabase
+      .from("action_tags")
+      .select("*,actions!inner(*),apis(*)")
+      .eq("org_id", org.id)
+      .eq("active", true);
+    if (actionTagResp.error) throw new Error(actionTagResp.error.message);
+    const actionsWithTags = actionTagResp.data;
+    let activeActions = actionsWithTags!
+      .map((tag) => {
+        const currentHost =
+          req.headers.get("x-forwarded-proto") +
+          "://" +
+          req.headers.get("host");
+        const mockUrl = currentHost + "/api/mock";
+        // Store the api_host with each action
+        return tag.actions.map((a) => ({
+          ...a,
+          // Override api_host if mock_api_responses is set to true
+          api_host: requestData.mock_api_responses
+            ? mockUrl
+            : tag.apis?.api_host ?? "",
+          auth_header: tag.apis?.auth_header ?? "",
+          auth_scheme: tag.apis?.auth_scheme ?? null,
+        }));
+      })
       .flat()
       .filter((action) => action.active);
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
           error:
-            "You have no active actions set for your organization. Add them if you have access to the superflows dashboard or reach out to your IT team.",
+            "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
         }),
         { status: 404, headers }
       );
     }
+    activeActions.forEach((action) => {
+      // Check that every action has an api_host
+      if (!action.api_host) {
+        return new Response(
+          JSON.stringify({
+            error: `No API host found for action with name: ${action.name} - add an API host on the API settings page`,
+          }),
+          { status: 400, headers }
+        );
+      }
+    });
 
     console.log(
       `${activeActions.length} active actions found: ${JSON.stringify(
@@ -409,7 +425,7 @@ export interface ToConfirm extends FunctionCall {
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
-  actions: Action[],
+  actions: ActionPlusApiInfo[],
   org: Organization,
   conversationId: number,
   previousMessages: ChatGPTMessage[],
