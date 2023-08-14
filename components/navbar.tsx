@@ -1,6 +1,7 @@
 import { Disclosure } from "@headlessui/react";
 import {
   ArrowRightOnRectangleIcon,
+  BookOpenIcon,
   Cog6ToothIcon,
   DocumentTextIcon,
   QuestionMarkCircleIcon,
@@ -88,6 +89,16 @@ export function Navbar(props: { current: string }) {
                 </div>
               </div>
               <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
+                <a
+                  href={
+                    "https://docs.superflows.ai/docs/category/integration-guide"
+                  }
+                  target={"_blank"}
+                  rel={"noopener noreferrer"}
+                  className="rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem] text-sm flex flex-row place-items-center"
+                >
+                  <BookOpenIcon className={"h-5 w-5 m-1"} /> Integration Guide
+                </a>
                 <FlyoutMenu
                   items={[
                     {
