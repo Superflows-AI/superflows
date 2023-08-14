@@ -1,6 +1,5 @@
-import { Fragment, ReactNode, useState } from "react";
+import { Fragment, ReactNode } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { CheckIcon } from "@heroicons/react/24/outline";
 import classNames from "classnames";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
@@ -12,7 +11,7 @@ export default function Modal(props: {
 }) {
   return (
     <Transition.Root show={props.open} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={props.setOpen}>
+      <Dialog as="div" className="relative z-30" onClose={props.setOpen}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
