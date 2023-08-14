@@ -1,9 +1,9 @@
-import { ActionTagJoinActions, DBChatMessage } from "../types";
+import { ActionTagJoin, DBChatMessage } from "../types";
 import { ChatGPTMessage } from "../models";
 
 export async function getActiveActionTagsAndActions(
   orgId: number
-): Promise<ActionTagJoinActions[] | undefined> {
+): Promise<ActionTagJoin[] | undefined> {
   // Below gets the action tags and actions that are active
   let authRequestResult = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/action_tags?select=*%2Cactions%21inner%28*%29&actions.active=is.true&org_id=eq.${orgId}`,
