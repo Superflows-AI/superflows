@@ -124,10 +124,6 @@ export default function PageActionsSection(props: {
               setCurrentApi={setSelectedApiTab}
               setApis={props.setApis}
               onDelete={async () => {
-                console.log(
-                  "onDelete called!",
-                  props.apis[(props.apis?.length ?? 1) - 1]
-                );
                 // This reads oddly, but it means we update the selected API to the last API in the list
                 // when props.apis is updated (this MUST be called before loadActions)
                 setUpdateSelectedTo(undefined);
