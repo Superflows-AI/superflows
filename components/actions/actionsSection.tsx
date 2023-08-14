@@ -117,40 +117,45 @@ export default function PageActionsSection(props: {
 
       <div className="mt-32 mx-5 mb-20">
         <div className="fixed top-16 mt-px inset-x-0 mx-auto bg-gray-800 max-w-7xl pt-2 z-10">
-          <APITabs
-            apis={props.apis}
-            currentApiId={selectedApiTab?.id}
-            setCurrentApi={setSelectedApiTab}
-            setApis={props.setApis}
-            onDelete={async () => {
-              console.log(
-                "onDelete called!",
-                props.apis[(props.apis?.length ?? 1) - 1]
-              );
-              // This reads oddly, but it means we update the selected API to the last API in the list
-              // when props.apis is updated (this MUST be called before loadActions)
-              setUpdateSelectedTo(undefined);
-              await props.loadActions();
-            }}
-          />
+          {props.actionTags.length > 0 && (
+            <APITabs
+              apis={props.apis}
+              currentApiId={selectedApiTab?.id}
+              setCurrentApi={setSelectedApiTab}
+              setApis={props.setApis}
+              onDelete={async () => {
+                console.log(
+                  "onDelete called!",
+                  props.apis[(props.apis?.length ?? 1) - 1]
+                );
+                // This reads oddly, but it means we update the selected API to the last API in the list
+                // when props.apis is updated (this MUST be called before loadActions)
+                setUpdateSelectedTo(undefined);
+                await props.loadActions();
+              }}
+            />
+          )}
           <div className="border-b border-gray-500 px-16 mx-8 pb-3 mt-4 flex place-items-end justify-between gap-x-2">
             <div className="flex flex-row gap-x-6 place-items-center">
-              <Checkbox
-                onChange={(checked) => {
-                  setShowInactive(checked);
-                }}
-                checked={showInactive}
-                label={"Show inactive"}
-              />
               {props.actionTags.length > 0 && (
-                <DropdownWithCheckboxes
-                  title={"Set active by HTTP method"}
-                  items={actionTagsToToggleItems(
-                    props.actionTags,
-                    props.setActionTags,
-                    supabase
-                  )}
-                />
+                <>
+                  <Checkbox
+                    onChange={(checked) => {
+                      setShowInactive(checked);
+                    }}
+                    checked={showInactive}
+                    label={"Show inactive"}
+                  />
+
+                  <DropdownWithCheckboxes
+                    title={"Set active by HTTP method"}
+                    items={actionTagsToToggleItems(
+                      props.actionTags,
+                      props.setActionTags,
+                      supabase
+                    )}
+                  />
+                </>
               )}
             </div>
             <div className="flex flex-row gap-x-2 place-items-center">
