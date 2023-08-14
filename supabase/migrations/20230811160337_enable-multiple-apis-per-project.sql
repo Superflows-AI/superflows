@@ -5,7 +5,7 @@ create table "public"."apis" (
     "org_id" bigint not null,
     "api_host" text not null default ''::text,
     "auth_header" text not null default 'Authorization'::text,
-    "auth_scheme" text not null default 'Bearer'::text
+    "auth_scheme" text default 'Bearer'::text
 );
 
 alter table "public"."apis" enable row level security;
