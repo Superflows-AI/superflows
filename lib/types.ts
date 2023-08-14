@@ -2,6 +2,12 @@ import { Database } from "./database.types";
 
 export type Action = Database["public"]["Tables"]["actions"]["Row"];
 
+export type ActionPlusApiInfo = Action & {
+  api_host: string;
+  auth_header: string;
+  auth_scheme: string | null;
+};
+
 export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 
 export type Api = Database["public"]["Tables"]["apis"]["Row"];

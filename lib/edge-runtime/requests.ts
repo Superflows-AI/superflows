@@ -30,7 +30,7 @@ export function constructHttpRequest({
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
-  if (!organization.api_host) {
+  if (!action.api_host) {
     throw new Error("API host has not been provided");
   }
 
@@ -41,13 +41,11 @@ export function constructHttpRequest({
   // TODO: You can only overwrite this header if it's in the permissions
   headers["Accept"] = "application/json";
   if (userApiKey) {
-    const scheme = organization.auth_scheme
-      ? organization.auth_scheme + " "
-      : "";
-    headers[organization.auth_header] = `${scheme}${userApiKey}`;
+    const scheme = action.auth_scheme ? action.auth_scheme + " " : "";
+    headers[action.auth_header] = `${scheme}${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/mock"))
+  if (action.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
   // This header is only required for requests with a body
   if (action.request_body_contents)
@@ -113,7 +111,7 @@ export function constructHttpRequest({
     requestOptions.body = JSON.stringify(body);
   }
 
-  let url = organization.api_host + action.path;
+  let url = action.api_host + action.path;
 
   // TODO: accept array for JSON?
   // Set parameters
