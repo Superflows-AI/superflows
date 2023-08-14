@@ -137,6 +137,7 @@ export default async function handler(
   res: NextApiResponse
 ): Promise<void> {
   console.log("mock api called");
+
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
   // Used below to extract path parameters

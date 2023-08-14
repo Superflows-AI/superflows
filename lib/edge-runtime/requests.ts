@@ -188,8 +188,6 @@ export async function makeHttpRequest(
   const response = await fetch(url, requestOptions);
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
-  if (!response.ok && responseStatus !== 404)
-    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
   const responseText = await response.text();
   // If there's no response body, return a status message
   if (!responseText) {
@@ -198,8 +196,11 @@ export async function makeHttpRequest(
       : { status: "Action failed" };
   }
 
-  if (responseStatus === 404)
-    return "The function returned a 404, the response was: " + responseText;
+  if (responseStatus >= 300)
+    return (
+      `The function returned a ${responseStatus}, the response was: ` +
+      responseText
+    );
 
   const reqHeaders: Record<string, any> | null =
     requestOptions?.headers ?? null;
