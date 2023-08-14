@@ -4,7 +4,9 @@ export type Action = Database["public"]["Tables"]["actions"]["Row"];
 
 export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 
-export type ActionTagJoinActions = ActionTag & { actions: Action[] };
+export type Api = Database["public"]["Tables"]["apis"]["Row"];
+
+export type ActionTagJoin = ActionTag & { actions: Action[] };
 
 export type DBChatMessage =
   Database["public"]["Tables"]["chat_messages"]["Row"];

@@ -36,21 +36,24 @@ export interface Database {
     Tables: {
       action_tags: {
         Row: {
-          created_at: string | null;
+          api_id: string;
+          created_at: string;
           description: string;
           id: number;
           name: string;
           org_id: number | null;
         };
         Insert: {
-          created_at?: string | null;
+          api_id: string;
+          created_at?: string;
           description?: string;
           id?: number;
           name?: string;
           org_id?: number | null;
         };
         Update: {
-          created_at?: string | null;
+          api_id?: string;
+          created_at?: string;
           description?: string;
           id?: number;
           name?: string;
@@ -62,6 +65,12 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "action_tags_api_id_fkey";
+            columns: ["api_id"];
+            referencedRelation: "apis";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -69,6 +78,7 @@ export interface Database {
         Row: {
           action_type: string;
           active: boolean;
+          api_id: string;
           created_at: string;
           description: string;
           id: number;
@@ -85,6 +95,7 @@ export interface Database {
         Insert: {
           action_type?: string;
           active?: boolean;
+          api_id: string;
           created_at?: string;
           description?: string;
           id?: number;
@@ -101,6 +112,7 @@ export interface Database {
         Update: {
           action_type?: string;
           active?: boolean;
+          api_id?: string;
           created_at?: string;
           description?: string;
           id?: number;
@@ -122,7 +134,50 @@ export interface Database {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "actions_api_id_fkey";
+            columns: ["api_id"];
+            referencedRelation: "apis";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "actions_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      apis: {
+        Row: {
+          api_host: string;
+          auth_header: string;
+          auth_scheme: string;
+          created_at: string;
+          id: string;
+          name: string;
+          org_id: number;
+        };
+        Insert: {
+          api_host?: string;
+          auth_header?: string;
+          auth_scheme?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          org_id: number;
+        };
+        Update: {
+          api_host?: string;
+          auth_header?: string;
+          auth_scheme?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "apis_org_id_fkey";
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
@@ -230,10 +285,7 @@ export interface Database {
       };
       organizations: {
         Row: {
-          api_host: string;
           api_key: string;
-          auth_header: string;
-          auth_scheme: string | null;
           created_at: string | null;
           description: string;
           id: number;
@@ -241,10 +293,7 @@ export interface Database {
           name: string;
         };
         Insert: {
-          api_host?: string;
           api_key?: string;
-          auth_header?: string;
-          auth_scheme?: string | null;
           created_at?: string | null;
           description?: string;
           id?: number;
@@ -252,10 +301,7 @@ export interface Database {
           name?: string;
         };
         Update: {
-          api_host?: string;
           api_key?: string;
-          auth_header?: string;
-          auth_scheme?: string | null;
           created_at?: string | null;
           description?: string;
           id?: number;
