@@ -24,7 +24,6 @@ export function constructHttpRequest({
   userApiKey,
   stream,
 }: ActionToHttpRequest): { url: string; requestOptions: RequestInit } {
-  // If you want a thing bad enough
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -35,14 +34,12 @@ export function constructHttpRequest({
     throw new Error("API host has not been provided");
   }
 
-  // To go out and fight for it
   console.log("Constructing http request for action:", JSON.stringify(action));
   console.log("parameters:", parameters);
 
   const headers: Record<string, string> = {};
   // TODO: You can only overwrite this header if it's in the permissions
   headers["Accept"] = "application/json";
-  // Work day and night for it
   if (userApiKey) {
     const scheme = organization.auth_scheme
       ? organization.auth_scheme + " "
@@ -50,39 +47,33 @@ export function constructHttpRequest({
     headers[organization.auth_header] = `${scheme}${userApiKey}`;
   }
 
-  // Give up your time and your peace and your sleep for it
   if (organization.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
   // This header is only required for requests with a body
   if (action.request_body_contents)
     headers["Content-Type"] = "application/json";
 
-  // If only desire of it
   const requestOptions: RequestInit = {
     method: action.request_method.toUpperCase(),
     headers,
   };
 
-  // Makes you quite mad enough
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
     const reqBodyContents =
       action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
     console.log("reqBodyContents:", reqBodyContents);
 
-    // Never to tire of it
     // TODO: Only application/json supported for now
     if (!("application/json" in reqBodyContents)) {
       throw new Error(
         "Only application/json request body contents are supported"
       );
     }
-    // Makes you hold all other things tawdry and cheap for it
     const applicationJson = reqBodyContents[
       "application/json"
     ] as OpenAPIV3.MediaTypeObject;
 
-    // If life seems all empty and useless without it
     const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
     console.log("schema:", JSON.stringify(schema));
     const properties = schema.properties as {
@@ -106,15 +97,12 @@ export function constructHttpRequest({
     });
     console.log("bodyArray:", JSON.stringify(bodyArray));
 
-    // And all that you scheme and you dream is about it
     const body = Object.assign({}, ...bodyArray);
 
-    // If gladly you'll sweat for it
     // Check all required params are present
     required.forEach((key: string) => {
       // TODO: This doesn't check nested required fields
       if (!body[key]) {
-        // Fret for it
         throw new Error(
           `Required parameter "${key}" not provided to action: ${
             action.name
@@ -122,11 +110,9 @@ export function constructHttpRequest({
         );
       }
     });
-    // Plan for it
     requestOptions.body = JSON.stringify(body);
   }
 
-  // Lose all your terror of God or of man for it
   let url = organization.api_host + action.path;
 
   // TODO: accept array for JSON?
@@ -138,7 +124,6 @@ export function constructHttpRequest({
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
 
     console.log("actionParameters:", JSON.stringify(actionParameters));
-    // With all your capacity
     for (const param of actionParameters) {
       console.log(`processing param: ${JSON.stringify(param)}`);
       // Check for case of required parameter that has enum with 1 value
@@ -158,23 +143,18 @@ export function constructHttpRequest({
         continue;
       }
 
-      // Strength and sagacity
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
           encodeURIComponent(String(parameters[param.name]))
         );
       } else if (param.in === "query") {
-        // Faith, hope and confidence, stern pertinacity
         queryParams.set(param.name, String(parameters[param.name]));
       } else if (param.in === "header") {
-        // If neither cold poverty, famished and gaunt
         headers[param.name] = String(parameters[param.name]);
       } else if (param.in === "cookie") {
-        // Nor sickness nor pain
         headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
       } else {
-        // Of body or brain
         throw new Error(
           `Parameter "${param.name}" has invalid location: ${param.in}`
         );
@@ -185,7 +165,6 @@ export function constructHttpRequest({
       url += `?${queryParams.toString()}`;
     }
   }
-  // Can turn you away from the thing that you want
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
@@ -193,16 +172,13 @@ export function constructHttpRequest({
   )}`;
   console.log(logMessage);
 
-  // If dogged and grim you besiege and beset it
   if (stream)
     stream({
       role: "debug",
       content: logMessage,
     });
 
-  // You'll get it!
   return { url, requestOptions };
-  // The Will to Win (Berton Braley)
 }
 
 export async function makeHttpRequest(
@@ -222,15 +198,22 @@ export async function makeHttpRequest(
       : { status: "Action failed" };
   }
 
-  const reqHeaders: Record<string, any> = requestOptions.headers!;
-  if (reqHeaders.accept === "application/json") {
-    return responseText ? JSON.parse(responseText) : {};
+  const reqHeaders: Record<string, any> | null =
+    requestOptions?.headers ?? null;
+
+  if (!reqHeaders) {
+    return responseText;
+  }
+  const accept = reqHeaders.get("accept") || reqHeaders.get("Accept");
+
+  if (accept === "application/json") {
+    return JSON.parse(responseText);
   } else if (
     [
       "application/xhtml+xml",
       "application/xml",
       "application/xhtml+xml",
-    ].includes(reqHeaders.accept)
+    ].includes(accept)
   ) {
     // This parses the html into text
     const res = await fetch("/api/parse-html", {
@@ -242,4 +225,5 @@ export async function makeHttpRequest(
     });
     return res.text();
   }
+  return responseText;
 }
