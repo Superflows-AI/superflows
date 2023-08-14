@@ -1,5 +1,5 @@
 import { Dialog } from "@headlessui/react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import Modal from "../modal";
 import { Dashboard as UppyDashboard } from "@uppy/react";
 import { useProfile } from "../contextManagers/profile";
@@ -31,6 +31,8 @@ export default function UploadModal(props: {
   open: boolean;
   setOpen: (open: boolean) => void;
   loadActions: () => Promise<void>;
+  api_id: string | undefined;
+  updateSelectedApiTab: (apiId: string | undefined) => void;
 }) {
   const { profile } = useProfile();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -77,6 +79,7 @@ export default function UploadModal(props: {
           return;
         }
       }
+      const api_id = props.api_id;
       const res = await fetch("/api/swagger-to-actions", {
         method: "POST",
         headers: {
@@ -85,6 +88,7 @@ export default function UploadModal(props: {
         body: JSON.stringify({
           org_id: profile!.org_id,
           swagger: json,
+          api_id,
         }),
       });
       setIsLoading(false);
@@ -94,10 +98,11 @@ export default function UploadModal(props: {
         uppy.removeFile(file.id);
         return;
       }
+      props.updateSelectedApiTab(api_id);
       await props.loadActions();
       props.setOpen(false);
     });
-  }, [profile]);
+  }, [profile, props.api_id]);
 
   return (
     <Modal open={props.open} setOpen={props.setOpen} classNames="max-w-2xl">
