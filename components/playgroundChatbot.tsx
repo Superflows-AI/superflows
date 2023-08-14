@@ -94,7 +94,7 @@ export default function PlaygroundChatbot(props: {
   const [devMode, setDevMode] = useState<boolean>(false);
   const killSwitchClicked = useRef(false);
   const submitButtonClickable =
-    !props.submitErrorMessage && userText.length > 3;
+    !props.submitErrorMessage && userText.length > 0;
 
   const onChatSubmit = useCallback(
     async (chat: StreamingStepInput[]) => {
