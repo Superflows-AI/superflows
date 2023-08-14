@@ -136,7 +136,6 @@ function APISettingsModal(props: {
   setApis: Dispatch<SetStateAction<Api[] | undefined>>;
   onDelete: () => Promise<void>;
 }) {
-  const { refreshProfile } = useProfile();
   const supabase = useSupabaseClient<Database>();
   const [apiHost, setApiHostLocal] = React.useState<string>(
     props.api?.api_host ?? ""
@@ -223,7 +222,6 @@ function APISettingsModal(props: {
                     .update({ name: apiName })
                     .eq("id", props.api.id);
                   if (res.error) throw res.error;
-                  await refreshProfile();
                   setApiNameSavedFeedback(!res.error);
                   setTimeout(() => {
                     setApiNameSavedFeedback(null);
@@ -265,7 +263,6 @@ function APISettingsModal(props: {
                       .update({ api_host: apiHost })
                       .eq("id", props.api.id);
                     if (res.error) throw res.error;
-                    await refreshProfile();
                     setApiHostSavedFeedback(!res.error);
                     setTimeout(() => {
                       setApiHostSavedFeedback(null);
@@ -324,7 +321,6 @@ function APISettingsModal(props: {
                         : api
                     )
                   );
-                  // await refreshProfile();
                 }}
                 theme="dark"
               />
@@ -383,7 +379,6 @@ function APISettingsModal(props: {
                         : api
                     )
                   );
-                  // await refreshProfile();
                 }}
                 theme={"dark"}
                 includeNull={true}
