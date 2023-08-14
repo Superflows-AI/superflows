@@ -49,7 +49,6 @@ export function ActionsPage() {
       .eq("org_id", profile?.org_id);
     if (apisResp.error) throw new Error(JSON.stringify(apisResp.error));
     setApis([...apisResp.data]);
-    console.log("loadActions called. Apis:", apisResp.data);
 
     const actionTagRes = await supabase
       .from("action_tags")
