@@ -204,7 +204,13 @@ export async function makeHttpRequest(
   if (!reqHeaders) {
     return responseText;
   }
-  const accept = reqHeaders.get("accept") || reqHeaders.get("Accept");
+
+  const accept =
+    reqHeaders.accept ||
+    reqHeaders.Accept ||
+    (typeof reqHeaders.get === "function" && reqHeaders.get("accept")) ||
+    (typeof reqHeaders.get === "function" && reqHeaders.get("Accept")) ||
+    null;
 
   if (accept === "application/json") {
     return JSON.parse(responseText);
