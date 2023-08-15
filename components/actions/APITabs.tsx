@@ -102,7 +102,7 @@ export default function APITabs(props: {
                       .from("apis")
                       .insert({ name: "New API", org_id: profile?.org_id! })
                       .select();
-                    if (supaRes.error) throw supaRes.error;
+                    if (supaRes.error) throw new Error(supaRes.error.message);
                     setApiIdToEdit(supaRes.data[0].id);
                     props.setApis((prev) => [...(prev ?? []), supaRes.data[0]]);
                   }}
@@ -172,7 +172,7 @@ function APISettingsModal(props: {
               .from("apis")
               .delete()
               .eq("id", props.api.id);
-            if (res.error) throw res.error;
+            if (res.error) throw new Error(res.error.message);
             props.setApis((prev) =>
               prev?.filter((api) => api.id !== props.api!.id)
             );
