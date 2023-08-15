@@ -488,6 +488,9 @@ async function Angela( // Good ol' Angela
         3
       );
       if (res === null || "message" in res) {
+        console.error(
+          `OpenAI API call failed for conversation with id: ${conversationId}`
+        );
         streamInfo({
           role: "error",
           content: "OpenAI API call failed",
@@ -608,6 +611,9 @@ async function Angela( // Good ol' Angela
 
       numOpenAIRequests++;
       if (numOpenAIRequests >= 5) {
+        console.error(
+          `OpenAI API call limit reached for conversation with id: ${conversationId}`
+        );
         streamInfo({
           role: "error",
           content: "OpenAI API call limit reached",
@@ -616,7 +622,7 @@ async function Angela( // Good ol' Angela
       }
     }
   } catch (e) {
-    console.error(e);
+    console.error(e?.toString() ?? "Internal server error");
     streamInfo({
       role: "error",
       content: e?.toString() ?? "Internal server error",
