@@ -89,9 +89,9 @@ export default async function handler(
       .insert({
         org_id: orgId,
         name: dereferencedSwagger.info.title,
-        api_host:
-          dereferencedSwagger.servers?.[dereferencedSwagger.servers?.length - 1]
-            ?.url,
+        api_host: dereferencedSwagger.servers
+          ?.reverse()
+          .find((server) => server.url.startsWith("https://"))?.url,
       })
       .select();
     if (apiResp.error) throw apiResp.error;
