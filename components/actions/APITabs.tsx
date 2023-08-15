@@ -52,7 +52,7 @@ export default function APITabs(props: {
             className="-mb-px flex place-items-center space-x-0 mx-4"
             aria-label="Tabs"
           >
-            <div className="text-gray-300 mr-3 text-sm">APIs</div>
+            <div className="text-gray-300 mr-3 text-sm select-none">APIs</div>
             {props.apis.map((api) => (
               <div className={"relative"} key={api.id}>
                 <button
@@ -61,7 +61,7 @@ export default function APITabs(props: {
                     props.currentApiId === api.id
                       ? "text-gray-300 bg-gray-850 border-gray-400"
                       : "text-gray-500 border-gray-600 hover:border-gray-500 hover:text-gray-400 bg-gray-800",
-                    "peer whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
+                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
                   )}
                   aria-current={
                     props.currentApiId === api.id ? "page" : undefined
@@ -110,7 +110,7 @@ export default function APITabs(props: {
                     !profile?.organizations?.is_paid[0].is_premium
                       ? "text-gray-600 border-gray-600 cursor-default"
                       : "cursor-pointer text-gray-500 border-gray-600 hover:border-gray-500 hover:text-gray-400 bg-gray-800",
-                    "peer whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
+                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
                   )}
                 >
                   Add new
