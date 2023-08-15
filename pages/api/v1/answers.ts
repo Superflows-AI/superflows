@@ -337,6 +337,8 @@ export default async function handler(req: NextRequest) {
         activeActions
       )}`
     );
+    const currentHost =
+      req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -352,7 +354,8 @@ export default async function handler(req: NextRequest) {
           org!,
           conversationId,
           previousMessages,
-          language
+          language,
+          currentHost
         );
         const insertedChatMessagesRes = await supabase
           .from("chat_messages")
@@ -429,7 +432,8 @@ async function Angela( // Good ol' Angela
   org: Organization,
   conversationId: number,
   previousMessages: ChatGPTMessage[],
-  language: string | null
+  language: string | null,
+  currentHost: string
 ): Promise<{
   nonSystemMessages: ChatGPTMessage[];
   cost: number;
@@ -569,7 +573,7 @@ async function Angela( // Good ol' Angela
         ) {
           const { url, requestOptions } =
             constructHttpRequest(actionToHttpRequest);
-          let out = await makeHttpRequest(url, requestOptions);
+          let out = await makeHttpRequest(url, requestOptions, currentHost);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
           const outMessage = {
