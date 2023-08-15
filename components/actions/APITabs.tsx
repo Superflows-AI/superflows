@@ -222,6 +222,11 @@ function APISettingsModal(props: {
                     .update({ name: apiName })
                     .eq("id", props.api.id);
                   if (res.error) throw res.error;
+                  props.setApis((prev) =>
+                    prev?.map((api) =>
+                      api.id === props.api!.id ? { ...api, name: apiName } : api
+                    )
+                  );
                   setApiNameSavedFeedback(!res.error);
                   setTimeout(() => {
                     setApiNameSavedFeedback(null);
@@ -263,6 +268,13 @@ function APISettingsModal(props: {
                       .update({ api_host: apiHost })
                       .eq("id", props.api.id);
                     if (res.error) throw res.error;
+                    props.setApis((prev) =>
+                      prev?.map((api) =>
+                        api.id === props.api!.id
+                          ? { ...api, api_host: apiHost }
+                          : api
+                      )
+                    );
                     setApiHostSavedFeedback(!res.error);
                     setTimeout(() => {
                       setApiHostSavedFeedback(null);
