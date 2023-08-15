@@ -288,7 +288,7 @@ export default async function handler(req: NextRequest) {
       .from("action_tags")
       .select("*,actions!inner(*),apis(*)")
       .eq("org_id", org.id)
-      .eq("active", true);
+      .eq("actions.active", true);
     if (actionTagResp.error) throw new Error(actionTagResp.error.message);
     const actionsWithTags = actionTagResp.data;
     let activeActions = actionsWithTags!
