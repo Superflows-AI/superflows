@@ -181,7 +181,8 @@ export function constructHttpRequest({
 
 export async function makeHttpRequest(
   url: string,
-  requestOptions: RequestInit
+  requestOptions: RequestInit,
+  localHostname: string
 ): Promise<any> {
   const response = await fetch(url, requestOptions);
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
@@ -218,13 +219,15 @@ export async function makeHttpRequest(
     return JSON.parse(responseText);
   } else if (
     [
-      "application/xhtml+xml",
+      "application/html",
+      "application/html+xml",
       "application/xml",
+      "application/xhtml",
       "application/xhtml+xml",
     ].includes(accept)
   ) {
     // This parses the html into text
-    const res = await fetch("/api/parse-html", {
+    const res = await fetch(`${localHostname}/api/parse-html`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

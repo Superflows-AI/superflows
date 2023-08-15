@@ -285,7 +285,11 @@ export default async function handler(req: NextRequest) {
           organization: org!,
           userApiKey: requestData.user_api_key,
         });
-        let output = await makeHttpRequest(url, requestOptions);
+        const currentHost =
+          req.headers.get("x-forwarded-proto") +
+          "://" +
+          req.headers.get("host");
+        let output = await makeHttpRequest(url, requestOptions, currentHost);
 
         console.log("http request:", JSON.stringify(output));
 
