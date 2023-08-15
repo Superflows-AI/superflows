@@ -41,11 +41,8 @@ export default function UploadModal(props: {
     error: Record<string, any>;
   } | null>(null);
 
-  const alreadyRun = useRef<boolean | null>(null);
-
   useEffect(() => {
-    if (!profile || alreadyRun.current) return;
-    alreadyRun.current = true;
+    if (!profile) return;
     uppy = new Uppy({
       autoProceed: true,
       allowMultipleUploadBatches: false,
