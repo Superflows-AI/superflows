@@ -46,7 +46,7 @@ export default function Playground() {
           .from("apis")
           .select("*")
           .eq("org_id", profile.org_id);
-        if (apiRes.error) throw apiRes.error;
+        if (apiRes.error) throw new Error(apiRes.error.message);
         setApis(apiRes.data);
       }
     })();
