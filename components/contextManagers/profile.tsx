@@ -39,12 +39,6 @@ export function ProfileContextProvider(props: {
   const refreshProfile = useCallback(
     async (localSession?: Session): Promise<ProfilesRow | undefined> => {
       localSession = localSession || (session ?? undefined);
-      console.log(
-        "refreshProfile called:",
-        localSession,
-        !!props.supabase,
-        !!setProfile
-      );
       if (!localSession || !props.supabase || !setProfile) return;
       const { data, error } = await props.supabase
         .from("profiles")
@@ -53,7 +47,6 @@ export function ProfileContextProvider(props: {
       if (error) {
         console.error(error.message);
         await props.supabase.auth.signOut();
-        console.log("profile.tsx -> /sign-in as error in loading profile");
         await router.push("/sign-in");
         return;
       }
