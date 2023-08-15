@@ -428,7 +428,7 @@
             }
           }
         },
-        "required": ["id", "name", "email"]
+        "required": ["name", "email"]
       },
       "Opportunity": {
         "type": "object",
