@@ -117,7 +117,7 @@ export default function PageActionsSection(props: {
 
       <div className="mt-32 mx-5 mb-20">
         <div className="fixed top-16 mt-px inset-x-0 mx-auto bg-gray-800 max-w-7xl pt-2 z-10">
-          {props.actionTags.length > 0 && (
+          {props.apis.length > 0 && (
             <APITabs
               apis={props.apis}
               currentApiId={selectedApiTab?.id}
