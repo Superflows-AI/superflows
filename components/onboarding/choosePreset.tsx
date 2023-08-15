@@ -135,9 +135,6 @@ export default function ChoosePreset(props: { onBackClick: () => void }) {
               );
               if (chatRes.error) throw chatRes.error;
               await refreshProfile();
-              console.log(
-                "choosePreset.tsx -> /index at the end of choosing a preset"
-              );
               await router.push("/");
             }}
           >

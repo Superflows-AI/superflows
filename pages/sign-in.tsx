@@ -36,7 +36,6 @@ function Dashboard() {
         }
       });
       // Redirect to remove the query params from the URL
-      console.log("sign-in.tsx -> /sign-in to remove query params");
       router.push("/sign-in", undefined, { shallow: true });
     }
     // Oddly this is needed for sign up from Google on Firefox. Don't know why, but
@@ -51,11 +50,8 @@ function Dashboard() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN") {
         const newProfile = await refreshProfile(session ?? undefined);
-        console.log("session", session);
-        console.log("newProfile", newProfile);
         if (!newProfile?.org_id) {
           if (!localStorage.getItem("join_id")) {
-            console.log("sign-in.tsx -> /onboarding since no join id");
             await router.push("/onboarding");
             return;
           } else {
@@ -73,15 +69,9 @@ function Dashboard() {
             localStorage.removeItem("join_id");
           }
         }
-        console.log(
-          "sign-in.tsx -> /index since SIGNED_IN auth action happened"
-        );
         await router.push("/");
       } else if (event === "USER_UPDATED") {
         // Only called if the user updates their password
-        console.log(
-          "sign-in.tsx -> /index since USER_UPDATED auth action happened"
-        );
         await router.push("/");
       }
     });

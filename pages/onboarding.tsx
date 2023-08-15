@@ -37,9 +37,6 @@ function OnboardingContent() {
       });
     }
     if (profile?.organizations?.name && !usingPreset) {
-      console.log(
-        "onboarding.tsx -> /actions since there's an org and not using preset"
-      );
       router.push("/actions", undefined, { shallow: true });
     }
   }, [profile]);
@@ -58,9 +55,6 @@ function OnboardingContent() {
     return (
       <CreateOrgScreen
         completeStep={() => {
-          console.log(
-            "onboarding.tsx -> /actions when completeStep() is called"
-          );
           router.push("/actions");
         }}
         onBackClick={() => setOnboardingStep(0)}

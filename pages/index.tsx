@@ -22,7 +22,6 @@ function Dashboard() {
 
   if (profile === undefined) return <LoadingPage />;
   else if (!profile?.org_id) {
-    console.log("index.tsx -> /onboarding since no org id");
     router.push("/onboarding");
     return <LoadingPage />;
   }
