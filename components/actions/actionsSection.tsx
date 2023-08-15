@@ -265,7 +265,7 @@ export default function PageActionsSection(props: {
                 }}
               />
             ))
-        ) : (
+        ) : props.apis.length === 0 ? (
           <div className="mt-32 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
             <h2 className={"text-2xl text-gray-300 font-medium mb-8"}>
               {selectedApiTab?.name}
@@ -394,6 +394,21 @@ export default function PageActionsSection(props: {
                 </div>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="mt-10 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
+            <h2 className={"text-2xl text-gray-300 font-medium mb-4"}>
+              You have no actions.
+            </h2>
+            <p>
+              Add them manually or{" "}
+              <button
+                className="inline text-sky-500 hover:underline"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                upload an OpenAPI API specification.
+              </button>
+            </p>
           </div>
         )}
         {numActiveActions > 20 && (
