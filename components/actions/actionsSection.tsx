@@ -384,7 +384,6 @@ export default function PageActionsSection(props: {
                           );
                         if (chatRes.error) throw chatRes.error;
                         await refreshProfile();
-
                         setIsLoading(false);
                       }}
                     >

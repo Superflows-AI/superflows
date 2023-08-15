@@ -42,6 +42,7 @@ export function Navbar(props: { current: string }) {
         action={async () => {
           await supabase.auth.signOut();
           await refreshProfile();
+          console.log("navbar.tsx -> /sign-in since sign out clicked");
           await router.push("/sign-in");
         }}
         actionColour={"purple"}
