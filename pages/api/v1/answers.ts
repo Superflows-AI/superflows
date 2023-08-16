@@ -3,7 +3,7 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { USAGE_LIMIT } from "../../../lib/consts";
+import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import {
   ActionToHttpRequest,
   ChatGPTMessage,
@@ -60,7 +60,7 @@ const AnswersZod = z.object({
 type AnswersType = z.infer<typeof AnswersZod>;
 
 const completionOptions: ChatGPTParams = {
-  max_tokens: 1000,
+  max_tokens: MAX_TOKENS_OUT,
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -488,7 +488,7 @@ async function Angela( // Good ol' Angela
       totalCost += promptInputCost;
 
       // If over context limit, remove oldest function calls
-      chatGptPrompt = removeOldestFunctionCalls(chatGptPrompt);
+      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt]);
 
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
