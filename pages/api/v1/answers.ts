@@ -585,7 +585,14 @@ async function Angela( // Good ol' Angela
         ) {
           const { url, requestOptions } =
             constructHttpRequest(actionToHttpRequest);
-          let out = await makeHttpRequest(url, requestOptions, currentHost);
+          let out;
+          try {
+            out = await makeHttpRequest(url, requestOptions, currentHost);
+          } catch (e) {
+            console.error(e);
+            // @ts-ignore
+            out = `Failed to call ${url}\n\n${e.toString()}`;
+          }
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
           const outMessage = {
