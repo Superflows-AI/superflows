@@ -435,14 +435,10 @@ function ActionsSection(props: {
 }) {
   const supabase = useSupabaseClient();
 
-  const [editActionIndex, setEditActionIndex] = React.useState<number | null>(
-    null
-  );
+  const [editAction, setEditAction] = React.useState<Action | null>(null);
+  const [deleteAction, setDeleteAction] = React.useState<Action | null>(null);
   const [editActionTag, setEditActionTag] = React.useState<boolean>(false);
   const [deleteActionTag, setDeleteActionTag] = React.useState<boolean>(false);
-  const [deleteActionIndex, setDeleteActionIndex] = React.useState<
-    number | null
-  >(null);
   const [actions, setActions] = React.useState<Action[]>(
     props.actionTagJoinActions.actions
   );
@@ -456,27 +452,28 @@ function ActionsSection(props: {
     <>
       <WarningModal
         title={
-          deleteActionIndex !== null
-            ? `Delete action: "${actions[deleteActionIndex!].name}"?`
-            : ""
+          deleteAction !== null ? `Delete action: "${deleteAction.name}"?` : ""
         }
         description={
           "Are you sure you want to delete this action? Once you delete it you can't get it back. There's no undo button."
         }
         action={async () => {
           let examplesCopy = [...actions];
-          examplesCopy.splice(deleteActionIndex!, 1);
+          examplesCopy.splice(
+            examplesCopy.findIndex((a) => a.id === deleteAction!.id),
+            1
+          );
           setActions(examplesCopy);
 
-          setDeleteActionIndex(null);
+          setDeleteAction(null);
           await supabase
             .from("actions")
             .delete()
-            .match({ id: actions[deleteActionIndex!].id });
+            .match({ id: deleteAction!.id });
         }}
-        open={deleteActionIndex !== null}
+        open={deleteAction !== null}
         setOpen={(open: boolean) => {
-          if (!open) setDeleteActionIndex(null);
+          if (!open) setDeleteAction(null);
         }}
       />
       <WarningModal
@@ -514,25 +511,27 @@ function ActionsSection(props: {
           close={() => setEditActionTag(false)}
         />
       )}
-      {editActionIndex !== null && (
+      {editAction !== null && (
         <EditActionModal
-          action={actions[editActionIndex]}
+          action={editAction}
           setAction={async (
             newAction: Database["public"]["Tables"]["actions"]["Row"]
           ) => {
-            actions[editActionIndex] = newAction;
+            actions[actions.findIndex((a) => a.id === editAction.id)] =
+              newAction;
             setActions(actions);
             await supabase.from("actions").upsert(newAction);
-            setEditActionIndex(null);
+            setEditAction(null);
           }}
           close={() => {
             if (
-              actions[editActionIndex].name === "" &&
-              actions.length === editActionIndex + 1
+              editAction.name === "" &&
+              actions.length ===
+                actions.findIndex((a) => a.id === editAction.id) + 1
             ) {
               setActions(actions.slice(0, -1));
             }
-            setEditActionIndex(null);
+            setEditAction(null);
           }}
         />
       )}
@@ -704,13 +703,13 @@ function ActionsSection(props: {
                       {
                         name: "Edit",
                         onClick: () => {
-                          setEditActionIndex(index);
+                          setEditAction(action);
                         },
                       },
                       {
                         name: "Delete",
                         onClick: () => {
-                          setDeleteActionIndex(index);
+                          setDeleteAction(action);
                         },
                       },
                     ]}
@@ -751,7 +750,7 @@ function ActionsSection(props: {
                 ...props.actionTagJoinActions,
                 actions: [...props.actionTagJoinActions.actions, resp.data[0]],
               });
-              setEditActionIndex(exampleLen);
+              setEditAction(resp.data[0]);
             }}
             className=" hover:bg-gray-600 rounded-lg cursor-pointer flex flex-col justify-center items-center py-2.5"
           >
