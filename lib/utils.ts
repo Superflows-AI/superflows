@@ -116,10 +116,14 @@ export function openAiCost(
     costPerToken = 0.06 / 1000;
   }
 
-  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
-  const nTokens = encoded.length;
+  const nTokens = getTokenCount(messages);
   // For the 8k context model
   return nTokens * costPerToken;
+}
+
+export function getTokenCount(messages: ChatGPTMessage[]): number {
+  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
+  return encoded.length;
 }
 
 export function objectNotEmpty(obj: Object): boolean {

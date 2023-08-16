@@ -15,10 +15,14 @@ import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
   exponentialRetryWrapper,
+  getTokenCount,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import { DBChatMessageToGPT } from "../../../lib/edge-runtime/utils";
+import {
+  DBChatMessageToGPT,
+  removeOldestFunctionCalls,
+} from "../../../lib/edge-runtime/utils";
 import {
   ActionPlusApiInfo,
   Organization,
@@ -471,17 +475,21 @@ async function Angela( // Good ol' Angela
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
-      const chatGptPrompt: ChatGPTMessage[] = getMessages(
-        nonSystemMessages,
+      let chatGptPrompt: ChatGPTMessage[] = getMessages(
+        // To stop going over the context limit: only remember the last 20 messages
+        nonSystemMessages.slice(Math.max(0, nonSystemMessages.length - 20)),
         actions,
         reqData.user_description,
         org,
         language
       );
-      console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
+
+      // If over context limit, remove oldest function calls
+      chatGptPrompt = removeOldestFunctionCalls(chatGptPrompt);
+
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
