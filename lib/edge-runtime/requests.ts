@@ -2,6 +2,8 @@ import { Action } from "../types";
 import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { deduplicateArray, filterKeys } from "../utils";
+import requestCorrectionPrompt from "../prompts/requestCorrection";
+import { getOpenAIResponse } from "../queryOpenAI";
 
 export function processAPIoutput(
   out: object | Array<any>,
@@ -17,13 +19,13 @@ export function processAPIoutput(
   return out;
 }
 
-export function constructHttpRequest({
+export async function constructHttpRequest({
   action,
   parameters,
   organization,
   userApiKey,
   stream,
-}: ActionToHttpRequest): { url: string; requestOptions: RequestInit } {
+}: ActionToHttpRequest): Promise<{ url: string; requestOptions: RequestInit }> {
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -97,19 +99,22 @@ export function constructHttpRequest({
     });
     console.log("bodyArray:", JSON.stringify(bodyArray));
 
-    const body = Object.assign({}, ...bodyArray);
+    let body: { [x: string]: any } = Object.assign({}, ...bodyArray);
 
     // Check all required params are present
-    required.forEach((key: string) => {
-      // TODO: This doesn't check nested required fields
-      if (!body[key]) {
-        throw new Error(
-          `Required parameter "${key}" not provided to action: ${
-            action.name
-          } out of ${JSON.stringify(Object.keys(body))}`
-        );
-      }
-    });
+    await Promise.all(
+      required.map(async (key: string) => {
+        // TODO: This doesn't check nested required fields
+        if (!body[key]) {
+          if (organization.api_host.includes("api/mock")) {
+            body[key] = "mock"; // maybe just do nothing
+            return;
+          }
+          const missing = await getMissingParam(key, action);
+          body[key] = missing;
+        }
+      })
+    );
     requestOptions.body = JSON.stringify(body);
   }
 
@@ -118,7 +123,6 @@ export function constructHttpRequest({
   // TODO: accept array for JSON?
   // Set parameters
   if (action.parameters && Array.isArray(action.parameters)) {
-    // If you'll simply go after that thing that you want
     const queryParams = new URLSearchParams();
     const actionParameters =
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
@@ -134,9 +138,11 @@ export function constructHttpRequest({
       }
 
       if (param.required && !parameters[param.name]) {
-        throw new Error(
-          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
-        );
+        if (organization.api_host.includes("api/mock")) {
+          parameters[param.name] = "mock";
+        } // Possibly just do nothing
+        const missing = await getMissingParam(param.name, action);
+        parameters[param.name] = missing;
       }
       if (!parameters[param.name]) {
         console.log("Parameter not provided:", param.name);
@@ -236,4 +242,17 @@ export async function makeHttpRequest(
     return res.text();
   }
   return responseText;
+}
+
+export async function getMissingParam(
+  missingParam: string,
+  action: Action
+): Promise<string | undefined> {
+  const prompt = requestCorrectionPrompt(missingParam, action);
+  if (!prompt) return undefined;
+  let response = await getOpenAIResponse(prompt, undefined, "3");
+  try {
+    response = JSON.parse(response);
+  } catch {}
+  return response;
 }

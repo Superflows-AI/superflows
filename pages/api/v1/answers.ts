@@ -551,8 +551,9 @@ async function Angela( // Good ol' Angela
             chosenAction.request_method!.toLowerCase()
           )
         ) {
-          const { url, requestOptions } =
-            constructHttpRequest(actionToHttpRequest);
+          const { url, requestOptions } = await constructHttpRequest(
+            actionToHttpRequest
+          );
           let out = await makeHttpRequest(url, requestOptions);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
