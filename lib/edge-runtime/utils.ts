@@ -1,6 +1,7 @@
 import { getTokenCount } from "../utils";
 import { ChatGPTMessage } from "../models";
 import { DBChatMessage } from "../types";
+import { MAX_TOKENS_OUT } from "../consts";
 
 export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
   if (message.role === "function") {
@@ -34,7 +35,7 @@ export function removeOldestFunctionCalls(
   const originalTokenCount = tokenCount;
   let numberRemoved = 0;
   // Keep removing until under the context limit
-  while (tokenCount >= 8192) {
+  while (tokenCount >= 8192 - MAX_TOKENS_OUT) {
     // Removes the oldest function call
     const oldestFunctionCallIndex = chatGptPrompt.findIndex(
       (m) => m.role === "function"
