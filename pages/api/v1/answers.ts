@@ -483,12 +483,13 @@ async function Angela( // Good ol' Angela
         org,
         language
       );
-      const promptInputCost = openAiCost(chatGptPrompt, "in");
-      console.log("GPT input cost:", promptInputCost);
-      totalCost += promptInputCost;
 
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt]);
+
+      const promptInputCost = openAiCost(chatGptPrompt, "in");
+      console.log("GPT input cost:", promptInputCost);
+      totalCost += promptInputCost;
 
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,

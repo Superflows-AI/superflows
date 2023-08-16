@@ -38,7 +38,7 @@ export function removeOldestFunctionCalls(
   while (tokenCount >= 8192 - MAX_TOKENS_OUT) {
     // Removes the oldest function call
     const oldestFunctionCallIndex = chatGptPrompt.findIndex(
-      (m) => m.role === "function"
+      (m) => m.role === "function" && m.content !== "Cut due to context limit"
     );
     if (oldestFunctionCallIndex === -1) {
       // No function calls left to remove
