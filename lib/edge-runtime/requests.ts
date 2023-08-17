@@ -4,6 +4,7 @@ import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { deduplicateArray, filterKeys } from "../utils";
 import requestCorrectionPrompt from "../prompts/requestCorrection";
 import { getOpenAIResponse } from "../queryOpenAI";
+import { Json } from "../database.types";
 
 export function processAPIoutput(
   out: object | Array<any>,
@@ -19,13 +20,13 @@ export function processAPIoutput(
   return out;
 }
 
-export async function constructHttpRequest({
+export function constructHttpRequest({
   action,
   parameters,
   organization,
   userApiKey,
   stream,
-}: ActionToHttpRequest): Promise<{ url: string; requestOptions: RequestInit }> {
+}: ActionToHttpRequest): { url: string; requestOptions: RequestInit } {
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -62,62 +63,67 @@ export async function constructHttpRequest({
 
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
-    const reqBodyContents =
-      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
-    console.log("reqBodyContents:", reqBodyContents);
-
-    // TODO: Only application/json supported for now
-    if (!("application/json" in reqBodyContents)) {
-      throw new Error(
-        "Only application/json request body contents are supported"
-      );
-    }
-    const applicationJson = reqBodyContents[
-      "application/json"
-    ] as OpenAPIV3.MediaTypeObject;
-
-    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-    console.log("schema:", JSON.stringify(schema));
-    const properties = schema.properties as {
-      [name: string]: OpenAPIV3_1.SchemaObject;
-    };
-    console.log("properties:", JSON.stringify(properties));
-    const required = schema.required ?? [];
-    const bodyArray = Object.entries(properties).map(([name, property]) => {
-      // Throw out readonly attributes
-      if (property.readOnly) return undefined;
-      if (parameters[name]) {
-        return { [name]: parameters[name] };
-      } else if (
-        // If the parameter is a required enum with 1 value
-        property.enum &&
-        property.enum.length === 1 &&
-        required.includes(name)
-      ) {
-        return { [name]: property.enum[0] };
-      }
-    });
-    console.log("bodyArray:", JSON.stringify(bodyArray));
-
-    let body: { [x: string]: any } = Object.assign({}, ...bodyArray);
-
-    // Check all required params are present
-    await Promise.all(
-      required.map(async (key: string) => {
-        // TODO: This doesn't check nested required fields
-        if (!body[key]) {
-          if (organization.api_host.includes("api/mock")) {
-            body[key] = "mock"; // maybe just do nothing
-            return;
-          }
-          const missing = await getMissingParam(key, action);
-          body[key] = missing;
-        }
-      })
+    const { properties, schema } = bodyPropertiesFromRequestBodyContents(
+      action.request_body_contents
     );
+    console.log("properties:", JSON.stringify(properties));
+    const body = buildBody(schema, properties, parameters);
     requestOptions.body = JSON.stringify(body);
   }
 
+  let url = buildUrl(organization, action, parameters, headers);
+  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
+    requestOptions,
+    null,
+    2
+  )}`;
+  console.log(logMessage);
+
+  if (stream)
+    stream({
+      role: "debug",
+      content: logMessage,
+    });
+
+  return { url, requestOptions };
+}
+
+export function bodyPropertiesFromRequestBodyContents(
+  requestBodyContents: Json
+) {
+  const reqBodyContents =
+    requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
+
+  console.log("reqBodyContents:", reqBodyContents);
+
+  // TODO: Only application/json supported for now
+  if (!("application/json" in reqBodyContents)) {
+    throw new Error(
+      "Only application/json request body contents are supported"
+    );
+  }
+  const applicationJson = reqBodyContents[
+    "application/json"
+  ] as OpenAPIV3.MediaTypeObject;
+
+  const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
+  const properties = schema.properties as {
+    [name: string]: OpenAPIV3_1.SchemaObject;
+  };
+  return { properties, schema };
+}
+
+function buildUrl(
+  organization: {
+    api_host: string;
+    id: number;
+    auth_scheme: string | null;
+    auth_header: string;
+  },
+  action: Action,
+  parameters: Record<string, unknown>,
+  headers: Record<string, string>
+) {
   let url = organization.api_host + action.path;
 
   // TODO: accept array for JSON?
@@ -127,7 +133,6 @@ export async function constructHttpRequest({
     const actionParameters =
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
 
-    console.log("actionParameters:", JSON.stringify(actionParameters));
     for (const param of actionParameters) {
       console.log(`processing param: ${JSON.stringify(param)}`);
       // Check for case of required parameter that has enum with 1 value
@@ -137,13 +142,6 @@ export async function constructHttpRequest({
         parameters[param.name] = schema.enum[0];
       }
 
-      if (param.required && !parameters[param.name]) {
-        if (organization.api_host.includes("api/mock")) {
-          parameters[param.name] = "mock";
-        } // Possibly just do nothing
-        const missing = await getMissingParam(param.name, action);
-        parameters[param.name] = missing;
-      }
       if (!parameters[param.name]) {
         console.log("Parameter not provided:", param.name);
         continue;
@@ -171,20 +169,33 @@ export async function constructHttpRequest({
       url += `?${queryParams.toString()}`;
     }
   }
-  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
-    requestOptions,
-    null,
-    2
-  )}`;
-  console.log(logMessage);
+  return url;
+}
 
-  if (stream)
-    stream({
-      role: "debug",
-      content: logMessage,
-    });
+function buildBody(
+  schema: OpenAPIV3.SchemaObject,
+  properties: { [name: string]: OpenAPIV3_1.SchemaObject },
+  parameters: Record<string, unknown>
+): { [x: string]: any } {
+  const required = schema.required ?? [];
 
-  return { url, requestOptions };
+  const bodyArray = Object.entries(properties).map(([name, property]) => {
+    // Throw out readonly attributes
+    if (property.readOnly) return undefined;
+    if (parameters[name]) {
+      return { [name]: parameters[name] };
+    } else if (
+      // If the parameter is a required enum with 1 value
+      property.enum &&
+      property.enum.length === 1 &&
+      required.includes(name)
+    ) {
+      return { [name]: property.enum[0] };
+    }
+  });
+  let body: { [x: string]: any } = Object.assign({}, ...bodyArray);
+
+  return body;
 }
 
 export async function makeHttpRequest(
@@ -242,17 +253,4 @@ export async function makeHttpRequest(
     return res.text();
   }
   return responseText;
-}
-
-export async function getMissingParam(
-  missingParam: string,
-  action: Action
-): Promise<string | undefined> {
-  const prompt = requestCorrectionPrompt(missingParam, action);
-  if (!prompt) return undefined;
-  let response = await getOpenAIResponse(prompt, undefined, "3");
-  try {
-    response = JSON.parse(response);
-  } catch {}
-  return response;
 }

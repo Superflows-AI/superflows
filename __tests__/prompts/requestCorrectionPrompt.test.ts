@@ -45,9 +45,7 @@ Parameter
 ---
 
 `)[1]
-    ).toEqual(
-      "- conversation_id (number): The ID of the conversation. REQUIRED"
-    );
+    ).toEqual("conversation_id (number): The ID of the conversation. REQUIRED");
   });
 
   it("parameter not in action", () => {
@@ -65,10 +63,14 @@ describe("Test extractParamDetails function", () => {
     Time, he's waiting in the wings
 He speaks of senseless things
 His script is you and me, boy
+    - time (string): he flexes like a
+    - falls (number): to the floor
+    - his_trick (string): is you and me
+    - boy (string)
     - exampleParam (string): This is an example parameter`;
     const paramName = "exampleParam";
     expect(extractParamDetails(query, paramName)).toEqual(
-      "- exampleParam (string): This is an example parameter"
+      "exampleParam (string): This is an example parameter"
     );
   });
 
@@ -89,16 +91,18 @@ Take your time
     - exampleParam (number)`;
     const paramName = "exampleParam";
     expect(extractParamDetails(query, paramName)).toEqual(
-      "- exampleParam (number)"
+      "exampleParam (number)"
     );
   });
 
   it("should handle numerical value in the parameter names", () => {
-    const query =
-      "- exampleParam1 (string): This is an example parameter with a numerical value in its name";
+    const query = `
+    The sniper in the brain 
+    regurgitating drain
+    - exampleParam1 (string): This is an example parameter with a numerical value in its name`;
     const paramName = "exampleParam1";
     expect(extractParamDetails(query, paramName)).toEqual(
-      "- exampleParam1 (string): This is an example parameter with a numerical value in its name"
+      "exampleParam1 (string): This is an example parameter with a numerical value in its name"
     );
   });
 
@@ -106,7 +110,7 @@ Take your time
     const query = `- example_param (string): This is an example parameter with underscores in its name.`;
     const paramName = "example_param";
     expect(extractParamDetails(query, paramName)).toEqual(
-      "- example_param (string): This is an example parameter with underscores in its name."
+      "example_param (string): This is an example parameter with underscores in its name."
     );
   });
 });

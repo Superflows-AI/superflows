@@ -268,7 +268,7 @@ export default async function handler(req: NextRequest) {
     const outs: ChatGPTMessage[] = await Promise.all(
       toExecute.map(async (execute, idx) => {
         console.log("Executing action:", JSON.stringify(execute));
-        const { url, requestOptions } = await constructHttpRequest({
+        const { url, requestOptions } = constructHttpRequest({
           action: execute.action,
           parameters: execute.params as Record<string, unknown>,
           organization: org!,

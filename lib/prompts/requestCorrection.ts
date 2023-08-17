@@ -18,8 +18,7 @@ export default function requestCorrectionPrompt(
   return [
     {
       role: "user",
-      content: `
-      Your previous response was incorrect. For function ${action.name} your response was missing the required parameter "${missingParam}".
+      content: `Your previous response was incorrect. For function "${action.name}" your response was missing the required parameter "${missingParam}".
 
 Using the information above, output a value for the missing parameter. If you are unsure of what to output, output "ask user" for more information.
 
@@ -72,6 +71,8 @@ export function extractParamDetails(
     `- ${paramName} \\(([^)]+)\\)(: ([A-Za-z0-9 .,]+))?`,
     "gm"
   );
-  const match = regex.exec(query);
-  return match ? `${match[0]}` : null;
+  let match = regex.exec(query);
+  const param = match ? `${match[0]}` : null;
+  // Don't need the leading dash
+  return param ? param.replace(/^(-)+/, "").trim() : null;
 }

@@ -1,9 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
-import { Redis } from "@upstash/redis";
+import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { USAGE_LIMIT } from "../../../lib/consts";
+import { Database } from "../../../lib/database.types";
+import {
+  constructHttpRequest,
+  makeHttpRequest,
+  processAPIoutput,
+} from "../../../lib/edge-runtime/requests";
+import {
+  DBChatMessageToGPT,
+  getActiveActionTagsAndActions,
+} from "../../../lib/edge-runtime/utils";
+import { getLanguage } from "../../../lib/language";
 import {
   ActionToHttpRequest,
   ChatGPTMessage,
@@ -13,26 +25,14 @@ import {
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
+import { Action, OrgJoinIsPaid, Organization } from "../../../lib/types";
 import {
   exponentialRetryWrapper,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import {
-  DBChatMessageToGPT,
-  getActiveActionTagsAndActions,
-} from "../../../lib/edge-runtime/utils";
-import { Action, Organization, OrgJoinIsPaid } from "../../../lib/types";
-import {
-  constructHttpRequest,
-  makeHttpRequest,
-  processAPIoutput,
-} from "../../../lib/edge-runtime/requests";
-import { getLanguage } from "../../../lib/language";
-import { Database } from "../../../lib/database.types";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
-import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
   runtime: "edge",
@@ -316,12 +316,6 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    console.log(
-      `${activeActions.length} active actions found: ${JSON.stringify(
-        activeActions
-      )}`
-    );
-
     const readableStream = new ReadableStream({
       async start(controller) {
         // Angela gets the answers for us
@@ -546,14 +540,16 @@ async function Angela( // Good ol' Angela
           userApiKey: reqData.user_api_key ?? "",
         };
 
+        // TODO
+        // await missingRequiredToCommand(chosenAction, command);
+
         if (
           ["get", "head", "options", "connect"].includes(
             chosenAction.request_method!.toLowerCase()
           )
         ) {
-          const { url, requestOptions } = await constructHttpRequest(
-            actionToHttpRequest
-          );
+          const { url, requestOptions } =
+            constructHttpRequest(actionToHttpRequest);
           let out = await makeHttpRequest(url, requestOptions);
           out = processAPIoutput(out, chosenAction);
           console.log("Output from API call:", out);
