@@ -2,13 +2,14 @@ import { Action } from "../types";
 import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { deduplicateArray, filterKeys } from "../utils";
+import { Json } from "../database.types";
 
 export function processAPIoutput(
-  out: object | Array<any>,
+  out: Json | Json[],
   chosenAction: Action
-): object {
+): Json | Json[] {
   if (Array.isArray(out)) {
-    out = deduplicateArray(out);
+    out = deduplicateArray(out) as Json[];
   }
   const keys = chosenAction.keys_to_keep;
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
@@ -183,7 +184,7 @@ export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit,
   localHostname: string
-): Promise<any> {
+): Promise<Json> {
   // TODO: Don't handle redirects manually
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,
   //  but it throws an error if you have the headers from the first request set
