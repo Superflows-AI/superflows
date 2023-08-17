@@ -393,4 +393,78 @@ describe("getActionDescriptions", () => {
 `
     );
   });
+  it("exampleRequestBody with examples", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [],
+        request_body_contents: {
+          "application/json": {
+            schema: {
+              required: ["enumProp"],
+              type: "object",
+              properties: {
+                created: {
+                  type: "string",
+                  description: "When it was created",
+                  example: "2021-01-01",
+                },
+                enumProp: {
+                  type: "string",
+                  enum: ["option1", "option2"],
+                  description: "enum description",
+                  example: "option2",
+                },
+              },
+              additionalProperties: false,
+              description: "Details of a dashboard.",
+            },
+          },
+        },
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `1. action1: description1. PARAMETERS:
+- created (string): When it was created. Example: 2021-01-01.
+- enumProp ("option1" | "option2"): enum description. REQUIRED
+`
+    );
+  });
+  it("params with examples", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [
+          {
+            name: "param1",
+            in: "query",
+            required: false,
+            description: "a description",
+            schema: {
+              type: "string",
+              example: "example1",
+            },
+          },
+          {
+            name: "updated",
+            in: "query",
+            required: false,
+            schema: {
+              type: "integer",
+            },
+            example: 1663734553,
+          },
+        ],
+        request_body_contents: null,
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `1. action1: description1. PARAMETERS:
+- param1 (string): a description. Example: example1.
+- updated (integer) Example: 1663734553.
+`
+    );
+  });
 });

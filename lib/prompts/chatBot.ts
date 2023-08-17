@@ -91,10 +91,15 @@ export function formatReqBodySchema(
       }`;
     }
   } else {
+    // TODO: Support object-level examples (if parent has example defined)
+    // Only show examples if there are no enums
+    // Note: using "Example:" rather than "E.g." because it's 1 fewer token
+    const example =
+      schema.example && !schema.enum ? ` Example: ${schema.example}.` : "";
     // Non-object, non-array
     paramString += `(${getType(schema.type, schema.enum)})${formatDescription(
       schema.description ?? schema.format
-    )}${isRequired ? " REQUIRED" : ""}`;
+    )}${example}${isRequired ? " REQUIRED" : ""}`;
   }
   return paramString;
 }
@@ -119,10 +124,19 @@ export function getActionDescriptions(actions: Action[]): string {
         // Below case is cursed: required param with 1 enum. Skip it.
         if (schema.enum && schema.enum.length === 1 && p.required) return;
 
+        // Only show examples if there are no enums
+        // Note: using "Example:" rather than "E.g." because it's 1 fewer token
+        const example =
+          (schema.example || p.example) && !schema.enum
+            ? ` Example: ${schema.example || p.example}.`
+            : "";
+
         paramString += `\n- ${p.name} (${getType(
           schema.type,
           schema.enum
-        )})${formatDescription(p.description)}${p.required ? " REQUIRED" : ""}`;
+        )})${formatDescription(p.description)}${example}${
+          p.required ? " REQUIRED" : ""
+        }`;
       });
     }
     const reqBody = action.request_body_contents as unknown as {
