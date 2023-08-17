@@ -641,9 +641,9 @@ function ActionsSection(props: {
         >
           {actions
             .filter((a) => props.showInactive || a.active)
-            .map((action, index) => (
+            .map((action) => (
               <li
-                key={index}
+                key={action.id}
                 className={classNames(
                   "group col-span-1 rounded-lg border cursor-pointer",
                   action.active
@@ -654,7 +654,9 @@ function ActionsSection(props: {
                 <div
                   onClick={async () => {
                     const newActionTag = { ...props.actionTagJoinActions };
-
+                    const index = newActionTag.actions.findIndex(
+                      (a) => a.id === action.id
+                    );
                     newActionTag.actions[index].active =
                       !newActionTag.actions[index].active;
                     props.setActionTag(newActionTag);
