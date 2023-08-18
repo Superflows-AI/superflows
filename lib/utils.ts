@@ -2,6 +2,7 @@ import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
+import { Json } from "./database.types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -116,10 +117,14 @@ export function openAiCost(
     costPerToken = 0.06 / 1000;
   }
 
-  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
-  const nTokens = encoded.length;
+  const nTokens = getTokenCount(messages);
   // For the 8k context model
   return nTokens * costPerToken;
+}
+
+export function getTokenCount(messages: ChatGPTMessage[]): number {
+  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
+  return encoded.length;
 }
 
 export function objectNotEmpty(obj: Object): boolean {
@@ -141,8 +146,13 @@ export function deduplicateArray<ArrType extends any[]>(
   arr: ArrType
 ): Partial<ArrType | { items: Partial<ArrType>[] }> {
   if (arr.length === 0) return {};
+  // Check for null, undefined, string, number, boolean or array
+  if (
+    arr.some((ele) => !ele || typeof ele !== "object" || Array.isArray(ele))
+  ) {
+    return arr;
+  }
   const firstEle = arr[0];
-  if (typeof firstEle !== "object") return arr;
   let output: Record<string, any> = { items: [] };
 
   Object.keys(firstEle).forEach((key) => {

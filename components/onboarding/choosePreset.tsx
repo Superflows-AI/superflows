@@ -58,7 +58,7 @@ export default function ChoosePreset(props: { onBackClick: () => void }) {
               const json = await res.json();
               const orgId = json.data.id;
               // So the new org shows in the profile
-              await refreshProfile();
+              const newProfile = await refreshProfile();
 
               // Add spec
               const presetLoc = `/presets/${preset.id}`;
@@ -85,10 +85,10 @@ export default function ChoosePreset(props: { onBackClick: () => void }) {
 
               // If not already set, set the org name & description
               let toUpdate: Record<string, any> = {};
-              if (!profile.organizations?.name) {
+              if (!newProfile?.organizations?.name) {
                 toUpdate.name = spec.info.title;
               }
-              if (!profile.organizations?.description) {
+              if (!newProfile?.organizations?.description) {
                 toUpdate.description = spec.info.description;
               }
               if (Object.keys(toUpdate).length > 0) {

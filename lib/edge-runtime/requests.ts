@@ -7,11 +7,11 @@ import { getOpenAIResponse } from "../queryOpenAI";
 import { Json } from "../database.types";
 
 export function processAPIoutput(
-  out: object | Array<any>,
+  out: Json | Json[],
   chosenAction: Action
-): object {
+): Json | Json[] {
   if (Array.isArray(out)) {
-    out = deduplicateArray(out);
+    out = deduplicateArray(out) as Json[];
   }
   const keys = chosenAction.keys_to_keep;
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
@@ -33,7 +33,7 @@ export function constructHttpRequest({
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
-  if (!organization.api_host) {
+  if (!action.api_host) {
     throw new Error("API host has not been provided");
   }
 
@@ -44,13 +44,11 @@ export function constructHttpRequest({
   // TODO: You can only overwrite this header if it's in the permissions
   headers["Accept"] = "application/json";
   if (userApiKey) {
-    const scheme = organization.auth_scheme
-      ? organization.auth_scheme + " "
-      : "";
-    headers[organization.auth_header] = `${scheme}${userApiKey}`;
+    const scheme = action.auth_scheme ? action.auth_scheme + " " : "";
+    headers[action.auth_header] = `${scheme}${userApiKey}`;
   }
 
-  if (organization.api_host.includes("api/mock"))
+  if (action.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
   // This header is only required for requests with a body
   if (action.request_body_contents)
@@ -71,7 +69,7 @@ export function constructHttpRequest({
     requestOptions.body = JSON.stringify(body);
   }
 
-  let url = buildUrl(organization, action, parameters, headers);
+  let url = buildUrl(action, parameters, headers);
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
@@ -114,17 +112,11 @@ export function bodyPropertiesFromRequestBodyContents(
 }
 
 function buildUrl(
-  organization: {
-    api_host: string;
-    id: number;
-    auth_scheme: string | null;
-    auth_header: string;
-  },
   action: Action,
   parameters: Record<string, unknown>,
   headers: Record<string, string>
 ) {
-  let url = organization.api_host + action.path;
+  let url = action.api_host + action.path;
 
   // TODO: accept array for JSON?
   // Set parameters
@@ -200,9 +192,25 @@ function buildBody(
 
 export async function makeHttpRequest(
   url: string,
-  requestOptions: RequestInit
-): Promise<any> {
-  const response = await fetch(url, requestOptions);
+  requestOptions: RequestInit,
+  localHostname: string
+): Promise<Json> {
+  // TODO: Don't handle redirects manually
+  // Why handle 3XX's manually? Because Companies House likes 302 redirects,
+  //  but it throws an error if you have the headers from the first request set
+  //  (specifically the Authorization header)
+  let response = await fetch(url, { ...requestOptions, redirect: "manual" });
+  if (response.status >= 300 && response.status < 400) {
+    // Try requesting from here without auth headers
+    const headers = requestOptions.headers;
+    if (headers) {
+      if ("Authorization" in headers) delete headers["Authorization"];
+      if ("authorization" in headers) delete headers["authorization"];
+    }
+    requestOptions.headers = headers;
+    // @ts-ignore
+    response = await fetch(response.headers.get("location"), requestOptions);
+  }
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
   const responseText = await response.text();
@@ -237,13 +245,15 @@ export async function makeHttpRequest(
     return JSON.parse(responseText);
   } else if (
     [
-      "application/xhtml+xml",
+      "application/html",
+      "application/html+xml",
       "application/xml",
+      "application/xhtml",
       "application/xhtml+xml",
     ].includes(accept)
   ) {
     // This parses the html into text
-    const res = await fetch("/api/parse-html", {
+    const res = await fetch(`${localHostname}/api/parse-html`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

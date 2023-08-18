@@ -1,23 +1,7 @@
-import { ActionTagJoinActions, DBChatMessage } from "../types";
+import { getTokenCount } from "../utils";
 import { ChatGPTMessage } from "../models";
-
-export async function getActiveActionTagsAndActions(
-  orgId: number
-): Promise<ActionTagJoinActions[] | undefined> {
-  // Below gets the action tags and actions that are active
-  let authRequestResult = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/action_tags?select=*%2Cactions%21inner%28*%29&actions.active=is.true&org_id=eq.${orgId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
-        APIKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-      },
-    }
-  );
-  const jsonResponse = await authRequestResult.json();
-  if (jsonResponse.error) throw new Error(jsonResponse.error.message);
-  return jsonResponse;
-}
+import { DBChatMessage } from "../types";
+import { MAX_TOKENS_OUT } from "../consts";
 
 export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
   if (message.role === "function") {
@@ -41,4 +25,37 @@ export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
     role: message.role as "user" | "assistant",
     content: message.content,
   };
+}
+
+export function removeOldestFunctionCalls(
+  chatGptPrompt: ChatGPTMessage[]
+): ChatGPTMessage[] {
+  /** Remove old function calls if over the context limit **/
+  let tokenCount = getTokenCount(chatGptPrompt);
+  const originalTokenCount = tokenCount;
+  let numberRemoved = 0;
+  // Keep removing until under the context limit
+  while (tokenCount >= 8192 - MAX_TOKENS_OUT) {
+    // Removes the oldest function call
+    const oldestFunctionCallIndex = chatGptPrompt.findIndex(
+      // 204 since 4 tokens are added to the prompt for each message
+      (m) => m.role === "function" && getTokenCount([m]) >= 204
+    );
+    if (oldestFunctionCallIndex === -1) {
+      // No function calls left to remove
+      break;
+    }
+    chatGptPrompt[oldestFunctionCallIndex].content = "Cut due to context limit";
+    tokenCount = getTokenCount(chatGptPrompt);
+    numberRemoved += 1;
+  }
+  console.info(
+    "Removed " +
+      numberRemoved +
+      " function calls due to context limit. Original token count: " +
+      originalTokenCount +
+      ", new token count: " +
+      tokenCount
+  );
+  return chatGptPrompt;
 }

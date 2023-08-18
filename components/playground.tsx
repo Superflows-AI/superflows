@@ -5,6 +5,7 @@ import PlaygroundChatbot from "./playgroundChatbot";
 import Toggle from "./toggle";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
+import { Api } from "../lib/types";
 
 export default function Playground() {
   const supabase = useSupabaseClient();
@@ -16,6 +17,7 @@ export default function Playground() {
 
   const { profile } = useProfile();
   const [numActions, setNumActions] = useState<number>(0);
+  const [apis, setApis] = useState<Api[] | null>(null);
 
   useEffect(() => {
     setMockApiResponses(localStorage.getItem("testMode") === "true");
@@ -40,6 +42,12 @@ export default function Playground() {
           .is("active", true);
         if (res2.error) throw res2.error;
         setNumActions(res2.count ?? 0);
+        const apiRes = await supabase
+          .from("apis")
+          .select("*")
+          .eq("org_id", profile.org_id);
+        if (apiRes.error) throw new Error(apiRes.error.message);
+        setApis(apiRes.data);
       }
     })();
   }, [profile]);
@@ -55,17 +63,21 @@ export default function Playground() {
           userDescription={userDescription}
           submitErrorMessage={
             !numActions ||
-            (!profile?.organizations?.api_host && !mockApiResponses)
+            // One API doesn't have an API host
+            (apis?.length &&
+              apis.some((api) => !api.api_host) &&
+              !mockApiResponses)
               ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
                   numActions ||
-                  profile?.organizations?.api_host ||
+                  (apis?.length && apis.some((api) => !api.api_host)) ||
                   mockApiResponses
                     ? ""
                     : " and"
                 }${
-                  profile?.organizations?.api_host || mockApiResponses
+                  (apis?.length && apis.some((api) => !api.api_host)) ||
+                  mockApiResponses
                     ? "."
-                    : " an API host (Project tab) or enable mocking API responses."
+                    : " API hosts (Actions) or mock API responses."
                 }`
               : ""
           }

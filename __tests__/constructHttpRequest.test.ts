@@ -11,12 +11,13 @@ const constActionParams = {
   created_at: "2021-08-15T20:00:00.000Z",
   name: "confirm",
   description: "",
-};
-const organization = {
-  id: 1,
+  api_id: "sefoi-sdfkhj-sdgfbnjkl-hednjkl-gslnk",
   api_host: "https://api.mock",
   auth_header: "Authorization",
   auth_scheme: "Bearer",
+};
+const organization = {
+  id: 1,
 };
 
 describe("constructHttpRequest", () => {

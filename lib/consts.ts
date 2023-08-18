@@ -16,3 +16,5 @@ export const PRESETS = [
       "A set of actions for interacting with a customer analytics tool.",
   },
 ];
+
+export const MAX_TOKENS_OUT = 1000;

@@ -45,10 +45,12 @@ function Dashboard() {
 
   // When they sign in, check if they have a join_id in localStorage and join the org if they do
   useEffect(() => {
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN") {
-        await refreshProfile();
-        if (!profile?.org_id) {
+        const newProfile = await refreshProfile(session ?? undefined);
+        if (!newProfile?.org_id) {
           if (!localStorage.getItem("join_id")) {
             await router.push("/onboarding");
             return;
@@ -73,6 +75,7 @@ function Dashboard() {
         await router.push("/");
       }
     });
+    return subscription.unsubscribe;
   }, []);
 
   // Auto-sign in as local user in dev mode

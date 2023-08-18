@@ -2,9 +2,17 @@ import { Database } from "./database.types";
 
 export type Action = Database["public"]["Tables"]["actions"]["Row"];
 
+export type ActionPlusApiInfo = Action & {
+  api_host: string;
+  auth_header: string;
+  auth_scheme: string | null;
+};
+
 export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 
-export type ActionTagJoinActions = ActionTag & { actions: Action[] };
+export type Api = Database["public"]["Tables"]["apis"]["Row"];
+
+export type ActionTagJoin = ActionTag & { actions: Action[] };
 
 export type DBChatMessage =
   Database["public"]["Tables"]["chat_messages"]["Row"];

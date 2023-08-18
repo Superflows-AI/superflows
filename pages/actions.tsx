@@ -5,9 +5,10 @@ import { useProfile } from "../components/contextManagers/profile";
 import Headers from "../components/headers";
 import { LoadingSpinner } from "../components/loadingspinner";
 import { Navbar } from "../components/navbar";
-import { Action, ActionTagJoinActions } from "../lib/types";
+import { Action, ActionTagJoin, Api } from "../lib/types";
 import { classNames } from "../lib/utils";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
+import { Database } from "../lib/database.types";
 
 export default function App() {
   return (
@@ -24,22 +25,31 @@ function Dashboard() {
       <Navbar current={"Actions"} />
       <div className="h-[calc(100%-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6">
         <div className="h-full rounded">
-          <RepliesPage />
+          <ActionsPage />
         </div>
       </div>
     </div>
   );
 }
 
-export function RepliesPage() {
-  const supabase = useSupabaseClient();
+export function ActionsPage() {
+  const supabase = useSupabaseClient<Database>();
   const { profile } = useProfile();
   const [isError, setIsError] = useState(false);
 
-  const [actionTag, setActionTagsJoinActions] = useState<
-    ActionTagJoinActions[] | undefined
+  const [actionTagsJoinActions, setActionTagsJoinActionsJoinActions] = useState<
+    ActionTagJoin[] | undefined
   >(undefined);
+  const [apis, setApis] = useState<Api[] | undefined>(undefined);
   const loadActions = useCallback(async () => {
+    const apisResp = await supabase
+      .from("apis")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .eq("org_id", profile?.org_id);
+    if (apisResp.error) throw new Error(JSON.stringify(apisResp.error));
+    setApis([...apisResp.data]);
+
     const actionTagRes = await supabase
       .from("action_tags")
       .select("*, actions(*)")
@@ -61,8 +71,9 @@ export function RepliesPage() {
       setIsError(true);
       throw new Error("No data returned");
     }
-    setActionTagsJoinActions(actionTagRes.data);
+    setActionTagsJoinActionsJoinActions(actionTagRes.data);
   }, [profile, supabase]);
+
   useEffect(() => {
     if (!profile?.org_id) return;
     loadActions();
@@ -70,11 +81,13 @@ export function RepliesPage() {
 
   return (
     <div className={classNames("w-full relative h-full")}>
-      {actionTag ? (
+      {actionTagsJoinActions && apis ? (
         <PageActionsSection
-          actionTags={actionTag}
-          setActionTags={setActionTagsJoinActions}
+          actionTags={actionTagsJoinActions}
+          setActionTags={setActionTagsJoinActionsJoinActions}
           loadActions={loadActions}
+          apis={apis}
+          setApis={setApis}
         />
       ) : !isError ? (
         <div className="flex flex-col gap-y-4 text-xl place-items-center justify-center h-full w-full text-gray-300 mt-40">

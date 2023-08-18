@@ -5,7 +5,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { USAGE_LIMIT } from "../../../lib/consts";
+import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
 import {
   constructHttpRequest,
@@ -29,9 +29,26 @@ import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import { Action, OrgJoinIsPaid, Organization } from "../../../lib/types";
 import {
   exponentialRetryWrapper,
+  getTokenCount,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
+import {
+  DBChatMessageToGPT,
+  removeOldestFunctionCalls,
+} from "../../../lib/edge-runtime/utils";
+import {
+  ActionPlusApiInfo,
+  Organization,
+  OrgJoinIsPaid,
+} from "../../../lib/types";
+import {
+  constructHttpRequest,
+  makeHttpRequest,
+  processAPIoutput,
+} from "../../../lib/edge-runtime/requests";
+import { getLanguage } from "../../../lib/language";
+import { Database } from "../../../lib/database.types";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
 
@@ -56,7 +73,7 @@ const AnswersZod = z.object({
 type AnswersType = z.infer<typeof AnswersZod>;
 
 const completionOptions: ChatGPTParams = {
-  max_tokens: 1000,
+  max_tokens: MAX_TOKENS_OUT,
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -205,25 +222,6 @@ export default async function handler(req: NextRequest) {
       `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`
     );
 
-    // Override api_host if mock_api_responses is set to true
-    if (org && requestData.mock_api_responses) {
-      const currentHost =
-        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
-      org.api_host = currentHost + "/api/mock";
-      console.log(
-        "Mocking API responses: overriding api_host to",
-        org.api_host
-      );
-    }
-    if (!org?.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: "No API host found - add an API host on the API settings page",
-        }),
-        { status: 400, headers }
-      );
-    }
-
     // TODO: Add non-streaming API support (although the UX is 10x worse)
     if (requestData.stream === false) {
       return new Response(
@@ -302,20 +300,62 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the active actions from the DB which we can choose between
-    const actionsWithTags = await getActiveActionTagsAndActions(org.id);
-    const activeActions = actionsWithTags!
-      .map((tag) => tag.actions)
+    // Below gets the action tags and actions that are active
+    const actionTagResp = await supabase
+      .from("action_tags")
+      .select("*,actions!inner(*),apis(*)")
+      .eq("org_id", org.id)
+      .eq("actions.active", true);
+    if (actionTagResp.error) throw new Error(actionTagResp.error.message);
+    const actionsWithTags = actionTagResp.data;
+    let activeActions = actionsWithTags!
+      .map((tag) => {
+        const currentHost =
+          req.headers.get("x-forwarded-proto") +
+          "://" +
+          req.headers.get("host");
+        const mockUrl = currentHost + "/api/mock";
+        // Store the api_host with each action
+        return tag.actions.map((a) => ({
+          ...a,
+          // Override api_host if mock_api_responses is set to true
+          api_host: requestData.mock_api_responses
+            ? mockUrl
+            : tag.apis?.api_host ?? "",
+          auth_header: tag.apis?.auth_header ?? "",
+          auth_scheme: tag.apis?.auth_scheme ?? null,
+        }));
+      })
       .flat()
       .filter((action) => action.active);
     if (!activeActions || activeActions.length === 0) {
       return new Response(
         JSON.stringify({
           error:
-            "You have no active actions set for your organization. Add them if you have access to the superflows dashboard or reach out to your IT team.",
+            "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
         }),
         { status: 404, headers }
       );
     }
+    activeActions.forEach((action) => {
+      // Check that every action has an api_host
+      if (!action.api_host) {
+        return new Response(
+          JSON.stringify({
+            error: `No API host found for action with name: ${action.name} - add an API host on the API settings page`,
+          }),
+          { status: 400, headers }
+        );
+      }
+    });
+
+    console.log(
+      `${activeActions.length} active actions found: ${JSON.stringify(
+        activeActions
+      )}`
+    );
+    const currentHost =
+      req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -331,7 +371,8 @@ export default async function handler(req: NextRequest) {
           org!,
           conversationId,
           previousMessages,
-          language
+          language,
+          currentHost
         );
         const insertedChatMessagesRes = await supabase
           .from("chat_messages")
@@ -404,11 +445,12 @@ export interface ToConfirm extends FunctionCall {
 async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
-  actions: Action[],
+  actions: ActionPlusApiInfo[],
   org: Organization,
   conversationId: number,
   previousMessages: ChatGPTMessage[],
-  language: string | null
+  language: string | null,
+  currentHost: string
 ): Promise<{
   nonSystemMessages: ChatGPTMessage[];
   cost: number;
@@ -446,23 +488,31 @@ async function Angela( // Good ol' Angela
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
-      const chatGptPrompt: ChatGPTMessage[] = getMessages(
-        nonSystemMessages,
+      let chatGptPrompt: ChatGPTMessage[] = getMessages(
+        // To stop going over the context limit: only remember the last 20 messages
+        nonSystemMessages.slice(Math.max(0, nonSystemMessages.length - 20)),
         actions,
         reqData.user_description,
         org,
         language
       );
-      console.log(`\nChatGPT system prompt:\n ${chatGptPrompt[0].content}\n`);
+
+      // If over context limit, remove oldest function calls
+      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt]);
+
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
+
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
         [chatGptPrompt, completionOptions],
         3
       );
       if (res === null || "message" in res) {
+        console.error(
+          `OpenAI API call failed for conversation with id: ${conversationId}`
+        );
         streamInfo({
           role: "error",
           content: "OpenAI API call failed",
@@ -586,8 +636,15 @@ async function Angela( // Good ol' Angela
         ) {
           const { url, requestOptions } =
             constructHttpRequest(actionToHttpRequest);
-          let out = await makeHttpRequest(url, requestOptions);
-          out = processAPIoutput(out, chosenAction);
+          let out;
+          try {
+            out = await makeHttpRequest(url, requestOptions, currentHost);
+            out = processAPIoutput(out, chosenAction);
+          } catch (e) {
+            console.error(e);
+            // @ts-ignore
+            out = `Failed to call ${url}\n\n${e.toString()}`;
+          }
           console.log("Output from API call:", out);
           const outMessage = {
             role: "function",
@@ -621,6 +678,9 @@ async function Angela( // Good ol' Angela
 
       numOpenAIRequests++;
       if (numOpenAIRequests >= 5) {
+        console.error(
+          `OpenAI API call limit reached for conversation with id: ${conversationId}`
+        );
         streamInfo({
           role: "error",
           content: "OpenAI API call limit reached",
@@ -629,7 +689,7 @@ async function Angela( // Good ol' Angela
       }
     }
   } catch (e) {
-    console.error(e);
+    console.error(e?.toString() ?? "Internal server error");
     streamInfo({
       role: "error",
       content: e?.toString() ?? "Internal server error",

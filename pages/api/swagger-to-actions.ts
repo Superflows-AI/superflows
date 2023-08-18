@@ -30,6 +30,7 @@ export const config = {
 const SwaggerEndpointZod = z.object({
   org_id: z.number(),
   swagger: z.record(z.any()),
+  api_id: z.optional(z.string()),
 });
 type SwaggerEndpointType = z.infer<typeof SwaggerEndpointZod>;
 
@@ -80,6 +81,23 @@ export default async function handler(
   }
   if (!dereferencedSwagger.paths) throw Error("No paths");
 
+  // If no api_id, add an API object
+  let api_id = req.body.api_id ?? "";
+  if (!api_id) {
+    const apiResp = await supabase
+      .from("apis")
+      .insert({
+        org_id: orgId,
+        name: dereferencedSwagger.info.title,
+        api_host: dereferencedSwagger.servers
+          ?.reverse()
+          .find((server) => server.url.startsWith("https://"))?.url,
+      })
+      .select();
+    if (apiResp.error) throw apiResp.error;
+    api_id = apiResp.data[0].id;
+  }
+
   // We store actions in tags. This stores the action_tags id for the row with the name of the tag
   let tagNameToId: { [name: string]: number } = {};
 
@@ -91,6 +109,7 @@ export default async function handler(
         name: tagObj.name,
         description: tagObj.description,
         org_id: orgId,
+        api_id,
       })
       .select();
     if (actionTagResponse.error) throw actionTagResponse.error;
@@ -135,7 +154,7 @@ export default async function handler(
           // Add to action_tags table
           const actionTagResponse = await supabase
             .from("action_tags")
-            .insert({ name: tagName, org_id: orgId })
+            .insert({ name: tagName, org_id: orgId, api_id })
             .select();
           if (actionTagResponse.error) throw actionTagResponse.error;
           if (actionTagResponse.data.length === 0) {
@@ -167,6 +186,7 @@ export default async function handler(
         request_method: method,
         // @ts-ignore
         responses: methodObj?.responses ?? null,
+        api_id,
       });
     }
   }

@@ -4,17 +4,18 @@ import React, { useRef } from "react";
 import { classNames } from "../../lib/utils";
 import FloatingLabelInput from "../floatingLabelInput";
 import Modal from "../modal";
-import { ActionTagJoinActions } from "../../lib/types";
+import { ActionTagJoin } from "../../lib/types";
 
 export default function EditActionGroupModal(props: {
-  actionTag: ActionTagJoinActions;
+  actionTag: ActionTagJoin;
   close: () => void;
-  setActionTag: (actionGroup: ActionTagJoinActions) => void;
+  setActionTag: (actionGroup: ActionTagJoin) => void;
 }) {
   const saveRef = useRef(null);
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
-  const [localActionGroup, setLocalActionGroup] =
-    React.useState<ActionTagJoinActions>(props.actionTag);
+  const [localActionGroup, setLocalActionGroup] = React.useState<ActionTagJoin>(
+    props.actionTag
+  );
 
   return (
     <Modal

@@ -11,7 +11,7 @@ import {
 } from "@supabase/auth-helpers-react";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Database } from "../../lib/database.types";
-import { Action, ActionTag, ActionTagJoinActions } from "../../lib/types";
+import { Action, ActionTagJoin, Api } from "../../lib/types";
 import { classNames } from "../../lib/utils";
 import Checkbox from "../checkbox";
 import { useProfile } from "../contextManagers/profile";
@@ -26,11 +26,14 @@ import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
 import { PRESETS } from "../../lib/consts";
 import ViewSystemPromptModal from "./viewPromptModal";
+import APITabs from "./APITabs";
 
 export default function PageActionsSection(props: {
-  actionTags: ActionTagJoinActions[];
-  setActionTags: Dispatch<SetStateAction<ActionTagJoinActions[] | undefined>>;
+  actionTags: ActionTagJoin[];
+  setActionTags: Dispatch<SetStateAction<ActionTagJoin[] | undefined>>;
   loadActions: () => Promise<void>;
+  apis: Api[];
+  setApis: Dispatch<SetStateAction<Api[] | undefined>>;
 }) {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
@@ -41,6 +44,9 @@ export default function PageActionsSection(props: {
     useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [viewPromptOpen, setViewPromptOpen] = React.useState<boolean>(false);
+  const [selectedApiTab, setSelectedApiTab] = React.useState<Api | undefined>(
+    props.apis.length > 0 ? props.apis[0] : undefined
+  );
 
   useEffect(() => {
     setNumActiveActions(
@@ -50,6 +56,24 @@ export default function PageActionsSection(props: {
         .filter((action) => action.active).length
     );
   }, [props.actionTags]);
+
+  // This is the api id that selectedApiTab should be changed to
+  const [updateSelectedTo, setUpdateSelectedTo] = useState<
+    string | undefined | null
+  >(null);
+  useEffect(() => {
+    // Null means do nothing
+    if (updateSelectedTo === null) return;
+    if (updateSelectedTo === undefined && props.apis.length > 0) {
+      setSelectedApiTab({ ...props.apis[0] });
+    } else {
+      setSelectedApiTab(
+        props.apis.find((api) => api.id === updateSelectedTo) ?? undefined
+      );
+    }
+    setUpdateSelectedTo(null);
+    // Run every time props.apis changes
+  }, [props.apis]);
 
   if (isLoading)
     return (
@@ -63,6 +87,8 @@ export default function PageActionsSection(props: {
         open={open}
         setOpen={setUploadModalOpen}
         loadActions={props.loadActions}
+        api_id={selectedApiTab?.id}
+        updateSelectedApiTab={setUpdateSelectedTo}
       />
       <ViewSystemPromptModal
         open={viewPromptOpen}
@@ -89,30 +115,47 @@ export default function PageActionsSection(props: {
         setOpen={setDeleteAllActionsModalOpen}
       />
 
-      <div className="mt-20 mx-5 mb-20">
-        <div className="fixed top-16 border-b border-gray-500 mt-px inset-x-0 px-16 mx-auto bg-gray-800 max-w-7xl pt-5 pb-3 z-10">
-          <div className="flex place-items-end justify-between gap-x-2">
+      <div className="mt-32 mx-5 mb-20">
+        <div className="fixed top-16 mt-px inset-x-0 mx-auto bg-gray-800 max-w-7xl pt-2 z-10">
+          {props.apis.length > 0 && (
+            <APITabs
+              apis={props.apis}
+              currentApiId={selectedApiTab?.id}
+              setCurrentApi={setSelectedApiTab}
+              setApis={props.setApis}
+              onDelete={async () => {
+                // This reads oddly, but it means we update the selected API to the last API in the list
+                // when props.apis is updated (this MUST be called before loadActions)
+                setUpdateSelectedTo(undefined);
+                await props.loadActions();
+              }}
+            />
+          )}
+          <div className="border-b border-gray-500 px-16 mx-8 pb-3 mt-4 flex place-items-end justify-between gap-x-2">
             <div className="flex flex-row gap-x-6 place-items-center">
-              <Checkbox
-                onChange={(checked) => {
-                  setShowInactive(checked);
-                }}
-                checked={showInactive}
-                label={"Show inactive"}
-              />
               {props.actionTags.length > 0 && (
-                <DropdownWithCheckboxes
-                  title={"Set active by HTTP method"}
-                  items={actionTagsToToggleItems(
-                    props.actionTags,
-                    props.setActionTags,
-                    supabase
-                  )}
-                />
+                <>
+                  <Checkbox
+                    onChange={(checked) => {
+                      setShowInactive(checked);
+                    }}
+                    checked={showInactive}
+                    label={"Show inactive"}
+                  />
+
+                  <DropdownWithCheckboxes
+                    title={"Set active by HTTP method"}
+                    items={actionTagsToToggleItems(
+                      props.actionTags,
+                      props.setActionTags,
+                      supabase
+                    )}
+                  />
+                </>
               )}
             </div>
             <div className="flex flex-row gap-x-2 place-items-center">
-              {profile && (
+              {profile && selectedApiTab && (
                 <button
                   className={classNames(
                     "flex flex-row place-items-center gap-x-1 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded focus:ring-2",
@@ -124,6 +167,7 @@ export default function PageActionsSection(props: {
                       .insert({
                         name: "New Group",
                         org_id: profile.org_id,
+                        api_id: selectedApiTab.id,
                       })
                       .select("*");
                     if (res.error) throw res.error;
@@ -132,6 +176,7 @@ export default function PageActionsSection(props: {
                       {
                         ...res.data[0],
                         actions: [],
+                        apis: selectedApiTab,
                       },
                       ...props.actionTags,
                     ];
@@ -183,18 +228,21 @@ export default function PageActionsSection(props: {
             </div>
           </div>
         </div>
-        {props.actionTags.length > 0 ? (
+        {props.actionTags.filter((a) => a.api_id === selectedApiTab?.id)
+          .length > 0 ? (
           props.actionTags
             .filter((actionTag) => {
+              // Only show actions for the selected API
+              if (actionTag.api_id !== selectedApiTab?.id) return false;
               if (showInactive) return true;
               return actionTag.actions.some((action) => action.active);
             })
-            .map((actionTag: ActionTagJoinActions) => (
+            .map((actionTag: ActionTagJoin) => (
               <ActionsSection
                 key={actionTag.id}
                 actionTagJoinActions={actionTag}
                 showInactive={showInactive}
-                setActionTag={(actionTag: ActionTagJoinActions) => {
+                setActionTag={(actionTag: ActionTagJoin) => {
                   const copy = [...props.actionTags];
                   const agIndex = props.actionTags.findIndex(
                     (ag) => ag.id === actionTag.id
@@ -217,10 +265,16 @@ export default function PageActionsSection(props: {
                 }}
               />
             ))
-        ) : (
-          <div className="mt-10 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
+        ) : props.apis.length === 0 ? (
+          <div className="mt-32 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
             <h2 className={"text-2xl text-gray-300 font-medium mb-8"}>
-              You have no actions
+              {selectedApiTab?.name}
+              {selectedApiTab?.name?.endsWith("API")
+                ? " has"
+                : selectedApiTab?.name
+                ? " API has"
+                : "You have"}{" "}
+              no actions
             </h2>
             <div className="grid grid-cols-2 gap-x-4 px-3 md:px-6">
               <div className="border border-gray-500 rounded-md py-4 px-8">
@@ -269,6 +323,9 @@ export default function PageActionsSection(props: {
                           .from("actions")
                           .update({ active: true })
                           .eq("org_id", profile.org_id);
+                        // This reads oddly, but it means we update the selected API to the last API in the list
+                        // when props.apis is updated (this MUST be called before loadActions)
+                        setUpdateSelectedTo(undefined);
                         await props.loadActions();
 
                         // If not already set, set the org name & description
@@ -327,7 +384,6 @@ export default function PageActionsSection(props: {
                           );
                         if (chatRes.error) throw chatRes.error;
                         await refreshProfile();
-
                         setIsLoading(false);
                       }}
                     >
@@ -337,6 +393,21 @@ export default function PageActionsSection(props: {
                 </div>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="mt-10 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
+            <h2 className={"text-2xl text-gray-300 font-medium mb-4"}>
+              You have no actions.
+            </h2>
+            <p>
+              Add them manually or{" "}
+              <button
+                className="inline text-sky-500 hover:underline"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                upload an OpenAPI API specification.
+              </button>
+            </p>
           </div>
         )}
         {numActiveActions > 20 && (
@@ -357,21 +428,17 @@ export default function PageActionsSection(props: {
 }
 
 function ActionsSection(props: {
-  actionTagJoinActions: ActionTagJoinActions;
-  setActionTag: (actionTag: ActionTagJoinActions) => void;
+  actionTagJoinActions: ActionTagJoin;
+  setActionTag: (actionTag: ActionTagJoin) => void;
   deleteActionTag: () => void;
   showInactive: boolean;
 }) {
   const supabase = useSupabaseClient();
 
-  const [editActionIndex, setEditActionIndex] = React.useState<number | null>(
-    null
-  );
+  const [editAction, setEditAction] = React.useState<Action | null>(null);
+  const [deleteAction, setDeleteAction] = React.useState<Action | null>(null);
   const [editActionTag, setEditActionTag] = React.useState<boolean>(false);
   const [deleteActionTag, setDeleteActionTag] = React.useState<boolean>(false);
-  const [deleteActionIndex, setDeleteActionIndex] = React.useState<
-    number | null
-  >(null);
   const [actions, setActions] = React.useState<Action[]>(
     props.actionTagJoinActions.actions
   );
@@ -385,27 +452,28 @@ function ActionsSection(props: {
     <>
       <WarningModal
         title={
-          deleteActionIndex !== null
-            ? `Delete action: "${actions[deleteActionIndex!].name}"?`
-            : ""
+          deleteAction !== null ? `Delete action: "${deleteAction.name}"?` : ""
         }
         description={
           "Are you sure you want to delete this action? Once you delete it you can't get it back. There's no undo button."
         }
         action={async () => {
           let examplesCopy = [...actions];
-          examplesCopy.splice(deleteActionIndex!, 1);
+          examplesCopy.splice(
+            examplesCopy.findIndex((a) => a.id === deleteAction!.id),
+            1
+          );
           setActions(examplesCopy);
 
-          setDeleteActionIndex(null);
+          setDeleteAction(null);
           await supabase
             .from("actions")
             .delete()
-            .match({ id: actions[deleteActionIndex!].id });
+            .match({ id: deleteAction!.id });
         }}
-        open={deleteActionIndex !== null}
+        open={deleteAction !== null}
         setOpen={(open: boolean) => {
-          if (!open) setDeleteActionIndex(null);
+          if (!open) setDeleteAction(null);
         }}
       />
       <WarningModal
@@ -420,17 +488,19 @@ function ActionsSection(props: {
       {editActionTag && (
         <EditActionTagModal
           actionTag={props.actionTagJoinActions}
-          setActionTag={async (actionTag: ActionTagJoinActions) => {
+          setActionTag={async (actionTag: ActionTagJoin) => {
             props.setActionTag({
               ...props.actionTagJoinActions,
               ...actionTag,
             });
-            // actionTag includes an .actions property, which shouldn't be included in the update
+            // actionTag includes .actions and .apis properties. Don't include these in the update
             const actionTagWithoutActions = {
               ...actionTag,
               actions: undefined,
+              apis: undefined,
             };
             delete actionTagWithoutActions.actions;
+            delete actionTagWithoutActions.apis;
             // Update the action tag in DB
             const res = await supabase
               .from("action_tags")
@@ -441,25 +511,27 @@ function ActionsSection(props: {
           close={() => setEditActionTag(false)}
         />
       )}
-      {editActionIndex !== null && (
+      {editAction !== null && (
         <EditActionModal
-          action={actions[editActionIndex]}
+          action={editAction}
           setAction={async (
             newAction: Database["public"]["Tables"]["actions"]["Row"]
           ) => {
-            actions[editActionIndex] = newAction;
+            actions[actions.findIndex((a) => a.id === editAction.id)] =
+              newAction;
             setActions(actions);
             await supabase.from("actions").upsert(newAction);
-            setEditActionIndex(null);
+            setEditAction(null);
           }}
           close={() => {
             if (
-              actions[editActionIndex].name === "" &&
-              actions.length === editActionIndex + 1
+              editAction.name === "" &&
+              actions.length ===
+                actions.findIndex((a) => a.id === editAction.id) + 1
             ) {
               setActions(actions.slice(0, -1));
             }
-            setEditActionIndex(null);
+            setEditAction(null);
           }}
         />
       )}
@@ -569,9 +641,9 @@ function ActionsSection(props: {
         >
           {actions
             .filter((a) => props.showInactive || a.active)
-            .map((action, index) => (
+            .map((action) => (
               <li
-                key={index}
+                key={action.id}
                 className={classNames(
                   "group col-span-1 rounded-lg border cursor-pointer",
                   action.active
@@ -582,7 +654,9 @@ function ActionsSection(props: {
                 <div
                   onClick={async () => {
                     const newActionTag = { ...props.actionTagJoinActions };
-
+                    const index = newActionTag.actions.findIndex(
+                      (a) => a.id === action.id
+                    );
                     newActionTag.actions[index].active =
                       !newActionTag.actions[index].active;
                     props.setActionTag(newActionTag);
@@ -631,13 +705,13 @@ function ActionsSection(props: {
                       {
                         name: "Edit",
                         onClick: () => {
-                          setEditActionIndex(index);
+                          setEditAction(action);
                         },
                       },
                       {
                         name: "Delete",
                         onClick: () => {
-                          setDeleteActionIndex(index);
+                          setDeleteAction(action);
                         },
                       },
                     ]}
@@ -667,6 +741,7 @@ function ActionsSection(props: {
                   action_type: "http",
                   active: true,
                   org_id: profile?.org_id,
+                  api_id: props.actionTagJoinActions.api_id,
                 })
                 .select();
               if (resp.error) throw resp.error;
@@ -677,14 +752,14 @@ function ActionsSection(props: {
                 ...props.actionTagJoinActions,
                 actions: [...props.actionTagJoinActions.actions, resp.data[0]],
               });
-              setEditActionIndex(exampleLen);
+              setEditAction(resp.data[0]);
             }}
             className=" hover:bg-gray-600 rounded-lg cursor-pointer flex flex-col justify-center items-center py-2.5"
           >
-            <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-md bg-gray-500 text-white">
+            <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-md bg-gray-700 text-gray-200">
               <PlusIcon className="h-6 w-6" aria-hidden="true" />
             </div>
-            <div className="mt-1 text-sm select-none font-medium text-gray-200">
+            <div className="mt-2 text-sm select-none text-gray-200">
               Add new
             </div>
           </li>
@@ -695,8 +770,8 @@ function ActionsSection(props: {
 }
 
 function actionTagsToToggleItems(
-  actionTags: ActionTagJoinActions[],
-  setActionTags: (actionTags: ActionTagJoinActions[]) => void,
+  actionTags: ActionTagJoin[],
+  setActionTags: (actionTags: ActionTagJoin[]) => void,
   supabase: SupabaseClient<Database>
 ): SelectBoxWithDropdownOption[] {
   const allActions = actionTags.map((actionTag) => actionTag.actions).flat();

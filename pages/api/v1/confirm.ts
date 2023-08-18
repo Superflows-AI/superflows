@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { Action, OrgJoinIsPaid } from "../../../lib/types";
+import { Action, ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
 import { isValidBody } from "../../../lib/utils";
 import {
   constructHttpRequest,
@@ -132,25 +132,6 @@ export default async function handler(req: NextRequest) {
       `Got call to confirm with valid request body for conversation ID: ${requestData.conversation_id}`
     );
 
-    // Override api_host if mock_api_responses is set to true
-    if (org && requestData.mock_api_responses) {
-      const currentHost =
-        req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
-      org.api_host = currentHost + "/api/mock";
-      console.log(
-        "Mocking API responses: overriding api_host to",
-        org.api_host
-      );
-    }
-    if (!org?.api_host) {
-      return new Response(
-        JSON.stringify({
-          error: "No API host found - add an API host on the API settings page",
-        }),
-        { status: 400, headers }
-      );
-    }
-
     // Count previous messages in the conversation
     const countMessagesRes = await supabase
       .from("chat_messages")
@@ -203,8 +184,15 @@ export default async function handler(req: NextRequest) {
         }
       );
     }
+    // Override api_host if mock_api_responses is set to true
+    const currentHost =
+      req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+    const mockUrl = currentHost + "/api/mock";
+    if (requestData.mock_api_responses) {
+      console.log("Mocking API responses: overriding api_host to", mockUrl);
+    }
 
-    let toExecute: { action: Action; params: object }[] = [];
+    let toExecute: { action: ActionPlusApiInfo; params: object }[] = [];
 
     if (redis) {
       const redisData = await redis.json.get(
@@ -217,15 +205,21 @@ export default async function handler(req: NextRequest) {
 
         toExecute = await Promise.all(
           storedParams.map(async (param) => {
-            const action = await supabase
+            const res = await supabase
               .from("actions")
-              .select("*")
+              .select("*, apis(*)")
               .eq("org_id", org!.id)
               .eq("id", param.actionId)
-              .single()
-              .then((res) => res.data!);
+              .single();
             return {
-              action: action,
+              action: {
+                ...res.data!,
+                api_host: requestData.mock_api_responses
+                  ? mockUrl
+                  : res.data!.apis!.api_host,
+                auth_header: res.data!.apis!.auth_header,
+                auth_scheme: res.data!.apis!.auth_scheme,
+              },
               params: param.args,
             };
           })
@@ -249,21 +243,38 @@ export default async function handler(req: NextRequest) {
       console.log("Data from database:", JSON.stringify(data));
       toExecute = await Promise.all(
         parseOutput(data[0].content).commands.map(async (command) => {
-          const action = await supabase
+          const res = await supabase
             .from("actions")
-            .select("*")
+            .select("*, apis(*)")
             .eq("org_id", org!.id)
             .eq("name", command.name)
-            .single()
-            .then((res) => res.data!);
+            .single();
           return {
-            action: action,
+            action: {
+              ...res.data!,
+              api_host: requestData.mock_api_responses
+                ? mockUrl
+                : res.data!.apis!.api_host,
+              auth_header: res.data!.apis!.auth_header,
+              auth_scheme: res.data!.apis!.auth_scheme,
+            },
             params: command.args,
           };
         })
       );
       console.log("Got toExecute from database:", JSON.stringify(toExecute));
     }
+    toExecute.forEach((execute) => {
+      if (!execute.action.api_host) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "No API host found - add an API host on the API settings page",
+          }),
+          { status: 400, headers }
+        );
+      }
+    });
 
     const outs: ChatGPTMessage[] = await Promise.all(
       toExecute.map(async (execute, idx) => {
@@ -274,7 +285,11 @@ export default async function handler(req: NextRequest) {
           organization: org!,
           userApiKey: requestData.user_api_key,
         });
-        let output = await makeHttpRequest(url, requestOptions);
+        const currentHost =
+          req.headers.get("x-forwarded-proto") +
+          "://" +
+          req.headers.get("host");
+        let output = await makeHttpRequest(url, requestOptions, currentHost);
 
         console.log("http request:", JSON.stringify(output));
 

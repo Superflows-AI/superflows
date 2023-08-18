@@ -1,4 +1,4 @@
-import { Action } from "./types";
+import { Action, ActionPlusApiInfo } from "./types";
 
 export type ChatGPTMessage =
   | {
@@ -69,13 +69,10 @@ export type StreamingStepInput =
 
 export type StreamingStep = StreamingStepInput & { id: number };
 export interface ActionToHttpRequest {
-  action: Action;
+  action: ActionPlusApiInfo;
   parameters: Record<string, unknown>;
   organization: {
-    api_host: string;
     id: number;
-    auth_scheme: string | null;
-    auth_header: string;
   };
   userApiKey?: string;
   stream?: (input: StreamingStepInput) => void;
