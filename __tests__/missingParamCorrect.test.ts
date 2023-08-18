@@ -16,6 +16,7 @@ const constActionParams = {
   created_at: "2021-08-15T20:00:00.000Z",
   name: "testAction",
   description: "",
+  api_id: "12345",
 };
 
 describe("missingParamCorrection", () => {

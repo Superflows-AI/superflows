@@ -1,4 +1,4 @@
-import { Action } from "../types";
+import { Action, ActionPlusApiInfo } from "../types";
 import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { deduplicateArray, filterKeys } from "../utils";
@@ -112,7 +112,7 @@ export function bodyPropertiesFromRequestBodyContents(
 }
 
 function buildUrl(
-  action: Action,
+  action: ActionPlusApiInfo,
   parameters: Record<string, unknown>,
   headers: Record<string, string>
 ) {

@@ -1,12 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
-import { getCorrectionsForMissingCommandArgs } from "../../../lib/edge-runtime/missingParamCorrection";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
+import { getCorrectionsForMissingCommandArgs } from "../../../lib/edge-runtime/missingParamCorrection";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -14,7 +14,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import {
   DBChatMessageToGPT,
-  getActiveActionTagsAndActions,
+  removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
 import {
@@ -26,29 +26,16 @@ import {
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
-import { Action, OrgJoinIsPaid, Organization } from "../../../lib/types";
+import {
+  ActionPlusApiInfo,
+  OrgJoinIsPaid,
+  Organization,
+} from "../../../lib/types";
 import {
   exponentialRetryWrapper,
-  getTokenCount,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import {
-  DBChatMessageToGPT,
-  removeOldestFunctionCalls,
-} from "../../../lib/edge-runtime/utils";
-import {
-  ActionPlusApiInfo,
-  Organization,
-  OrgJoinIsPaid,
-} from "../../../lib/types";
-import {
-  constructHttpRequest,
-  makeHttpRequest,
-  processAPIoutput,
-} from "../../../lib/edge-runtime/requests";
-import { getLanguage } from "../../../lib/language";
-import { Database } from "../../../lib/database.types";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
 
@@ -607,16 +594,17 @@ async function Angela( // Good ol' Angela
         }
 
         if (needsUserCorrection) {
-          const correctionMessage =
-            "Tell user:\n" +
-            "I'm sorry but I need more information before I can do that, can you please provide: " +
-            toUserCorrect.join("\n");
-
-          nonSystemMessages.push({
+          const correctionMessage = {
             role: "assistant",
-            content: correctionMessage,
-          });
-          streamInfo({ role: "correction", content: correctionMessage });
+            content:
+              "<<[NEW-MESSAGE]>>" +
+              "Tell user:\n" +
+              "I'm sorry but I need more information before I can do that, can you please provide: " +
+              toUserCorrect.join("\n"),
+          } as ChatGPTMessage;
+
+          nonSystemMessages.push(correctionMessage);
+          streamInfo(correctionMessage);
 
           return { nonSystemMessages, cost: totalCost, numUserQueries };
         }

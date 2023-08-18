@@ -63,7 +63,7 @@ type NonSystemGPTMessage = Exclude<ChatGPTMessage, { role: "system" }>;
 export type StreamingStepInput =
   | NonSystemGPTMessage
   | {
-      role: "error" | "debug" | "confirmation" | "correction";
+      role: "error" | "debug" | "confirmation";
       content: string;
     };
 

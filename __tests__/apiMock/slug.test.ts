@@ -24,6 +24,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "POST",
     responses: null,
+    api_id: "12345",
   },
   {
     tag: 1,
@@ -40,6 +41,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "GET",
     responses: null,
+    api_id: "12345",
   },
   {
     tag: 1,
@@ -56,6 +58,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "PUT",
     responses: null,
+    api_id: "12345",
   },
   {
     tag: 1,
@@ -72,6 +75,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "PUT",
     responses: null,
+    api_id: "12345",
   },
   {
     tag: 1,
@@ -88,6 +92,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "PUT",
     responses: null,
+    api_id: "12345",
   },
   {
     tag: 1,
@@ -104,6 +109,7 @@ const actions: Action[] = [
     request_body_contents: null,
     request_method: "PUT",
     responses: null,
+    api_id: "12345",
   },
 ];
 

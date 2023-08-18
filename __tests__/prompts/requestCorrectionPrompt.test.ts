@@ -1,10 +1,12 @@
 import requestCorrectionPrompt, {
   extractParamDetails,
 } from "../../lib/prompts/requestCorrection";
+import { Action } from "../../lib/types";
 
-const action = {
+const action: Action = {
   action_type: "sample_action",
   active: true,
+  api_id: "12345",
   created_at: "2020-01-01",
   description: "Sample description",
   id: 1,
