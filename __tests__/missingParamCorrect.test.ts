@@ -1,6 +1,6 @@
 import { FunctionCall } from "@superflows/chat-ui-react";
 import "jest";
-import { missingRequiredToCommand } from "../lib/edge-runtime/missingParamCorrection";
+import { getCorrectionsForMissingCommandArgs } from "../lib/edge-runtime/missingParamCorrection";
 import { getOpenAIResponse } from "../lib/queryOpenAI";
 import { Action } from "../lib/types";
 jest.mock("../lib/queryOpenAI");
@@ -47,24 +47,21 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await missingRequiredToCommand(
+    const correctedCommand = await getCorrectionsForMissingCommandArgs(
       action,
-      originalCommand as FunctionCall
+      originalCommand as FunctionCall,
+      []
     );
 
     const expected = {
-      name: "testAction",
-      args: {
-        paramThatsNotMissing: "abc123",
-        paramToBeMissing:
-          "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
-      },
+      paramToBeMissing:
+        "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
     };
-    expect(correctedCommand).toEqual(expected);
+    expect(correctedCommand.corrections).toEqual(expected);
   });
 
   it("POST - missing required body param", async () => {
-    (getOpenAIResponse as jest.Mock).mockReturnValue(1976);
+    (getOpenAIResponse as jest.Mock).mockReturnValue("1976");
 
     const action: Action = {
       ...constActionParams,
@@ -92,19 +89,17 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await missingRequiredToCommand(
+    const correctedCommand = await getCorrectionsForMissingCommandArgs(
       action,
-      originalCommand as FunctionCall
+      originalCommand as FunctionCall,
+      []
     );
 
     const expected = {
-      name: "testAction",
-      args: {
-        paramThatsNotMissing: "abc123",
-        paramToBeMissing: 1976,
-      },
+      paramToBeMissing: 1976,
     };
-    expect(correctedCommand).toEqual(expected);
+
+    expect(correctedCommand.corrections).toEqual(expected);
   });
   it("GET - missing multiple query params corrections", async () => {
     const action: Action = {
@@ -147,28 +142,25 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await missingRequiredToCommand(
+    const correctedCommand = await getCorrectionsForMissingCommandArgs(
       action,
-      originalCommand as FunctionCall
+      originalCommand as FunctionCall,
+      []
     );
 
     const expected = {
-      name: "testAction",
-      args: {
-        paramThatsNotMissing: "abc123",
-        firstParamToBeMissing:
-          "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
-        secondParamToBeMissing:
-          "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo",
-      },
+      firstParamToBeMissing:
+        "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
+      secondParamToBeMissing:
+        "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo",
     };
-    expect(correctedCommand).toEqual(expected);
+    expect(correctedCommand.corrections).toEqual(expected);
   });
 
   it("POST - missing required multiple body params", async () => {
     (getOpenAIResponse as jest.Mock)
-      .mockReturnValueOnce(1976)
-      .mockReturnValueOnce(2020);
+      .mockReturnValueOnce("1976")
+      .mockReturnValueOnce("2020");
 
     const action: Action = {
       ...constActionParams,
@@ -202,20 +194,17 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await missingRequiredToCommand(
+    const correctedCommand = await getCorrectionsForMissingCommandArgs(
       action,
-      originalCommand as FunctionCall
+      originalCommand as FunctionCall,
+      []
     );
 
     const expected = {
-      name: "testAction",
-      args: {
-        paramThatsNotMissing: "abc123",
-        firstParamToBeMissing: 1976,
-        secondParamToBeMissing: 2020,
-      },
+      firstParamToBeMissing: 1976,
+      secondParamToBeMissing: 2020,
     };
-    expect(correctedCommand).toEqual(expected);
+    expect(correctedCommand.corrections).toEqual(expected);
   });
 
   it(" POST -  missing query and body params", async () => {
@@ -252,7 +241,7 @@ describe("missingParamCorrection", () => {
     };
 
     (getOpenAIResponse as jest.Mock)
-      .mockReturnValueOnce(1976)
+      .mockReturnValueOnce("1976")
       .mockReturnValueOnce("missing-query-param-value");
 
     const originalCommand = {
@@ -260,19 +249,16 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await missingRequiredToCommand(
+    const correctedCommand = await getCorrectionsForMissingCommandArgs(
       action,
-      originalCommand as FunctionCall
+      originalCommand as FunctionCall,
+      []
     );
 
     const expected = {
-      name: "testAction",
-      args: {
-        paramThatsNotMissing: "abc123",
-        queryParamToBeMissing: "missing-query-param-value",
-        bodyParamToBeMissing: 1976,
-      },
+      queryParamToBeMissing: "missing-query-param-value",
+      bodyParamToBeMissing: 1976,
     };
-    expect(correctedCommand).toEqual(expected);
+    expect(correctedCommand.corrections).toEqual(expected);
   });
 });

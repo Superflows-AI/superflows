@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
+import { getCorrectionsForMissingCommandArgs } from "../../../lib/edge-runtime/missingParamCorrection";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
@@ -532,6 +533,44 @@ async function Angela( // Good ol' Angela
           throw new Error(`Action ${command.name} not found!`);
         }
 
+        // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
+        // done a non ask_user correction?
+        const { newSystemMessages, corrections } =
+          await getCorrectionsForMissingCommandArgs(
+            chosenAction,
+            command,
+            chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
+          );
+
+        let needsUserCorrection = false;
+
+        const toUserCorrect = [];
+        if (Object.keys(corrections).length > 0) {
+          for (const [param, response] of Object.entries(corrections)) {
+            if (response.toLowerCase().replace(/[^A-Z]+/gi, "") !== "askuser") {
+              command.args[param] = response;
+            } else {
+              needsUserCorrection = true;
+              toUserCorrect.push(param);
+            }
+          }
+        }
+
+        if (needsUserCorrection) {
+          const correctionMessage =
+            "Tell user:\n" +
+            "I'm sorry but I need more information before I can do that, can you please provide: " +
+            toUserCorrect.join("\n");
+
+          nonSystemMessages.push({
+            role: "assistant",
+            content: correctionMessage,
+          });
+          streamInfo({ role: "correction", content: correctionMessage });
+
+          return { nonSystemMessages, cost: totalCost, numUserQueries };
+        }
+
         const actionToHttpRequest: ActionToHttpRequest = {
           action: chosenAction,
           parameters: command.args,
@@ -539,9 +578,6 @@ async function Angela( // Good ol' Angela
           stream: streamInfo,
           userApiKey: reqData.user_api_key ?? "",
         };
-
-        // TODO
-        // await missingRequiredToCommand(chosenAction, command);
 
         if (
           ["get", "head", "options", "connect"].includes(

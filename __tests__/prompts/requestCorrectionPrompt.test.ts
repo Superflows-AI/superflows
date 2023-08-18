@@ -34,18 +34,28 @@ const action = {
 
 describe("requestCorrectionPrompt function", () => {
   it("test that action is processed correctly", () => {
-    const result = requestCorrectionPrompt("conversation_id", action);
-    expect(result).not.toBeNull();
-    expect(
-      result![0].content.split(`-- END OF EXAMPLES --
+    const expected = `
 
-Provide a response for the parameter below. Follow the format exactly from the examples above. 
 
 Parameter
 ---
 
-`)[1]
-    ).toEqual("conversation_id (number): The ID of the conversation. REQUIRED");
+conversation_id (number): The ID of the conversation. REQUIRED
+
+Response
+---
+
+`;
+
+    const result = requestCorrectionPrompt("conversation_id", action);
+
+    expect(result).not.toBeNull();
+
+    expect(
+      result![0].content.split(
+        `Provide a response for the parameter below. Follow the format exactly from the examples above. Output only the response or "ask user". Do not output the parameter name or description.`
+      )[1]
+    ).toEqual(expected);
   });
 
   it("parameter not in action", () => {

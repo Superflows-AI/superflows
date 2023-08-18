@@ -5,11 +5,16 @@ import requestCorrectionPrompt from "../prompts/requestCorrection";
 import { bodyPropertiesFromRequestBodyContents } from "./requests";
 
 import { getOpenAIResponse } from "../queryOpenAI";
+import { ChatGPTMessage } from "../models";
 
-export async function missingRequiredToCommand(
+export async function getCorrectionsForMissingCommandArgs(
   action: Action,
-  command: FunctionCall
-): Promise<FunctionCall> {
+  command: FunctionCall,
+  previousConversation: ChatGPTMessage[]
+): Promise<{
+  corrections: { [param: string]: "ask user" | any };
+  newSystemMessages: ChatGPTMessage[] | null;
+}> {
   // TODO: name this function better
 
   let bodyRequired: string[] = [];
@@ -28,27 +33,40 @@ export async function missingRequiredToCommand(
     (param) => !command.args[param]
   );
 
+  let correctionPrompt: ChatGPTMessage[] | null = null;
+  const corrections: { [param: string]: "ask user" | string } = {};
   for (const param of missingParams) {
-    const fix = await getMissingParam(param, action);
-    command.args[param] = fix;
+    const missingParamRes = await getMissingParam(
+      param,
+      action,
+      previousConversation
+    );
+    if (missingParamRes.response) corrections[param] = missingParamRes.response;
+    correctionPrompt = missingParamRes.correctionPrompt;
   }
-  return command;
+  return { corrections, newSystemMessages: correctionPrompt };
 }
 
 async function getMissingParam(
   missingParam: string,
-  action: Action
-): Promise<string | undefined> {
+  action: Action,
+  previousConversation: ChatGPTMessage[]
+): Promise<{
+  response: string | null;
+  correctionPrompt: ChatGPTMessage[] | null;
+}> {
   console.log(`Parameter ${missingParam} is missing attempt to get it`);
-  const prompt = requestCorrectionPrompt(missingParam, action);
+  const correctionPrompt = requestCorrectionPrompt(missingParam, action);
+  if (!correctionPrompt) return { response: null, correctionPrompt: null };
+  const prompt = [...previousConversation].concat(correctionPrompt);
   console.log("Request correction prompt:\n", prompt);
-  if (!prompt) return undefined;
   let response = await getOpenAIResponse(prompt, undefined, "3");
+  response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);
   try {
     response = JSON.parse(response);
   } catch {}
-  return response;
+  return { response, correctionPrompt };
 }
 
 function getRequiredQueryParams(action: Action) {

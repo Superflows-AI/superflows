@@ -12,6 +12,9 @@ export default function requestCorrectionPrompt(
   );
 
   if (!paramDetails) {
+    console.log(
+      `Could not find missing parameter "${missingParam}" in action "${action.name}"`
+    );
     return null;
   }
 
@@ -52,12 +55,18 @@ ask user
 
 -- END OF EXAMPLES --
 
-Provide a response for the parameter below. Follow the format exactly from the examples above. 
+Provide a response for the parameter below. Follow the format exactly from the examples above. Output only the response or "ask user". Do not output the parameter name or description.
+
 
 Parameter
 ---
 
-${paramDetails}`,
+${paramDetails}
+
+Response
+---
+
+`,
     },
   ];
 }
