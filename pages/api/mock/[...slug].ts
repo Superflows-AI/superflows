@@ -303,13 +303,14 @@ export async function getMockedProperties(
 
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
-    [prompt, {}, nTokens < 4000 ? "3" : "3-16k"],
+    // Output tokens count towards your total token count
+    [prompt, { max_tokens: 600 }, nTokens < 4096 - 600 ? "3" : "3-16k"],
     3
   );
 
   console.log("Response:\n", openAiResponse);
 
-  if (openAiResponse.length === 0) return { message: "Call to openai failed" };
+  if (openAiResponse.length === 0) return { message: "Call to OpenAI failed" };
 
   if (isArray)
     return rebuildPropertiesArray(
