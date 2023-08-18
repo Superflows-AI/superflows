@@ -1,6 +1,6 @@
 import { FunctionCall } from "@superflows/chat-ui-react";
 import "jest";
-import { getCorrectionsForMissingCommandArgs } from "../lib/edge-runtime/missingParamCorrection";
+import { getMissingArgCorrections } from "../lib/edge-runtime/missingParamCorrection";
 import { getOpenAIResponse } from "../lib/queryOpenAI";
 import { Action } from "../lib/types";
 jest.mock("../lib/queryOpenAI");
@@ -48,7 +48,7 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await getCorrectionsForMissingCommandArgs(
+    const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       []
@@ -90,7 +90,7 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await getCorrectionsForMissingCommandArgs(
+    const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       []
@@ -143,7 +143,7 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await getCorrectionsForMissingCommandArgs(
+    const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       []
@@ -195,7 +195,7 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await getCorrectionsForMissingCommandArgs(
+    const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       []
@@ -250,7 +250,7 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
-    const correctedCommand = await getCorrectionsForMissingCommandArgs(
+    const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       []

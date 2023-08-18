@@ -6,8 +6,9 @@ import { bodyPropertiesFromRequestBodyContents } from "./requests";
 
 import { getOpenAIResponse } from "../queryOpenAI";
 import { ChatGPTMessage } from "../models";
+import { removeOldestFunctionCalls } from "./utils";
 
-export async function getCorrectionsForMissingCommandArgs(
+export async function getMissingArgCorrections(
   action: Action,
   command: FunctionCall,
   previousConversation: ChatGPTMessage[]
@@ -15,8 +16,6 @@ export async function getCorrectionsForMissingCommandArgs(
   corrections: { [param: string]: "ask user" | any };
   newSystemMessages: ChatGPTMessage[] | null;
 }> {
-  // TODO: name this function better
-
   let bodyRequired: string[] = [];
 
   if (action.request_body_contents) {
@@ -30,11 +29,12 @@ export async function getCorrectionsForMissingCommandArgs(
   const allRequiredParams = bodyRequired.concat(queryRequired);
 
   const missingParams = allRequiredParams.filter(
-    (param) => !command.args[param]
+    (param) => !(param in command.args)
   );
 
   let correctionPrompt: ChatGPTMessage[] | null = null;
   const corrections: { [param: string]: "ask user" | string } = {};
+  // TODO parallelize
   for (const param of missingParams) {
     const missingParamRes = await getMissingParam(
       param,
@@ -55,12 +55,21 @@ async function getMissingParam(
   response: string | null;
   correctionPrompt: ChatGPTMessage[] | null;
 }> {
-  console.log(`Parameter ${missingParam} is missing attempt to get it`);
+  console.log(`Parameter ${missingParam} is missing. Attempt to get it`);
   const correctionPrompt = requestCorrectionPrompt(missingParam, action);
   if (!correctionPrompt) return { response: null, correctionPrompt: null };
-  const prompt = [...previousConversation].concat(correctionPrompt);
+  const prompt = removeOldestFunctionCalls(
+    [...previousConversation].concat(correctionPrompt)
+  );
   console.log("Request correction prompt:\n", prompt);
-  let response = await getOpenAIResponse(prompt, undefined, "3");
+  let response = await getOpenAIResponse(
+    prompt,
+    {
+      frequency_penalty: 0,
+      max_tokens: 100,
+    },
+    "3"
+  );
   response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);
   try {
@@ -69,7 +78,7 @@ async function getMissingParam(
   return { response, correctionPrompt };
 }
 
-function getRequiredQueryParams(action: Action) {
+function getRequiredQueryParams(action: Action): string[] {
   if (!action.parameters) return [];
   const actionParameters =
     action.parameters as unknown as OpenAPIV3_1.ParameterObject[];

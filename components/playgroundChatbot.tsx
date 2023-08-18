@@ -151,9 +151,8 @@ export default function PlaygroundChatbot(props: {
               data.role !== outputMessages[outputMessages.length - 1]?.role ||
               data.content.includes("<<[NEW-MESSAGE]>>")
             ) {
-              if (data.content.includes("<<[NEW-MESSAGE]>>")) {
+              if (data.content.includes("<<[NEW-MESSAGE]>>"))
                 data.content = data.content.replace("<<[NEW-MESSAGE]>>", "");
-              }
               outputMessages.push({ ...data });
             } else {
               outputMessages[outputMessages.length - 1].content += data.content;

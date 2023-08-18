@@ -1,10 +1,8 @@
-import { Action, ActionPlusApiInfo } from "../types";
-import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { deduplicateArray, filterKeys } from "../utils";
-import requestCorrectionPrompt from "../prompts/requestCorrection";
-import { getOpenAIResponse } from "../queryOpenAI";
 import { Json } from "../database.types";
+import { ActionToHttpRequest } from "../models";
+import { Action, ActionPlusApiInfo } from "../types";
+import { deduplicateArray, filterKeys } from "../utils";
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -88,7 +86,10 @@ export function constructHttpRequest({
 
 export function bodyPropertiesFromRequestBodyContents(
   requestBodyContents: Json
-) {
+): {
+  properties: { [name: string]: OpenAPIV3_1.SchemaObject };
+  schema: OpenAPIV3.SchemaObject;
+} {
   const reqBodyContents =
     requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
 
@@ -115,7 +116,7 @@ function buildUrl(
   action: ActionPlusApiInfo,
   parameters: Record<string, unknown>,
   headers: Record<string, string>
-) {
+): string {
   let url = action.api_host + action.path;
 
   // TODO: accept array for JSON?
@@ -185,9 +186,7 @@ function buildBody(
       return { [name]: property.enum[0] };
     }
   });
-  let body: { [x: string]: any } = Object.assign({}, ...bodyArray);
-
-  return body;
+  return Object.assign({}, ...bodyArray);
 }
 
 export async function makeHttpRequest(

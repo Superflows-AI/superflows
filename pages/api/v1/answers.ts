@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
-import { getCorrectionsForMissingCommandArgs } from "../../../lib/edge-runtime/missingParamCorrection";
+import { getMissingArgCorrections } from "../../../lib/edge-runtime/missingParamCorrection";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -573,7 +573,7 @@ async function Angela( // Good ol' Angela
         // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
         // done a non ask_user correction?
         const { newSystemMessages, corrections } =
-          await getCorrectionsForMissingCommandArgs(
+          await getMissingArgCorrections(
             chosenAction,
             command,
             chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
@@ -584,7 +584,12 @@ async function Angela( // Good ol' Angela
         const toUserCorrect = [];
         if (Object.keys(corrections).length > 0) {
           for (const [param, response] of Object.entries(corrections)) {
-            if (response.toLowerCase().replace(/[^A-Z]+/gi, "") !== "askuser") {
+            if (
+              !response
+                .toLowerCase()
+                .replace(/[^A-Z]+/gi, "")
+                .includes("askuser")
+            ) {
               command.args[param] = response;
             } else {
               needsUserCorrection = true;

@@ -12,7 +12,7 @@ export default function requestCorrectionPrompt(
   );
 
   if (!paramDetails) {
-    console.log(
+    console.warn(
       `Could not find missing parameter "${missingParam}" in action "${action.name}"`
     );
     return null;
