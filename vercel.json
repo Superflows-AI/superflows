@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "pages/api/receive-push.ts": {
-      "memory": 500,
-      "maxDuration": 60
-    }
-  }
-}

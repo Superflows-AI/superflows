@@ -119,7 +119,7 @@ lastName: Smith
     const expectedOutput = {
       browserSdkVersion: 1,
       dateCreated: "2021-01-01",
-      dsn: { properties: { cdn: "nice-cdn", csp: "nice-csp" } },
+      dsn: { cdn: "nice-cdn", csp: "nice-csp" },
     };
 
     const res = await getMockedProperties(

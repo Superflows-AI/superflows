@@ -139,6 +139,12 @@ export default async function handler(
   console.log("mock api called");
   const queryParams = req.query;
   const org_id = Number(req.headers["org_id"]);
+  if (isNaN(org_id)) {
+    res.status(400).json({
+      message: `Internal error: Invalid org_id header "${org_id}"`,
+    });
+    return;
+  }
   // Used below to extract path parameters
   const slug = queryParams.slug as string[];
   delete queryParams.slug;
@@ -157,6 +163,7 @@ export default async function handler(
     if (authRes.error) throw new Error(authRes.error.message);
   }
 
+  // Get all actions for this org and HTTP method
   const { data: actions, error } = await supabase
     .from("actions")
     .select("*")
@@ -193,10 +200,6 @@ export default async function handler(
         responses[responseCode ?? ""] ?? {})
       : {};
 
-  const schema =
-    (response.content?.["application/json"]
-      ?.schema as OpenAPIV3_1.SchemaObject) ?? null;
-
   const requestParameters =
     objectNotEmpty(pathParameters) ||
     objectNotEmpty(queryParams) ||
@@ -208,6 +211,13 @@ export default async function handler(
         ]
       : null;
 
+  // Use the accept header to determine the response schema - default to json
+  const acceptHeader = (req.headers["accept"] ??
+    req.headers["Accept"] ??
+    "application/json") as string;
+  const schema =
+    (response.content?.[acceptHeader]?.schema as OpenAPIV3_1.SchemaObject) ??
+    null;
   const properties = schema ? propertiesFromSchema(schema) : null;
 
   // Just deal with the first layer of nesting for now
@@ -295,11 +305,10 @@ export async function getMockedProperties(
   );
   console.log("Prompt:\n", prompt[1].content);
 
-  const encoded = tokenizer.encodeChat(
+  const nTokens = tokenizer.encodeChat(
     prompt as ChatMessage[],
     "gpt-3.5-turbo"
-  );
-  const nTokens = encoded.length;
+  ).length;
 
   const openAiResponse = await exponentialRetryWrapper(
     getOpenAIResponse,
@@ -337,7 +346,7 @@ function rebuildProperties(
   const newChunks = propertiesToChunks(
     Object.assign({}, transformed, { ...reAdded, ...hardCodedProperties })
   );
-  return jsonReconstruct(newChunks);
+  return removePropertiesItems(jsonReconstruct(newChunks));
 }
 
 function rebuildPropertiesArray(
@@ -370,7 +379,7 @@ function rebuildPropertiesArray(
     );
     arrayResponse.push(jsonReconstruct(newChunks));
   }
-  return arrayResponse;
+  return removePropertiesItems(arrayResponse);
 }
 
 function propertiesFromSchema(schema: OpenAPIV3_1.SchemaObject) {
@@ -378,4 +387,27 @@ function propertiesFromSchema(schema: OpenAPIV3_1.SchemaObject) {
   if ("items" in schema && schema.items && "properties" in schema.items)
     return schema.items.properties;
   return null;
+}
+
+export function removePropertiesItems(json: object): object {
+  /** This is a hack to remove all mentions of 'properties'
+   *  and 'items' from the json output by the mocking.
+   *
+   *  If the object had deliberate 'properties' or 'items' keys,
+   *  they'd be removed too. **/
+  if (Array.isArray(json)) {
+    return json.map(removePropertiesItems);
+  } else if (typeof json === "object") {
+    const processedArray = Object.entries(json).map(([key, value]) => {
+      if (
+        (key === "properties" || key === "items") &&
+        typeof value === "object"
+      ) {
+        return removePropertiesItems(value);
+      }
+      return { [key]: removePropertiesItems(value) };
+    });
+    return Object.assign({}, ...processedArray);
+  }
+  return json;
 }
