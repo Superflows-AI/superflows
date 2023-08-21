@@ -1,7 +1,7 @@
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
-import { Action, ActionPlusApiInfo } from "../types";
+import { Action } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
 
 export function processAPIoutput(
@@ -54,7 +54,6 @@ export function constructHttpRequest({
 
   const requestOptions: RequestInit = {
     method: action.request_method.toUpperCase(),
-    headers,
   };
 
   // Request body
@@ -67,56 +66,6 @@ export function constructHttpRequest({
     requestOptions.body = JSON.stringify(body);
   }
 
-  let url = buildUrl(action, parameters, headers);
-  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
-    requestOptions,
-    null,
-    2
-  )}`;
-  console.log(logMessage);
-
-  if (stream)
-    stream({
-      role: "debug",
-      content: logMessage,
-    });
-
-  return { url, requestOptions };
-}
-
-export function bodyPropertiesFromRequestBodyContents(
-  requestBodyContents: Json
-): {
-  properties: { [name: string]: OpenAPIV3_1.SchemaObject };
-  schema: OpenAPIV3.SchemaObject;
-} {
-  const reqBodyContents =
-    requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
-
-  console.log("reqBodyContents:", reqBodyContents);
-
-  // TODO: Only application/json supported for now
-  if (!("application/json" in reqBodyContents)) {
-    throw new Error(
-      "Only application/json request body contents are supported"
-    );
-  }
-  const applicationJson = reqBodyContents[
-    "application/json"
-  ] as OpenAPIV3.MediaTypeObject;
-
-  const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-  const properties = schema.properties as {
-    [name: string]: OpenAPIV3_1.SchemaObject;
-  };
-  return { properties, schema };
-}
-
-function buildUrl(
-  action: ActionPlusApiInfo,
-  parameters: Record<string, unknown>,
-  headers: Record<string, string>
-): string {
   let url = action.api_host + action.path;
 
   // TODO: accept array for JSON?
@@ -162,7 +111,49 @@ function buildUrl(
       url += `?${queryParams.toString()}`;
     }
   }
-  return url;
+  requestOptions.headers = headers;
+  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
+    requestOptions,
+    null,
+    2
+  )}`;
+  console.log(logMessage);
+
+  if (stream)
+    stream({
+      role: "debug",
+      content: logMessage,
+    });
+
+  return { url, requestOptions };
+}
+
+export function bodyPropertiesFromRequestBodyContents(
+  requestBodyContents: Json
+): {
+  properties: { [name: string]: OpenAPIV3_1.SchemaObject };
+  schema: OpenAPIV3.SchemaObject;
+} {
+  const reqBodyContents =
+    requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
+
+  console.log("reqBodyContents:", reqBodyContents);
+
+  // TODO: Only application/json supported for now
+  if (!("application/json" in reqBodyContents)) {
+    throw new Error(
+      "Only application/json request body contents are supported"
+    );
+  }
+  const applicationJson = reqBodyContents[
+    "application/json"
+  ] as OpenAPIV3.MediaTypeObject;
+
+  const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
+  const properties = schema.properties as {
+    [name: string]: OpenAPIV3_1.SchemaObject;
+  };
+  return { properties, schema };
 }
 
 function buildBody(

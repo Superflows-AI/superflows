@@ -485,7 +485,7 @@ async function Angela( // Good ol' Angela
       );
 
       // If over context limit, remove oldest function calls
-      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt]);
+      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt], "4");
 
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);

@@ -28,14 +28,17 @@ export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
 }
 
 export function removeOldestFunctionCalls(
-  chatGptPrompt: ChatGPTMessage[]
+  chatGptPrompt: ChatGPTMessage[],
+  model: "3" | "3-16k" | "4",
+  maxTokensOut: number = MAX_TOKENS_OUT
 ): ChatGPTMessage[] {
+  const maxTokens = model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192;
   /** Remove old function calls if over the context limit **/
   let tokenCount = getTokenCount(chatGptPrompt);
   const originalTokenCount = tokenCount;
   let numberRemoved = 0;
   // Keep removing until under the context limit
-  while (tokenCount >= 8192 - MAX_TOKENS_OUT) {
+  while (tokenCount >= maxTokens - maxTokensOut) {
     // Removes the oldest function call
     const oldestFunctionCallIndex = chatGptPrompt.findIndex(
       // 204 since 4 tokens are added to the prompt for each message

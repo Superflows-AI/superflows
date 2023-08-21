@@ -25,7 +25,7 @@ export async function getMissingArgCorrections(
     bodyRequired = schema?.required || [];
   }
 
-  const queryRequired = getRequiredQueryParams(action);
+  const queryRequired = getRequiredParams(action);
   const allRequiredParams = bodyRequired.concat(queryRequired);
 
   const missingParams = allRequiredParams.filter(
@@ -59,7 +59,9 @@ async function getMissingParam(
   const correctionPrompt = requestCorrectionPrompt(missingParam, action);
   if (!correctionPrompt) return { response: null, correctionPrompt: null };
   const prompt = removeOldestFunctionCalls(
-    [...previousConversation].concat(correctionPrompt)
+    [...previousConversation].concat(correctionPrompt),
+    "3",
+    100
   );
   console.log("Request correction prompt:\n", prompt);
   let response = await getOpenAIResponse(
@@ -73,12 +75,13 @@ async function getMissingParam(
   response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);
   try {
+    // Type casts to the most appropriate type, errors and returns a string if no casting possible
     response = JSON.parse(response);
   } catch {}
   return { response, correctionPrompt };
 }
 
-function getRequiredQueryParams(action: Action): string[] {
+function getRequiredParams(action: Action): string[] {
   if (!action.parameters) return [];
   const actionParameters =
     action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
