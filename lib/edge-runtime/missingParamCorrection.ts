@@ -17,6 +17,7 @@ export async function getMissingArgCorrections(
   newSystemMessages: ChatGPTMessage[] | null;
 }> {
   // Strip out unnecessary text from the system message
+  previousConversation = [...previousConversation];
   previousConversation[0].content = previousConversation[0].content
     .split("You MUST exclusively use the functions listed below")[0]
     .trim();
