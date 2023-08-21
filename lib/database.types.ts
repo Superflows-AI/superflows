@@ -151,7 +151,7 @@ export interface Database {
         Row: {
           api_host: string;
           auth_header: string;
-          auth_scheme: string;
+          auth_scheme: string | null;
           created_at: string;
           id: string;
           name: string;
@@ -160,7 +160,7 @@ export interface Database {
         Insert: {
           api_host?: string;
           auth_header?: string;
-          auth_scheme?: string;
+          auth_scheme?: string | null;
           created_at?: string;
           id?: string;
           name?: string;
@@ -169,7 +169,7 @@ export interface Database {
         Update: {
           api_host?: string;
           auth_header?: string;
-          auth_scheme?: string;
+          auth_scheme?: string | null;
           created_at?: string;
           id?: string;
           name?: string;

@@ -1,9 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
-import { Redis } from "@upstash/redis";
+import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
+import { Database } from "../../../lib/database.types";
+import { getMissingArgCorrections } from "../../../lib/edge-runtime/missingParamCorrection";
+import {
+  constructHttpRequest,
+  makeHttpRequest,
+  processAPIoutput,
+} from "../../../lib/edge-runtime/requests";
+import {
+  DBChatMessageToGPT,
+  removeOldestFunctionCalls,
+} from "../../../lib/edge-runtime/utils";
+import { getLanguage } from "../../../lib/language";
 import {
   ActionToHttpRequest,
   ChatGPTMessage,
@@ -14,30 +27,17 @@ import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
+  ActionPlusApiInfo,
+  OrgJoinIsPaid,
+  Organization,
+} from "../../../lib/types";
+import {
   exponentialRetryWrapper,
-  getTokenCount,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import {
-  DBChatMessageToGPT,
-  removeOldestFunctionCalls,
-} from "../../../lib/edge-runtime/utils";
-import {
-  ActionPlusApiInfo,
-  Organization,
-  OrgJoinIsPaid,
-} from "../../../lib/types";
-import {
-  constructHttpRequest,
-  makeHttpRequest,
-  processAPIoutput,
-} from "../../../lib/edge-runtime/requests";
-import { getLanguage } from "../../../lib/language";
-import { Database } from "../../../lib/database.types";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
-import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 
 export const config = {
   runtime: "edge",
@@ -485,7 +485,7 @@ async function Angela( // Good ol' Angela
       );
 
       // If over context limit, remove oldest function calls
-      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt]);
+      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt], "4");
 
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
@@ -568,6 +568,50 @@ async function Angela( // Good ol' Angela
         const chosenAction = actions.find((a) => a.name === command.name);
         if (!chosenAction) {
           throw new Error(`Action ${command.name} not found!`);
+        }
+
+        // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
+        // done a non ask_user correction?
+        const { newSystemMessages, corrections } =
+          await getMissingArgCorrections(
+            chosenAction,
+            command,
+            chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
+          );
+
+        let needsUserCorrection = false;
+
+        const toUserCorrect = [];
+        if (Object.keys(corrections).length > 0) {
+          for (const [param, response] of Object.entries(corrections)) {
+            if (
+              !response
+                .toLowerCase()
+                .replace(/[^A-Z]+/gi, "")
+                .includes("askuser")
+            ) {
+              command.args[param] = response;
+            } else {
+              needsUserCorrection = true;
+              toUserCorrect.push(param);
+            }
+          }
+        }
+
+        if (needsUserCorrection) {
+          const correctionMessage = {
+            role: "assistant",
+            content:
+              "<<[NEW-MESSAGE]>>" +
+              "Tell user:\n" +
+              "I'm sorry but I need more information before I can do that, can you please provide: " +
+              toUserCorrect.join("\n"),
+          } as ChatGPTMessage;
+
+          nonSystemMessages.push(correctionMessage);
+          streamInfo(correctionMessage);
+
+          return { nonSystemMessages, cost: totalCost, numUserQueries };
         }
 
         const actionToHttpRequest: ActionToHttpRequest = {

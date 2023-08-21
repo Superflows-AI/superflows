@@ -148,9 +148,11 @@ export function getActionDescriptions(actions: Action[]): string {
     } else if (Object.keys(action.request_body_contents ?? {}).length > 0) {
       console.error(`No application/json in request body for ${action.name}.`);
     }
-    numberedActions += `${i}. ${action.name}${formatDescription(
-      action.description
-    )} ${paramString ? "PARAMETERS:" + paramString : "PARAMETERS: None."}\n`;
+    numberedActions += `${actions.length > 1 ? `${i}. ` : ""}${
+      action.name
+    }${formatDescription(action.description)} ${
+      paramString ? "PARAMETERS:" + paramString : "PARAMETERS: None."
+    }\n`;
     i++;
   });
   return numberedActions;

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import {
-  formatReqBodySchema,
-  getActionDescriptions,
-} from "../../lib/prompts/chatBot";
+import { getActionDescriptions } from "../../lib/prompts/chatBot";
 import { Action } from "../../lib/types";
 import {
   exampleRequestBody1,
@@ -23,7 +20,32 @@ describe("getActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual("1. action1 PARAMETERS: None.\n");
+    expect(out).toEqual("action1 PARAMETERS: None.\n");
+  });
+  it("no parameters multiple actions", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        active: true,
+        parameters: [],
+        request_body_contents: {},
+        responses: [],
+        action_type: "http",
+        http_method: "GET",
+      } as unknown as Action,
+      {
+        name: "action2",
+        active: true,
+        parameters: [],
+        request_body_contents: {},
+        responses: [],
+        action_type: "http",
+        http_method: "GET",
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `1. action1 PARAMETERS: None.\n2. action2 PARAMETERS: None.\n`
+    );
   });
   // Setting parameters
   it("1 parameter, required", () => {
@@ -45,7 +67,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "1. action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
     );
   });
   it("1 parameter, not required", () => {
@@ -66,7 +88,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "1. action1: description1. PARAMETERS:\n- param1 (string): a description.\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description.\n"
     );
   });
   it("1 parameter with string enums", () => {
@@ -88,7 +110,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      '1. action1: description1. PARAMETERS:\n- param1 ("alpha" | "beta" | "gamma"): a description.\n'
+      'action1: description1. PARAMETERS:\n- param1 ("alpha" | "beta" | "gamma"): a description.\n'
     );
   });
   it("1 parameter with number enums", () => {
@@ -110,10 +132,10 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "1. action1: description1. PARAMETERS:\n- param1 (1 | 2 | 3): a description.\n"
+      "action1: description1. PARAMETERS:\n- param1 (1 | 2 | 3): a description.\n"
     );
   });
-  it("2 parameters", () => {
+  it("2 parameters 1 action", () => {
     const out = getActionDescriptions([
       {
         name: "action1",
@@ -140,9 +162,69 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
+      `action1: description1. PARAMETERS:
+- param1 (string): a description.
+- param2 (number): this isn't a description. REQUIRED
+`
+    );
+  });
+  it("2 parameters 2 actions", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [
+          {
+            name: "param1",
+            in: "query",
+            description: "a description",
+            schema: {
+              type: "string",
+            },
+          },
+          {
+            name: "param2",
+            in: "path",
+            description: "this isn't a description",
+            required: true,
+            schema: {
+              type: "number",
+            },
+          },
+        ],
+      } as unknown as Action,
+
+      {
+        name: "action2",
+        description: "description1",
+        parameters: [
+          {
+            name: "param3",
+            in: "query",
+            description: "a description",
+            schema: {
+              type: "string",
+            },
+          },
+          {
+            name: "param4",
+            in: "path",
+            description: "this isn't a description",
+            required: true,
+            schema: {
+              type: "number",
+            },
+          },
+        ],
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
       `1. action1: description1. PARAMETERS:
 - param1 (string): a description.
 - param2 (number): this isn't a description. REQUIRED
+2. action2: description1. PARAMETERS:
+- param3 (string): a description.
+- param4 (number): this isn't a description. REQUIRED
 `
     );
   });
@@ -174,7 +256,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - param2 (number): this isn't a description.
 `
     );
@@ -204,7 +286,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "1. action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
     );
   });
   it("2 request body items", () => {
@@ -234,7 +316,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - param1 (string): a description. REQUIRED
 - param2 (number): this is a number.
 `
@@ -266,7 +348,7 @@ describe("getActionDescriptions", () => {
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`1. action1: description #1. PARAMETERS:
+    expect(out).toEqual(`action1: description #1. PARAMETERS:
 - updates (string[]): description of the array. REQUIRED
 `);
   });
@@ -295,7 +377,7 @@ describe("getActionDescriptions", () => {
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`1. action1: description #1. PARAMETERS:
+    expect(out).toEqual(`action1: description #1. PARAMETERS:
 - updates (string[]): array of item description. REQUIRED
 `);
   });
@@ -309,7 +391,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - updates (object[]): List of updates for a custom fields.
 \t- customField (string): The ID or key of the custom field. For example, \`customfield_10010\`. REQUIRED
 \t- issueIds (integer[]): The list of issue IDs. REQUIRED
@@ -328,7 +410,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - accountId (string): The account ID of a user.
 - globalPermissions (string[]): Global permissions to look up.
 - projectPermissions (object[]): Project permissions with associated projects and issues to look up.
@@ -348,7 +430,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - description (string): The description of the dashboard.
 - editPermissions (object[]): The edit permissions for the dashboard. REQUIRED
 \t- type ("user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown"): user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to. REQUIRED
@@ -388,7 +470,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - description (string): The description of the dashboard.
 `
     );
@@ -425,7 +507,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - created (string): When it was created. Example: 2021-01-01.
 - enumProp ("option1" | "option2"): enum description. REQUIRED
 `
@@ -461,7 +543,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
+      `action1: description1. PARAMETERS:
 - param1 (string): a description. Example: example1.
 - updated (integer) Example: 1663734553.
 `

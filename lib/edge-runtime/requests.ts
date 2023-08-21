@@ -1,8 +1,8 @@
-import { Action } from "../types";
-import { ActionToHttpRequest } from "../models";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import { deduplicateArray, filterKeys } from "../utils";
 import { Json } from "../database.types";
+import { ActionToHttpRequest } from "../models";
+import { Action } from "../types";
+import { deduplicateArray, filterKeys } from "../utils";
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -54,61 +54,15 @@ export function constructHttpRequest({
 
   const requestOptions: RequestInit = {
     method: action.request_method.toUpperCase(),
-    headers,
   };
 
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
-    const reqBodyContents =
-      action.request_body_contents as unknown as OpenAPIV3.RequestBodyObject;
-    console.log("reqBodyContents:", reqBodyContents);
-
-    // TODO: Only application/json supported for now
-    if (!("application/json" in reqBodyContents)) {
-      throw new Error(
-        "Only application/json request body contents are supported"
-      );
-    }
-    const applicationJson = reqBodyContents[
-      "application/json"
-    ] as OpenAPIV3.MediaTypeObject;
-
-    const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-    console.log("schema:", JSON.stringify(schema));
-    const properties = schema.properties as {
-      [name: string]: OpenAPIV3_1.SchemaObject;
-    };
+    const { properties, schema } = bodyPropertiesFromRequestBodyContents(
+      action.request_body_contents
+    );
     console.log("properties:", JSON.stringify(properties));
-    const required = schema.required ?? [];
-    const bodyArray = Object.entries(properties).map(([name, property]) => {
-      // Throw out readonly attributes
-      if (property.readOnly) return undefined;
-      if (parameters[name]) {
-        return { [name]: parameters[name] };
-      } else if (
-        // If the parameter is a required enum with 1 value
-        property.enum &&
-        property.enum.length === 1 &&
-        required.includes(name)
-      ) {
-        return { [name]: property.enum[0] };
-      }
-    });
-    console.log("bodyArray:", JSON.stringify(bodyArray));
-
-    const body = Object.assign({}, ...bodyArray);
-
-    // Check all required params are present
-    required.forEach((key: string) => {
-      // TODO: This doesn't check nested required fields
-      if (!body[key]) {
-        throw new Error(
-          `Required parameter "${key}" not provided to action: ${
-            action.name
-          } out of ${JSON.stringify(Object.keys(body))}`
-        );
-      }
-    });
+    const body = buildBody(schema, properties, parameters);
     requestOptions.body = JSON.stringify(body);
   }
 
@@ -117,12 +71,10 @@ export function constructHttpRequest({
   // TODO: accept array for JSON?
   // Set parameters
   if (action.parameters && Array.isArray(action.parameters)) {
-    // If you'll simply go after that thing that you want
     const queryParams = new URLSearchParams();
     const actionParameters =
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
 
-    console.log("actionParameters:", JSON.stringify(actionParameters));
     for (const param of actionParameters) {
       console.log(`processing param: ${JSON.stringify(param)}`);
       // Check for case of required parameter that has enum with 1 value
@@ -132,11 +84,6 @@ export function constructHttpRequest({
         parameters[param.name] = schema.enum[0];
       }
 
-      if (param.required && !parameters[param.name]) {
-        throw new Error(
-          `Parameter "${param.name}" in ${param.in} is not provided by LLM`
-        );
-      }
       if (!parameters[param.name]) {
         console.log("Parameter not provided:", param.name);
         continue;
@@ -164,6 +111,7 @@ export function constructHttpRequest({
       url += `?${queryParams.toString()}`;
     }
   }
+  requestOptions.headers = headers;
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
@@ -178,6 +126,58 @@ export function constructHttpRequest({
     });
 
   return { url, requestOptions };
+}
+
+export function bodyPropertiesFromRequestBodyContents(
+  requestBodyContents: Json
+): {
+  properties: { [name: string]: OpenAPIV3_1.SchemaObject };
+  schema: OpenAPIV3.SchemaObject;
+} {
+  const reqBodyContents =
+    requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
+
+  console.log("reqBodyContents:", reqBodyContents);
+
+  // TODO: Only application/json supported for now
+  if (!("application/json" in reqBodyContents)) {
+    throw new Error(
+      "Only application/json request body contents are supported"
+    );
+  }
+  const applicationJson = reqBodyContents[
+    "application/json"
+  ] as OpenAPIV3.MediaTypeObject;
+
+  const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
+  const properties = schema.properties as {
+    [name: string]: OpenAPIV3_1.SchemaObject;
+  };
+  return { properties, schema };
+}
+
+function buildBody(
+  schema: OpenAPIV3.SchemaObject,
+  properties: { [name: string]: OpenAPIV3_1.SchemaObject },
+  parameters: Record<string, unknown>
+): { [x: string]: any } {
+  const required = schema.required ?? [];
+
+  const bodyArray = Object.entries(properties).map(([name, property]) => {
+    // Throw out readonly attributes
+    if (property.readOnly) return undefined;
+    if (parameters[name]) {
+      return { [name]: parameters[name] };
+    } else if (
+      // If the parameter is a required enum with 1 value
+      property.enum &&
+      property.enum.length === 1 &&
+      required.includes(name)
+    ) {
+      return { [name]: property.enum[0] };
+    }
+  });
+  return Object.assign({}, ...bodyArray);
 }
 
 export async function makeHttpRequest(
