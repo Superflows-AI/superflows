@@ -1,22 +1,17 @@
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { DevChatItem, UserChatItem } from "@superflows/chat-ui-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
 import { Json } from "../lib/database.types";
 import { StreamingStep, StreamingStepInput } from "../lib/models";
 import { classNames } from "../lib/utils";
+import suggestions1 from "../public/presets/1/suggestions.json";
+import suggestions2 from "../public/presets/2/suggestions.json";
 import { AutoGrowingTextArea } from "./autoGrowingTextarea";
 import { useProfile } from "./contextManagers/profile";
 import { LoadingSpinner } from "./loadingspinner";
 import Toggle from "./toggle";
-import {
-  DevChatItem,
-  UserChatItem,
-  convertToRenderable,
-  functionNameToDisplay,
-} from "@superflows/chat-ui-react";
-import suggestions1 from "../public/presets/1/suggestions.json";
-import suggestions2 from "../public/presets/2/suggestions.json";
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;
@@ -32,6 +27,20 @@ export default function PlaygroundChatbot(props: {
   const { profile } = useProfile();
 
   const session = useSession();
+
+  // Ensure we don't send a request to /answers with an expired access_token
+  useEffect(() => {
+    if (!session) return;
+    const handler = setInterval(async () => {
+      if (session.expires_in < 60) {
+        await supabase.auth.refreshSession(session);
+      }
+    }, 60000); // checks every minute
+    return () => {
+      clearInterval(handler);
+    };
+  }, [session]); // Re-run effect when session changes
+
   // Get suggestions from past conversations in playground
   const supabase = useSupabaseClient();
   const [suggestions, setSuggestions] = useState<string[]>([]);
