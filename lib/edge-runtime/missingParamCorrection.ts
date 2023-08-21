@@ -16,6 +16,11 @@ export async function getMissingArgCorrections(
   corrections: { [param: string]: "ask user" | any };
   newSystemMessages: ChatGPTMessage[] | null;
 }> {
+  // Strip out unnecessary text from the system message
+  previousConversation[0].content = previousConversation[0].content
+    .split("You MUST exclusively use the functions listed below")[0]
+    .trim();
+
   let bodyRequired: string[] = [];
 
   if (action.request_body_contents) {

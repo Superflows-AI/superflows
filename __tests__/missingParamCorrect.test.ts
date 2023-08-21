@@ -3,6 +3,7 @@ import "jest";
 import { getMissingArgCorrections } from "../lib/edge-runtime/missingParamCorrection";
 import { getOpenAIResponse } from "../lib/queryOpenAI";
 import { Action } from "../lib/types";
+import getMessages from "../lib/prompts/chatBot";
 jest.mock("../lib/queryOpenAI");
 
 const constActionParams = {
@@ -48,10 +49,18 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "very lovely user",
+      { name: "", description: "" },
+      null
+    );
+
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      []
+      previousConversation
     );
 
     const expected = {
@@ -90,10 +99,18 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "",
+      { name: "", description: "" },
+      null
+    );
+
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      []
+      previousConversation
     );
 
     const expected = {
@@ -143,10 +160,18 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "",
+      { name: "", description: "" },
+      null
+    );
+
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      []
+      previousConversation
     );
 
     const expected = {
@@ -195,10 +220,18 @@ describe("missingParamCorrection", () => {
       args: { paramThatsNotMissing: "abc123" },
     };
 
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "",
+      { name: "", description: "" },
+      null
+    );
+
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      []
+      previousConversation
     );
 
     const expected = {
@@ -249,11 +282,18 @@ describe("missingParamCorrection", () => {
       name: "testAction",
       args: { paramThatsNotMissing: "abc123" },
     };
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "",
+      { name: "", description: "" },
+      null
+    );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      []
+      previousConversation
     );
 
     const expected = {
