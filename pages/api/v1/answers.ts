@@ -38,6 +38,7 @@ import {
 } from "../../../lib/utils";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
+import { removePropertiesItems } from "../mock/[...slug]";
 
 export const config = {
   runtime: "edge",
