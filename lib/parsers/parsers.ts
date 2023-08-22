@@ -11,7 +11,7 @@ export function parseGPTStreamedData(
       })
       .filter((l: string) => l);
   } catch (e) {
-    console.warn(
+    console.log(
       `Error parsing GPT output string: ${gptOutString}. Error: ${e}`
     );
     return undefined;
