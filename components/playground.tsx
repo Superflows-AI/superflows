@@ -6,6 +6,7 @@ import Toggle from "./toggle";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
 import { Api } from "../lib/types";
+import { useRouter } from "next/router";
 
 export default function Playground() {
   const supabase = useSupabaseClient();
@@ -14,12 +15,23 @@ export default function Playground() {
   const [mockApiResponses, setMockApiResponses] = useState<boolean | null>(
     null
   );
+  const router = useRouter();
 
   const { profile } = useProfile();
   const [numActions, setNumActions] = useState<number>(0);
   const [apis, setApis] = useState<Api[] | null>(null);
 
   useEffect(() => {
+    // If they have query params set, store locally
+    if (Object.keys(router.query).length > 0) {
+      Object.entries(router.query).forEach(([key, value]) => {
+        if (value && typeof value === "string") {
+          localStorage.setItem(key, value);
+        }
+      });
+      // Redirect to remove the query params from the URL
+      router.push("/", undefined, { shallow: true });
+    }
     setMockApiResponses(localStorage.getItem("testMode") === "true");
     localStorage.getItem("userApiKey") &&
       setUserApiKey(localStorage.getItem("userApiKey") as string);
