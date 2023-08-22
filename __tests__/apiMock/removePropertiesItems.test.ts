@@ -12,7 +12,7 @@ describe("removePropertiesItems", () => {
     expect(out).toEqual(expected);
   });
   it("nested in items", () => {
-    const out = removePropertiesItems({ properties: expected });
+    const out = removePropertiesItems({ items: expected });
     expect(out).toEqual(expected);
   });
   it("double nested", () => {
@@ -34,7 +34,6 @@ describe("removePropertiesItems", () => {
     expect(out).toEqual({ ...expected, another: "one", andAnother: "one" });
   });
   it("double nested with inner non-removed key", () => {
-    const expected = { out: 1, nowt: 2 };
     const out = removePropertiesItems({
       properties: { key: expected, andAnother: "one" },
       another: "one",
@@ -42,7 +41,6 @@ describe("removePropertiesItems", () => {
     expect(out).toEqual({ key: expected, another: "one", andAnother: "one" });
   });
   it("double nested with outer non-removed key", () => {
-    const expected = { out: 1, nowt: 2 };
     const out = removePropertiesItems({
       key: { items: expected, andAnother: "one" },
       another: "one",
@@ -51,5 +49,21 @@ describe("removePropertiesItems", () => {
       key: { ...expected, andAnother: "one" },
       another: "one",
     });
+  });
+  it("array of objects", () => {
+    const out = removePropertiesItems([
+      { items: expected },
+      { items: expected },
+      { items: expected },
+    ]);
+    expect(out).toEqual([expected, expected, expected]);
+  });
+  it("array of double-nested objects", () => {
+    const out = removePropertiesItems([
+      { items: { properties: expected } },
+      { items: { properties: expected } },
+      { items: { properties: expected } },
+    ]);
+    expect(out).toEqual([expected, expected, expected]);
   });
 });
