@@ -1,11 +1,67 @@
 import { describe, expect, it } from "@jest/globals";
-import { getActionDescriptions } from "../../lib/prompts/chatBot";
+import {
+  formatReqBodySchema,
+  getActionDescriptions,
+} from "../../lib/prompts/chatBot";
 import { Action } from "../../lib/types";
 import {
   exampleRequestBody1,
   exampleRequestBody2,
   exampleRequestBody3,
+  realWorldExampleSchema,
 } from "./testData";
+import { OpenAPIV3_1 } from "openapi-types";
+
+describe("formatReqBodySchema", () => {
+  it("real-world example", () => {
+    const out = formatReqBodySchema(
+      realWorldExampleSchema.schema as OpenAPIV3_1.SchemaObject
+    );
+    // TODO: There's a bug here. We shouldn't require an object if all
+    //  its children are enums with 1 value. We also probably want to
+    //  simplify the data.exchange object so it's less nested and complex.
+    //  It should probably be a top-level object instead, but this requires
+    //  changing how parameters are parsed from the GPT response.
+    expect(out).toEqual(`
+- workflow (object) REQUIRED
+- data (object) REQUIRED
+\t- exchange (object) REQUIRED
+\t\t- serviceProviderConfiguration (object)
+\t\t\t- sellSideProvider (string)
+\t\t\t- buySideProvider (string)
+\t\t\t- sellSideVirtualization ("enabled" | "disabled" | "not-applicable")
+\t\t\t- buySideVirtualization ("enabled" | "disabled" | "not-applicable")
+\t\t\t- sellSideSourceOfTruth ("if-core" | "baas-provider" | "card-processor")
+\t\t\t- buySideSourceOfTruth ("if-core" | "baas-provider" | "card-processor")
+\t\t- type ("spot" | "spot-debit-in-advance")
+\t\t- id (string): ID of exchange.
+\t\t- clientId (string): ID of client. REQUIRED
+\t\t- quoteId (string): ID of quote. REQUIRED
+\t\t- transactionNumber (string): Transaction number of exchange. REQUIRED
+\t\t- fixedSide ("buy" | "sell"): which side is fixed as amount. REQUIRED
+\t\t- rate (number): Rate. REQUIRED
+\t\t- serviceProviderRate (number): Service provider rate. REQUIRED
+\t\t- buyAccountId (string): ID of buy account. REQUIRED
+\t\t- buyCurrency (string): ISO 4217 currency code. REQUIRED
+\t\t- buyAmount (number): Buy amount of exchange. REQUIRED
+\t\t- serviceProviderBuyAmount (number): Buy amount of service provider. REQUIRED
+\t\t- sellAccountId (string): ID of sell account. REQUIRED
+\t\t- sellCurrency (string): ISO 4217 currency code. REQUIRED
+\t\t- sellAmount (number): Sell amount of exchange. REQUIRED
+\t\t- serviceProviderSellAmount (number): Sell amount of service provider. REQUIRED
+\t\t- feeAmount (number): Fee amount.
+\t\t- feeCurrency (string): Fee currency.
+\t\t- rollCount (integer): Roll count of exchange. REQUIRED
+\t\t- originalExchangeDate (string): Original exchange date. REQUIRED
+\t\t- exchangeDate (string): Calculated exchange date. REQUIRED
+\t\t- cutOffDateTime (string): Exchange cut-off date time. REQUIRED
+\t\t- settlementDate (string): Calculated exchange settlement date. REQUIRED
+\t\t- status ("pending" | "on-hold" | "completed" | "cancelled" | "failed"): Status of Exchange. REQUIRED
+\t\t- cancellationFee (number): Cancellation fee.
+- connect (object) REQUIRED
+- metadata (object) REQUIRED`);
+  });
+});
 
 describe("getActionDescriptions", () => {
   it("no parameters", () => {

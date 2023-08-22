@@ -221,3 +221,249 @@ export const exampleRequestBody3 = {
     },
   },
 };
+
+export const realWorldExampleSchema = {
+  schema: {
+    required: ["connect", "data", "metadata", "workflow"],
+    type: "object",
+    properties: {
+      workflow: {
+        required: ["code"],
+        type: "object",
+        properties: {
+          code: {
+            type: "string",
+            description: "workflow code",
+            enum: ["client.direct.spot"],
+          },
+        },
+      },
+      data: {
+        required: ["exchange"],
+        type: "object",
+        properties: {
+          exchange: {
+            required: [
+              "buyAccountId",
+              "buyAmount",
+              "buyCurrency",
+              "clientId",
+              "cutOffDateTime",
+              "exchangeDate",
+              "fixedSide",
+              "originalExchangeDate",
+              "quoteId",
+              "rate",
+              "rollCount",
+              "sellAccountId",
+              "sellAmount",
+              "sellCurrency",
+              "serviceProviderBuyAmount",
+              "serviceProviderRate",
+              "serviceProviderSellAmount",
+              "settlementDate",
+              "status",
+              "transactionNumber",
+            ],
+            type: "object",
+            properties: {
+              serviceProviderConfiguration: {
+                type: "object",
+                properties: {
+                  sellSideProvider: {
+                    type: "string",
+                    enum: [
+                      "CLT",
+                      "DHB",
+                      "RLB",
+                      "FXR",
+                      "KCL",
+                      "CAB",
+                      "CLB",
+                      "TCC",
+                      "CCE",
+                      "NIU",
+                      "LHV",
+                      "GPS",
+                      "COA",
+                      "SUM",
+                      "UNC",
+                      "MOD",
+                    ],
+                  },
+                  buySideProvider: {
+                    type: "string",
+                    enum: [
+                      "CLT",
+                      "DHB",
+                      "RLB",
+                      "FXR",
+                      "KCL",
+                      "CAB",
+                      "CLB",
+                      "TCC",
+                      "CCE",
+                      "NIU",
+                      "LHV",
+                      "GPS",
+                      "COA",
+                      "SUM",
+                      "UNC",
+                      "MOD",
+                    ],
+                  },
+                  sellSideVirtualization: {
+                    type: "string",
+                    enum: ["enabled", "disabled", "not-applicable"],
+                  },
+                  buySideVirtualization: {
+                    type: "string",
+                    enum: ["enabled", "disabled", "not-applicable"],
+                  },
+                  sellSideSourceOfTruth: {
+                    type: "string",
+                    enum: ["if-core", "baas-provider", "card-processor"],
+                  },
+                  buySideSourceOfTruth: {
+                    type: "string",
+                    enum: ["if-core", "baas-provider", "card-processor"],
+                  },
+                },
+              },
+              type: { type: "string", enum: ["spot", "spot-debit-in-advance"] },
+              id: {
+                type: "string",
+                description: "ID of exchange",
+                format: "uuid",
+              },
+              clientId: {
+                type: "string",
+                description: "ID of client",
+                format: "uuid",
+              },
+              quoteId: {
+                type: "string",
+                description: "ID of quote",
+                format: "uuid",
+              },
+              transactionNumber: {
+                type: "string",
+                description: "Transaction number of exchange",
+              },
+              fixedSide: {
+                type: "string",
+                description: "which side is fixed as amount",
+                enum: ["buy", "sell"],
+              },
+              rate: { type: "number", description: "Rate" },
+              serviceProviderRate: {
+                type: "number",
+                description: "Service provider rate",
+              },
+              buyAccountId: {
+                type: "string",
+                description: "ID of buy account",
+                format: "uuid",
+              },
+              buyCurrency: {
+                maxLength: 3,
+                minLength: 3,
+                type: "string",
+                description: "ISO 4217 currency code",
+              },
+              buyAmount: {
+                type: "number",
+                description: "Buy amount of exchange",
+              },
+              serviceProviderBuyAmount: {
+                type: "number",
+                description: "Buy amount of service provider",
+              },
+              sellAccountId: {
+                type: "string",
+                description: "ID of sell account",
+                format: "uuid",
+              },
+              sellCurrency: {
+                maxLength: 3,
+                minLength: 3,
+                type: "string",
+                description: "ISO 4217 currency code",
+              },
+              sellAmount: {
+                type: "number",
+                description: "Sell amount of exchange",
+              },
+              serviceProviderSellAmount: {
+                type: "number",
+                description: "Sell amount of service provider",
+              },
+              feeAmount: { type: "number", description: "Fee amount" },
+              feeCurrency: { type: "string", description: "Fee currency" },
+              rollCount: {
+                type: "integer",
+                description: "Roll count of exchange",
+                format: "int32",
+              },
+              originalExchangeDate: {
+                type: "string",
+                description: "Original exchange date",
+                format: "date",
+              },
+              exchangeDate: {
+                type: "string",
+                description: "Calculated exchange date",
+                format: "date",
+              },
+              cutOffDateTime: {
+                type: "string",
+                description: "Exchange cut-off date time",
+                format: "date-time",
+              },
+              settlementDate: {
+                type: "string",
+                description: "Calculated exchange settlement date",
+                format: "date",
+              },
+              status: {
+                type: "string",
+                description: "Status of Exchange",
+                enum: [
+                  "pending",
+                  "on-hold",
+                  "completed",
+                  "cancelled",
+                  "failed",
+                ],
+              },
+              cancellationFee: {
+                type: "number",
+                description: "Cancellation fee",
+                nullable: true,
+              },
+            },
+            description: "exchange data model",
+            readOnly: false,
+          },
+        },
+      },
+      connect: {
+        required: ["serviceProvider", "type"],
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            description: "service provider selection type",
+            enum: ["explicit"],
+          },
+          serviceProvider: {
+            type: "string",
+            description: "account is connected to this service provider ",
+            enum: ["railsbank"],
+          },
+        },
+      },
+      metadata: { type: "object" },
+    },
+  },
+};

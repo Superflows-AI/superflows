@@ -62,3 +62,18 @@ export function removeOldestFunctionCalls(
   );
   return chatGptPrompt;
 }
+
+export function getJsonMIMEType<inObj>(
+  inputDict: Record<string, inObj> | undefined | null
+): inObj | undefined {
+  if (!inputDict) return undefined;
+  if ("application/json" in inputDict) {
+    return inputDict["application/json"];
+  } else if ("*/*" in inputDict) {
+    return inputDict["*/*"];
+  } else if ("*/json" in inputDict) {
+    return inputDict["*/*"];
+  } else {
+    return undefined;
+  }
+}
