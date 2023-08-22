@@ -19,6 +19,7 @@ import {
   splitPath,
   chunksToProperties,
 } from "../../../lib/utils";
+import { getJsonMIMEType } from "../../../lib/edge-runtime/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -192,7 +193,7 @@ export default async function handler(
 
   let responseCode;
   // Search for a 2xx response starting at 200
-  const response =
+  const response: OpenAPIV3_1.ResponseObject =
     matchingAction && matchingAction.responses
       ? ((responseCode = Object.keys(matchingAction.responses).find(
           (key) => Number(key) >= 200 && Number(key) < 300
@@ -240,8 +241,8 @@ export default async function handler(
 
   // Hierarchy of fallbacks if we don't have full schema etc
   const fallback =
-    response.content?.["application/json"]?.schema ||
-    response.content?.["application/json"] ||
+    getJsonMIMEType(response.content)?.schema ||
+    getJsonMIMEType(response.content) ||
     response.content ||
     response;
 

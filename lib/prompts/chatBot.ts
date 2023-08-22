@@ -1,6 +1,7 @@
 import { ChatGPTMessage } from "../models";
 import { Action } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
+import { getJsonMIMEType } from "../edge-runtime/utils";
 
 export function formatDescription(
   description: string | undefined | null
@@ -58,6 +59,10 @@ export function formatReqBodySchema(
       [name: string]: OpenAPIV3_1.SchemaObject;
     };
     const required = schema?.required ?? [];
+    if (nestingLevel !== 0) {
+      paramString += "(object)";
+      if (isRequired) paramString += " REQUIRED";
+    }
 
     Object.entries(properties).forEach(([key, value]) => {
       // Throw out readonly attributes
@@ -80,7 +85,7 @@ export function formatReqBodySchema(
       // Arrays of objects require special handling
       paramString += `(object[])${formatDescription(schema.description)}${
         isRequired ? " REQUIRED" : ""
-      }${formatReqBodySchema(items, nestingLevel, false)}`;
+      }${formatReqBodySchema(items, nestingLevel, false).split("(object)")[1]}`;
     } else {
       // Arrays of non-objects (incl. other arrays)
       const des = formatDescription(
@@ -143,8 +148,9 @@ export function getActionDescriptions(actions: Action[]): string {
       [media: string]: OpenAPIV3_1.MediaTypeObject;
     };
     // TODO: Support content-types other than application/json
-    if (reqBody && "application/json" in reqBody) {
-      paramString += formatReqBodySchema(reqBody["application/json"].schema);
+    const jsonSchema = getJsonMIMEType(reqBody);
+    if (jsonSchema) {
+      paramString += formatReqBodySchema(jsonSchema.schema);
     } else if (Object.keys(action.request_body_contents ?? {}).length > 0) {
       console.error(`No application/json in request body for ${action.name}.`);
     }

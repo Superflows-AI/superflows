@@ -3,6 +3,8 @@ import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
+import { getJsonMIMEType } from "./utils";
+import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -39,7 +41,7 @@ export function constructHttpRequest({
   console.log("parameters:", parameters);
 
   const headers: Record<string, string> = {};
-  // TODO: You can only overwrite this header if it's in the permissions
+  // TODO: You can only overwrite this header if it's in the parameters
   headers["Accept"] = "application/json";
   if (userApiKey) {
     const scheme = action.auth_scheme ? action.auth_scheme + " " : "";
@@ -134,20 +136,19 @@ export function bodyPropertiesFromRequestBodyContents(
   properties: { [name: string]: OpenAPIV3_1.SchemaObject };
   schema: OpenAPIV3.SchemaObject;
 } {
-  const reqBodyContents =
-    requestBodyContents as unknown as OpenAPIV3.RequestBodyObject;
+  const reqBodyContents = requestBodyContents as unknown as {
+    [media: string]: MediaTypeObject;
+  };
 
   console.log("reqBodyContents:", reqBodyContents);
 
   // TODO: Only application/json supported for now
-  if (!("application/json" in reqBodyContents)) {
+  const applicationJson = getJsonMIMEType(reqBodyContents);
+  if (!applicationJson) {
     throw new Error(
       "Only application/json request body contents are supported"
     );
   }
-  const applicationJson = reqBodyContents[
-    "application/json"
-  ] as OpenAPIV3.MediaTypeObject;
 
   const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
   const properties = schema.properties as {
