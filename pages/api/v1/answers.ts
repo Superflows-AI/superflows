@@ -9,7 +9,7 @@ import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
 import {
   DBChatMessageToGPT,
   getFreeTierUsage,
-  getHost,
+  getHost, isValidBody,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
 import {
@@ -19,7 +19,6 @@ import {
   GPTMessageInclSummary,
 } from "../../../lib/models";
 import { OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
-import { isValidBody } from "../../../lib/utils";
 
 export const config = {
   runtime: "edge",

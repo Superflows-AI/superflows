@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
-import { isValidBody } from "../../lib/utils";
 import { pdfToText } from "../../lib/pdfReader";
+import { isValidBody } from "../../lib/edge-runtime/utils";
 
 const ParsePdfZod = z.object({
   url: z.string(),

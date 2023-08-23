@@ -3,7 +3,6 @@ import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
-import { isValidBody } from "../../../lib/utils";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -17,7 +16,7 @@ import {
   ToConfirm,
 } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
-import { getHost, replaceVariables } from "../../../lib/edge-runtime/utils";
+import {getHost, isValidBody, replaceVariables} from "../../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
