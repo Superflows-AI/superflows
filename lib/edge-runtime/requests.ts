@@ -234,6 +234,18 @@ export async function makeHttpRequest(
 
   if (accept === "application/json") {
     return JSON.parse(responseText);
+  } else if (accept === "application/pdf") {
+    // This gets the pdf and then parses it into text. We aren't
+    // calling this function here because it requires nodejs runtime
+    const res = await fetch(`${localHostname}/api/parse-pdf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/",
+      },
+      // TODO: Fix this dirty hack - we're making the request on this side and on parse-pdf
+      body: JSON.stringify({ url, requestOptions }),
+    });
+    return res.text();
   } else if (
     [
       "application/html",

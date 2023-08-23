@@ -2,12 +2,13 @@ import { getDocument } from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 
 export async function pdfToText(data: ArrayBuffer | Buffer): Promise<string> {
+  console.log("Loading PDF...");
   const loadingTask = getDocument(data);
   const pdf = await loadingTask.promise;
 
   const total = pdf.numPages;
   let layers: { [key: string]: string } = {};
-  console.log("Starting to process PDF");
+  console.log("Processing PDF...");
   for (let i = 1; i <= total; i++) {
     const page = await pdf.getPage(i);
     const n = page.pageNumber;
@@ -18,7 +19,6 @@ export async function pdfToText(data: ArrayBuffer | Buffer): Promise<string> {
       for (let k = 0; k < textContent.items.length; k++) {
         const block = textContent.items[k] as TextItem;
         if (last_block !== null && !last_block.str.endsWith(" ")) {
-          // if (block.hasEOL || last_block.transform[4] < block.transform[4]) {
           if (block.hasEOL) {
             page_text += "\r\n";
           } else if (
