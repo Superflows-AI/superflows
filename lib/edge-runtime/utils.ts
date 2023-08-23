@@ -7,6 +7,16 @@ import { Database } from "../database.types";
 import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
 import RemoveMarkdown from "remove-markdown";
+import {z} from "zod/lib";
+
+
+export function isValidBody<T extends Record<string, unknown>>(
+  body: any,
+  bodySchema: z.ZodType<any>,
+): body is T {
+  const { success } = bodySchema.safeParse(body);
+  return success;
+}
 
 export function DBChatMessageToGPT(
   message: DBChatMessage,

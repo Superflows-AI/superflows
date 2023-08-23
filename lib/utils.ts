@@ -75,14 +75,6 @@ export function unpackAndCall(
   return func(...args);
 }
 
-export function isValidBody<T extends Record<string, unknown>>(
-  body: any,
-  bodySchema: z.ZodType<any>,
-): body is T {
-  const { success } = bodySchema.safeParse(body);
-  return success;
-}
-
 export function stripTrailingAndCurly(str: string) {
   // Remove trailing slashes
   str = str.replace(/\/$/, "");
