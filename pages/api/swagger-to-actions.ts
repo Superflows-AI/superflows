@@ -3,8 +3,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { z } from "zod";
-import { isValidBody, stripTrailingAndCurly } from "../../lib/utils";
+import { stripTrailingAndCurly } from "../../lib/utils";
 import { OpenAPIV3_1 } from "openapi-types";
+import { isValidBody } from "../../lib/edge-runtime/utils";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");

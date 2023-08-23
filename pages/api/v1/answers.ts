@@ -14,6 +14,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import {
   DBChatMessageToGPT,
+  isValidBody,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
@@ -31,14 +32,9 @@ import {
   OrgJoinIsPaid,
   Organization,
 } from "../../../lib/types";
-import {
-  exponentialRetryWrapper,
-  isValidBody,
-  openAiCost,
-} from "../../../lib/utils";
+import { exponentialRetryWrapper, openAiCost } from "../../../lib/utils";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
-import { removePropertiesItems } from "../mock/[...slug]";
 
 export const config = {
   runtime: "edge",

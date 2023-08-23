@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as cheerio from "cheerio";
 import { z } from "zod";
-import { isValidBody } from "../../lib/utils";
+import { isValidBody } from "../../lib/edge-runtime/utils";
 
 const ParseHtmlZod = z.object({ html: z.string() });
 type ParseHtmlType = z.infer<typeof ParseHtmlZod>;

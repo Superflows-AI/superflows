@@ -2,6 +2,15 @@ import { getTokenCount } from "../utils";
 import { ChatGPTMessage } from "../models";
 import { DBChatMessage } from "../types";
 import { MAX_TOKENS_OUT } from "../consts";
+import { z } from "zod";
+
+export function isValidBody<T extends Record<string, unknown>>(
+  body: any,
+  bodySchema: z.ZodType<any>
+): body is T {
+  const { success } = bodySchema.safeParse(body);
+  return success;
+}
 
 export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
   if (message.role === "function") {

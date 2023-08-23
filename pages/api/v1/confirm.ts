@@ -3,7 +3,6 @@ import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Action, ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
-import { isValidBody } from "../../../lib/utils";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -14,6 +13,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { ToConfirm } from "./answers";
 import { ChatGPTMessage } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
+import { isValidBody } from "../../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",

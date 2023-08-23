@@ -2,7 +2,6 @@ import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
-import { Json } from "./database.types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -72,14 +71,6 @@ export function unpackAndCall<Args extends object>(
   // Call the function with the unpacked arguments
   // @ts-ignore
   return func(...args);
-}
-
-export function isValidBody<T extends Record<string, unknown>>(
-  body: any,
-  bodySchema: z.ZodType<any>
-): body is T {
-  const { success } = bodySchema.safeParse(body);
-  return success;
 }
 
 export function stripTrailingAndCurly(str: string) {
