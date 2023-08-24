@@ -14,8 +14,13 @@ export function isValidBody<T extends Record<string, unknown>>(
   body: any,
   bodySchema: z.ZodType<any>,
 ): body is T {
-  const { success } = bodySchema.safeParse(body);
-  return success;
+  const safeParseOut = bodySchema.safeParse(body);
+  if ("error" in safeParseOut) {
+    console.error(
+      "Error parsing request body: " + safeParseOut.error.toString()
+    );
+  }
+  return safeParseOut.success;
 }
 
 export function DBChatMessageToGPT(

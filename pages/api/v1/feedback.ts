@@ -3,9 +3,9 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Database } from "../../../lib/database.types";
 import { OrgJoinIsPaid } from "../../../lib/types";
-import { isValidBody } from "../../../lib/utils";
 
 import { Redis } from "@upstash/redis";
+import { isValidBody } from "../../../lib/edge-runtime/utils";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)

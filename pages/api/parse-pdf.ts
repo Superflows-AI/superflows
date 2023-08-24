@@ -11,8 +11,9 @@ type ParsePdfType = z.infer<typeof ParsePdfZod>;
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ): Promise<void> {
+  console.log("/parse-pdf called!");
   if (req.method !== "POST") {
     res.status(405).json({
       error: "Only POST requests allowed",

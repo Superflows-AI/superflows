@@ -8,9 +8,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 import {
   DBChatMessageToGPT,
   getFreeTierUsage,
+  isValidBody,
 } from "../../../lib/edge-runtime/utils";
 import { USAGE_LIMIT } from "../../../lib/consts";
-import { exponentialRetryWrapper, isValidBody } from "../../../lib/utils";
+import { exponentialRetryWrapper } from "../../../lib/utils";
 import {
   filterConversationForFollowUps,
   getFollowUpSuggestionSystemPrompt,
