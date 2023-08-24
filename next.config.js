@@ -5,6 +5,9 @@
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  experimental: {
+    outputFileTracingIgnores: ["**canvas**"]
+  },
   reactStrictMode: true,
   // This enables calls to /api/v1 from users' domains
   async headers() {
