@@ -193,14 +193,20 @@ export async function makeHttpRequest(
   let response = await fetch(url, { ...requestOptions, redirect: "manual" });
   if (response.status >= 300 && response.status < 400) {
     // Try requesting from here without auth headers
-    const headers = requestOptions.headers;
+    const requestOptionsCopy = {
+      ...requestOptions,
+      headers: { ...requestOptions.headers },
+    };
+    const headers = requestOptionsCopy.headers;
     if (headers) {
       if ("Authorization" in headers) delete headers["Authorization"];
       if ("authorization" in headers) delete headers["authorization"];
     }
-    requestOptions.headers = headers;
+    requestOptionsCopy.headers = headers;
     // @ts-ignore
-    response = await fetch(response.headers.get("location"), requestOptions);
+    response = await fetch(response.headers.get("location"), {
+      ...requestOptionsCopy,
+    });
   }
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
@@ -240,12 +246,13 @@ export async function makeHttpRequest(
     const res = await fetch(`${localHostname}/api/parse-pdf`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/",
+        "Content-Type": "application/json",
       },
       // TODO: Fix this dirty hack - we're making the request on this side and on parse-pdf
       body: JSON.stringify({ url, requestOptions }),
     });
-    return res.text();
+    if (res.status === 200) return res.text();
+    else return res.statusText;
   } else if (
     [
       "application/html",
