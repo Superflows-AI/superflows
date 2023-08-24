@@ -1,9 +1,7 @@
-import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { getRelevantDocChunks } from "../../lib/embed-docs/docsSearch";
 import { NextRequest } from "next/server";
-import { isValidBody } from "../../lib/utils";
 import { OrgJoinIsPaidFinetunedModels } from "../../lib/types";
 
 export const config = {

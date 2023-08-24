@@ -36,18 +36,12 @@
     "eventsource-parser": "^1.0.0",
     "fuse.js": "^6.6.2",
     "gpt-tokenizer": "^2.1.1",
-<<<<<<< HEAD
     "langchain": "^0.0.165",
     "luxon": "^3.4.3",
     "next": "^13.5.4",
-    "pdfjs-dist": "^3.7.107",
+    "pdfjs-dist": "^3.9.179",
     "playwright": "^1.38.1",
     "posthog-js": "^1.78.6",
-=======
-    "next": "^13.4.9",
-    "pdfjs-dist": "^3.9.179",
-    "posthog-js": "^1.75.2",
->>>>>>> Add pdf-reading capabilities
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-json-editor-ajrm": "^2.5.14",

@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { z } from "zod";
-import { isValidBody } from "../../lib/utils";
 import { embedText } from "../../lib/embed-docs/embedText";
 import { NextRequest } from "next/server";
+import { isValidBody } from "../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
