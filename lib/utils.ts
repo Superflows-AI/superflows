@@ -2,7 +2,6 @@ import tokenizer from "gpt-tokenizer";
 import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
-import { Json } from "./database.types";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -125,6 +124,31 @@ export function openAiCost(
 export function getTokenCount(messages: ChatGPTMessage[]): number {
   const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
   return encoded.length;
+}
+
+export function chunkString(
+  text: string,
+  chunkSize: number,
+  overlap: number
+): string[] {
+  /** Splits a long string into chunks of length `chunkSize`, with overlap `overlap`
+   * Useful for splitting up long strings for GPT. **/
+  const encoding = tokenizer.encode(text);
+  console.log("Chunking string. Number of tokens = " + encoding.length);
+
+  const chunks = [];
+  let i = 0;
+  let start,
+    end = 0;
+  while (end < encoding.length) {
+    start = i * (chunkSize - overlap);
+    end = start + chunkSize;
+
+    chunks.push(tokenizer.decode(encoding.slice(start, end)));
+    i++;
+  }
+  console.log("Outputting " + chunks.length + " chunks of length " + chunkSize);
+  return chunks;
 }
 
 export function objectNotEmpty(obj: Object): boolean {

@@ -33,12 +33,14 @@ import {
 } from "../../../lib/types";
 import {
   exponentialRetryWrapper,
+  getTokenCount,
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
 import { removePropertiesItems } from "../mock/[...slug]";
+import summarizeText from "../../../lib/edge-runtime/summarize";
 
 export const config = {
   runtime: "edge",
@@ -562,101 +564,114 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
-      const toConfirm: ToConfirm[] = [];
       // Call endpoints here
-      for (const command of mostRecentParsedOutput.commands) {
-        console.log("Processing command: ", command);
-        const chosenAction = actions.find((a) => a.name === command.name);
-        if (!chosenAction) {
-          throw new Error(`Action ${command.name} not found!`);
-        }
-
-        // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
-        // done a non ask_user correction?
-        const { newSystemMessages, corrections } =
-          await getMissingArgCorrections(
-            chosenAction,
-            command,
-            chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
-          );
-
-        let needsUserCorrection = false;
-
-        const toUserCorrect = [];
-        if (Object.keys(corrections).length > 0) {
-          for (const [param, response] of Object.entries(corrections)) {
-            if (
-              !response
-                .toLowerCase()
-                .replace(/[^A-Z]+/gi, "")
-                .includes("askuser")
-            ) {
-              command.args[param] = response;
-            } else {
-              needsUserCorrection = true;
-              toUserCorrect.push(param);
+      const toConfirm: ToConfirm[] = (
+        await Promise.all(
+          mostRecentParsedOutput.commands.map(async (command) => {
+            console.log("Processing command: ", command);
+            const chosenAction = actions.find((a) => a.name === command.name);
+            if (!chosenAction) {
+              throw new Error(`Action ${command.name} not found!`);
             }
-          }
-        }
 
-        if (needsUserCorrection) {
-          const correctionMessage = {
-            role: "assistant",
-            content:
-              "<<[NEW-MESSAGE]>>" +
-              "Tell user:\n" +
-              "I'm sorry but I need more information before I can do that, can you please provide: " +
-              toUserCorrect.join("\n"),
-          } as ChatGPTMessage;
+            // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
+            // done a non ask_user correction?
+            const { newSystemMessages, corrections } =
+              await getMissingArgCorrections(
+                chosenAction,
+                command,
+                chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
+              );
 
-          nonSystemMessages.push(correctionMessage);
-          streamInfo(correctionMessage);
+            let needsUserCorrection = false;
 
-          return { nonSystemMessages, cost: totalCost, numUserQueries };
-        }
+            const toUserCorrect = [];
+            if (Object.keys(corrections).length > 0) {
+              for (const [param, response] of Object.entries(corrections)) {
+                if (
+                  !response
+                    .toLowerCase()
+                    .replace(/[^A-Z]+/gi, "")
+                    .includes("askuser")
+                ) {
+                  command.args[param] = response;
+                } else {
+                  needsUserCorrection = true;
+                  toUserCorrect.push(param);
+                }
+              }
+            }
 
-        const actionToHttpRequest: ActionToHttpRequest = {
-          action: chosenAction,
-          parameters: command.args,
-          organization: org,
-          stream: streamInfo,
-          userApiKey: reqData.user_api_key ?? "",
-        };
+            if (needsUserCorrection) {
+              const correctionMessage = {
+                role: "assistant",
+                content:
+                  "<<[NEW-MESSAGE]>>" +
+                  "Tell user:\n" +
+                  "I'm sorry but I need more information before I can do that, please can you provide: " +
+                  toUserCorrect.join("\n"),
+              } as ChatGPTMessage;
 
-        if (
-          ["get", "head", "options", "connect"].includes(
-            chosenAction.request_method!.toLowerCase()
-          )
-        ) {
-          const { url, requestOptions } =
-            constructHttpRequest(actionToHttpRequest);
-          let out;
-          try {
-            out = await makeHttpRequest(url, requestOptions, currentHost);
-            out = processAPIoutput(out, chosenAction);
-          } catch (e) {
-            console.error(e);
-            // @ts-ignore
-            out = `Failed to call ${url}\n\n${e.toString()}`;
-          }
-          console.log("Output from API call:", out);
-          const outMessage = {
-            role: "function",
-            name: command.name,
-            content: JSON.stringify(out, null, 2),
-          } as ChatGPTMessage;
-          streamInfo(outMessage);
-          nonSystemMessages.push(outMessage);
-        } else {
-          toConfirm.push({
-            actionId: chosenAction.id,
-            args: command.args,
-            name: command.name,
-          });
+              nonSystemMessages.push(correctionMessage);
+              streamInfo(correctionMessage);
 
-          awaitingConfirmation = true;
-        }
-      }
+              return { nonSystemMessages, cost: totalCost, numUserQueries };
+            }
+
+            const actionToHttpRequest: ActionToHttpRequest = {
+              action: chosenAction,
+              parameters: command.args,
+              organization: org,
+              stream: streamInfo,
+              userApiKey: reqData.user_api_key ?? "",
+            };
+
+            if (
+              ["get", "head", "options", "connect"].includes(
+                chosenAction.request_method!.toLowerCase()
+              )
+            ) {
+              const { url, requestOptions } =
+                constructHttpRequest(actionToHttpRequest);
+              let out;
+              try {
+                out = await makeHttpRequest(url, requestOptions, currentHost);
+                out = processAPIoutput(out, chosenAction);
+              } catch (e) {
+                console.error(e);
+                // @ts-ignore
+                out = `Failed to call ${url}\n\n${e.toString()}`;
+              }
+              console.log("Output from API call:", out);
+              const outMessage = {
+                role: "function",
+                name: command.name,
+                content:
+                  typeof out === "string" ? out : JSON.stringify(out, null, 2),
+              } as ChatGPTMessage;
+
+              // If >1500 tokens, summarise the message
+              if (
+                typeof out === "string" &&
+                getTokenCount([outMessage]) > 1500
+              ) {
+                const summary = await summarizeText(out, org);
+                outMessage.content = summary;
+              }
+              streamInfo(outMessage);
+              nonSystemMessages.push(outMessage);
+            } else {
+              // This adds to the toConfirm array
+              return {
+                actionId: chosenAction.id,
+                args: command.args,
+                name: command.name,
+              };
+            }
+          })
+        )
+      ).filter((x): x is ToConfirm => x !== undefined);
+      awaitingConfirmation = toConfirm.length > 0;
       if (awaitingConfirmation) {
         streamInfo({
           role: "confirmation",

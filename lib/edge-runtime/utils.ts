@@ -77,3 +77,15 @@ export function getJsonMIMEType<inObj>(
     return undefined;
   }
 }
+
+export function getHeader(
+  headers: { [key: string]: string } | Headers | null,
+  name: string
+): string | null {
+  if (headers === null) return null;
+  if (typeof headers.get === "function") {
+    return headers.get(name) || headers.get(name.toLowerCase());
+  }
+  // @ts-ignore
+  return headers[name] || headers[name.toLowerCase()] || null;
+}

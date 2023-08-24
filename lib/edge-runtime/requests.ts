@@ -3,7 +3,7 @@ import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
-import { getJsonMIMEType } from "./utils";
+import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
 export function processAPIoutput(
@@ -225,12 +225,7 @@ export async function makeHttpRequest(
     return responseText;
   }
 
-  const accept =
-    reqHeaders.accept ||
-    reqHeaders.Accept ||
-    (typeof reqHeaders.get === "function" && reqHeaders.get("accept")) ||
-    (typeof reqHeaders.get === "function" && reqHeaders.get("Accept")) ||
-    null;
+  const accept = getHeader(reqHeaders, "Accept") ?? "application/json";
 
   if (accept === "application/json") {
     return JSON.parse(responseText);
