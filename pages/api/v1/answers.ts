@@ -14,6 +14,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import {
   DBChatMessageToGPT,
+  MessageInclSummaryToGPT,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
@@ -21,6 +22,7 @@ import {
   ActionToHttpRequest,
   ChatGPTMessage,
   ChatGPTParams,
+  GPTMessageInclSummary,
   StreamingStepInput,
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
@@ -39,7 +41,6 @@ import {
 } from "../../../lib/utils";
 import suggestions1 from "../../../public/presets/1/suggestions.json";
 import suggestions2 from "../../../public/presets/2/suggestions.json";
-import { removePropertiesItems } from "../mock/[...slug]";
 import summarizeText from "../../../lib/edge-runtime/summarize";
 
 export const config = {
@@ -224,7 +225,7 @@ export default async function handler(req: NextRequest) {
 
     // Get the past conversation from the DB
     let language: string | null = null;
-    let previousMessages: ChatGPTMessage[] = [];
+    let previousMessages: GPTMessageInclSummary[] = [];
     let conversationId: number;
     if (requestData.conversation_id) {
       console.log(
@@ -438,11 +439,11 @@ async function Angela( // Good ol' Angela
   actions: ActionPlusApiInfo[],
   org: Organization,
   conversationId: number,
-  previousMessages: ChatGPTMessage[],
+  previousMessages: GPTMessageInclSummary[],
   language: string | null,
   currentHost: string
 ): Promise<{
-  nonSystemMessages: ChatGPTMessage[];
+  nonSystemMessages: GPTMessageInclSummary[];
   cost: number;
   numUserQueries: number;
 }> {
@@ -480,7 +481,10 @@ async function Angela( // Good ol' Angela
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
         // To stop going over the context limit: only remember the last 20 messages
-        nonSystemMessages.slice(Math.max(0, nonSystemMessages.length - 20)),
+        nonSystemMessages
+          .slice(Math.max(0, nonSystemMessages.length - 20))
+          // Set summaries to 'content' - don't show AI un-summarized output
+          .map(MessageInclSummaryToGPT),
         actions,
         reqData.user_description,
         org,
@@ -574,14 +578,11 @@ async function Angela( // Good ol' Angela
               throw new Error(`Action ${command.name} not found!`);
             }
 
-            // TODO: Do we need the new system messages? I.e. does the AI need to see if we've
-            // done a non ask_user correction?
-            const { newSystemMessages, corrections } =
-              await getMissingArgCorrections(
-                chosenAction,
-                command,
-                chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
-              );
+            const { corrections } = await getMissingArgCorrections(
+              chosenAction,
+              command,
+              chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
+            );
 
             let needsUserCorrection = false;
 
@@ -643,20 +644,19 @@ async function Angela( // Good ol' Angela
                 out = `Failed to call ${url}\n\n${e.toString()}`;
               }
               console.log("Output from API call:", out);
-              const outMessage = {
+              const outMessage: GPTMessageInclSummary = {
                 role: "function",
                 name: command.name,
                 content:
                   typeof out === "string" ? out : JSON.stringify(out, null, 2),
-              } as ChatGPTMessage;
+              };
 
               // If >1500 tokens, summarise the message
               if (
                 typeof out === "string" &&
                 getTokenCount([outMessage]) > 1500
               ) {
-                const summary = await summarizeText(out, org);
-                outMessage.content = summary;
+                outMessage.summary = await summarizeText(out, org);
               }
               streamInfo(outMessage);
               nonSystemMessages.push(outMessage);

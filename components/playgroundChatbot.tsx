@@ -343,11 +343,13 @@ export default function PlaygroundChatbot(props: {
               );
             else if (chatItem.role === "debug") return;
             else if (chatItem.role === "function") {
-              let contentString = "";
+              let contentString = chatItem.content;
               let functionJsonResponse: Json = {};
               try {
                 functionJsonResponse = JSON.parse(chatItem.content) as Json;
-              } catch (e) {}
+              } catch (e) {
+                functionJsonResponse = chatItem.content;
+              }
               if (
                 // Empty array
                 (Array.isArray(functionJsonResponse) &&
@@ -358,25 +360,19 @@ export default function PlaygroundChatbot(props: {
                   Object.entries(functionJsonResponse).length === 0)
               ) {
                 if (
-                  devChatContents[idx - 1].role === "function" ||
-                  (devChatContents[idx + 1] &&
-                    devChatContents[idx + 1].role === "function")
+                  devChatContents[idx - 1]?.role === "function" ||
+                  devChatContents[idx + 1]?.role === "function"
                 ) {
                   // If the function call is adjacent to other function calls we don't need to tell them it
                   // was empty - otherwise we get a lot of empty messages clogging up the chat interface
-                  return <div key={idx + chatItem.content} />;
+                  return <div key={idx.toString() + chatItem.content} />;
                 }
                 contentString = "No data returned";
-              } else if (
-                functionJsonResponse &&
-                typeof functionJsonResponse === "object"
-              ) {
-                contentString = chatItem.content;
               }
               return (
-                <DevChatItem
+                <UserChatItem
                   chatItem={{ ...chatItem, content: contentString }}
-                  key={idx + chatItem.content}
+                  key={idx.toString() + chatItem.content}
                 />
               );
             }

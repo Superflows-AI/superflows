@@ -1,4 +1,4 @@
-import { Action, ActionPlusApiInfo } from "./types";
+import { ActionPlusApiInfo } from "./types";
 
 export type ChatGPTMessage =
   | {
@@ -9,6 +9,18 @@ export type ChatGPTMessage =
       role: "function";
       content: string;
       name: string;
+    };
+
+export type GPTMessageInclSummary =
+  | {
+      role: "system" | "user" | "assistant";
+      content: string;
+    }
+  | {
+      role: "function";
+      content: string;
+      name: string;
+      summary?: string;
     };
 
 export interface ChatGPTResponse {
@@ -58,7 +70,7 @@ export type RequestMethod =
   | "PATCH"
   | "OPTIONS";
 
-type NonSystemGPTMessage = Exclude<ChatGPTMessage, { role: "system" }>;
+type NonSystemGPTMessage = Exclude<GPTMessageInclSummary, { role: "system" }>;
 
 export type StreamingStepInput =
   | NonSystemGPTMessage

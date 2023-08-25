@@ -1,9 +1,11 @@
 import { getTokenCount } from "../utils";
-import { ChatGPTMessage } from "../models";
+import { ChatGPTMessage, GPTMessageInclSummary } from "../models";
 import { DBChatMessage } from "../types";
 import { MAX_TOKENS_OUT } from "../consts";
 
-export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
+export function DBChatMessageToGPT(
+  message: DBChatMessage
+): GPTMessageInclSummary {
   if (message.role === "function") {
     let content: string;
     try {
@@ -19,11 +21,24 @@ export function DBChatMessageToGPT(message: DBChatMessage): ChatGPTMessage {
       role: message.role,
       content: content,
       name: message.name!,
+      summary: message.summary ?? undefined,
     };
   }
   return {
     role: message.role as "user" | "assistant",
     content: message.content,
+  };
+}
+
+export function MessageInclSummaryToGPT(
+  message: GPTMessageInclSummary
+): ChatGPTMessage {
+  return {
+    ...message,
+    content:
+      "summary" in message
+        ? message?.summary ?? message.content
+        : message.content,
   };
 }
 
