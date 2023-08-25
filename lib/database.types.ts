@@ -195,6 +195,7 @@ export interface Database {
           name: string | null;
           org_id: number;
           role: string;
+          summary: string | null;
         };
         Insert: {
           content: string;
@@ -206,6 +207,7 @@ export interface Database {
           name?: string | null;
           org_id: number;
           role: string;
+          summary?: string | null;
         };
         Update: {
           content?: string;
@@ -217,6 +219,7 @@ export interface Database {
           name?: string | null;
           org_id?: number;
           role?: string;
+          summary?: string | null;
         };
         Relationships: [
           {
