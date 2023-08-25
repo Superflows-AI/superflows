@@ -193,14 +193,27 @@ export async function makeHttpRequest(
   let response = await fetch(url, { ...requestOptions, redirect: "manual" });
   if (response.status >= 300 && response.status < 400) {
     // Try requesting from here without auth headers
+    console.log("Attempting manual redirect");
+
+    if (!response.headers.has("location")) {
+      return {
+        status: "Redirect failed as original request did not return location",
+      };
+    }
     const headers = requestOptions.headers;
     if (headers) {
       if ("Authorization" in headers) delete headers["Authorization"];
       if ("authorization" in headers) delete headers["authorization"];
     }
     requestOptions.headers = headers;
-    // @ts-ignore
-    response = await fetch(response.headers.get("location"), requestOptions);
+    const { origin } = new URL(url);
+
+    const redirectUrl = response.headers.get("location")!.includes(origin)
+      ? response.headers.get("location")!
+      : new URL(response.headers.get("location")!, origin).href;
+
+    console.log("Attempting fetch with redirected url: ", redirectUrl);
+    response = await fetch(redirectUrl, requestOptions);
   }
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
