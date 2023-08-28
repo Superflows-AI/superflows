@@ -33,13 +33,15 @@ export function DBChatMessageToGPT(
 export function MessageInclSummaryToGPT(
   message: GPTMessageInclSummary
 ): ChatGPTMessage {
-  return {
+  const out = {
     ...message,
     content:
       "summary" in message
         ? message?.summary ?? message.content
         : message.content,
   };
+  if ("summary" in out) delete out.summary;
+  return out;
 }
 
 export function removeOldestFunctionCalls(
