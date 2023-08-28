@@ -199,7 +199,9 @@ ${numberedActions}
 
 To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
 
-Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses 
+Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
+
+Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses
 
 Think and talk to the user in ${language ?? "the same language they write in"}${
         language !== "English"
