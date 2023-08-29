@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-npm test -- --runInBand --watchAll=false --bail --ci --silent
+npm test -- --watchAll=false --bail --ci --silent

@@ -14,4 +14,4 @@ build:
 
 test:
 # Run in series to stop race condition
-	npm test -- --runInBand
+	npm test
