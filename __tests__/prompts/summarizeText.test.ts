@@ -17,7 +17,7 @@ For context of what to include in your summary, you are working for test. test d
 
 Your response should be a maximum of 6 bullet points. Only use one, two or three bullet points if you can. Only write short simple sentences. Only write one sentence per bullet point. Be as succinct as possible.
 
-Include all important facts, numbers and statistics.
+Include all important facts, numbers and statistics. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 
 Do not include legal disclaimers, privacy policies or copyright information.
 
