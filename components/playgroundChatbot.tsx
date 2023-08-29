@@ -336,7 +336,7 @@ export default function PlaygroundChatbot(props: {
             )
               return (
                 <DevChatItem
-                  key={idx + chatItem.content}
+                  key={idx}
                   chatItem={chatItem}
                   onConfirm={onConfirm}
                 />
@@ -365,20 +365,18 @@ export default function PlaygroundChatbot(props: {
                 ) {
                   // If the function call is adjacent to other function calls we don't need to tell them it
                   // was empty - otherwise we get a lot of empty messages clogging up the chat interface
-                  return <div key={idx.toString() + chatItem.content} />;
+                  return <div key={idx.toString()} />;
                 }
                 contentString = "No data returned";
               }
               return (
                 <UserChatItem
                   chatItem={{ ...chatItem, content: contentString }}
-                  key={idx.toString() + chatItem.content}
+                  key={idx.toString()}
                 />
               );
             }
-            return (
-              <UserChatItem chatItem={chatItem} key={idx + chatItem.content} />
-            );
+            return <UserChatItem chatItem={chatItem} key={idx} />;
           })}
           {devChatContents.length === 0 && suggestions.length > 0 && (
             <div className="py-4 px-1.5">
