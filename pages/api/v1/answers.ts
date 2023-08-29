@@ -651,10 +651,10 @@ async function Angela( // Good ol' Angela
                   typeof out === "string" ? out : JSON.stringify(out, null, 2),
               };
 
-              // If >1500 tokens, summarise the message
+              // If >500 tokens, summarise the message
               if (
                 typeof out === "string" &&
-                getTokenCount([outMessage]) > 1500
+                getTokenCount([outMessage]) > 500
               ) {
                 outMessage.summary = await summarizeText(out, org);
               }
