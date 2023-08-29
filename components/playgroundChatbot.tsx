@@ -102,8 +102,7 @@ export default function PlaygroundChatbot(props: {
   const [loading, setLoading] = useState<boolean>(false);
   const [devMode, setDevMode] = useState<boolean>(false);
   const killSwitchClicked = useRef(false);
-  const submitButtonClickable =
-    !props.submitErrorMessage && userText.length > 0;
+  const submitButtonClickable = !props.submitErrorMessage && userText;
 
   const onChatSubmit = useCallback(
     async (chat: StreamingStepInput[]) => {
@@ -157,7 +156,11 @@ export default function PlaygroundChatbot(props: {
             const data = JSON.parse(chunkOfChunk) as StreamingStep;
             if (conversationId === null) setConversationId(data.id);
             if (
+              // Different message role from the last message
               data.role !== outputMessages[outputMessages.length - 1]?.role ||
+              // Not the assistant (e.g. function, debug etc where the entire contents of a message is 1 chunk)
+              data.role !== "assistant" ||
+              // Includes explicit new message tag
               data.content.includes("<<[NEW-MESSAGE]>>")
             ) {
               if (data.content.includes("<<[NEW-MESSAGE]>>"))
