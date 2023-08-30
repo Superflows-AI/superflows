@@ -392,4 +392,45 @@ describe("constructHttpRequest", () => {
       })
     );
   });
+  it("POST - 1 body param and 1 no choice param", () => {
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...constActionParams,
+        parameters: null,
+        path: "/api/mock/confirm",
+        request_method: "POST",
+        request_body_contents: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["noChoice"],
+              properties: {
+                conversation_id: {
+                  type: "number",
+                },
+                noChoice: {
+                  type: "string",
+                  enum: ["value"],
+                },
+              },
+            },
+          },
+        },
+      },
+      parameters: { conversation_id: 1 },
+      organization,
+      userApiKey: "1234",
+      stream: () => {},
+    });
+    expect(url).toBe("https://api.mock/api/mock/confirm");
+    expect(requestOptions.method).toBe("POST");
+    expect(requestOptions.headers).toEqual({
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: "Bearer 1234",
+    });
+    expect(requestOptions.body).toBe(
+      JSON.stringify({ conversation_id: 1, noChoice: "value" })
+    );
+  });
 });

@@ -222,7 +222,7 @@ export const exampleRequestBody3 = {
   },
 };
 
-export const realWorldExampleSchema = {
+export const realWorldExampleSchema1 = {
   schema: {
     required: ["connect", "data", "metadata", "workflow"],
     type: "object",
@@ -464,6 +464,194 @@ export const realWorldExampleSchema = {
         },
       },
       metadata: { type: "object" },
+    },
+  },
+};
+
+export const realWorldExampleSchema2 = {
+  schema: {
+    required: ["connect", "data", "metadata", "workflow"],
+    type: "object",
+    properties: {
+      workflow: {
+        required: ["code"],
+        type: "object",
+        properties: {
+          code: {
+            type: "string",
+            description: "workflow code",
+            enum: ["client.issuing", "client.sub-account", "client.migration"],
+          },
+        },
+      },
+      data: {
+        required: ["account"],
+        type: "object",
+        properties: {
+          account: {
+            required: [
+              "accountHolderIdentityType",
+              "clientId",
+              "country",
+              "currency",
+              "id",
+              "ledgerNumber",
+              "mainAccountId",
+              "routingCodes",
+              "serviceProvider",
+              "status",
+            ],
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                description: "id of account",
+                format: "uuid",
+                readOnly: true,
+              },
+              clientId: {
+                type: "string",
+                description: "id of client",
+                format: "uuid",
+              },
+              status: {
+                type: "string",
+                description: "status of account",
+                readOnly: true,
+                enum: [
+                  "pending",
+                  "active",
+                  "inactive",
+                  "suspended",
+                  "closed",
+                  "declined",
+                ],
+              },
+              country: {
+                maxLength: 2,
+                minLength: 2,
+                type: "string",
+                description: "ISO 3166-1 alpha-2 country code",
+                readOnly: true,
+              },
+              currency: {
+                maxLength: 3,
+                minLength: 3,
+                type: "string",
+                description: "ISO 4217 currency code",
+              },
+              alias: {
+                maxLength: 30,
+                type: "string",
+                description:
+                  "alias of account, refer to Accounts section in Guides for details",
+              },
+              routingCodes: {
+                type: "object",
+                description:
+                  "routing codes of account as map, refer to Accounts section in Guides for details",
+                readOnly: true,
+              },
+              iban: {
+                maxLength: 31,
+                minLength: 15,
+                pattern:
+                  "^[a-zA-Z]{2}[0-9]{2}[a-zA-Z0-9]{4}[0-9]{4}([a-zA-Z0-9]?){3,19}$|^[A-Z]{2}\\d{5}[0-9A-Z]{13}$",
+                type: "string",
+                description: "iban assigned to account",
+                nullable: true,
+                readOnly: true,
+              },
+              accountNumber: {
+                maxLength: 20,
+                minLength: 8,
+                pattern: "^[0-9]{8,20}$",
+                type: "string",
+                description: "account number assigned to account",
+                nullable: true,
+                readOnly: true,
+              },
+              ledgerNumber: {
+                maxLength: 8,
+                minLength: 8,
+                pattern: "^[0-9]{8,8}$",
+                type: "string",
+                description:
+                  "unique ledger number of account generated internally",
+                readOnly: true,
+              },
+              availableBalance: {
+                type: "number",
+                description: "available balance of account",
+                format: "double",
+                readOnly: true,
+              },
+              receivableBalance: {
+                type: "number",
+                description: "receivable balance of account",
+                format: "double",
+                readOnly: true,
+              },
+              payableBalance: {
+                type: "number",
+                description: "payable balance of account",
+                format: "double",
+                readOnly: true,
+              },
+              accountHolderIdentityType: {
+                type: "string",
+                description: "type of account holder client's identity",
+                readOnly: true,
+                enum: ["corporate", "individual"],
+              },
+              serviceProvider: {
+                type: "string",
+                description: "service provider which this account connected to",
+                readOnly: true,
+              },
+              mainAccountId: {
+                type: "string",
+                description:
+                  "the main account id which the given account is linked to",
+                format: "uuid",
+                readOnly: true,
+              },
+            },
+          },
+          sourceId: {
+            type: "string",
+            description:
+              "id of the account to be migrated, required if workflow is migration",
+            writeOnly: true,
+          },
+        },
+      },
+      connect: {
+        required: ["type"],
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            description: "service provider selection type",
+            enum: ["explicit"],
+          },
+          serviceProvider: {
+            type: "string",
+            description: "account is connected to this service provider",
+          },
+        },
+      },
+      metadata: {
+        type: "object",
+      },
+    },
+  },
+  examples: {
+    "client-issuing": {
+      description: "client-issuing",
+    },
+    "client-migration": {
+      description: "client-migration",
     },
   },
 };

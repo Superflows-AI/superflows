@@ -5,6 +5,7 @@ import { Action } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
 import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
+import { fillNoChoiceRequiredParams } from "../actionUtils";
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -60,11 +61,11 @@ export function constructHttpRequest({
 
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
-    const { properties, schema } = bodyPropertiesFromRequestBodyContents(
+    const schema = bodyPropertiesFromRequestBodyContents(
       action.request_body_contents
     );
-    console.log("properties:", JSON.stringify(properties));
-    const body = buildBody(schema, properties, parameters);
+    const allParams = fillNoChoiceRequiredParams(parameters, schema);
+    const body = buildBody(schema, allParams);
     requestOptions.body = JSON.stringify(body);
   }
 
@@ -132,10 +133,7 @@ export function constructHttpRequest({
 
 export function bodyPropertiesFromRequestBodyContents(
   requestBodyContents: Json
-): {
-  properties: { [name: string]: OpenAPIV3_1.SchemaObject };
-  schema: OpenAPIV3.SchemaObject;
-} {
+): OpenAPIV3.SchemaObject {
   const reqBodyContents = requestBodyContents as unknown as {
     [media: string]: MediaTypeObject;
   };
@@ -150,32 +148,23 @@ export function bodyPropertiesFromRequestBodyContents(
     );
   }
 
-  const schema = applicationJson.schema as OpenAPIV3.SchemaObject;
-  const properties = schema.properties as {
-    [name: string]: OpenAPIV3_1.SchemaObject;
-  };
-  return { properties, schema };
+  return applicationJson.schema as OpenAPIV3.SchemaObject;
 }
 
 function buildBody(
   schema: OpenAPIV3.SchemaObject,
-  properties: { [name: string]: OpenAPIV3_1.SchemaObject },
   parameters: Record<string, unknown>
 ): { [x: string]: any } {
-  const required = schema.required ?? [];
+  const properties = schema.properties as {
+    [name: string]: OpenAPIV3_1.SchemaObject;
+  };
+  console.log("properties:", JSON.stringify(properties));
 
   const bodyArray = Object.entries(properties).map(([name, property]) => {
     // Throw out readonly attributes
     if (property.readOnly) return undefined;
     if (parameters[name]) {
       return { [name]: parameters[name] };
-    } else if (
-      // If the parameter is a required enum with 1 value
-      property.enum &&
-      property.enum.length === 1 &&
-      required.includes(name)
-    ) {
-      return { [name]: property.enum[0] };
     }
   });
   return Object.assign({}, ...bodyArray);
