@@ -21,10 +21,18 @@ E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product an
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
 
-### Readme nav
 
-[Features](#features) | [Setup](#setup) | [Development](#development)
+## Setup
 
+Setup involves three steps:
+
+1. Upload API specification
+2. Test in the playground
+3. Integrate into your product in 1 line of code
+
+### Roadmap
+
+[Available here.](https://docs.superflows.ai/blog/roadmap)
 
 ## Features
 
@@ -32,20 +40,23 @@ You can try out the cloud version for free [**here**](https://dashboard.superflo
 - Public streaming API
 - Answers in the same language the question is asked in
 - UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
+- Upload API specifications for fast set up
+- Connect to multiple APIs with different hosts
+- Track usage in dashboard
 
 ### Dashboard
 
 Superflows has a testing dashboard where you can configure, evaluate and debug your AI assistant before putting it into production. 
 
-You can interact with your assistant on the 'Playground'. 'Developer mode' shows you under the hood of what the assistant is thinking and planning. 'Mock API responses' generates fake data, enabling you to check the behaviour of the assistant without connecting it to an API. 
+You can interact with your assistant on the <b>'Playground'</b>. <b>'Developer mode'</b> shows you under the hood of what the assistant is thinking and planning. <b>'Mock API responses'</b> enables you to check the behaviour of the assistant without connecting it to an API. 
 
-<img src="public/crm-ai.png" width="500px" alt="Superflows Logo" />
+<img src="public/sf-crm-ai-corner.png" width="500px" alt="Superflows playground" />
 
 The 'Actions' page lets you control which API endpoints your assistant can call to answer user queries in a simple dashboard.
 
 These endpoints can easily be uploaded via an Open API Specification, or entered manually. 
 
-<img src="public/sf-actions.png" width="500px" alt="Superflows Logo" />
+<img src="public/sf-actions-corner.png" width="500px" alt="Superflows actions page" />
 
 
 ### API
@@ -56,21 +67,8 @@ Our API specification can be found at on our [documentation page](https://docs.s
 
 Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in a few lines of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
 
-<img src="public/superflows-sidebar.gif" width="500px" alt="Superflows Logo" />
+<img src="public/superflows-sidebar.gif" width="500px" alt="Superflows sidebar" />
 
-
-
-## Setup
-
-Setup involves three steps:
-
-1. Upload API specification
-2. Test in the playground
-3. Integrate into your product in a few lines of code
-
-### Roadmap
-
-[Available here.](https://docs.superflows.ai/blog/roadmap)
 
 ## Development
 
