@@ -25,7 +25,7 @@ export async function getMissingArgCorrections(
   let bodyRequired: string[] = [];
 
   if (action.request_body_contents) {
-    const { schema } = bodyPropertiesFromRequestBodyContents(
+    const schema = bodyPropertiesFromRequestBodyContents(
       action.request_body_contents
     );
     bodyRequired = schema?.required || [];

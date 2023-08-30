@@ -49,7 +49,7 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
   }
 }
 
-export function unpackAndCall<Args extends object>(
+export function unpackAndCall(
   func: ((...args: any[]) => any) | undefined,
   obj: {
     [p: string]: any;

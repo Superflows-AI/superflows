@@ -8,22 +8,20 @@ import {
   exampleRequestBody1,
   exampleRequestBody2,
   exampleRequestBody3,
-  realWorldExampleSchema,
+  realWorldExampleSchema1,
+  realWorldExampleSchema2,
 } from "./testData";
 import { OpenAPIV3_1 } from "openapi-types";
 
 describe("formatReqBodySchema", () => {
-  it("real-world example", () => {
+  it("real-world example 1", () => {
     const out = formatReqBodySchema(
-      realWorldExampleSchema.schema as OpenAPIV3_1.SchemaObject
+      realWorldExampleSchema1.schema as OpenAPIV3_1.SchemaObject
     );
-    // TODO: There's a bug here. We shouldn't require an object if all
-    //  its children are enums with 1 value. We also probably want to
-    //  simplify the data.exchange object so it's less nested and complex.
-    //  It should probably be a top-level object instead, but this requires
-    //  changing how parameters are parsed from the GPT response.
+    // We probably want to simplify the data.exchange object so it's less
+    // nested and complex. It should probably be a top-level object instead,
+    // but this requires changing how parameters are parsed from the GPT response.
     expect(out).toEqual(`
-- workflow (object) REQUIRED
 - data (object) REQUIRED
 \t- exchange (object) REQUIRED
 \t\t- serviceProviderConfiguration (object)
@@ -57,9 +55,23 @@ describe("formatReqBodySchema", () => {
 \t\t- cutOffDateTime (string): Exchange cut-off date time. REQUIRED
 \t\t- settlementDate (string): Calculated exchange settlement date. REQUIRED
 \t\t- status ("pending" | "on-hold" | "completed" | "cancelled" | "failed"): Status of Exchange. REQUIRED
-\t\t- cancellationFee (number): Cancellation fee.
+\t\t- cancellationFee (number): Cancellation fee.`);
+  });
+  it("real-world example 1", () => {
+    const out = formatReqBodySchema(
+      realWorldExampleSchema2.schema as OpenAPIV3_1.SchemaObject
+    );
+    expect(out).toEqual(`
+- workflow (object) REQUIRED
+\t- code ("client.issuing" | "client.sub-account" | "client.migration"): workflow code. REQUIRED
+- data (object) REQUIRED
+\t- account (object) REQUIRED
+\t\t- clientId (string): id of client. REQUIRED
+\t\t- currency (string): ISO 4217 currency code. REQUIRED
+\t\t- alias (string): alias of account, refer to Accounts section in Guides for details.
+\t- sourceId (string): id of the account to be migrated, required if workflow is migration.
 - connect (object) REQUIRED
-- metadata (object) REQUIRED`);
+\t- serviceProvider (string): account is connected to this service provider.`);
   });
 });
 

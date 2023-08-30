@@ -2,6 +2,7 @@ import { ChatGPTMessage } from "../models";
 import { Action } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
 import { getJsonMIMEType } from "../edge-runtime/utils";
+import { isChoiceRequired } from "../actionUtils";
 
 export function formatDescription(
   description: string | undefined | null
@@ -68,9 +69,10 @@ export function formatReqBodySchema(
       // Throw out readonly attributes
       if (value.readOnly) return;
 
-      // Below case is cursed - it's for when a required parameter is an enum with only one value
+      // Below case is when no choice is required for a parameter - it's when
+      // a required parameter is an enum with only one value
       // We skip it since there's no decision to be made and it costs tokens
-      if (required.includes(key) && value.enum && value.enum.length === 1) {
+      if (!isChoiceRequired(value, required.includes(key))) {
         return;
       }
 
