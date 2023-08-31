@@ -5,7 +5,7 @@ import {
 } from "../../lib/actionUtils";
 import { OpenAPIV3_1 } from "openapi-types";
 
-const nothingToFillSchema1 = {
+const simpleSchemaWithChoice1 = {
   type: "object",
   properties: {
     code: {
@@ -15,7 +15,7 @@ const nothingToFillSchema1 = {
   },
 } as OpenAPIV3_1.SchemaObject;
 
-const nothingToFillSchema2 = {
+const simpleSchemaWithChoice2 = {
   type: "object",
   required: ["code"],
   properties: {
@@ -110,12 +110,12 @@ const complexSchema2 = {
 } as OpenAPIV3_1.SchemaObject;
 
 describe("isChoiceRequired", () => {
-  it("nothing to fill 1", () => {
-    const out = isChoiceRequired(nothingToFillSchema1);
+  it("simple schema with choice 1", () => {
+    const out = isChoiceRequired(simpleSchemaWithChoice1);
     expect(out).toBe(true);
   });
-  it("nothing to fill 2", () => {
-    const out = isChoiceRequired(nothingToFillSchema2);
+  it("simple schema with choice 2", () => {
+    const out = isChoiceRequired(simpleSchemaWithChoice2);
     expect(out).toBe(true);
   });
   it("no choice required - simple", () => {
@@ -171,13 +171,13 @@ describe("isChoiceRequired", () => {
 });
 
 describe("getFilledNoChoiceRequiredFields", () => {
-  it("nothing to fill 1", () => {
-    const out = getFilledNoChoiceRequiredFields(nothingToFillSchema1);
+  it("simple schema with choice 1", () => {
+    const out = getFilledNoChoiceRequiredFields(simpleSchemaWithChoice1);
     expect(out).toEqual(null);
   });
 
-  it("nothing to fill 2", () => {
-    const out = getFilledNoChoiceRequiredFields(nothingToFillSchema2);
+  it("simple schema with choice 2", () => {
+    const out = getFilledNoChoiceRequiredFields(simpleSchemaWithChoice2);
     expect(out).toEqual(null);
   });
 
@@ -203,18 +203,18 @@ describe("getFilledNoChoiceRequiredFields", () => {
 });
 
 describe("fillNoChoiceRequiredParams", () => {
-  it("nothing to fill 1", () => {
+  it("simple schema with choice 1", () => {
     const out = fillNoChoiceRequiredParams(
       { code: "inv" },
-      nothingToFillSchema1
+      simpleSchemaWithChoice1
     );
     expect(out).toEqual({ code: "inv" });
   });
 
-  it("nothing to fill 2", () => {
+  it("simple schema with choice 2", () => {
     const out = fillNoChoiceRequiredParams(
       { code: "external" },
-      nothingToFillSchema2
+      simpleSchemaWithChoice2
     );
     expect(out).toEqual({ code: "external" });
   });
