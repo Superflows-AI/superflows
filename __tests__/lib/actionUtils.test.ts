@@ -37,6 +37,20 @@ const simpleSchema = {
   },
 } as OpenAPIV3_1.SchemaObject;
 
+const twoParamsSchema = {
+  required: ["code", "metadata"],
+  type: "object",
+  properties: {
+    code: {
+      type: "string",
+      enum: ["external", "internal"],
+    },
+    metadata: {
+      type: "object",
+    },
+  },
+} as OpenAPIV3_1.SchemaObject;
+
 const complexSchema1 = {
   required: ["workflow", "data"],
   type: "object",
@@ -108,6 +122,14 @@ describe("isChoiceRequired", () => {
     const out = isChoiceRequired(simpleSchema);
     expect(out).toBe(false);
   });
+  it("choice required - two param", () => {
+    const out = isChoiceRequired(twoParamsSchema);
+    expect(out).toBe(true);
+  });
+  it("no choice required - two param, object with no other schema", () => {
+    const out = isChoiceRequired(twoParamsSchema.properties!.metadata);
+    expect(out).toBe(false);
+  });
   it("complex 1 - outer", () => {
     const out = isChoiceRequired(complexSchema1);
     expect(out).toBe(true);
@@ -151,17 +173,22 @@ describe("isChoiceRequired", () => {
 describe("getFilledNoChoiceRequiredFields", () => {
   it("nothing to fill 1", () => {
     const out = getFilledNoChoiceRequiredFields(nothingToFillSchema1);
-    expect(out).toEqual({});
+    expect(out).toEqual(null);
   });
 
   it("nothing to fill 2", () => {
     const out = getFilledNoChoiceRequiredFields(nothingToFillSchema2);
-    expect(out).toEqual({});
+    expect(out).toEqual(null);
   });
 
   it("simple schema", () => {
     const out = getFilledNoChoiceRequiredFields(simpleSchema);
     expect(out).toEqual({ code: "external" });
+  });
+
+  it("two params schema", () => {
+    const out = getFilledNoChoiceRequiredFields(twoParamsSchema);
+    expect(out).toEqual({ metadata: {} });
   });
 
   it("complex schema 1", () => {
