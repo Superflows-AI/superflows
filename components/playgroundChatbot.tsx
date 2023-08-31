@@ -250,13 +250,6 @@ export default function PlaygroundChatbot(props: {
     ]
   );
 
-  useEffect(() => {
-    const ele = document.getElementById("scrollable-chat-contents");
-    if (ele) {
-      ele.scrollTop = ele.scrollHeight;
-    }
-  }, [devChatContents]);
-
   return (
     <div className="flex w-full h-full flex-1 flex-col divide-y divide-gray-200 bg-gray-50">
       {/* Header */}
@@ -302,7 +295,7 @@ export default function PlaygroundChatbot(props: {
       {/* Scrollable chat window */}
       <div
         className="relative flex-1 overflow-y-auto h-full flex flex-col pb-1 pt-36 px-8 md:px-10 lg:px-14 xl:px-20"
-        id={"scrollable-chat-contents"}
+        id={"sf-scrollable-chat-contents"}
       >
         {profile &&
           process.env.NODE_ENV === "production" &&

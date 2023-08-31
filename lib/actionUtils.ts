@@ -41,6 +41,10 @@ export function getFilledNoChoiceRequiredFields(
   if (!schema || schema.type !== "object" || !parentRequired) {
     return null;
   }
+  // Below is for case where it's an object schema but that's all you know
+  if (Object.keys(schema).length === 1) {
+    return {};
+  }
 
   let filledObject: any = {};
   const requiredKeys = schema.required || [];
@@ -58,13 +62,13 @@ export function getFilledNoChoiceRequiredFields(
         childSchema,
         isKeyRequired
       );
-      if (filledChildObject && Object.keys(filledChildObject).length > 0) {
+      if (filledChildObject) {
         filledObject[key] = filledChildObject;
       }
     }
   }
 
-  return filledObject;
+  return Object.keys(filledObject).length > 0 ? filledObject : null;
 }
 
 export function fillNoChoiceRequiredParams<

@@ -342,7 +342,7 @@ export default async function handler(req: NextRequest) {
 
     console.log(
       `${activeActions.length} active actions found: ${JSON.stringify(
-        activeActions
+        activeActions.map((a) => a.name)
       )}`
     );
     const currentHost =
