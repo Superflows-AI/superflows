@@ -9,7 +9,7 @@ export function isChoiceRequired(
    * value (or all nested children are like this) **/
   if (!parentRequired) return true;
   if (schema.type !== "object") {
-    return !(schema.enum && schema.enum.length === 1) ?? true;
+    return !(schema.enum && schema.enum.length === 1);
   }
 
   const requiredKeys = schema.required || [];
@@ -75,6 +75,8 @@ export function fillNoChoiceRequiredParams<
   Params extends Record<string, unknown>,
   Output extends Params
 >(paramsFromAI: Params, schema: OpenAPIV3_1.SchemaObject): Output {
+  /** Combines the parameters from the AI with parameters where no
+   * choice is required by the AI. **/
   const noChoiceParams = getFilledNoChoiceRequiredFields(schema);
   return combineParams(paramsFromAI, noChoiceParams);
 }
