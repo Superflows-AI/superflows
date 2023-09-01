@@ -119,7 +119,7 @@ export default async function handler(req: NextRequest) {
     }
 
     // Authenticate that the user is allowed to use this API
-    let orgApiKey = req.headers
+    const orgApiKey = req.headers
       .get("Authorization")
       ?.replace("Bearer ", "")
       .replace("bearer ", "");
@@ -299,7 +299,7 @@ export default async function handler(req: NextRequest) {
       .eq("actions.active", true);
     if (actionTagResp.error) throw new Error(actionTagResp.error.message);
     const actionsWithTags = actionTagResp.data;
-    let activeActions = actionsWithTags!
+    const activeActions = actionsWithTags!
       .map((tag) => {
         const currentHost =
           req.headers.get("x-forwarded-proto") +
@@ -401,7 +401,7 @@ export default async function handler(req: NextRequest) {
           const { error: error2 } = await supabase.from("usage").insert({
             org_id: org!.id,
             usage: cost,
-            num_user_queries: numUserQueries,
+            num_user_queries: isPlayground ? 0 : numUserQueries,
           });
           if (error2) throw new Error(error2.message);
         }
@@ -450,7 +450,7 @@ async function Angela( // Good ol' Angela
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  let nonSystemMessages = [...previousMessages];
+  const nonSystemMessages = [...previousMessages];
 
   function streamInfo(step: StreamingStepInput) {
     controller.enqueue(
