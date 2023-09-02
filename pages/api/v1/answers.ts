@@ -14,6 +14,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import {
   DBChatMessageToGPT,
+  getFreeTierUsage,
   MessageInclSummaryToGPT,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
@@ -39,8 +40,6 @@ import {
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import suggestions1 from "../../../public/presets/1/suggestions.json";
-import suggestions2 from "../../../public/presets/2/suggestions.json";
 import summarizeText from "../../../lib/edge-runtime/summarize";
 
 export const config = {
@@ -169,28 +168,8 @@ export default async function handler(req: NextRequest) {
       process.env.NODE_ENV === "production" &&
       (org.is_paid.length === 0 || !org.is_paid[0].is_premium)
     ) {
-      // The number of first messages sent by the organization's users
-      // This count is just for free tier users. All messages should count to avoid spam.
-      // For paying customers, we only count full AI responses against their usage (see below).
-      const usageRes = await supabase
-        .from("chat_messages")
-        .select("*", { count: "estimated" })
-        .eq("conversation_index", 0)
-        .eq("org_id", org.id)
-        .eq("role", "user");
-      if (usageRes.error) throw new Error(usageRes.error.message);
-      let numQueriesMade = usageRes.count ?? 0;
-      const messagesSent = usageRes.data.map((message) => message.content);
-      // This accounts for the suggestions of a preset. The preset adds 3 messages to the DB
-      if (
-        numQueriesMade &&
-        (suggestions1.every((s) => messagesSent.includes(s)) ||
-          suggestions2.every((s) => messagesSent.includes(s)))
-      ) {
-        // 3 suggestions, so reduce by 3
-        numQueriesMade -= 3;
-      }
-      if (numQueriesMade >= USAGE_LIMIT) {
+      const { overLimit } = await getFreeTierUsage(supabase, org.id);
+      if (overLimit) {
         return new Response(
           JSON.stringify({
             error: `You have reached your usage limit of ${USAGE_LIMIT} messages. Upgrade to premium to get unlimited messages.`,
