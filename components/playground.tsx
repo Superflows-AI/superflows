@@ -3,10 +3,17 @@ import { useEffect, useState } from "react";
 import { useProfile } from "./contextManagers/profile";
 import PlaygroundChatbot from "./playgroundChatbot";
 import Toggle from "./toggle";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  QuestionMarkCircleIcon,
+} from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
 import { Api } from "../lib/types";
 import { useRouter } from "next/router";
+import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
+import suggestions1 from "../public/presets/1/suggestions.json";
+import suggestions2 from "../public/presets/2/suggestions.json";
+import { getFreeTierUsage } from "../lib/edge-runtime/utils";
 
 export default function Playground() {
   const supabase = useSupabaseClient();
@@ -64,10 +71,74 @@ export default function Playground() {
     })();
   }, [profile]);
 
+  // Get the usage count for the user
+  const [usageLevel, setUsageLevel] = useState<number>(0);
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      // Get the usage count for the user
+      if (
+        profile?.organizations!.is_paid.length === 0 ||
+        !profile?.organizations!.is_paid[0].is_premium
+      ) {
+        const { numQueriesMade } = await getFreeTierUsage(
+          supabase,
+          profile!.org_id!
+        );
+        setUsageLevel(numQueriesMade);
+      }
+    })();
+  }, [profile]);
+
   return (
     <>
       <div className="fixed bottom-0 left-0 top-16 z-10 flex w-40 md:w-56 lg:w-72 flex-col border-t border-gray-700">
-        <div className="relative bg-gray-800 flex flex-1 flex-col gap-y-5 overflow-y-auto border-gray-700 px-6 pb-4"></div>
+        <div className="relative bg-gray-800 flex flex-1 flex-col overflow-y-auto border-gray-700 px-6 pb-4">
+          <h2 className="text-lg text-gray-200 mt-8">Playground</h2>
+          <p className="text-gray-400 text-sm mt-1.5">
+            This is the playground for testing your AI assistant before
+            deploying it to production. Try the kinds of queries your users will
+            ask and see how it responds.
+          </p>
+          <a
+            className="hover:underline mt-2 px-1.5 py-0.5 w-fit flex bg-gray-700 rounded-md border border-gray-600 flex-row text-gray-300 text-little place-items-center gap-x-1.5"
+            href={
+              "https://docs.superflows.ai/docs/getting-started/playground-testing"
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            Learn more
+          </a>
+        </div>
+        {profile &&
+          process.env.NODE_ENV === "production" &&
+          (profile?.organizations!.is_paid.length === 0 ||
+            !profile?.organizations!.is_paid[0].is_premium) && (
+            <div
+              className={classNames(
+                "absolute bottom-0 inset-x-0 flex flex-col justify-center place-items-center border-0 min-h-20 px-6 py-3 bg-gray-900",
+                USAGE_LIMIT - usageLevel < 5 ? "text-red-500" : "text-gray-200"
+              )}
+            >
+              <p>
+                You&apos;ve used{" "}
+                <b className="inline">
+                  {usageLevel}/{USAGE_LIMIT}
+                </b>{" "}
+                of the free-tier limit.
+              </p>
+              {USAGE_LIMIT <= usageLevel && (
+                <a
+                  href={PRICING_PAGE}
+                  className="mt-4 hover:underline text-blue-600"
+                >
+                  Upgrade to premium
+                </a>
+              )}
+            </div>
+          )}
       </div>
       <main className="fixed inset-x-40 md:inset-x-56 lg:inset-x-72 top-16 bottom-0">
         <PlaygroundChatbot
@@ -80,16 +151,17 @@ export default function Playground() {
               apis.some((api) => !api.api_host) &&
               !mockApiResponses)
               ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
-                  numActions ||
-                  (apis?.length && apis.some((api) => !api.api_host)) ||
-                  mockApiResponses
+                  !numActions &&
+                  ((apis?.length && apis.some((api) => !api.api_host)) ||
+                    !mockApiResponses)
                     ? ""
                     : " and"
                 }${
-                  (apis?.length && apis.some((api) => !api.api_host)) ||
-                  mockApiResponses
-                    ? "."
-                    : " API hosts (Actions) or mock API responses."
+                  apis?.length &&
+                  apis.some((api) => !api.api_host) &&
+                  !mockApiResponses
+                    ? " API hosts (Actions) or mock API responses."
+                    : "."
                 }`
               : ""
           }

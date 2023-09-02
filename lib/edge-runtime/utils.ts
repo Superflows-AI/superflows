@@ -1,7 +1,11 @@
 import { getTokenCount } from "../utils";
 import { ChatGPTMessage, GPTMessageInclSummary } from "../models";
 import { DBChatMessage } from "../types";
-import { MAX_TOKENS_OUT } from "../consts";
+import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
+import suggestions1 from "../../public/presets/1/suggestions.json";
+import suggestions2 from "../../public/presets/2/suggestions.json";
+import { SupabaseClient } from "@supabase/auth-helpers-react";
+import { Database } from "../database.types";
 
 export function DBChatMessageToGPT(
   message: DBChatMessage
@@ -105,4 +109,31 @@ export function getHeader(
   }
   // @ts-ignore
   return headers[name] || headers[name.toLowerCase()] || null;
+}
+
+export async function getFreeTierUsage(
+  supabase: SupabaseClient<Database>,
+  orgId: number
+): Promise<{ overLimit: boolean; numQueriesMade: number }> {
+  // The number of first messages sent by the organization's users
+  // This count is just for free tier users. All messages should count to avoid spam.
+  // For paying customers, we only count full AI responses against their usage (see below).
+  const usageRes = await supabase
+    .from("chat_messages")
+    .select("*", { count: "exact" })
+    .eq("org_id", orgId)
+    .eq("role", "user");
+  if (usageRes.error) throw new Error(usageRes.error.message);
+  let numQueriesMade = usageRes.count ?? 0;
+  const messagesSent = usageRes.data.map((message) => message.content);
+  // This accounts for the suggestions of a preset. The preset adds 3 messages to the DB
+  if (
+    numQueriesMade &&
+    (suggestions1.every((s) => messagesSent.includes(s)) ||
+      suggestions2.every((s) => messagesSent.includes(s)))
+  ) {
+    // 3 suggestions, so reduce by 3
+    numQueriesMade -= 3;
+  }
+  return { overLimit: numQueriesMade >= USAGE_LIMIT, numQueriesMade };
 }
