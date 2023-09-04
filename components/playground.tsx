@@ -149,9 +149,10 @@ export default function Playground() {
             // One API doesn't have an API host
             (apis?.length &&
               apis.some((api) => !api.api_host) &&
-              !mockApiResponses)
+              !mockApiResponses) ||
+            !userApiKey
               ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
-                  !numActions &&
+                  numActions &&
                   ((apis?.length && apis.some((api) => !api.api_host)) ||
                     !mockApiResponses)
                     ? ""
@@ -160,9 +161,18 @@ export default function Playground() {
                   apis?.length &&
                   apis.some((api) => !api.api_host) &&
                   !mockApiResponses
-                    ? " API hosts (Actions) or mock API responses."
-                    : "."
-                }`
+                    ? " API hosts (Actions), or mock API responses"
+                    : ""
+                }${
+                  !userApiKey &&
+                  (!numActions ||
+                    // One API doesn't have an API host
+                    (apis?.length &&
+                      apis.some((api) => !api.api_host) &&
+                      !mockApiResponses))
+                    ? " and"
+                    : ""
+                }${!userApiKey ? " an API key" : ""}`
               : ""
           }
           mockAPIresponses={!!mockApiResponses}
@@ -234,7 +244,12 @@ export default function Playground() {
             Authorization header.
           </p>
           <input
-            className="rounded mt-2 px-2 py-1 w-full"
+            className={classNames(
+              "rounded mt-2 px-2 py-1 w-full border border-solid",
+              !userApiKey
+                ? "border-red-500 ring-2 ring-offset-2 ring-red-400 ring-offset-gray-900"
+                : "border-transparent"
+            )}
             value={userApiKey}
             onChange={(e) => setUserApiKey(e.target.value)}
             onBlur={() => {

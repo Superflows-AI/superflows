@@ -59,7 +59,7 @@ export default function PlaygroundChatbot(props: {
       {/* Header */}
       <div
         className={classNames(
-          `pt-6 px-3 pb-4`,
+          `pt-8 px-3 pb-6`,
           "text-gray-900 border-b-2 border-gray-200 bg-gray-50"
         )}
       >
@@ -82,7 +82,7 @@ export default function PlaygroundChatbot(props: {
           </h1>
         </div>
       </div>
-      <div className="h-full w-full px-4">
+      <div className="flex flex-1 overflow-auto px-8 md:px-10 lg:px-14 xl:px-20">
         <SuperflowsChat
           superflowsApiKey={profile!.organizations!.api_key}
           superflowsUrl={location.origin}
@@ -99,7 +99,7 @@ export default function PlaygroundChatbot(props: {
           <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2">
             <p
               className={classNames(
-                "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-little font-semibold",
+                "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-little font-medium",
                 !props.submitErrorMessage ? "invisible" : "visible"
               )}
             >
