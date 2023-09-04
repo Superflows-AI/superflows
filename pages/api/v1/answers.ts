@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
@@ -41,6 +41,7 @@ import {
   openAiCost,
 } from "../../../lib/utils";
 import summarizeText from "../../../lib/edge-runtime/summarize";
+import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 export const config = {
   runtime: "edge",
@@ -157,11 +158,20 @@ export default async function handler(req: NextRequest) {
       });
     }
 
-    const isPlayground =
-      (req.headers.get("sessionToken") &&
-        (await supabase.auth.getUser(req.headers.get("sessionToken")!))?.data
-          ?.user?.aud === "authenticated") ||
-      false;
+    // Check the cookie to see if the user is logged in via supabase (in playground) or not
+    // This determines whether to increment usage or not
+    let isPlayground: boolean;
+    const cookie = req.headers.get("cookie");
+    if (cookie) {
+      const res = NextResponse.next();
+      const authSupa = createMiddlewareSupabaseClient({ req, res });
+      const {
+        data: { session },
+      } = await authSupa.auth.getSession();
+      isPlayground = !!(session && session.user);
+    } else {
+      isPlayground = false;
+    }
 
     // Check that the user hasn't surpassed the usage limit
     if (
