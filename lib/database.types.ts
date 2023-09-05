@@ -261,6 +261,34 @@ export interface Database {
           }
         ];
       };
+      finetuned_models: {
+        Row: {
+          created_at: string;
+          id: string;
+          openai_name: string;
+          org_id: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          openai_name?: string;
+          org_id: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          openai_name?: string;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "finetuned_models_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       is_paid: {
         Row: {
           id: number;

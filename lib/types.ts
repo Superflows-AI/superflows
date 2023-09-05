@@ -28,4 +28,9 @@ export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
 export type IsPaid = Database["public"]["Tables"]["is_paid"]["Row"];
 
-export type OrgJoinIsPaid = Organization & { is_paid: IsPaid[] };
+type FinetunedModels = Database["public"]["Tables"]["finetuned_models"]["Row"];
+
+export type OrgJoinIsPaidFinetunedModels = Organization & {
+  is_paid: IsPaid[];
+  finetuned_models: FinetunedModels[];
+};
