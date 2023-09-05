@@ -53,9 +53,9 @@ export function removeOldestFunctionCalls(
   model: "3" | "3-16k" | "4",
   maxTokensOut: number = MAX_TOKENS_OUT
 ): ChatGPTMessage[] {
-  const maxTokens = model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192;
   /** Remove old function calls if over the context limit **/
   let tokenCount = getTokenCount(chatGptPrompt);
+  const maxTokens = model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192;
   const originalTokenCount = tokenCount;
   let numberRemoved = 0;
   // Keep removing until under the context limit

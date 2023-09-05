@@ -71,7 +71,8 @@ export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
 
 export async function streamOpenAIResponse(
   messages: ChatGPTMessage[],
-  params: ChatGPTParams = {}
+  params: ChatGPTParams = {},
+  model: string
 ): Promise<ReadableStream | { message: string; status: number } | null> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   const options = {
@@ -82,8 +83,7 @@ export async function streamOpenAIResponse(
     },
     // Use our default params, rather than OpenAI's when these aren't specified
     body: JSON.stringify({
-      // model: "gpt-3.5-turbo-0613",
-      model: "gpt-4-0613",
+      model,
       messages,
       ...defaultParams,
       ...params,
