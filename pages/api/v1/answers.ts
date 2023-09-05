@@ -31,8 +31,7 @@ import getMessages from "../../../lib/prompts/chatBot";
 import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
 import {
   ActionPlusApiInfo,
-  OrgJoinIsPaid,
-  Organization,
+  OrgJoinIsPaidFinetunedModels,
 } from "../../../lib/types";
 import {
   exponentialRetryWrapper,
@@ -142,11 +141,11 @@ export default async function handler(req: NextRequest) {
       }
     }
 
-    let org: OrgJoinIsPaid | null = null;
+    let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
       const authRes = await supabase
         .from("organizations")
-        .select("*, is_paid(*)")
+        .select("*, is_paid(*), finetuned_models(*)")
         .eq("api_key", orgApiKey);
       if (authRes.error) throw new Error(authRes.error.message);
       org = authRes.data?.[0] ?? null;
@@ -426,7 +425,7 @@ async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
   actions: ActionPlusApiInfo[],
-  org: Organization,
+  org: OrgJoinIsPaidFinetunedModels,
   conversationId: number,
   previousMessages: GPTMessageInclSummary[],
   language: string | null,
@@ -465,13 +464,16 @@ async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
+  const model = org.finetuned_models[0]?.openai_name ?? "gpt-4-0613";
+  // When this number is reached, we remove the oldest messages from the context window
+  const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
-        // To stop going over the context limit: only remember the last 20 messages
+        // To stop going over the context limit: only remember the last 'maxConvLength' messages
         nonSystemMessages
-          .slice(Math.max(0, nonSystemMessages.length - 20))
+          .slice(Math.max(0, nonSystemMessages.length - maxConvLength))
           // Set summaries to 'content' - don't show AI un-summarized output
           .map(MessageInclSummaryToGPT),
         actions,
@@ -479,9 +481,11 @@ async function Angela( // Good ol' Angela
         org,
         language
       );
-
       // If over context limit, remove oldest function calls
-      chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt], "4");
+      chatGptPrompt = removeOldestFunctionCalls(
+        [...chatGptPrompt],
+        model === "gpt-4-0613" ? "4" : "3"
+      );
 
       const promptInputCost = openAiCost(chatGptPrompt, "in");
       console.log("GPT input cost:", promptInputCost);
@@ -489,7 +493,7 @@ async function Angela( // Good ol' Angela
 
       const res = await exponentialRetryWrapper(
         streamOpenAIResponse,
-        [chatGptPrompt, completionOptions],
+        [chatGptPrompt, completionOptions, model],
         3
       );
       if (res === null || "message" in res) {
