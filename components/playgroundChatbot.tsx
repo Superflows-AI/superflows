@@ -1,12 +1,9 @@
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { SuperflowsChat } from "@superflows/chat-ui-react";
 import { useEffect, useRef, useState } from "react";
-import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
 import { classNames } from "../lib/utils";
-import suggestions1 from "../public/presets/1/suggestions.json";
-import suggestions2 from "../public/presets/2/suggestions.json";
 import { useProfile } from "./contextManagers/profile";
 import Toggle from "./toggle";
-import { SuperflowsChat } from "@superflows/chat-ui-react";
 
 export default function PlaygroundChatbot(props: {
   userApiKey: string;
@@ -99,7 +96,7 @@ export default function PlaygroundChatbot(props: {
           <div className="flex flex-shrink-0 w-full justify-between px-1 pb-4 pt-2">
             <p
               className={classNames(
-                "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-little font-medium",
+                "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-little font-medium text-center",
                 !props.submitErrorMessage ? "invisible" : "visible"
               )}
             >
