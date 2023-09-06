@@ -144,37 +144,12 @@ export default function Playground() {
         <PlaygroundChatbot
           userApiKey={userApiKey}
           userDescription={userDescription}
-          submitErrorMessage={
-            !numActions ||
-            // One API doesn't have an API host
-            (apis?.length &&
-              apis.some((api) => !api.api_host) &&
-              !mockApiResponses) ||
-            !userApiKey
-              ? `You need to add${numActions ? "" : " actions (Actions tab)"}${
-                  numActions &&
-                  ((apis?.length && apis.some((api) => !api.api_host)) ||
-                    !mockApiResponses)
-                    ? ""
-                    : " and"
-                }${
-                  apis?.length &&
-                  apis.some((api) => !api.api_host) &&
-                  !mockApiResponses
-                    ? " API hosts (Actions), or mock API responses"
-                    : ""
-                }${
-                  !userApiKey &&
-                  (!numActions ||
-                    // One API doesn't have an API host
-                    (apis?.length &&
-                      apis.some((api) => !api.api_host) &&
-                      !mockApiResponses))
-                    ? " and"
-                    : ""
-                }${!userApiKey ? " an API key" : ""}`
-              : ""
-          }
+          submitErrorMessage={getErrorMessage(
+            numActions,
+            apis,
+            mockApiResponses,
+            userApiKey
+          )}
           mockAPIresponses={!!mockApiResponses}
         />
       </main>
@@ -263,4 +238,21 @@ export default function Playground() {
       </div>
     </>
   );
+}
+
+function getErrorMessage(
+  numActions: number,
+  apis: Api[] | null,
+  mockApiResponses: boolean | null,
+  userApiKey: string
+): string {
+  // Error message is delivered in stages so that the user can fix one thing at a time
+  if (numActions === 0) return "You need to add actions (Actions tab)";
+
+  if (apis?.length && apis.some((api) => !api.api_host) && !mockApiResponses)
+    return "You need to add API hosts (Actions tab), or turn on mock API responses.";
+
+  if (!userApiKey && !mockApiResponses) return "You need to add an API key ->";
+
+  return "";
 }
