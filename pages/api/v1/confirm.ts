@@ -186,7 +186,8 @@ export default async function handler(req: NextRequest) {
     }
     // Override api_host if mock_api_responses is set to true
     const currentHost =
-      req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+      req.headers.get("x-forwarded-proto") ??
+      "http" + "://" + req.headers.get("host");
     const mockUrl = currentHost + "/api/mock";
     if (requestData.mock_api_responses) {
       console.log("Mocking API responses: overriding api_host to", mockUrl);
@@ -288,9 +289,8 @@ export default async function handler(req: NextRequest) {
           userApiKey: requestData.user_api_key,
         });
         const currentHost =
-          req.headers.get("x-forwarded-proto") +
-          "://" +
-          req.headers.get("host");
+          req.headers.get("x-forwarded-proto") ??
+          "http" + "://" + req.headers.get("host");
         let output = await makeHttpRequest(url, requestOptions, currentHost);
 
         console.log("http request:", JSON.stringify(output));
