@@ -290,9 +290,11 @@ export default async function handler(req: NextRequest) {
     const activeActions = actionsWithTags!
       .map((tag) => {
         const currentHost =
-          req.headers.get("x-forwarded-proto") +
-          "://" +
-          req.headers.get("host");
+          req.headers.get("x-forwarded-proto") ??
+          // fallback is safe according to nextjs
+          // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
+          "http" + "://" + req.headers.get("host");
+
         const mockUrl = currentHost + "/api/mock";
         // Store the api_host with each action
         return tag.actions.map((a) => ({
@@ -335,7 +337,10 @@ export default async function handler(req: NextRequest) {
       )}`
     );
     const currentHost =
-      req.headers.get("x-forwarded-proto") + "://" + req.headers.get("host");
+      // fallback is safe according to nextjs
+      // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
+      req.headers.get("x-forwarded-proto") ??
+      "http" + "://" + req.headers.get("host");
 
     const readableStream = new ReadableStream({
       async start(controller) {
