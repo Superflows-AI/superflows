@@ -3,7 +3,7 @@ export type Json =
   | number
   | boolean
   | null
-  | { [key: string]: Json }
+  | { [key: string]: Json | undefined }
   | Json[];
 
 export interface Database {
@@ -257,6 +257,40 @@ export interface Database {
             foreignKeyName: "conversations_org_id_fkey";
             columns: ["org_id"];
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      feedback: {
+        Row: {
+          conversation_id: number;
+          created_at: string | null;
+          id: number;
+          positive_feedback: boolean | null;
+          system_prompt: string;
+          user_message_idx: number | null;
+        };
+        Insert: {
+          conversation_id: number;
+          created_at?: string | null;
+          id?: number;
+          positive_feedback?: boolean | null;
+          system_prompt: string;
+          user_message_idx?: number | null;
+        };
+        Update: {
+          conversation_id?: number;
+          created_at?: string | null;
+          id?: number;
+          positive_feedback?: boolean | null;
+          system_prompt?: string;
+          user_message_idx?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "feedback_conversation_id_fkey";
+            columns: ["conversation_id"];
+            referencedRelation: "conversations";
             referencedColumns: ["id"];
           }
         ];
@@ -568,12 +602,6 @@ export interface Database {
             foreignKeyName: "objects_bucketId_fkey";
             columns: ["bucket_id"];
             referencedRelation: "buckets";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "objects_owner_fkey";
-            columns: ["owner"];
-            referencedRelation: "users";
             referencedColumns: ["id"];
           }
         ];
