@@ -226,6 +226,7 @@ export default async function handler(req: NextRequest) {
         .eq("conversation_id", requestData.conversation_id)
         .eq("org_id", org.id)
         .order("conversation_index", { ascending: true });
+
       if (convResp.error) throw new Error(convResp.error.message);
       const conversation = convResp.data.map(DBChatMessageToGPT);
 
@@ -474,6 +475,18 @@ async function Angela( // Good ol' Angela
   const model = org.model;
   // When this number is reached, we remove the oldest messages from the context window
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
+
+  // Store the system prompt in the feedback table so we can reconstruct it later
+  await supabase.from("feedback").insert({
+    system_prompt: getMessages(
+      [],
+      actions,
+      reqData.user_description,
+      org,
+      language
+    )[0].content,
+    conversation_id: conversationId,
+  });
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
