@@ -561,8 +561,9 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
+      const toUserCorrect: string[] = [];
       // Call endpoints here
-      const toConfirm: ToConfirm[] = (
+      const commandMapOutput = (
         await Promise.all(
           mostRecentParsedOutput.commands.map(async (command) => {
             console.log("Processing command: ", command);
@@ -579,7 +580,6 @@ async function Angela( // Good ol' Angela
 
             let needsUserCorrection = false;
 
-            const toUserCorrect = [];
             if (Object.keys(corrections).length > 0) {
               for (const [param, response] of Object.entries(corrections)) {
                 if (
@@ -590,6 +590,7 @@ async function Angela( // Good ol' Angela
                 ) {
                   command.args[param] = response;
                 } else {
+                  console.info("Needs user correction: ", param);
                   needsUserCorrection = true;
                   toUserCorrect.push(param);
                 }
@@ -597,19 +598,9 @@ async function Angela( // Good ol' Angela
             }
 
             if (needsUserCorrection) {
-              const correctionMessage = {
-                role: "assistant",
-                content:
-                  "<<[NEW-MESSAGE]>>" +
-                  "Tell user:\n" +
-                  "I'm sorry but I need more information before I can do that, please can you provide: " +
-                  toUserCorrect.join("\n"),
-              } as ChatGPTMessage;
-
-              nonSystemMessages.push(correctionMessage);
-              streamInfo(correctionMessage);
-
-              return { nonSystemMessages, cost: totalCost, numUserQueries };
+              // We check for nulls later in the .map() output to see if we need to ask
+              // the user for more information
+              return null;
             }
 
             const actionToHttpRequest: ActionToHttpRequest = {
@@ -663,7 +654,28 @@ async function Angela( // Good ol' Angela
             }
           })
         )
-      ).filter((x): x is ToConfirm => x !== undefined);
+      ).filter((x) => x !== undefined);
+
+      // Below checks for if there are any 'needs correction' messages
+      if (commandMapOutput.some((output) => output === null)) {
+        const correctionMessage = {
+          role: "assistant",
+          content:
+            "<<[NEW-MESSAGE]>>" +
+            "Tell user:\n" +
+            "I'm sorry but I need more information before I can do that, please can you provide: " +
+            toUserCorrect.join("\n"),
+        } as ChatGPTMessage;
+
+        nonSystemMessages.push(correctionMessage);
+        streamInfo(correctionMessage);
+        return { nonSystemMessages, cost: totalCost, numUserQueries };
+      }
+
+      // This is for typing purposes
+      const toConfirm: ToConfirm[] = commandMapOutput.filter(
+        (x): x is ToConfirm => x !== null
+      );
       awaitingConfirmation = toConfirm.length > 0;
       if (awaitingConfirmation) {
         streamInfo({
