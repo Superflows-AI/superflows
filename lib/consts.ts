@@ -17,4 +17,4 @@ export const PRESETS = [
   },
 ];
 
-export const MAX_TOKENS_OUT = 1000;
+export const MAX_TOKENS_OUT = 400;
