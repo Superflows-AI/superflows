@@ -265,24 +265,24 @@ export interface Database {
         Row: {
           conversation_id: number;
           created_at: string | null;
+          feedback_positive: boolean | null;
           id: number;
-          positive_feedback: boolean | null;
           system_prompt: string;
           user_message_idx: number | null;
         };
         Insert: {
           conversation_id: number;
           created_at?: string | null;
+          feedback_positive?: boolean | null;
           id?: number;
-          positive_feedback?: boolean | null;
           system_prompt: string;
           user_message_idx?: number | null;
         };
         Update: {
           conversation_id?: number;
           created_at?: string | null;
+          feedback_positive?: boolean | null;
           id?: number;
-          positive_feedback?: boolean | null;
           system_prompt?: string;
           user_message_idx?: number | null;
         };

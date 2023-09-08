@@ -477,7 +477,7 @@ async function Angela( // Good ol' Angela
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
   // Store the system prompt in the feedback table so we can reconstruct it later
-  await supabase.from("feedback").insert({
+  const { data, error } = await supabase.from("feedback").insert({
     system_prompt: getMessages(
       [],
       actions,
@@ -485,8 +485,9 @@ async function Angela( // Good ol' Angela
       org,
       language
     )[0].content,
-    conversation_id: conversationId,
+    conversation_id: 44,
   });
+  console.log("ahhhhhhhhhhhhh ", error?.message ?? "NOUGHT");
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {

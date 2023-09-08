@@ -14,7 +14,7 @@ export const config = {
 
 const FeedbackZod = z.object({
   conversation_id: z.number(),
-  feedback: z.boolean(),
+  feedback_positive: z.boolean(),
   user_message_idx: z.number(),
 });
 type FeedbackType = z.infer<typeof FeedbackZod>;
@@ -100,6 +100,9 @@ export default async function handler(req: NextRequest) {
       `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`
     );
 
+    console.log("requestDaaaaata", JSON.stringify(requestData));
+
+    // Get the most recent feedback entry matching the conversation ID
     const { data, error } = await supabase
       .from("feedback")
       .select("*")
@@ -109,15 +112,15 @@ export default async function handler(req: NextRequest) {
 
     if (error) throw new Error(error.message);
 
-    // Update the most recent entry
-    const { error: updateError } = await supabase
+    const { data: data2, error: updateError } = await supabase
       .from("feedback")
       .update({
-        feedback: requestData.feedback,
+        feedback_positive: requestData.feedback_positive,
         user_message_idx: requestData.user_message_idx,
       })
       .eq("id", data[0].id);
 
+    console.log("data2", data2);
     if (updateError) throw new Error(updateError.message);
 
     console.log("feedback updated successfully");
