@@ -13,7 +13,9 @@ export default function requestCorrectionPrompt(
 
   if (!paramDetails) {
     console.warn(
-      `Could not find missing parameter "${missingParam}" in action "${action.name}"`
+      `Could not find missing parameter "${missingParam}" in action "${action.name}.
+
+It should have no choice associated with it so should be being filled in automatically."`
     );
     return null;
   }
