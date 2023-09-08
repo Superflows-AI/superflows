@@ -14,6 +14,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { ToConfirm } from "./answers";
 import { ChatGPTMessage } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
+import { getHost } from "../../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
@@ -185,9 +186,8 @@ export default async function handler(req: NextRequest) {
       );
     }
     // Override api_host if mock_api_responses is set to true
-    const currentHost =
-      req.headers.get("x-forwarded-proto") ??
-      "http" + "://" + req.headers.get("host");
+    const currentHost = getHost(req);
+
     const mockUrl = currentHost + "/api/mock";
     if (requestData.mock_api_responses) {
       console.log("Mocking API responses: overriding api_host to", mockUrl);
@@ -288,9 +288,8 @@ export default async function handler(req: NextRequest) {
           organization: org!,
           userApiKey: requestData.user_api_key,
         });
-        const currentHost =
-          req.headers.get("x-forwarded-proto") ??
-          "http" + "://" + req.headers.get("host");
+
+        const currentHost = getHost(req);
         let output = await makeHttpRequest(url, requestOptions, currentHost);
 
         console.log("http request:", JSON.stringify(output));

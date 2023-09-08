@@ -6,6 +6,7 @@ import suggestions1 from "../../public/presets/1/suggestions.json";
 import suggestions2 from "../../public/presets/2/suggestions.json";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
+import { NextRequest } from "next/server";
 
 export function DBChatMessageToGPT(
   message: DBChatMessage
@@ -136,4 +137,11 @@ export async function getFreeTierUsage(
     numQueriesMade -= 3;
   }
   return { overLimit: numQueriesMade >= USAGE_LIMIT, numQueriesMade };
+}
+
+export function getHost(req: NextRequest) {
+  // fallback is safe according to nextjs
+  // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
+  const protocol = req.headers.get("x-forwarded-proto") ?? "http";
+  return protocol + "://" + req.headers.get("host");
 }
