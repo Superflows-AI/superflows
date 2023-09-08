@@ -18,15 +18,6 @@ alter table "public"."feedback" add constraint "feedback_conversation_id_fkey" F
 
 alter table "public"."feedback" validate constraint "feedback_conversation_id_fkey";
 
--- create policy "enable all operations based on org_id"
--- on "public"."feedback"
--- as permissive
--- for all
--- to authenticated
--- using ((auth.uid() IN ( SELECT profiles.id
---    FROM (profiles
---      JOIN conversations ON ((conversations.org_id = profiles.org_id)))
---   WHERE (conversations.id = feedback.conversation_id))));
 
 CREATE POLICY "enable all operations based on org_id"
 ON "public"."feedback"

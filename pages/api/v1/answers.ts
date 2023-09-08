@@ -15,6 +15,7 @@ import {
 import {
   DBChatMessageToGPT,
   getFreeTierUsage,
+  getHost,
   MessageInclSummaryToGPT,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
@@ -290,11 +291,7 @@ export default async function handler(req: NextRequest) {
     const actionsWithTags = actionTagResp.data;
     const activeActions = actionsWithTags!
       .map((tag) => {
-        const currentHost =
-          req.headers.get("x-forwarded-proto") ??
-          // fallback is safe according to nextjs
-          // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
-          "http" + "://" + req.headers.get("host");
+        const currentHost = getHost(req);
 
         const mockUrl = currentHost + "/api/mock";
         // Store the api_host with each action
@@ -337,11 +334,7 @@ export default async function handler(req: NextRequest) {
         activeActions.map((a) => a.name)
       )}`
     );
-    const currentHost =
-      // fallback is safe according to nextjs
-      // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
-      req.headers.get("x-forwarded-proto") ??
-      "http" + "://" + req.headers.get("host");
+    const currentHost = getHost(req);
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -485,9 +478,8 @@ async function Angela( // Good ol' Angela
       org,
       language
     )[0].content,
-    conversation_id: 44,
+    conversation_id: conversationId,
   });
-  console.log("ahhhhhhhhhhhhh ", error?.message ?? "NOUGHT");
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
