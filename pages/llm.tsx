@@ -29,11 +29,14 @@ const allLLMs: SelectBoxOption[] = [
 ];
 
 if (process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT) {
+  console.log("Adding fine-tuned LLM to list");
   allLLMs.unshift({
     id: process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT,
     name: "Fine-tuned GPT-3.5",
     description: "Speed: 3/3 | Accuracy: 2/3",
   });
+} else {
+  console.log("NOT adding fine-tuned LLM to list");
 }
 
 function Dashboard() {
