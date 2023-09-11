@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navbar } from "../components/navbar";
 import Headers from "../components/headers";
 import { useProfile } from "../components/contextManagers/profile";
@@ -29,23 +29,27 @@ const allLLMs: SelectBoxOption[] = [
 ];
 
 if (process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT) {
-  console.log("Adding fine-tuned LLM to list");
   allLLMs.unshift({
     id: process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT,
     name: "Fine-tuned GPT-3.5",
     description: "Speed: 3/3 | Accuracy: 2/3",
   });
-} else {
-  console.log("NOT adding fine-tuned LLM to list");
 }
 
 function Dashboard() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
+  const [llm, setLlm] = React.useState<string>(
+    profile ? profile!.organizations!.model : "gpt-4-0613"
+  );
+  useEffect(() => {
+    if (profile && profile?.organizations?.model !== llm)
+      setLlm(profile!.organizations!.model);
+  }, [profile]);
 
   return (
     <div className="min-h-screen bg-gray-800">
-      <Navbar current={"LLM"} />
+      <Navbar current={"AI"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4">
           <h1 className="text-xl text-gray-100">Language Model Settings</h1>
@@ -62,8 +66,9 @@ function Dashboard() {
             <SelectBox
               options={allLLMs}
               theme={"dark"}
-              selected={profile ? profile!.organizations!.model : "gpt-4-0613"}
+              selected={llm}
               setSelected={async (requestMethod) => {
+                setLlm(requestMethod);
                 const { error } = await supabase
                   .from("organizations")
                   .update({
@@ -75,9 +80,6 @@ function Dashboard() {
               }}
               size={"base"}
             />
-          </div>
-          <div className="flex flex-col place-items-end">
-            <div className="flex flex-row gap-x-3 mt-4 justify-end"></div>
           </div>
         </div>
       </div>
