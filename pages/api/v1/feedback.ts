@@ -13,10 +13,12 @@ export const config = {
 };
 
 const FeedbackZod = z.object({
-  conversation_id: z.number(),
+  conversation_id: z.nullable(z.number()),
   feedback_positive: z.boolean(),
   user_message_idx: z.number(),
+  negative_feedback_text: z.nullable(z.string()),
 });
+
 type FeedbackType = z.infer<typeof FeedbackZod>;
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -31,7 +33,7 @@ const supabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE
+  process.env.SERVICE_LEVEL_KEY_SUPABASE,
   // Bring me my Chariot of fire!
 );
 
@@ -53,7 +55,7 @@ export default async function handler(req: NextRequest) {
         {
           status: 405,
           headers,
-        }
+        },
       );
     }
 
@@ -96,11 +98,21 @@ export default async function handler(req: NextRequest) {
       });
     }
 
-    console.log(
-      `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`
-    );
+    if (requestData.conversation_id === null) {
+      return new Response(
+        JSON.stringify({
+          message: "conversation_id null. Nothing to save feedback on",
+        }),
+        {
+          status: 200,
+          headers,
+        },
+      );
+    }
 
-    console.log("requestDaaaaata", JSON.stringify(requestData));
+    console.log(
+      `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`,
+    );
 
     // Get the most recent feedback entry matching the conversation ID
     const { data, error } = await supabase
@@ -117,10 +129,10 @@ export default async function handler(req: NextRequest) {
       .update({
         feedback_positive: requestData.feedback_positive,
         user_message_idx: requestData.user_message_idx,
+        negative_feedback_text: requestData.negative_feedback_text,
       })
       .eq("id", data[0].id);
 
-    console.log("data2", data2);
     if (updateError) throw new Error(updateError.message);
 
     console.log("feedback updated successfully");
@@ -130,7 +142,7 @@ export default async function handler(req: NextRequest) {
       {
         status: 200,
         headers,
-      }
+      },
     );
   } catch (e) {
     let message: string;
@@ -147,7 +159,7 @@ export default async function handler(req: NextRequest) {
       {
         status: 500,
         headers,
-      }
+      },
     );
   }
 }

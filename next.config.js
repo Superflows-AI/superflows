@@ -4,42 +4,36 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
 /** @type {import('next').NextConfig} */
+const headers = [
+  { key: "Access-Control-Allow-Credentials", value: "true" },
+  { key: "Access-Control-Allow-Origin", value: "*" },
+  { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
+  {
+    key: "Access-Control-Allow-Headers",
+    value: "Content-Type, Authorization, Accept",
+  },
+];
+
 module.exports = {
   reactStrictMode: true,
   // This enables calls to /api/v1 from users' domains
   async headers() {
     return [
       {
-        source: '/api/v1/answers',
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, Accept" }
-        ],
+        source: "/api/v1/answers",
+        headers: headers,
       },
       {
-        source: '/api/v1/confirm',
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, Accept" }
-        ],
-      },      
+        source: "/api/v1/confirm",
+        headers: headers,
+      },
       {
-        source: '/api/v1/feedback',
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "OPTIONS,POST" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, Accept" }
-        ],
-      }
+        source: "/api/v1/feedback",
+        headers: headers,
+      },
     ];
-  }
+  },
 };
-
 
 // Injected content via Sentry wizard below
 
@@ -75,5 +69,5 @@ module.exports = withSentryConfig(
 
     // Automatically tree-shake Sentry logger statements to reduce bundle size
     disableLogger: true,
-  }
+  },
 );
