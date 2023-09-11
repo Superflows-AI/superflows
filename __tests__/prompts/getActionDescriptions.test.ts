@@ -23,7 +23,7 @@ describe("formatReqBodySchema", () => {
     // but this requires changing how parameters are parsed from the GPT response.
     expect(out).toEqual(`
 - data (object) REQUIRED
-\t- exchange (object) REQUIRED
+\t- exchange (object): exchange data model. REQUIRED
 \t\t- serviceProviderConfiguration (object)
 \t\t\t- sellSideProvider (string)
 \t\t\t- buySideProvider (string)

@@ -464,7 +464,8 @@ async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
-  const model = org.finetuned_models[0]?.openai_name ?? "gpt-4-0613";
+  // Use a fine-tuned model specific to their org above the 'model' field
+  const model = org.finetuned_models[0]?.openai_name ?? org.model;
   // When this number is reached, we remove the oldest messages from the context window
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
