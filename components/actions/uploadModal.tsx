@@ -162,25 +162,58 @@ export default function UploadModal(props: {
       </div>
       <div className="mt-2 flex flex-col max-h-60 bg-red-200 rounded overflow-y-auto">
         {error &&
-          Object.entries(error.error).map(([key, value]) => {
-            if (isNaN(Number(key))) return;
-            const errorEle = value as SwaggerParserErrorType;
-            return (
-              <div
-                key={key}
-                className="py-3 px-4 border-b border-red-700 bg-red-200 text-base text-red-500 flex flex-col"
-              >
-                <div className="font-mono text-xs text-gray-500 break-words">
-                  {errorEle.instancePath}
+          (Object.entries(error.error).filter(([key, _]) => !isNaN(Number(key)))
+            .length > 0 ? (
+            Object.entries(error.error).map(([key, value]) => {
+              if (isNaN(Number(key))) return;
+              const errorEle = value as SwaggerParserErrorType;
+              return (
+                <div
+                  key={key}
+                  className="py-3 px-4 border-b border-red-700 bg-red-200 text-base text-red-500 flex flex-col"
+                >
+                  <div className="font-mono text-xs text-gray-500 break-words">
+                    {errorEle.instancePath}
+                  </div>
+                  <div className="text-red-600">{errorEle.message}</div>
+                  <div className="text-red-400 text-sm">
+                    {JSON.stringify(errorEle.params, undefined, 2)}
+                  </div>
                 </div>
-                <div className="text-red-600">{errorEle.message}</div>
-                <div className="text-red-400 text-sm">
-                  {JSON.stringify(errorEle.params, undefined, 2)}
-                </div>
+              );
+            })
+          ) : (
+            <div className="py-3 px-4 border-b border-red-700 bg-red-200 text-base text-red-500 flex flex-col">
+              <div className="font-mono text-xs text-gray-500 break-words">
+                {error.error.name}
               </div>
-            );
-          })}
+              <div className="text-red-600">{error.error.message}</div>
+            </div>
+          ))}
       </div>
+      {error && (
+        <div className="mt-3 rounded bg-gray-600 px-3 py-2 text-gray-200">
+          Tip: If the error is not clear, try validating your OpenAPI spec with{" "}
+          <a
+            className="no-underline hover:underline text-[#05aadc] cursor-pointer"
+            href="https://editor.swagger.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Swagger Editor
+          </a>{" "}
+          or{" "}
+          <a
+            className="no-underline hover:underline text-[#05aadc] cursor-pointer"
+            href="https://docs.superflows.ai/docs/connecting-your-api/api-spec-requirements"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            check our docs
+          </a>{" "}
+          to see the requirements for an OpenAPI spec.
+        </div>
+      )}
     </Modal>
   );
 }
