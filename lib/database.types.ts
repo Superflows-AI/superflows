@@ -321,6 +321,7 @@ export interface Database {
           description: string;
           id: number;
           join_link_id: string | null;
+          model: string;
           name: string;
         };
         Insert: {
@@ -329,6 +330,7 @@ export interface Database {
           description?: string;
           id?: number;
           join_link_id?: string | null;
+          model?: string;
           name?: string;
         };
         Update: {
@@ -337,6 +339,7 @@ export interface Database {
           description?: string;
           id?: number;
           join_link_id?: string | null;
+          model?: string;
           name?: string;
         };
         Relationships: [];
