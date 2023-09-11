@@ -7,6 +7,7 @@ export interface SelectBoxOption {
   id: string | null;
   name: string;
   icon?: React.ReactNode;
+  description?: string;
 }
 
 export default function SelectBox(props: {
@@ -100,14 +101,26 @@ export default function SelectBox(props: {
                         <>
                           <div className="flex flex-row place-items-center gap-x-1">
                             {option.icon ?? ""}
-                            <span
-                              className={classNames(
-                                selected ? "font-semibold" : "font-normal",
-                                "block truncate"
+                            <div className="flex flex-col">
+                              <span
+                                className={classNames(
+                                  selected ? "font-semibold" : "font-normal",
+                                  "block truncate"
+                                )}
+                              >
+                                {option.name}
+                              </span>
+                              {option.description && (
+                                <span
+                                  className={classNames(
+                                    active ? "text-gray-600" : "text-gray-300",
+                                    "block text-xs truncate"
+                                  )}
+                                >
+                                  {option.description}
+                                </span>
                               )}
-                            >
-                              {option.name}
-                            </span>
+                            </div>
                           </div>
 
                           {selected ? (

@@ -48,6 +48,7 @@ export default async function handler(
       api_key,
       description: req.body.description,
       join_link_id: uuidv4(),
+      model: process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT,
     })
     .select();
   if (error) throw new Error(error.message);

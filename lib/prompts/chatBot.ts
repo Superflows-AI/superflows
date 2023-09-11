@@ -48,7 +48,8 @@ function removeMarkdownLinks(text: string): string {
 export function formatReqBodySchema(
   schema: OpenAPIV3_1.SchemaObject | undefined,
   nestingLevel: number = 0,
-  isRequired: boolean = false
+  isRequired: boolean = false,
+  parentArrayOfObjects: boolean = false
 ): string {
   /** Recursive function to parse an OpenAPI Schema object into a Superflows GPT-able string.
    * Only works for requestBody right now since readOnly parameters are ignored. **/
@@ -62,6 +63,9 @@ export function formatReqBodySchema(
     const required = schema?.required ?? [];
     if (nestingLevel !== 0) {
       paramString += "(object)";
+      if (schema.description && !parentArrayOfObjects) {
+        paramString += formatDescription(schema.description);
+      }
       if (isRequired) paramString += " REQUIRED";
     }
 
@@ -87,7 +91,11 @@ export function formatReqBodySchema(
       // Arrays of objects require special handling
       paramString += `(object[])${formatDescription(schema.description)}${
         isRequired ? " REQUIRED" : ""
-      }${formatReqBodySchema(items, nestingLevel, false).split("(object)")[1]}`;
+      }${
+        formatReqBodySchema(items, nestingLevel, false, true).split(
+          "(object)"
+        )[1]
+      }`;
     } else {
       // Arrays of non-objects (incl. other arrays)
       const des = formatDescription(
