@@ -55,7 +55,7 @@ export default function SignInComponent(props: {
             </p>
             <Auth
               supabaseClient={supabase}
-              providers={["google"]}
+              providers={["google", "github"]}
               view={view}
               redirectTo={redirectUrl ?? ""}
               appearance={{
