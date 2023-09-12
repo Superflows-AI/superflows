@@ -1,4 +1,7 @@
-import { constructHttpRequest } from "../lib/edge-runtime/requests";
+import {
+  constructHttpRequest,
+  endpointUrlFromAction,
+} from "../lib/edge-runtime/requests";
 
 const constActionParams = {
   action_type: "http",
@@ -310,7 +313,7 @@ describe("constructHttpRequest", () => {
     expect(requestOptions.body).toBe(
       JSON.stringify({
         user: { conversation_id: 1 },
-      })
+      }),
     );
   });
   it("POST - complicated lad", () => {
@@ -390,7 +393,7 @@ describe("constructHttpRequest", () => {
       JSON.stringify({
         user: { conversation_id: 1, something_else: { conversation_id: 2 } },
         list: [1, 2, 3, 4],
-      })
+      }),
     );
   });
   it("POST - 1 body param and 1 no choice param", () => {
@@ -431,7 +434,7 @@ describe("constructHttpRequest", () => {
       Authorization: "Bearer 1234",
     });
     expect(requestOptions.body).toBe(
-      JSON.stringify({ conversation_id: 1, noChoice: "value" })
+      JSON.stringify({ conversation_id: 1, noChoice: "value" }),
     );
   });
   it("GET - fixed header set", () => {
@@ -465,5 +468,61 @@ describe("constructHttpRequest", () => {
       org_id: "1",
     });
     expect(requestOptions.body).toBe(undefined);
+  });
+});
+
+describe("endpointUrlFromAction", () => {
+  it("path has leading slash", () => {
+    const result = endpointUrlFromAction({
+      api_host: "http://localhost:3000/api/mock",
+      path: "/api/v1/Segment/{segment-id}/column/{column-id}",
+    });
+    expect(result).toEqual(
+      "http://localhost:3000/api/mock/api/v1/Segment/{segment-id}/column/{column-id}",
+    );
+  });
+  it("leading slash in the path and trailing slash in the host", () => {
+    const action = {
+      path: "/api/v1/test",
+      api_host: "http://localhost:3000/api/",
+    };
+    const result = endpointUrlFromAction(action);
+    expect(result).toEqual("http://localhost:3000/api/api/v1/test");
+  });
+
+  it("henry bug", () => {
+    const action = {
+      path: "/events",
+      api_host: "https://api.seeddata.io/api/",
+    };
+    const result = endpointUrlFromAction(action);
+    expect(result).toEqual("https://api.seeddata.io/api/events");
+  });
+
+  it("no leading slash in the path and no trailing slash in the host", () => {
+    const action = {
+      path: "api2/v1/test",
+      api_host: "http://localhost:3000/api",
+    };
+    const result = endpointUrlFromAction(action);
+    expect(result).toEqual("http://localhost:3000/api/api2/v1/test");
+  });
+
+  it("leading slash in the path and no trailing slash in the host", () => {
+    const action = {
+      path: "/api/v1/test",
+      api_host: "http://localhost:3000/api",
+    };
+    const result = endpointUrlFromAction(action);
+    expect(result).toEqual("http://localhost:3000/api/api/v1/test");
+  });
+
+  it("no leading slash in the path and a trailing slash in the host", () => {
+    const action = {
+      path: "api/v1/test",
+      api_host: "http://localhost:3000/api/",
+    };
+    const result = endpointUrlFromAction(action);
+    expect(result).toEqual("http://localhost:3000/api/api/v1/test");
   });
 });
