@@ -1,3 +1,4 @@
+import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { Ratelimit } from "@upstash/ratelimit";
@@ -12,11 +13,12 @@ import {
   makeHttpRequest,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
+import summarizeText from "../../../lib/edge-runtime/summarize";
 import {
   DBChatMessageToGPT,
+  MessageInclSummaryToGPT,
   getFreeTierUsage,
   getHost,
-  MessageInclSummaryToGPT,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
@@ -40,8 +42,6 @@ import {
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import summarizeText from "../../../lib/edge-runtime/summarize";
-import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 export const config = {
   runtime: "edge",
@@ -469,17 +469,15 @@ async function Angela( // Good ol' Angela
   // When this number is reached, we remove the oldest messages from the context window
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
-  // Store the system prompt in the feedback table so we can reconstruct it later
-  const { data, error } = await supabase.from("feedback").insert({
-    system_prompt: getMessages(
-      [],
-      actions,
-      reqData.user_description,
-      org,
-      language,
-    )[0].content,
-    conversation_id: conversationId,
-  });
+  if (redis) {
+    // Store the system prompt, in case we get feedback on it
+    await redis.set(
+      conversationId.toString(),
+      getMessages([], actions, reqData.user_description, org, language)[0]
+        .content,
+    );
+    await redis.expire(conversationId.toString(), 60 * 60);
+  }
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {

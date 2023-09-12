@@ -5,6 +5,12 @@ import { Database } from "../../../lib/database.types";
 import { OrgJoinIsPaid } from "../../../lib/types";
 import { isValidBody } from "../../../lib/utils";
 
+import { Redis } from "@upstash/redis";
+
+let redis: Redis | null = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  redis = Redis.fromEnv();
+
 export const config = {
   runtime: "edge",
   // Edge gets upset with our use of recharts in chat-ui-react.
@@ -15,7 +21,7 @@ export const config = {
 const FeedbackZod = z.object({
   conversation_id: z.nullable(z.number()),
   feedback_positive: z.boolean(),
-  user_message_idx: z.number(),
+  conversation_length_at_feedback: z.number(),
   negative_feedback_text: z.nullable(z.string()),
 });
 
@@ -114,24 +120,18 @@ export default async function handler(req: NextRequest) {
       `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`,
     );
 
-    // Get the most recent feedback entry matching the conversation ID
-    const { data, error } = await supabase
-      .from("feedback")
-      .select("*")
-      .eq("conversation_id", requestData.conversation_id)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    let systemPrompt: string | null = null;
+    if (redis)
+      systemPrompt = await redis.get(requestData.conversation_id.toString());
 
-    if (error) throw new Error(error.message);
-
-    const { data: data2, error: updateError } = await supabase
-      .from("feedback")
-      .update({
-        feedback_positive: requestData.feedback_positive,
-        user_message_idx: requestData.user_message_idx,
-        negative_feedback_text: requestData.negative_feedback_text,
-      })
-      .eq("id", data[0].id);
+    const { error: updateError } = await supabase.from("feedback").insert({
+      conversation_id: requestData.conversation_id,
+      feedback_positive: requestData.feedback_positive,
+      conversation_length_at_feedback:
+        requestData.conversation_length_at_feedback,
+      negative_feedback_text: requestData.negative_feedback_text,
+      system_prompt: systemPrompt,
+    });
 
     if (updateError) throw new Error(updateError.message);
 
