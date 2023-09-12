@@ -3,7 +3,7 @@ export type Json =
   | number
   | boolean
   | null
-  | { [key: string]: Json | undefined }
+  | { [key: string]: Json }
   | Json[];
 
 export interface Database {
@@ -71,7 +71,7 @@ export interface Database {
             columns: ["api_id"];
             referencedRelation: "apis";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       actions: {
@@ -144,7 +144,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       apis: {
@@ -181,7 +181,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       chat_messages: {
@@ -233,7 +233,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       conversations: {
@@ -258,33 +258,36 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       feedback: {
         Row: {
           conversation_id: number;
+          conversation_length_at_feedback: number;
           created_at: string | null;
-          feedback_positive: boolean | null;
+          feedback_positive: boolean;
           id: number;
-          system_prompt: string;
-          user_message_idx: number | null;
+          negative_feedback_text: string | null;
+          system_prompt: string | null;
         };
         Insert: {
           conversation_id: number;
+          conversation_length_at_feedback: number;
           created_at?: string | null;
-          feedback_positive?: boolean | null;
+          feedback_positive: boolean;
           id?: number;
-          system_prompt: string;
-          user_message_idx?: number | null;
+          negative_feedback_text?: string | null;
+          system_prompt?: string | null;
         };
         Update: {
           conversation_id?: number;
+          conversation_length_at_feedback?: number;
           created_at?: string | null;
-          feedback_positive?: boolean | null;
+          feedback_positive?: boolean;
           id?: number;
-          system_prompt?: string;
-          user_message_idx?: number | null;
+          negative_feedback_text?: string | null;
+          system_prompt?: string | null;
         };
         Relationships: [
           {
@@ -292,7 +295,7 @@ export interface Database {
             columns: ["conversation_id"];
             referencedRelation: "conversations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       finetuned_models: {
@@ -320,7 +323,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       fixed_headers: {
@@ -351,7 +354,7 @@ export interface Database {
             columns: ["api_id"];
             referencedRelation: "apis";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       is_paid: {
@@ -376,7 +379,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       organizations: {
@@ -446,7 +449,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       usage: {
@@ -477,7 +480,7 @@ export interface Database {
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
     };
@@ -536,7 +539,7 @@ export interface Database {
             columns: ["owner"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       migrations: {
@@ -603,7 +606,13 @@ export interface Database {
             columns: ["bucket_id"];
             referencedRelation: "buckets";
             referencedColumns: ["id"];
-          }
+          },
+          {
+            foreignKeyName: "objects_owner_fkey";
+            columns: ["owner"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
     };
