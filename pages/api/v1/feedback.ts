@@ -122,7 +122,7 @@ export default async function handler(req: NextRequest) {
 
     let systemPrompt: string | null = null;
     if (redis)
-      systemPrompt = await redis.get(requestData.conversation_id.toString());
+      systemPrompt = await redis.getdel(requestData.conversation_id.toString());
 
     const { error: updateError } = await supabase.from("feedback").insert({
       conversation_id: requestData.conversation_id,
@@ -134,8 +134,6 @@ export default async function handler(req: NextRequest) {
     });
 
     if (updateError) throw new Error(updateError.message);
-
-    console.log("feedback updated successfully");
 
     return new Response(
       JSON.stringify({ message: "Feedback updated successfully" }),
