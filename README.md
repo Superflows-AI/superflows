@@ -69,7 +69,7 @@ The API specification can be found in the [docs](https://docs.superflows.ai/docs
 
 Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in 1 line of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
 
-<img src="public/superflows-sidebar.gif" width="500px" alt="Superflows sidebar" />
+<img src="public/modal.gif" width="500px" alt="Superflows modal" />
 
 ## Support / talk with founders
 - [Schedule Demo 👋](https://meetings-eu1.hubspot.com/matthew-phillips/superflows-demo)
