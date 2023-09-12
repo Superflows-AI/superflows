@@ -37,14 +37,14 @@ You can try out the cloud version for free [**here**](https://dashboard.superflo
 
 ## Features
 
-- [x] Developer dashboard to configure and test your product assistant
-- [x] Public streaming API
-- [x] Answers in the same language the question is asked in
-- [x] Pre-built UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
-- [x] Upload API specifications for fast set up
-- [x] Connect to multiple APIs with different hosts
-- [x] Asks for user confirmation before taking actions that add, remove or update data
-- [x] Track usage in dashboard
+- [x] Developer dashboard to configure and test your product assistant 🎛️
+- [x] Public streaming API 🏞️
+- [x] Answers in the same language the question is asked in 🇬🇧 🇪🇸 🇫🇷 🇩🇪
+- [x] Pre-built UI components (find React components [here](https://github.com/Superflows-AI/chat-ui)) 🖥️
+- [x] Upload API specifications for fast set up 💨
+- [x] Connect to multiple APIs with different hosts ✌️
+- [x] Asks for user confirmation before taking actions that add, remove or update data ✅ 
+- [x] Track usage in dashboard 📊
 
 ### Dashboard
 
