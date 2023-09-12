@@ -60,16 +60,16 @@ These endpoints can easily be uploaded via an Open API Specification, or entered
 
 <img src="public/sf-actions-corner.png" width="500px" alt="Superflows actions page" />
 
+### UI Components
+
+Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in 1 line of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
+
+<img src="public/modal.png" width="500px" alt="Superflows modal" />
 
 ### API
 
 The API specification can be found in the [docs](https://docs.superflows.ai/docs/category/api-specification). 
 
-### UI Components
-
-Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in 1 line of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
-
-<img src="public/modal.gif" width="500px" alt="Superflows modal" />
 
 ## Support / talk with founders
 - [Schedule Demo 👋](https://meetings-eu1.hubspot.com/matthew-phillips/superflows-demo)
