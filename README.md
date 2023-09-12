@@ -8,41 +8,43 @@
 <h2 align="center" >A chat interface that can control your product </h3>
 <p align="center"></p>
 
-<p align="center">🌐 <a href="https://superflows.ai">Website</a> · 📚 <a href="https://docs.superflows.ai">Docs</a> ·  💬 <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">Slack</a></p>
+<p align="center"><a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> ·  <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
 <br />
 
 https://github.com/Superflows-AI/superflows/assets/33871096/77c463c1-5e06-45a8-a32a-9f1fd8af0dac
 
 # Superflows
 
-Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes API calls to answer them.
+Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes calls to the software's API to answer them.
 
-E.g. a CRM user could ask: "What's the status of the B Corp deal?". A product analytics tool user could ask: "What did users think of the recent UI change?". These questions would be addressed by fetching information from your product's API and using an LLM to generate the answer.
+E.g. a CRM user could ask simply:
+> What's the status of the B Corp deal?
 
-You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on our [documentation pages](https://docs.superflows.ai/).
+or more complex questions like:
+> Which of my deals are at risk of slipping this quarter? What next steps would you recommend to get them back on track?
+
+A user of feedback software could ask:
+> Which bugs reported by users are the most pressing?
+
+You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
 
 
 ## Setup
-
-Setup involves three steps:
 
 1. Upload API specification
 2. Test in the playground
 3. Integrate into your product in 1 line of code
 
-### Roadmap
-
-[Available here.](https://docs.superflows.ai/blog/roadmap)
-
 ## Features
 
-- Developer dashboard to configure and test your product assistant
-- Public streaming API
-- Answers in the same language the question is asked in
-- UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
-- Upload API specifications for fast set up
-- Connect to multiple APIs with different hosts
-- Track usage in dashboard
+- [x] Developer dashboard to configure and test your product assistant
+- [x] Public streaming API
+- [x] Answers in the same language the question is asked in
+- [x] Pre-built UI components (find React components [here](https://github.com/Superflows-AI/chat-ui))
+- [x] Upload API specifications for fast set up
+- [x] Connect to multiple APIs with different hosts
+- [x] Asks for user confirmation before taking actions that add, remove or update data
+- [x] Track usage in dashboard
 
 ### Dashboard
 
@@ -52,7 +54,7 @@ You can interact with your assistant on the <b>'Playground'</b>. <b>'Developer m
 
 <img src="public/sf-crm-ai-corner.png" width="500px" alt="Superflows playground" />
 
-The 'Actions' page lets you control which API endpoints your assistant can call to answer user queries in a simple dashboard.
+The <b>'Actions'</b> page lets you control which API endpoints your assistant can call to answer user queries in a simple dashboard.
 
 These endpoints can easily be uploaded via an Open API Specification, or entered manually. 
 
@@ -61,14 +63,27 @@ These endpoints can easily be uploaded via an Open API Specification, or entered
 
 ### API
 
-Our API specification can be found at on our [documentation page](https://docs.superflows.ai/docs/category/api-specification). 
+The API specification can be found in the [docs](https://docs.superflows.ai/docs/category/api-specification). 
 
 ### UI Components
 
-Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in a few lines of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
+Superflows comes with out-of-the-box React UI components. These components let you integrate Superflows into your product in 1 line of code ([integration guide](https://docs.superflows.ai/docs/integration-guide/react)). 
 
 <img src="public/superflows-sidebar.gif" width="500px" alt="Superflows sidebar" />
 
+## Support / talk with founders
+- [Schedule Demo 👋](https://meetings-eu1.hubspot.com/matthew-phillips/superflows-demo)
+- [Slack Community 💭](https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w)
+- Our numbers 📞 +44 (755) 7101-159 / +44 (780) 580-6766
+- Our emails ✉️ [henry@superflows.ai](mailto:henry@superflows.ai?cc=matthew@superflows.ai&subject=Chat+about+Superflows) / [matthew@superflows.ai](mailto:matthew@superflows.ai?cc=henry@superflows.ai&subject=Chat+about+Superflows)
+
+## Self-hosting
+
+We haven't written a self-hosting guide for Superflows yet. If you're interested in self-hosting, please reach out to us on [Slack](https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w) or [email](mailto:henry@superflows.ai?cc=matthew@superflows.ai&subject=Interested+in+self-hosting).
+
+## Roadmap
+
+[Available here.](https://docs.superflows.ai/blog/roadmap)
 
 ## Development
 
