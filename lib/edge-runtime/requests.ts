@@ -1,15 +1,15 @@
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
 import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
-import { fillNoChoiceRequiredParams } from "../actionUtils";
 
 export function processAPIoutput(
   out: Json | Json[],
-  chosenAction: Action
+  chosenAction: Action,
 ): Json | Json[] {
   if (Array.isArray(out)) {
     out = deduplicateArray(out) as Json[];
@@ -68,7 +68,7 @@ export function constructHttpRequest({
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
     const schema = bodyPropertiesFromRequestBodyContents(
-      action.request_body_contents
+      action.request_body_contents,
     );
     const allParams = fillNoChoiceRequiredParams(parameters, schema);
     const body = buildBody(schema, allParams);
@@ -76,12 +76,7 @@ export function constructHttpRequest({
   }
 
   // Below URL(...).href deals with "/" between the path and host
-  let url = action.api_host + action.path;
-  // let url = new URL(action.path, action.api_host).href
-  //   // These are because path parameters can be in action.path e.g. /{param}
-  //   // and above line encodes them into %7B and %7D
-  //   .replaceAll("%7B", "{")
-  //   .replaceAll("%7D", "}");
+  let url = endpointUrlFromAction(action as { api_host: string; path: string });
 
   // TODO: accept array for JSON?
   // Set parameters
@@ -107,7 +102,7 @@ export function constructHttpRequest({
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name]))
+          encodeURIComponent(String(parameters[param.name])),
         );
       } else if (param.in === "query") {
         queryParams.set(param.name, String(parameters[param.name]));
@@ -117,7 +112,7 @@ export function constructHttpRequest({
         headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
       } else {
         throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`
+          `Parameter "${param.name}" has invalid location: ${param.in}`,
         );
       }
     }
@@ -130,7 +125,7 @@ export function constructHttpRequest({
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
-    2
+    2,
   )}`;
   console.log(logMessage);
 
@@ -143,8 +138,21 @@ export function constructHttpRequest({
   return { url, requestOptions };
 }
 
+export function endpointUrlFromAction(action: {
+  api_host: string;
+  path: string;
+}) {
+  // Ensure the base URL has a trailing slash
+  const base = action.api_host.endsWith("/")
+    ? action.api_host
+    : `${action.api_host}/`;
+  // Ensure the action path does not have a leading slash
+  const path = action.path.startsWith("/") ? action.path.slice(1) : action.path;
+  return base + path;
+}
+
 export function bodyPropertiesFromRequestBodyContents(
-  requestBodyContents: Json
+  requestBodyContents: Json,
 ): OpenAPIV3.SchemaObject {
   const reqBodyContents = requestBodyContents as unknown as {
     [media: string]: MediaTypeObject;
@@ -156,7 +164,7 @@ export function bodyPropertiesFromRequestBodyContents(
   const applicationJson = getJsonMIMEType(reqBodyContents);
   if (!applicationJson) {
     throw new Error(
-      "Only application/json request body contents are supported"
+      "Only application/json request body contents are supported",
     );
   }
 
@@ -165,7 +173,7 @@ export function bodyPropertiesFromRequestBodyContents(
 
 function buildBody(
   schema: OpenAPIV3.SchemaObject,
-  parameters: Record<string, unknown>
+  parameters: Record<string, unknown>,
 ): { [x: string]: any } {
   const properties = schema.properties as {
     [name: string]: OpenAPIV3_1.SchemaObject;
@@ -185,7 +193,7 @@ function buildBody(
 export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit,
-  localHostname: string
+  localHostname: string,
 ): Promise<Json> {
   // TODO: Don't handle redirects manually
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,
