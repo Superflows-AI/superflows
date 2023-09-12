@@ -70,11 +70,12 @@ export function constructHttpRequest({
   }
 
   // Below URL(...).href deals with "/" between the path and host
-  let url = new URL(action.path, action.api_host).href
-    // These are because path parameters can be in action.path e.g. /{param}
-    // and above line encodes them into %7B and %7D
-    .replaceAll("%7B", "{")
-    .replaceAll("%7D", "}");
+  let url = action.api_host + action.path;
+  // let url = new URL(action.path, action.api_host).href
+  //   // These are because path parameters can be in action.path e.g. /{param}
+  //   // and above line encodes them into %7B and %7D
+  //   .replaceAll("%7B", "{")
+  //   .replaceAll("%7D", "}");
 
   // TODO: accept array for JSON?
   // Set parameters
