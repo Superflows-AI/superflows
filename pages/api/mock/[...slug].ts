@@ -314,7 +314,11 @@ export async function getMockedProperties(
   const openAiResponse = await exponentialRetryWrapper(
     getLLMResponse,
     // Output tokens count towards your total token count
-    [prompt, { max_tokens: 600 }, nTokens < 4096 - 600 ? "3" : "3-16k"],
+    [
+      prompt,
+      { max_tokens: 600 },
+      nTokens < 4096 - 600 ? "gpt-3.5-turbo-0613" : "gpt-3.5-turbo-16k-0613",
+    ],
     3
   );
 
