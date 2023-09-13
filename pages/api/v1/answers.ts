@@ -443,7 +443,7 @@ async function Angela( // Good ol' Angela
   function streamInfo(step: StreamingStepInput) {
     controller.enqueue(
       encoder.encode(
-        "data:" +
+        "data: " +
           JSON.stringify({
             id: conversationId,
             ...step,
@@ -632,8 +632,7 @@ async function Angela( // Good ol' Angela
               const outMessage: GPTMessageInclSummary = {
                 role: "function",
                 name: command.name,
-                content:
-                  typeof out === "string" ? out : JSON.stringify(out, null, 2),
+                content: typeof out === "string" ? out : JSON.stringify(out),
               };
 
               // If >500 tokens, summarise the message
