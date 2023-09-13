@@ -437,12 +437,14 @@ function APISettingsModal(props: {
                 <Header
                   key={idx}
                   header={h}
-                  setHeader={async (header: HeadersInsert) => {
+                  onBlur={async () => {
                     const res = await supabase
                       .from("fixed_headers")
-                      .update(header)
+                      .update(h)
                       .eq("id", h.id);
                     if (res.error) throw new Error(res.error.message);
+                  }}
+                  setHeader={(header: HeadersInsert) => {
                     setHeaders((prev) =>
                       prev.map((prevHeader) =>
                         prevHeader.id === h.id ? header : prevHeader
@@ -496,6 +498,7 @@ function APISettingsModal(props: {
 function Header(props: {
   header: HeadersInsert;
   setHeader: (header: HeadersInsert) => void;
+  onBlur: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -504,6 +507,7 @@ function Header(props: {
         className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-2 focus:border-purple-600 focus:ring-purple-600"
         placeholder={"Name"}
         value={props.header.name}
+        onBlur={props.onBlur}
         onChange={(e) => {
           props.setHeader({ ...props.header, name: e.target.value });
         }}
@@ -512,6 +516,7 @@ function Header(props: {
         className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-2 focus:border-purple-600 focus:ring-purple-600"
         placeholder={"Value"}
         value={props.header.value}
+        onBlur={props.onBlur}
         onChange={(e) => {
           props.setHeader({ ...props.header, value: e.target.value });
         }}
