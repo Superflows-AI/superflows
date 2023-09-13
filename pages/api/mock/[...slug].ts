@@ -7,7 +7,7 @@ import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Chunk, Properties, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
-import { getOpenAIResponse } from "../../../lib/queryOpenAI";
+import { getLLMResponse } from "../../../lib/queryLLM";
 import { Action } from "../../../lib/types";
 import {
   addGPTdataToProperties,
@@ -312,7 +312,7 @@ export async function getMockedProperties(
   ).length;
 
   const openAiResponse = await exponentialRetryWrapper(
-    getOpenAIResponse,
+    getLLMResponse,
     // Output tokens count towards your total token count
     [prompt, { max_tokens: 600 }, nTokens < 4096 - 600 ? "3" : "3-16k"],
     3

@@ -28,7 +28,7 @@ import {
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
-import { streamOpenAIResponse } from "../../../lib/queryOpenAI";
+import { getSecondaryModel, streamLLMResponse } from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
   OrgJoinIsPaidFinetunedModels,
@@ -464,8 +464,8 @@ async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
-  // Use a fine-tuned model specific to their org above the 'model' field
-  const model = org.finetuned_models[0]?.openai_name ?? org.model;
+
+  const model = org.model;
   // When this number is reached, we remove the oldest messages from the context window
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
@@ -493,7 +493,7 @@ async function Angela( // Good ol' Angela
       totalCost += promptInputCost;
 
       const res = await exponentialRetryWrapper(
-        streamOpenAIResponse,
+        streamLLMResponse,
         [chatGptPrompt, completionOptions, model],
         3
       );
@@ -503,7 +503,7 @@ async function Angela( // Good ol' Angela
         );
         streamInfo({
           role: "error",
-          content: "OpenAI API call failed",
+          content: "Call to Language Model API failed",
         });
         return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
@@ -576,7 +576,8 @@ async function Angela( // Good ol' Angela
             const { corrections } = await getMissingArgCorrections(
               chosenAction,
               command,
-              chatGptPrompt.concat(newMessage) // This may contain useful information for the correction
+              chatGptPrompt.concat(newMessage), // This may contain useful information for the correction
+              getSecondaryModel(model)
             );
 
             let needsUserCorrection = false;

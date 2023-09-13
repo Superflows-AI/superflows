@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { Action, ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
+import { ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
 import { isValidBody } from "../../../lib/utils";
 import {
   constructHttpRequest,

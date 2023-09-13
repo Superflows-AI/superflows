@@ -1,8 +1,8 @@
 import "jest";
-import { getOpenAIResponse } from "../../lib/queryOpenAI";
+import { getLLMResponse } from "../../lib/queryLLM";
 import { getMockedProperties } from "../../pages/api/mock/[...slug]";
 
-jest.mock("../../lib/queryOpenAI");
+jest.mock("../../lib/queryLLM");
 
 // This resets the number of times called counts between tests
 afterEach(() => {
@@ -26,7 +26,7 @@ lastName: Smith
       },
     };
 
-    (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+    (getLLMResponse as jest.Mock).mockReturnValue(openAiResponse);
 
     const res = await getMockedProperties(
       openApiProperties,
@@ -72,7 +72,7 @@ lastName: Smith
       },
     ];
 
-    (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+    (getLLMResponse as jest.Mock).mockReturnValue(openAiResponse);
 
     const res = await getMockedProperties(
       openApiProperties,
@@ -114,7 +114,7 @@ lastName: Smith
       },
     };
 
-    (getOpenAIResponse as jest.Mock).mockReturnValue(openAiResponse);
+    (getLLMResponse as jest.Mock).mockReturnValue(openAiResponse);
 
     const expectedOutput = {
       browserSdkVersion: 1,
