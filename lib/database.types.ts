@@ -289,6 +289,37 @@ export interface Database {
           }
         ];
       };
+      fixed_headers: {
+        Row: {
+          api_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          value: string;
+        };
+        Insert: {
+          api_id: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          value?: string;
+        };
+        Update: {
+          api_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          value?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fixed_headers_api_id_fkey";
+            columns: ["api_id"];
+            referencedRelation: "apis";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       is_paid: {
         Row: {
           id: number;

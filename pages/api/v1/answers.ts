@@ -282,7 +282,7 @@ export default async function handler(req: NextRequest) {
     // Below gets the action tags and actions that are active
     const actionTagResp = await supabase
       .from("action_tags")
-      .select("*,actions!inner(*),apis(*)")
+      .select("*,actions!inner(*),apis(*, fixed_headers(*))")
       .eq("org_id", org.id)
       .eq("actions.active", true);
     if (actionTagResp.error) throw new Error(actionTagResp.error.message);
@@ -303,6 +303,7 @@ export default async function handler(req: NextRequest) {
             : tag.apis?.api_host ?? "",
           auth_header: tag.apis?.auth_header ?? "",
           auth_scheme: tag.apis?.auth_scheme ?? null,
+          headers: tag.apis?.fixed_headers ?? [],
         }));
       })
       .flat()

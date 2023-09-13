@@ -54,6 +54,12 @@ export function constructHttpRequest({
   // This header is only required for requests with a body
   if (action.request_body_contents)
     headers["Content-Type"] = "application/json";
+  action.headers
+    // Filter out headers without names
+    .filter((header) => header.name)
+    .forEach((header) => {
+      headers[header.name] = header.value;
+    });
 
   const requestOptions: RequestInit = {
     method: action.request_method.toUpperCase(),
