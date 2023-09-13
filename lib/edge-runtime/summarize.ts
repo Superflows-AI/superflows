@@ -3,7 +3,7 @@ import {
   getSummarizeTextPrompt,
   summariseEmailGPTParams,
 } from "../prompts/summarizeText";
-import { getOpenAIResponse } from "../queryOpenAI";
+import { getLLMResponse, getSecondaryModel } from "../queryLLM";
 import { chunkString } from "../utils";
 
 export default async function summarizeText(
@@ -17,7 +17,11 @@ export default async function summarizeText(
   const summaries = await Promise.all(
     chunks.map(async (chunk) => {
       const prompt = getSummarizeTextPrompt(chunk, organization);
-      return getOpenAIResponse(prompt, summariseEmailGPTParams, "3");
+      return getLLMResponse(
+        prompt,
+        summariseEmailGPTParams,
+        getSecondaryModel(organization.model)
+      );
     })
   );
   return summaries.join("\n");

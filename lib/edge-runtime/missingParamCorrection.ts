@@ -1,17 +1,18 @@
 import { OpenAPIV3_1 } from "openapi-types";
 import { FunctionCall } from "@superflows/chat-ui-react";
-import { Action } from "../types";
+import { Action, Organization } from "../types";
 import requestCorrectionPrompt from "../prompts/requestCorrection";
 import { bodyPropertiesFromRequestBodyContents } from "./requests";
 
-import { getOpenAIResponse } from "../queryOpenAI";
+import { getLLMResponse } from "../queryLLM";
 import { ChatGPTMessage } from "../models";
 import { removeOldestFunctionCalls } from "./utils";
 
 export async function getMissingArgCorrections(
   action: Action,
   command: FunctionCall,
-  previousConversation: ChatGPTMessage[]
+  previousConversation: ChatGPTMessage[],
+  model: string
 ): Promise<{
   corrections: { [param: string]: "ask user" | any };
   newSystemMessages: ChatGPTMessage[] | null;
@@ -45,7 +46,8 @@ export async function getMissingArgCorrections(
     const missingParamRes = await getMissingParam(
       param,
       action,
-      previousConversation
+      previousConversation,
+      model
     );
     if (missingParamRes.response) corrections[param] = missingParamRes.response;
     correctionPrompt = missingParamRes.correctionPrompt;
@@ -56,7 +58,8 @@ export async function getMissingArgCorrections(
 async function getMissingParam(
   missingParam: string,
   action: Action,
-  previousConversation: ChatGPTMessage[]
+  previousConversation: ChatGPTMessage[],
+  model: string
 ): Promise<{
   response: string | null;
   correctionPrompt: ChatGPTMessage[] | null;
@@ -70,13 +73,13 @@ async function getMissingParam(
     100
   );
   console.log("Request correction prompt:\n", prompt);
-  let response = await getOpenAIResponse(
+  let response = await getLLMResponse(
     prompt,
     {
       frequency_penalty: 0,
       max_tokens: 100,
     },
-    "3"
+    model
   );
   response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);

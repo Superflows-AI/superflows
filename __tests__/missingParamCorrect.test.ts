@@ -1,10 +1,10 @@
 import { FunctionCall } from "@superflows/chat-ui-react";
 import "jest";
 import { getMissingArgCorrections } from "../lib/edge-runtime/missingParamCorrection";
-import { getOpenAIResponse } from "../lib/queryOpenAI";
+import { getLLMResponse } from "../lib/queryLLM";
 import { Action } from "../lib/types";
 import getMessages from "../lib/prompts/chatBot";
-jest.mock("../lib/queryOpenAI");
+jest.mock("../lib/queryLLM");
 
 const constActionParams = {
   action_type: "http",
@@ -40,7 +40,7 @@ describe("missingParamCorrection", () => {
       request_body_contents: { "application/json": { schema: {} } },
     };
 
-    (getOpenAIResponse as jest.Mock).mockReturnValue(
+    (getLLMResponse as jest.Mock).mockReturnValue(
       "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked"
     );
 
@@ -60,7 +60,8 @@ describe("missingParamCorrection", () => {
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      previousConversation
+      previousConversation,
+      "gpt-3.5-turbo"
     );
 
     const expected = {
@@ -71,7 +72,7 @@ describe("missingParamCorrection", () => {
   });
 
   it("POST - missing required body param", async () => {
-    (getOpenAIResponse as jest.Mock).mockReturnValue("1976");
+    (getLLMResponse as jest.Mock).mockReturnValue("1976");
 
     const action: Action = {
       ...constActionParams,
@@ -110,7 +111,8 @@ describe("missingParamCorrection", () => {
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      previousConversation
+      previousConversation,
+      "gpt-3.5-turbo"
     );
 
     const expected = {
@@ -147,7 +149,7 @@ describe("missingParamCorrection", () => {
       request_body_contents: { "application/json": { schema: {} } },
     };
 
-    (getOpenAIResponse as jest.Mock)
+    (getLLMResponse as jest.Mock)
       .mockReturnValueOnce(
         "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked"
       )
@@ -171,7 +173,8 @@ describe("missingParamCorrection", () => {
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      previousConversation
+      previousConversation,
+      "gpt-3.5-turbo"
     );
 
     const expected = {
@@ -184,7 +187,7 @@ describe("missingParamCorrection", () => {
   });
 
   it("POST - missing required multiple body params", async () => {
-    (getOpenAIResponse as jest.Mock)
+    (getLLMResponse as jest.Mock)
       .mockReturnValueOnce("1976")
       .mockReturnValueOnce("2020");
 
@@ -231,7 +234,8 @@ describe("missingParamCorrection", () => {
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      previousConversation
+      previousConversation,
+      "gpt-3.5-turbo"
     );
 
     const expected = {
@@ -274,7 +278,7 @@ describe("missingParamCorrection", () => {
       },
     };
 
-    (getOpenAIResponse as jest.Mock)
+    (getLLMResponse as jest.Mock)
       .mockReturnValueOnce("1976")
       .mockReturnValueOnce("missing-query-param-value");
 
@@ -293,7 +297,8 @@ describe("missingParamCorrection", () => {
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
-      previousConversation
+      previousConversation,
+      "gpt-3.5-turbo"
     );
 
     const expected = {

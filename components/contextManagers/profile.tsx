@@ -7,12 +7,12 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
-import { OrgJoinIsPaid } from "../../lib/types";
+import { OrgJoinIsPaid, OrgJoinIsPaidFinetunedModels } from "../../lib/types";
 import { Session, useSession } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/router";
 
 type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
-  organizations: OrgJoinIsPaid | null;
+  organizations: OrgJoinIsPaidFinetunedModels | null;
 };
 
 const ProfileContext = createContext<{
@@ -42,7 +42,7 @@ export function ProfileContextProvider(props: {
       if (!localSession || !props.supabase || !setProfile) return;
       const { data, error } = await props.supabase
         .from("profiles")
-        .select("*, organizations(*, is_paid(*))")
+        .select("*, organizations(*, is_paid(*), finetuned_models(*))")
         .single();
       if (error) {
         console.error(error.message);
