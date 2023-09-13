@@ -1,8 +1,9 @@
-import React, { Dispatch, SetStateAction, useEffect } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   CheckCircleIcon,
   Cog6ToothIcon,
   PlusIcon,
+  TrashIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import SelectBox from "../selectBox";
@@ -10,7 +11,7 @@ import { Database } from "../../lib/database.types";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useProfile } from "../contextManagers/profile";
 import classNames from "classnames";
-import { Api } from "../../lib/types";
+import { Api, HeadersInsert } from "../../lib/types";
 import Modal from "../modal";
 import WarningModal from "../warningModal";
 
@@ -149,10 +150,31 @@ function APISettingsModal(props: {
   const [apiNameSavedFeedback, setApiNameSavedFeedback] = React.useState<
     boolean | null
   >(null);
+  const [headers, setHeaders] = useState<HeadersInsert[]>([]);
   useEffect(() => {
     if (!props.api) return;
     setApiHostLocal(props.api.api_host);
     setApiNameLocal(props.api.name);
+    (async () => {
+      const res = await supabase
+        .from("fixed_headers")
+        .select("*")
+        .eq("api_id", props.api!.id);
+      if (res.error) throw new Error(res.error.message);
+      let headers = res.data;
+
+      // If there are no headers, create one so the user can see one in the UI
+      // Note: empty headers are ignored on the backend anyway
+      if (!headers || headers.length === 0) {
+        const insertRes = await supabase
+          .from("fixed_headers")
+          .insert({ api_id: props.api!.id })
+          .select();
+        if (insertRes.error) throw new Error(insertRes.error.message);
+        headers = insertRes.data;
+      }
+      setHeaders(headers);
+    })();
   }, [props.api]);
 
   const [deleteClicked, setDeleteClicked] = React.useState<boolean>(false);
@@ -212,7 +234,7 @@ function APISettingsModal(props: {
                 {apiNameSavedFeedback ? "Saved" : "Save failed"}
               </div>
               <input
-                className="border border-gray-300 rounded-md bg-gray-700 grow text-gray-200 text-xl px-5 py-2"
+                className="border border-gray-300 rounded-md bg-gray-700 grow text-gray-200 text-xl px-5 py-2 focus:border-purple-600 focus:ring-purple-600"
                 onChange={(e) => setApiNameLocal(e.target.value)}
                 value={apiName}
                 onBlur={async () => {
@@ -258,7 +280,7 @@ function APISettingsModal(props: {
               </div>
               <div className="relative flex flex-col w-[calc(50%+8rem)]">
                 <input
-                  className="border border-gray-300 rounded-md bg-gray-700 grow text-gray-200 px-5 py-1"
+                  className="border border-gray-300 rounded-md bg-gray-700 grow text-gray-200 px-5 py-1 focus:border-purple-600 focus:ring-purple-600"
                   onChange={(e) => setApiHostLocal(e.target.value)}
                   value={apiHost}
                   onBlur={async () => {
@@ -404,11 +426,62 @@ function APISettingsModal(props: {
                 </p>
               </div>
             </div>
+            <div className="col-start-1 flex flex-col place-items-start pr-4">
+              <h2 className="text-lg text-gray-200">Headers</h2>
+              <p className="text-gray-400 text-sm">
+                Add any other fixed headers that your API always needs.
+              </p>
+            </div>
+            <div className="mt-2 col-span-2 flex flex-col gap-y-1.5 w-full px-12">
+              {headers.map((h, idx) => (
+                <Header
+                  key={idx}
+                  header={h}
+                  setHeader={async (header: HeadersInsert) => {
+                    const res = await supabase
+                      .from("fixed_headers")
+                      .update(header)
+                      .eq("id", h.id);
+                    if (res.error) throw new Error(res.error.message);
+                    setHeaders((prev) =>
+                      prev.map((prevHeader) =>
+                        prevHeader.id === h.id ? header : prevHeader
+                      )
+                    );
+                  }}
+                  onDelete={async () => {
+                    const res = await supabase
+                      .from("fixed_headers")
+                      .delete()
+                      .eq("id", h.id);
+                    if (res.error) throw new Error(res.error.message);
+                    setHeaders((prev) =>
+                      prev.filter((prevHeader) => prevHeader.id !== h.id)
+                    );
+                  }}
+                />
+              ))}
+              <button
+                className="w-fit flex gap-x-2 text-sm flex-row justify-start place-items-center rounded-md text-gray-400 px-3 py-0.5 hover:bg-gray-900 transition"
+                onClick={async () => {
+                  if (!props.api) return;
+                  const res = await supabase
+                    .from("fixed_headers")
+                    .insert({ api_id: props.api.id })
+                    .select();
+                  if (res.error) throw new Error(res.error.message);
+                  setHeaders((prev) => [...prev, res.data[0]]);
+                }}
+              >
+                Add header
+                <PlusIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <div className="mt-10 flex flex-col rounded-md border border-gray-600 py-4 px-4 bg-gray-900">
+          <div className="mt-6 flex flex-row gap-x-10 place-items-center rounded-md border border-gray-600 py-3 px-3 bg-gray-900">
             <h3 className="text-lg text-gray-300">Danger Zone</h3>
             <button
-              className="mt-3 max-w-fit rounded-md text-gray-300 px-3 py-1.5 border border-gray-600 hover:bg-red-600 transition"
+              className="max-w-fit rounded-md text-gray-300 px-3 py-1.5 border border-gray-600 hover:bg-red-600 transition"
               onClick={() => setDeleteClicked(true)}
             >
               Delete API
@@ -417,5 +490,38 @@ function APISettingsModal(props: {
         </div>
       </Modal>
     </>
+  );
+}
+
+function Header(props: {
+  header: HeadersInsert;
+  setHeader: (header: HeadersInsert) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="w-full flex flex-row place-items-center gap-x-6">
+      <input
+        className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-2 focus:border-purple-600 focus:ring-purple-600"
+        placeholder={"Name"}
+        value={props.header.name}
+        onChange={(e) => {
+          props.setHeader({ ...props.header, name: e.target.value });
+        }}
+      />
+      <input
+        className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-2 focus:border-purple-600 focus:ring-purple-600"
+        placeholder={"Value"}
+        value={props.header.value}
+        onChange={(e) => {
+          props.setHeader({ ...props.header, value: e.target.value });
+        }}
+      />
+      <button
+        className="rounded-md text-gray-400 px-1.5 py-1.5 hover:bg-gray-900 transition"
+        onClick={props.onDelete}
+      >
+        <TrashIcon className="h-5 w-5" />
+      </button>
+    </div>
   );
 }

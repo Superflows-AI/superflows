@@ -6,6 +6,7 @@ export type ActionPlusApiInfo = Action & {
   api_host: string;
   auth_header: string;
   auth_scheme: string | null;
+  headers: Database["public"]["Tables"]["fixed_headers"]["Row"][];
 };
 
 export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
@@ -35,3 +36,6 @@ export type OrgJoinIsPaid = Organization & { is_paid: IsPaid[] };
 export type OrgJoinIsPaidFinetunedModels = OrgJoinIsPaid & {
   finetuned_models: FinetunedModels[];
 };
+
+export type HeadersInsert =
+  Database["public"]["Tables"]["fixed_headers"]["Insert"];

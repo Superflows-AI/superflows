@@ -207,7 +207,7 @@ export default async function handler(req: NextRequest) {
           storedParams.map(async (param) => {
             const res = await supabase
               .from("actions")
-              .select("*, apis(*)")
+              .select("*, apis(*, fixed_headers(*))")
               .eq("org_id", org!.id)
               .eq("id", param.actionId)
               .single();
@@ -219,6 +219,7 @@ export default async function handler(req: NextRequest) {
                   : res.data!.apis!.api_host,
                 auth_header: res.data!.apis!.auth_header,
                 auth_scheme: res.data!.apis!.auth_scheme,
+                headers: res.data!.apis!.fixed_headers,
               },
               params: param.args,
             };
@@ -245,7 +246,7 @@ export default async function handler(req: NextRequest) {
         parseOutput(data[0].content).commands.map(async (command) => {
           const res = await supabase
             .from("actions")
-            .select("*, apis(*)")
+            .select("*, apis(*, fixed_headers(*))")
             .eq("org_id", org!.id)
             .eq("name", command.name)
             .single();
@@ -257,6 +258,7 @@ export default async function handler(req: NextRequest) {
                 : res.data!.apis!.api_host,
               auth_header: res.data!.apis!.auth_header,
               auth_scheme: res.data!.apis!.auth_scheme,
+              headers: res.data!.apis!.fixed_headers,
             },
             params: command.args,
           };

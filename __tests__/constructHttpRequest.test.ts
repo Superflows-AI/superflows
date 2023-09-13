@@ -15,6 +15,7 @@ const constActionParams = {
   api_host: "https://api.mock",
   auth_header: "Authorization",
   auth_scheme: "Bearer",
+  headers: [],
 };
 const organization = {
   id: 1,
@@ -432,5 +433,37 @@ describe("constructHttpRequest", () => {
     expect(requestOptions.body).toBe(
       JSON.stringify({ conversation_id: 1, noChoice: "value" })
     );
+  });
+  it("GET - fixed header set", () => {
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...constActionParams,
+        parameters: null,
+        headers: [
+          {
+            name: "org_id",
+            value: "1",
+            id: "",
+            api_id: "",
+            created_at: "",
+          },
+        ],
+        path: "/api/mock/confirm",
+        request_method: "GET",
+        request_body_contents: null,
+      },
+      parameters: {},
+      organization,
+      userApiKey: "1234",
+      stream: () => {},
+    });
+    expect(url).toBe("https://api.mock/api/mock/confirm");
+    expect(requestOptions.method).toBe("GET");
+    expect(requestOptions.headers).toEqual({
+      Accept: "application/json",
+      Authorization: "Bearer 1234",
+      org_id: "1",
+    });
+    expect(requestOptions.body).toBe(undefined);
   });
 });
