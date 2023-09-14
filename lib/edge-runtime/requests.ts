@@ -13,56 +13,33 @@ export function removeIDs(obj: Json | Json[]): {
   cleanedObject: Json | Json[];
   idStore: IDStore;
 } {
-  const removedObj = JSON.parse(JSON.stringify(obj));
+  const cleanedObject = JSON.parse(JSON.stringify(obj));
 
-  const store: IDStore = {};
+  const idStore: IDStore = {};
   let idIdx = 0;
 
-  function findAndReplaceID(currentObject: Json | Json[]) {
-    if (!currentObject || typeof currentObject !== "object") return;
+  function findAndReplaceID(json: Json | Json[]) {
+    if (!json || typeof json !== "object") return;
+    const entries = Array.isArray(json) ? json.entries() : Object.entries(json);
 
-    if (Array.isArray(currentObject)) {
-      currentObject.forEach((item, index) => {
-        if (typeof item === "string" && isID(item)) {
-          const id = item;
-          const existingId = store[id as string];
-          if (existingId) {
-            currentObject[index] = existingId;
-          } else {
-            const newId = `ID${++idIdx}`;
-            store[id as string] = newId;
-            currentObject[index] = newId;
-          }
-        } else if (typeof item === "object") {
-          findAndReplaceID(item);
-        }
-      });
-      return;
-    }
-
-    for (const key in currentObject) {
-      if (
-        typeof currentObject[key] === "string" &&
-        isID(currentObject[key] as string)
-      ) {
-        const uuid = currentObject[key];
-        const existingId = store[uuid as string];
-        if (existingId) {
-          currentObject[key] = existingId;
-        } else {
+    for (const [key, value] of entries) {
+      if (typeof value === "string" && isID(value)) {
+        const id = idStore[value];
+        if (!id) {
           const newId = `ID${++idIdx}`;
-          store[uuid as string] = newId;
-          currentObject[key] = newId;
+          (json as any)[key] = idStore[value] = newId;
+        } else {
+          (json as any)[key] = id;
         }
-      } else if (typeof currentObject[key] === "object") {
-        findAndReplaceID(currentObject[key]);
+      } else if (typeof value === "object") {
+        findAndReplaceID(value);
       }
     }
   }
 
-  findAndReplaceID(removedObj);
+  findAndReplaceID(cleanedObject);
 
-  return { cleanedObject: removedObj, idStore: store };
+  return { cleanedObject, idStore };
 }
 
 export function reAddUUIDs(
@@ -74,31 +51,17 @@ export function reAddUUIDs(
   // Need the lookup reversed compared to removeUUIDs
   uuidStore = swapKeysValues(uuidStore);
 
-  function findAndReplaceID(currentObject: Json | Json[]) {
-    if (!currentObject || typeof currentObject !== "object") return;
+  function findAndReplaceID(json: Json | Json[]) {
+    if (!json || typeof json !== "object") return;
+    const entries = Array.isArray(json)
+      ? json.entries()
+      : Object.entries(json as { [key: string]: Json });
 
-    if (Array.isArray(currentObject)) {
-      currentObject.forEach((item, index) => {
-        if (
-          typeof item === "string" &&
-          uuidStore[currentObject[index] as string]
-        ) {
-          currentObject[index] = uuidStore[item as string];
-        } else if (typeof item === "object") {
-          findAndReplaceID(item);
-        }
-      });
-      return;
-    }
-
-    for (const key in currentObject) {
-      if (
-        typeof currentObject[key] === "string" &&
-        uuidStore[currentObject[key] as string]
-      ) {
-        currentObject[key] = uuidStore[currentObject[key] as string];
-      } else if (typeof currentObject[key] === "object") {
-        findAndReplaceID(currentObject[key]);
+    for (const [key, value] of entries) {
+      if (typeof value === "string" && uuidStore[value]) {
+        (json as any)[key] = uuidStore[value];
+      } else if (typeof value === "object") {
+        findAndReplaceID(value);
       }
     }
   }
