@@ -3,13 +3,112 @@ import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action } from "../types";
-import { deduplicateArray, filterKeys } from "../utils";
+import { deduplicateArray, filterKeys, swapKeysValues, isUUID } from "../utils";
 import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
+type UUIDStore = { [key: string]: string };
+
+export function removeUUIDs(obj: Json | Json[]): {
+  cleanedObject: Json | Json[];
+  uuidStore: UUIDStore;
+} {
+  const removedObj = JSON.parse(JSON.stringify(obj));
+
+  const store: UUIDStore = {};
+  let id = 0;
+
+  function findAndReplaceUUID(currentObject: Json | Json[]) {
+    if (!currentObject || typeof currentObject !== "object") return;
+
+    if (Array.isArray(currentObject)) {
+      currentObject.forEach((item, index) => {
+        if (typeof item === "string" && isUUID(item)) {
+          const uuid = item;
+          const existingId = store[uuid as string];
+          if (existingId) {
+            currentObject[index] = existingId;
+          } else {
+            const newId = `ID${++id}`;
+            store[uuid as string] = newId;
+            currentObject[index] = newId;
+          }
+        } else if (typeof item === "object") {
+          findAndReplaceUUID(item);
+        }
+      });
+      return;
+    }
+
+    for (const key in currentObject) {
+      if (
+        typeof currentObject[key] === "string" &&
+        isUUID(currentObject[key] as string)
+      ) {
+        const uuid = currentObject[key];
+        const existingId = store[uuid as string];
+        if (existingId) {
+          currentObject[key] = existingId;
+        } else {
+          const newId = `ID${++id}`;
+          store[uuid as string] = newId;
+          currentObject[key] = newId;
+        }
+      } else if (typeof currentObject[key] === "object") {
+        findAndReplaceUUID(currentObject[key]);
+      }
+    }
+  }
+
+  findAndReplaceUUID(removedObj);
+
+  return { cleanedObject: removedObj, uuidStore: store };
+}
+
+export function reAddUUIDs(
+  obj: Json | Json[],
+  uuidStore: UUIDStore
+): Json | Json[] {
+  const originalObj = JSON.parse(JSON.stringify(obj));
+
+  // Need the lookup reversed compared to removeUUIDs
+  uuidStore = swapKeysValues(uuidStore);
+
+  function findAndReplaceID(currentObject: Json | Json[]) {
+    if (!currentObject || typeof currentObject !== "object") return;
+
+    if (Array.isArray(currentObject)) {
+      currentObject.forEach((item, index) => {
+        if (
+          typeof item === "string" &&
+          uuidStore[currentObject[index] as string]
+        ) {
+          currentObject[index] = uuidStore[item as string];
+        } else if (typeof item === "object") {
+          findAndReplaceID(item);
+        }
+      });
+      return;
+    }
+
+    for (const key in currentObject) {
+      if (
+        typeof currentObject[key] === "string" &&
+        uuidStore[currentObject[key] as string]
+      ) {
+        currentObject[key] = uuidStore[currentObject[key] as string];
+      } else if (typeof currentObject[key] === "object") {
+        findAndReplaceID(currentObject[key]);
+      }
+    }
+  }
+  findAndReplaceID(originalObj);
+  return originalObj;
+}
+
 export function processAPIoutput(
   out: Json | Json[],
-  chosenAction: Action,
+  chosenAction: Action
 ): Json | Json[] {
   if (Array.isArray(out)) {
     out = deduplicateArray(out) as Json[];
@@ -18,6 +117,7 @@ export function processAPIoutput(
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
     out = filterKeys(out, keys as string[]);
   }
+
   return out;
 }
 
@@ -68,7 +168,7 @@ export function constructHttpRequest({
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
     const schema = bodyPropertiesFromRequestBodyContents(
-      action.request_body_contents,
+      action.request_body_contents
     );
     const allParams = fillNoChoiceRequiredParams(parameters, schema);
     const body = buildBody(schema, allParams);
@@ -102,7 +202,7 @@ export function constructHttpRequest({
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name])),
+          encodeURIComponent(String(parameters[param.name]))
         );
       } else if (param.in === "query") {
         queryParams.set(param.name, String(parameters[param.name]));
@@ -112,7 +212,7 @@ export function constructHttpRequest({
         headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
       } else {
         throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`,
+          `Parameter "${param.name}" has invalid location: ${param.in}`
         );
       }
     }
@@ -125,7 +225,7 @@ export function constructHttpRequest({
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
-    2,
+    2
   )}`;
   console.log(logMessage);
 
@@ -152,7 +252,7 @@ export function endpointUrlFromAction(action: {
 }
 
 export function bodyPropertiesFromRequestBodyContents(
-  requestBodyContents: Json,
+  requestBodyContents: Json
 ): OpenAPIV3.SchemaObject {
   const reqBodyContents = requestBodyContents as unknown as {
     [media: string]: MediaTypeObject;
@@ -164,7 +264,7 @@ export function bodyPropertiesFromRequestBodyContents(
   const applicationJson = getJsonMIMEType(reqBodyContents);
   if (!applicationJson) {
     throw new Error(
-      "Only application/json request body contents are supported",
+      "Only application/json request body contents are supported"
     );
   }
 
@@ -173,7 +273,7 @@ export function bodyPropertiesFromRequestBodyContents(
 
 function buildBody(
   schema: OpenAPIV3.SchemaObject,
-  parameters: Record<string, unknown>,
+  parameters: Record<string, unknown>
 ): { [x: string]: any } {
   const properties = schema.properties as {
     [name: string]: OpenAPIV3_1.SchemaObject;
@@ -193,7 +293,7 @@ function buildBody(
 export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit,
-  localHostname: string,
+  localHostname: string
 ): Promise<Json> {
   // TODO: Don't handle redirects manually
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,

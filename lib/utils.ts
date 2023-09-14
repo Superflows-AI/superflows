@@ -1,7 +1,8 @@
 import tokenizer from "gpt-tokenizer";
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
+import { validate } from "uuid";
 import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
-import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -295,7 +296,6 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
       layer = layer[key];
     }
   }
-
   return root;
 }
 
@@ -403,4 +403,15 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
     path: prop.path,
     data: prop.data,
   }));
+}
+
+export function swapKeysValues(json: { [key: string]: string }) {
+  const ret: { [key: string]: string } = {};
+  for (var key in json) {
+    ret[json[key]] = key;
+  }
+  return ret;
+}
+export function isUUID(str: string): boolean {
+  return validate(str);
 }

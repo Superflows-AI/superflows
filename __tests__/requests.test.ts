@@ -1,6 +1,11 @@
+import { v4 as uuidv4 } from "uuid";
+import pokemon from "./testData/pokemon.json";
+
 import {
   constructHttpRequest,
   endpointUrlFromAction,
+  reAddUUIDs,
+  removeUUIDs,
 } from "../lib/edge-runtime/requests";
 
 const constActionParams = {
@@ -313,7 +318,7 @@ describe("constructHttpRequest", () => {
     expect(requestOptions.body).toBe(
       JSON.stringify({
         user: { conversation_id: 1 },
-      }),
+      })
     );
   });
   it("POST - complicated lad", () => {
@@ -393,7 +398,7 @@ describe("constructHttpRequest", () => {
       JSON.stringify({
         user: { conversation_id: 1, something_else: { conversation_id: 2 } },
         list: [1, 2, 3, 4],
-      }),
+      })
     );
   });
   it("POST - 1 body param and 1 no choice param", () => {
@@ -434,7 +439,7 @@ describe("constructHttpRequest", () => {
       Authorization: "Bearer 1234",
     });
     expect(requestOptions.body).toBe(
-      JSON.stringify({ conversation_id: 1, noChoice: "value" }),
+      JSON.stringify({ conversation_id: 1, noChoice: "value" })
     );
   });
   it("GET - fixed header set", () => {
@@ -478,7 +483,7 @@ describe("endpointUrlFromAction", () => {
       path: "/api/v1/Segment/{segment-id}/column/{column-id}",
     });
     expect(result).toEqual(
-      "http://localhost:3000/api/mock/api/v1/Segment/{segment-id}/column/{column-id}",
+      "http://localhost:3000/api/mock/api/v1/Segment/{segment-id}/column/{column-id}"
     );
   });
   it("leading slash in the path and trailing slash in the host", () => {
@@ -524,5 +529,129 @@ describe("endpointUrlFromAction", () => {
     };
     const result = endpointUrlFromAction(action);
     expect(result).toEqual("http://localhost:3000/api/api/v1/test");
+  });
+});
+
+describe("remove and reAdd Ids", () => {
+  it("basic removal", () => {
+    const id = uuidv4();
+    const obj = {
+      a: id,
+      b: "test",
+    };
+    const originalObj = JSON.parse(JSON.stringify(obj));
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "test",
+    });
+    expect(obj).toEqual(originalObj); // make sure original object is not mutated
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+  it("removal in nested object", () => {
+    const id = uuidv4();
+    const obj = {
+      a: {
+        b: id,
+      },
+      c: "test",
+    };
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: {
+        b: "ID1",
+      },
+      c: "test",
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in array", () => {
+    const id = uuidv4();
+    const obj = {
+      a: [id, "test"],
+    };
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: ["ID1", "test"],
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in nested array", () => {
+    const id = uuidv4();
+    const obj = {
+      a: [[id, "test"]],
+    };
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: [["ID1", "test"]],
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in null", () => {
+    const obj = {
+      a: null,
+      b: "test",
+    };
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: null,
+      b: "test",
+    });
+
+    expect(uuidStore).toEqual({});
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("multiple UUID removal", () => {
+    const id1 = uuidv4();
+    const id2 = uuidv4();
+    const obj = {
+      a: id1,
+      b: id2,
+    };
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "ID2",
+    });
+
+    expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("duplicated and nested UUID removal", () => {
+    const id1 = uuidv4();
+    const id2 = uuidv4();
+    const obj = {
+      a: id1,
+      b: "test",
+      c: [id2, null, { d: id1 }, "end"],
+    };
+
+    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "test",
+      c: ["ID2", null, { d: "ID1" }, "end"],
+    });
+
+    expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+  it("no uuids not changed", () => {
+    const { cleanedObject, uuidStore } = removeUUIDs(pokemon);
+    expect(cleanedObject).toEqual(pokemon);
+    expect(uuidStore).toEqual({});
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(pokemon);
   });
 });
