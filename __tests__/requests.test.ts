@@ -5,7 +5,7 @@ import {
   constructHttpRequest,
   endpointUrlFromAction,
   reAddUUIDs,
-  removeUUIDs,
+  removeIDs,
 } from "../lib/edge-runtime/requests";
 
 const constActionParams = {
@@ -540,7 +540,7 @@ describe("remove and reAdd Ids", () => {
       b: "test",
     };
     const originalObj = JSON.parse(JSON.stringify(obj));
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "test",
@@ -557,7 +557,7 @@ describe("remove and reAdd Ids", () => {
       },
       c: "test",
     };
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: {
         b: "ID1",
@@ -574,7 +574,7 @@ describe("remove and reAdd Ids", () => {
     const obj = {
       a: [id, "test"],
     };
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: ["ID1", "test"],
     });
@@ -588,7 +588,7 @@ describe("remove and reAdd Ids", () => {
     const obj = {
       a: [[id, "test"]],
     };
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: [["ID1", "test"]],
     });
@@ -602,7 +602,7 @@ describe("remove and reAdd Ids", () => {
       a: null,
       b: "test",
     };
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: null,
       b: "test",
@@ -619,7 +619,7 @@ describe("remove and reAdd Ids", () => {
       a: id1,
       b: id2,
     };
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "ID2",
@@ -638,7 +638,7 @@ describe("remove and reAdd Ids", () => {
       c: [id2, null, { d: id1 }, "end"],
     };
 
-    const { cleanedObject, uuidStore } = removeUUIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "test",
@@ -649,9 +649,182 @@ describe("remove and reAdd Ids", () => {
     expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(obj);
   });
   it("no uuids not changed", () => {
-    const { cleanedObject, uuidStore } = removeUUIDs(pokemon);
+    const { cleanedObject, idStore: uuidStore } = removeIDs(pokemon);
     expect(cleanedObject).toEqual(pokemon);
     expect(uuidStore).toEqual({});
     expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(pokemon);
   });
+
+  it("real world example", () => {
+    const object = {
+      data: {
+        outgoingTransfers: [
+          {
+            requirementConfiguration: {
+              transferDateStatus: "fulfilled",
+              complianceCheckStatus: "not-required",
+              balanceCheckStatus: "not-required",
+              authorizationStatusCheck: "not-required",
+            },
+            id: "b3b84aac-df0c-46eb-8106-32d988375ccf",
+            transactionNumber: "20230822-EQJ2E3",
+            clientId: "09f42c3a-dcea-4468-a77a-40f1e6d456f1",
+            transferDate: "2023-08-23",
+            status: "pending",
+            currency: "USD",
+            amount: 1024,
+            feeAmount: 12.73,
+            beneficiary: {
+              account: {
+                currency: "USD",
+                iban: null,
+                ledgerNumber: "43755142",
+              },
+            },
+            scope: "internal",
+            source: {
+              accountId: "59f36934-02f9-4849-b0bb-06f9ba5bbda9",
+            },
+            destination: {
+              accountId: "1d86d8d9-d41b-4438-9b1d-e3691c62c456",
+            },
+          },
+        ],
+      },
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+
+    const cleanedExpected = {
+      data: {
+        outgoingTransfers: [
+          {
+            requirementConfiguration: {
+              transferDateStatus: "fulfilled",
+              complianceCheckStatus: "not-required",
+              balanceCheckStatus: "not-required",
+              authorizationStatusCheck: "not-required",
+            },
+            id: "ID1",
+            transactionNumber: "ID2",
+            clientId: "ID3",
+            transferDate: "2023-08-23",
+            status: "pending",
+            currency: "USD",
+            amount: 1024,
+            feeAmount: 12.73,
+            beneficiary: {
+              account: {
+                currency: "USD",
+                iban: null,
+                ledgerNumber: "43755142",
+              },
+            },
+            scope: "internal",
+            source: {
+              accountId: "ID4",
+            },
+            destination: {
+              accountId: "ID5",
+            },
+          },
+        ],
+      },
+    };
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(object);
+  });
+
+  // ____________________ TODO __________________________________
+  // it("real world example2", () => {
+  //   const object = {
+  //     inactive_count: 0,
+  //     items: [
+  //       {
+  //         name: "SMITH, Christopher Dean Mark",
+  //         appointed_on: "2022-09-23",
+  //         officer_role: "director",
+  //         occupation: "Company Director",
+  //         links: {
+  //           officer: {
+  //             appointments:
+  //               "/officers/v2pvca1uF1aDlx6XqwhenGxrU3c/appointments",
+  //           },
+  //         },
+  //         address: {
+  //           address_line_1: "21 Nevern Place",
+  //           address_line_2: "Earl's Court",
+  //           premises: "Flat 5",
+  //           postal_code: "SW5 9NR",
+  //           locality: "London",
+  //         },
+  //       },
+  //       {
+  //         officer_role: "director",
+  //         appointed_on: "2023-02-23",
+  //         name: "SMITH, John James",
+  //         occupation: "Director",
+  //         address: {
+  //           address_line_1: "21 Nevern Place",
+  //           postal_code: "SW5 9NR",
+  //           address_line_2: "Earl's Court",
+  //           premises: "Flat 5",
+  //           locality: "London",
+  //         },
+  //         links: {
+  //           officer: {
+  //             appointments:
+  //               "/officers/YzrqtRIBFpm1jHh52B19iY3SwG4/appointments",
+  //           },
+  //         },
+  //       },
+  //     ],
+  //     resigned_count: 0,
+  //   };
+  //   const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+
+  //   const cleanedExpected = {
+  //     inactive_count: 0,
+  //     items: [
+  //       {
+  //         name: "SMITH, Christopher Dean Mark",
+  //         appointed_on: "2022-09-23",
+  //         officer_role: "director",
+  //         occupation: "Company Director",
+  //         links: {
+  //           officer: {
+  //             appointments: "/officers/ID1/appointments",
+  //           },
+  //         },
+  //         address: {
+  //           address_line_1: "21 Nevern Place",
+  //           address_line_2: "Earl's Court",
+  //           premises: "Flat 5",
+  //           postal_code: "SW5 9NR",
+  //           locality: "London",
+  //         },
+  //       },
+  //       {
+  //         officer_role: "director",
+  //         appointed_on: "2023-02-23",
+  //         name: "SMITH, John James",
+  //         occupation: "Director",
+  //         address: {
+  //           address_line_1: "21 Nevern Place",
+  //           postal_code: "SW5 9NR",
+  //           address_line_2: "Earl's Court",
+  //           premises: "Flat 5",
+  //           locality: "London",
+  //         },
+  //         links: {
+  //           officer: {
+  //             appointments: "/officers/ID2/appointments",
+  //           },
+  //         },
+  //       },
+  //     ],
+  //     resigned_count: 0,
+  //   };
+  //   expect(cleanedObject).toEqual(cleanedExpected);
+  //   expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(object);
+  // });
 });

@@ -3,38 +3,38 @@ import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action } from "../types";
-import { deduplicateArray, filterKeys, swapKeysValues, isUUID } from "../utils";
+import { deduplicateArray, filterKeys, swapKeysValues, isID } from "../utils";
 import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
-type UUIDStore = { [key: string]: string };
+type IDStore = { [key: string]: string };
 
-export function removeUUIDs(obj: Json | Json[]): {
+export function removeIDs(obj: Json | Json[]): {
   cleanedObject: Json | Json[];
-  uuidStore: UUIDStore;
+  idStore: IDStore;
 } {
   const removedObj = JSON.parse(JSON.stringify(obj));
 
-  const store: UUIDStore = {};
-  let id = 0;
+  const store: IDStore = {};
+  let idIdx = 0;
 
-  function findAndReplaceUUID(currentObject: Json | Json[]) {
+  function findAndReplaceID(currentObject: Json | Json[]) {
     if (!currentObject || typeof currentObject !== "object") return;
 
     if (Array.isArray(currentObject)) {
       currentObject.forEach((item, index) => {
-        if (typeof item === "string" && isUUID(item)) {
-          const uuid = item;
-          const existingId = store[uuid as string];
+        if (typeof item === "string" && isID(item)) {
+          const id = item;
+          const existingId = store[id as string];
           if (existingId) {
             currentObject[index] = existingId;
           } else {
-            const newId = `ID${++id}`;
-            store[uuid as string] = newId;
+            const newId = `ID${++idIdx}`;
+            store[id as string] = newId;
             currentObject[index] = newId;
           }
         } else if (typeof item === "object") {
-          findAndReplaceUUID(item);
+          findAndReplaceID(item);
         }
       });
       return;
@@ -43,31 +43,31 @@ export function removeUUIDs(obj: Json | Json[]): {
     for (const key in currentObject) {
       if (
         typeof currentObject[key] === "string" &&
-        isUUID(currentObject[key] as string)
+        isID(currentObject[key] as string)
       ) {
         const uuid = currentObject[key];
         const existingId = store[uuid as string];
         if (existingId) {
           currentObject[key] = existingId;
         } else {
-          const newId = `ID${++id}`;
+          const newId = `ID${++idIdx}`;
           store[uuid as string] = newId;
           currentObject[key] = newId;
         }
       } else if (typeof currentObject[key] === "object") {
-        findAndReplaceUUID(currentObject[key]);
+        findAndReplaceID(currentObject[key]);
       }
     }
   }
 
-  findAndReplaceUUID(removedObj);
+  findAndReplaceID(removedObj);
 
-  return { cleanedObject: removedObj, uuidStore: store };
+  return { cleanedObject: removedObj, idStore: store };
 }
 
 export function reAddUUIDs(
   obj: Json | Json[],
-  uuidStore: UUIDStore
+  uuidStore: IDStore
 ): Json | Json[] {
   const originalObj = JSON.parse(JSON.stringify(obj));
 

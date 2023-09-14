@@ -1,4 +1,5 @@
 import tokenizer from "gpt-tokenizer";
+import { DateTime } from "luxon";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { validate } from "uuid";
 import { z } from "zod";
@@ -414,4 +415,59 @@ export function swapKeysValues(json: { [key: string]: string }) {
 }
 export function isUUID(str: string): boolean {
   return validate(str);
+}
+
+export function isID(str: string): boolean {
+  if (str.length < 10) return false;
+  if (isUUID(str)) return true;
+  if (isDate(str)) return false;
+  const nTokens = tokenizer.encode(str).length;
+  const x = str.length / nTokens;
+  // Is an ID if there's less than 2 characters per token
+  return x <= 2.2;
+}
+
+const dateFormats = [
+  "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+  "yyyy-MM-dd'T'HH:mm:ss.SSS",
+  "yyyy-MM-dd'T'HH:mm:ss",
+  "yyyy-MM-dd'T'HH:mm",
+  "yyyy-MM-dd'T'HH",
+  "yyyy-MM-dd",
+  "yyyy/MM/dd'T'HH:mm:ss.SSSZ",
+  "yyyy/MM/dd'T'HH:mm:ss.SSS",
+  "yyyy/MM/dd'T'HH:mm:ss",
+  "yyyy/MM/dd'T'HH:mm",
+  "yyyy/MM/dd'T'HH",
+  "yyyy/MM/dd",
+  "yyyy.MM.dd'T'HH:mm:ss.SSSZ",
+  "yyyy.MM.dd'T'HH:mm:ss.SSS",
+  "yyyy.MM.dd'T'HH:mm:ss",
+  "yyyy.MM.dd'T'HH:mm",
+  "yyyy.MM.dd'T'HH",
+  "yyyy.MM.dd",
+  "yyyyMMdd'T'HHmmss.SSSZ",
+  "yyyyMMdd'T'HHmmss.SSS",
+  "yyyyMMdd'T'HHmmss",
+  "yyyyMMdd'T'HHmm",
+  "yyyyMMdd'T'HH",
+  "yyyyMMdd",
+  "HH:mm:ss.SSS",
+  "HH:mm:ss",
+  "HH:mm",
+  "MM-dd-yyyy",
+  "dd.MM.yyyy",
+  "MM/dd/yyyy",
+  "dd/MM/yyyy",
+  "h:mm a",
+];
+
+export function isDate(str: string): boolean {
+  for (const format of dateFormats) {
+    const dt = DateTime.fromFormat(str, format);
+    if (dt.isValid) {
+      return true;
+    }
+  }
+  return false;
 }
