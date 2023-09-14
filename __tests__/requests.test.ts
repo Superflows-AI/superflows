@@ -734,97 +734,96 @@ describe("remove and reAdd Ids", () => {
     expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(object);
   });
 
-  // ____________________ TODO __________________________________
-  // it("real world example2", () => {
-  //   const object = {
-  //     inactive_count: 0,
-  //     items: [
-  //       {
-  //         name: "SMITH, Christopher Dean Mark",
-  //         appointed_on: "2022-09-23",
-  //         officer_role: "director",
-  //         occupation: "Company Director",
-  //         links: {
-  //           officer: {
-  //             appointments:
-  //               "/officers/v2pvca1uF1aDlx6XqwhenGxrU3c/appointments",
-  //           },
-  //         },
-  //         address: {
-  //           address_line_1: "21 Nevern Place",
-  //           address_line_2: "Earl's Court",
-  //           premises: "Flat 5",
-  //           postal_code: "SW5 9NR",
-  //           locality: "London",
-  //         },
-  //       },
-  //       {
-  //         officer_role: "director",
-  //         appointed_on: "2023-02-23",
-  //         name: "SMITH, John James",
-  //         occupation: "Director",
-  //         address: {
-  //           address_line_1: "21 Nevern Place",
-  //           postal_code: "SW5 9NR",
-  //           address_line_2: "Earl's Court",
-  //           premises: "Flat 5",
-  //           locality: "London",
-  //         },
-  //         links: {
-  //           officer: {
-  //             appointments:
-  //               "/officers/YzrqtRIBFpm1jHh52B19iY3SwG4/appointments",
-  //           },
-  //         },
-  //       },
-  //     ],
-  //     resigned_count: 0,
-  //   };
-  //   const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+  it("real world with urls", () => {
+    const object = {
+      inactive_count: 0,
+      items: [
+        {
+          name: "SMITH, Christopher Dean Mark",
+          appointed_on: "2022-09-23",
+          officer_role: "director",
+          occupation: "Company Director",
+          links: {
+            officer: {
+              appointments:
+                "/officers/v2pvca1uF1aDlx6XqwhenGxrU3c/appointments",
+            },
+          },
+          address: {
+            address_line_1: "21 Nevern Place",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            postal_code: "SW5 9NR",
+            locality: "London",
+          },
+        },
+        {
+          officer_role: "director",
+          appointed_on: "2023-02-23",
+          name: "SMITH, John James",
+          occupation: "Director",
+          address: {
+            address_line_1: "21 Nevern Place",
+            postal_code: "SW5 9NR",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            locality: "London",
+          },
+          links: {
+            officer: {
+              appointments:
+                "/officers/YzrqtRIBFpm1jHh52B19iY3SwG4/appointments",
+            },
+          },
+        },
+      ],
+      resigned_count: 0,
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
 
-  //   const cleanedExpected = {
-  //     inactive_count: 0,
-  //     items: [
-  //       {
-  //         name: "SMITH, Christopher Dean Mark",
-  //         appointed_on: "2022-09-23",
-  //         officer_role: "director",
-  //         occupation: "Company Director",
-  //         links: {
-  //           officer: {
-  //             appointments: "/officers/ID1/appointments",
-  //           },
-  //         },
-  //         address: {
-  //           address_line_1: "21 Nevern Place",
-  //           address_line_2: "Earl's Court",
-  //           premises: "Flat 5",
-  //           postal_code: "SW5 9NR",
-  //           locality: "London",
-  //         },
-  //       },
-  //       {
-  //         officer_role: "director",
-  //         appointed_on: "2023-02-23",
-  //         name: "SMITH, John James",
-  //         occupation: "Director",
-  //         address: {
-  //           address_line_1: "21 Nevern Place",
-  //           postal_code: "SW5 9NR",
-  //           address_line_2: "Earl's Court",
-  //           premises: "Flat 5",
-  //           locality: "London",
-  //         },
-  //         links: {
-  //           officer: {
-  //             appointments: "/officers/ID2/appointments",
-  //           },
-  //         },
-  //       },
-  //     ],
-  //     resigned_count: 0,
-  //   };
-  //   expect(cleanedObject).toEqual(cleanedExpected);
-  //   expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(object);
-  // });
+    const cleanedExpected = {
+      inactive_count: 0,
+      items: [
+        {
+          name: "SMITH, Christopher Dean Mark",
+          appointed_on: "2022-09-23",
+          officer_role: "director",
+          occupation: "Company Director",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+          address: {
+            address_line_1: "21 Nevern Place",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            postal_code: "SW5 9NR",
+            locality: "London",
+          },
+        },
+        {
+          officer_role: "director",
+          appointed_on: "2023-02-23",
+          name: "SMITH, John James",
+          occupation: "Director",
+          address: {
+            address_line_1: "21 Nevern Place",
+            postal_code: "SW5 9NR",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            locality: "London",
+          },
+          links: {
+            officer: {
+              appointments: "/officers/ID2/appointments",
+            },
+          },
+        },
+      ],
+      resigned_count: 0,
+    };
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddUUIDs(cleanedObject, uuidStore)).toEqual(object);
+  });
 });
