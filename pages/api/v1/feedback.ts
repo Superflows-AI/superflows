@@ -19,7 +19,7 @@ export const config = {
 };
 
 const FeedbackZod = z.object({
-  conversation_id: z.nullable(z.number()),
+  conversation_id: z.number(),
   feedback_positive: z.boolean(),
   conversation_length_at_feedback: z.number(),
   negative_feedback_text: z.nullable(z.string()),

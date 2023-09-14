@@ -476,7 +476,7 @@ async function Angela( // Good ol' Angela
       getMessages([], actions, reqData.user_description, org, language)[0]
         .content,
     );
-    await redis.expire(conversationId.toString(), 60 * 60);
+    await redis.expire(conversationId.toString(), 60 * 15);
   }
 
   try {
