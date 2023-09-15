@@ -137,3 +137,4 @@ dist
 local/
 .idea/
 install-sidebar.sh
+.vercel

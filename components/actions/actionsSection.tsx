@@ -204,13 +204,6 @@ export default function PageActionsSection(props: {
                       ),
                       onClick: () => setViewPromptOpen(true),
                     },
-                    {
-                      name: "Delete all actions",
-                      Icon: <TrashIcon className="w-4 h-4 md:w-5 md:h-5" />,
-                      onClick: () =>
-                        props.actionTags.length > 0 &&
-                        setDeleteAllActionsModalOpen(true),
-                    },
                   ]}
                   buttonClassName={
                     "text-gray-200 rounded bg-gray-900 hover:bg-gray-950"
@@ -265,9 +258,9 @@ export default function PageActionsSection(props: {
                 }}
               />
             ))
-        ) : props.apis.length === 0 ? (
-          <div className="mt-32 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
-            <h2 className={"text-2xl text-gray-300 font-medium mb-8"}>
+        ) : (
+          <div className="mt-10 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
+            <h2 className={"text-2xl text-gray-300 font-medium mb-4"}>
               {selectedApiTab?.name}
               {selectedApiTab?.name?.endsWith("API")
                 ? " has"
@@ -276,136 +269,53 @@ export default function PageActionsSection(props: {
                 : "You have"}{" "}
               no actions
             </h2>
-            <div className="grid grid-cols-2 gap-x-4 px-3 md:px-6">
-              <div className="border border-gray-500 rounded-md py-4 px-8">
-                <h3 className="text-xl text-gray-300 mb-4">
-                  Configure your API
-                </h3>
-                <p>
-                  <button
-                    className="inline text-sky-500 hover:underline pt-6"
-                    onClick={() => setUploadModalOpen(true)}
-                  >
-                    Upload your OpenAPI specification
-                  </button>
-                </p>
-              </div>
-              <div className="border border-gray-500 rounded-md py-4 px-2 sm:px-4 md:px-8">
-                <h3 className="text-xl text-gray-300 mb-4">
-                  Use a preset configuration
-                </h3>
-                <div className="mt-8 grid grid-cols-2 gap-x-2">
-                  {PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      className="px-4 md:px-10 py-4 bg-gray-900 hover:bg-gray-800 text-base md:text-lg text-gray-400 rounded-md border border-gray-600"
-                      onClick={async () => {
-                        // Add spec
-                        if (isLoading || !profile) return;
-                        setIsLoading(true);
-                        const specRes = await fetch(
-                          `/presets/${preset.id}/demo-openapi-spec.json`
-                        );
-                        const spec = await specRes.json();
-                        await fetch("/api/swagger-to-actions", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            org_id: profile.org_id,
-                            swagger: spec,
-                          }),
-                        });
-
-                        // Enable all actions
-                        await supabase
-                          .from("actions")
-                          .update({ active: true })
-                          .eq("org_id", profile.org_id);
-                        // This reads oddly, but it means we update the selected API to the last API in the list
-                        // when props.apis is updated (this MUST be called before loadActions)
-                        setUpdateSelectedTo(undefined);
-                        await props.loadActions();
-
-                        // If not already set, set the org name & description
-                        let toUpdate: Record<string, any> = {};
-                        if (!profile.organizations?.name) {
-                          toUpdate.name = spec.info.title;
-                        }
-                        if (!profile.organizations?.description) {
-                          toUpdate.description = spec.info.description;
-                        }
-                        if (Object.keys(toUpdate).length > 0) {
-                          await supabase
-                            .from("organizations")
-                            .update(toUpdate)
-                            .eq("id", profile.org_id);
-                        }
-
-                        // Set user description
-                        const userDescRes = await fetch(
-                          `/presets/${preset.id}/user_description.json`
-                        );
-                        // If the file doesn't exist, don't set the user description
-                        if (userDescRes.status === 200) {
-                          const userDesc = (await userDescRes.json()) as string;
-                          localStorage.setItem("userDescription", userDesc);
-                        }
-
-                        // Set test mode to true
-                        localStorage.setItem("testMode", "true");
-
-                        // Add preset suggestions
-                        const suggRes = await fetch(
-                          `/presets/${preset.id}/suggestions.json`
-                        );
-                        const suggestions = (await suggRes.json()) as string[];
-                        const convRes = await supabase
-                          .from("conversations")
-                          // Match number of new conversations to the number of suggestions in the file
-                          .insert(
-                            suggestions.map((_) => ({
-                              org_id: profile.org_id!,
-                            }))
-                          )
-                          .select();
-                        if (convRes.error) throw convRes.error;
-                        const chatRes = await supabase
-                          .from("chat_messages")
-                          .insert(
-                            convRes.data.map((conv, idx) => ({
-                              org_id: conv.org_id,
-                              conversation_id: conv.id,
-                              role: "user",
-                              content: suggestions[idx],
-                              conversation_index: 0,
-                            }))
-                          );
-                        if (chatRes.error) throw chatRes.error;
-                        await refreshProfile();
-                        setIsLoading(false);
-                      }}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-10 h-96 text-gray-400 text-center text-lg rounded-lg border border-gray-500 border-dashed bg-gray-850 flex flex-col justify-center place-items-center">
-            <h2 className={"text-2xl text-gray-300 font-medium mb-4"}>
-              You have no actions.
-            </h2>
             <p>
-              Add them manually or{" "}
+              {profile && (
+                <button
+                  className="inline text-sky-500 hover:underline"
+                  onClick={async () => {
+                    let api = selectedApiTab;
+                    if (!api) {
+                      const apiRes = await supabase
+                        .from("apis")
+                        .insert({ org_id: profile!.org_id! })
+                        .select();
+                      if (apiRes.error) throw new Error(apiRes.error.message);
+                      api = apiRes.data[0];
+                      props.setApis([api]);
+                      setSelectedApiTab(api);
+                      await props.loadActions();
+                    }
+                    const res = await supabase
+                      .from("action_tags")
+                      .insert({
+                        name: "New Group",
+                        org_id: profile.org_id,
+                        api_id: api.id,
+                      })
+                      .select("*");
+                    if (res.error) throw res.error;
+                    if (res.data === null) throw new Error("No data returned");
+                    const newActionTags = [
+                      {
+                        ...res.data[0],
+                        actions: [],
+                        apis: selectedApiTab,
+                      },
+                      ...props.actionTags,
+                    ];
+                    props.setActionTags(newActionTags);
+                  }}
+                >
+                  Add them manually
+                </button>
+              )}{" "}
+              or{" "}
               <button
                 className="inline text-sky-500 hover:underline"
                 onClick={() => setUploadModalOpen(true)}
               >
-                upload an OpenAPI API specification.
+                upload an OpenAPI specification.
               </button>
             </p>
           </div>

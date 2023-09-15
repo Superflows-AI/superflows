@@ -5,7 +5,7 @@
   </a>
 </p>
 
-<h2 align="center" >A chat interface that can control your product </h3>
+<h2 align="center" >A chat interface that controls your product via API calls</h3>
 <p align="center"></p>
 
 <p align="center"><a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> ·  <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
@@ -45,6 +45,8 @@ You can try out the cloud version for free [**here**](https://dashboard.superflo
 - [x] Connect to multiple APIs with different hosts ✌️
 - [x] Asks for user confirmation before taking actions that add, remove or update data ✅ 
 - [x] Track usage in dashboard 📊
+- [x] Multi-LLM support (Llama 2, GPT4, Claude 2, PaLM 2...) 🌍
+- [x] Collects user feedback on AI replies for fine-tuning 👍
 
 ### Dashboard
 
