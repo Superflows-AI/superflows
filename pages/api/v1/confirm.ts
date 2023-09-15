@@ -148,9 +148,10 @@ export default async function handler(req: NextRequest) {
       )}`
     );
 
+    const redisKey = requestData.conversation_id.toString() + "-toConfirm";
     if (!requestData.confirm) {
       // Cancel - user said this is incorrect!
-      if (redis) await redis.json.del(requestData.conversation_id.toString());
+      if (redis) await redis.json.del(redisKey);
       // Respond with a message from the assistant & add user cancel to GPT history
       const assistantMessage = {
         role: "assistant",
@@ -196,10 +197,8 @@ export default async function handler(req: NextRequest) {
     let toExecute: { action: ActionPlusApiInfo; params: object }[] = [];
 
     if (redis) {
-      const redisData = await redis.json.get(
-        requestData.conversation_id.toString()
-      );
-      await redis.json.del(requestData.conversation_id.toString());
+      const redisData = await redis.json.get(redisKey);
+      await redis.json.del(redisKey);
 
       if (redisData) {
         const storedParams = redisData.toConfirm as ToConfirm[];

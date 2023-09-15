@@ -39,7 +39,7 @@ const supabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE,
+  process.env.SERVICE_LEVEL_KEY_SUPABASE
   // Bring me my Chariot of fire!
 );
 
@@ -61,7 +61,7 @@ export default async function handler(req: NextRequest) {
         {
           status: 405,
           headers,
-        },
+        }
       );
     }
 
@@ -112,17 +112,20 @@ export default async function handler(req: NextRequest) {
         {
           status: 200,
           headers,
-        },
+        }
       );
     }
 
     console.log(
-      `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`,
+      `Got call to feedback with valid request body for conversation ID: ${requestData.conversation_id}`
     );
 
     let systemPrompt: string | null = null;
-    if (redis)
-      systemPrompt = await redis.getdel(requestData.conversation_id.toString());
+    if (redis) {
+      const redisKey =
+        requestData.conversation_id.toString() + "-system-prompt";
+      systemPrompt = await redis.getdel(redisKey);
+    }
 
     const { error: updateError } = await supabase.from("feedback").insert({
       conversation_id: requestData.conversation_id,
@@ -140,7 +143,7 @@ export default async function handler(req: NextRequest) {
       {
         status: 200,
         headers,
-      },
+      }
     );
   } catch (e) {
     let message: string;
@@ -157,7 +160,7 @@ export default async function handler(req: NextRequest) {
       {
         status: 500,
         headers,
-      },
+      }
     );
   }
 }
