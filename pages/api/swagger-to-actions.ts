@@ -83,19 +83,35 @@ export default async function handler(
 
   // If no api_id, add an API object
   let api_id = req.body.api_id ?? "";
+  const authInfo = getAuthInfoFromSpec(
+    dereferencedSwagger.components?.securitySchemes as Record<
+      string,
+      OpenAPIV3_1.SecuritySchemeObject
+    >
+  );
+  const api_host = dereferencedSwagger.servers
+    ?.reverse()
+    .find((server) => server.url.startsWith("https://"))?.url;
   if (!api_id) {
     const apiResp = await supabase
       .from("apis")
       .insert({
         org_id: orgId,
         name: dereferencedSwagger.info.title,
-        api_host: dereferencedSwagger.servers
-          ?.reverse()
-          .find((server) => server.url.startsWith("https://"))?.url,
+        api_host,
+        auth_header: authInfo?.auth_header,
+        auth_scheme: authInfo?.auth_scheme,
       })
       .select();
     if (apiResp.error) throw apiResp.error;
     api_id = apiResp.data[0].id;
+  } else {
+    const apiResp = await supabase.from("apis").update({
+      api_host,
+      auth_header: authInfo?.auth_header,
+      auth_scheme: authInfo?.auth_scheme,
+    });
+    if (apiResp.error) throw apiResp.error;
   }
 
   // We store actions in tags. This stores the action_tags id for the row with the name of the tag
@@ -294,4 +310,35 @@ export function replaceMarkdownLinks(
     markdownLinkRegEx,
     (match, linkText) => linkText
   );
+}
+
+export function getAuthInfoFromSpec(
+  securitySchemes:
+    | { [key: string]: OpenAPIV3_1.SecuritySchemeObject }
+    | undefined
+):
+  | {
+      auth_header: string;
+      auth_scheme: string | null;
+    }
+  | undefined {
+  if (!securitySchemes) return;
+  for (const securityScheme of Object.values(securitySchemes)) {
+    if (securityScheme.type === "http" && securityScheme.scheme === "bearer") {
+      return { auth_header: "Authorization", auth_scheme: "Bearer" };
+    }
+  }
+  for (const securityScheme of Object.values(securitySchemes)) {
+    if (securityScheme.type === "http") {
+      return {
+        auth_header: "Authorization",
+        auth_scheme: securityScheme.scheme,
+      };
+    }
+  }
+  for (const securityScheme of Object.values(securitySchemes)) {
+    if (securityScheme.type === "apiKey") {
+      return { auth_header: securityScheme.name, auth_scheme: null };
+    }
+  }
 }

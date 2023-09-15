@@ -57,13 +57,6 @@ export function ProfileContextProvider(props: {
   );
 
   useEffect(() => {
-    console.log(
-      "session or router changed. Will refresh:",
-      router.pathname !== pathname,
-      session,
-      router.pathname,
-      pathname
-    );
     if (session && router.pathname !== pathname) {
       refreshProfile();
       setPathname(router.pathname);
