@@ -69,6 +69,7 @@ export function reAddIDs(
   const originalObj = JSON.parse(JSON.stringify(obj));
   uuidStore = swapKeysValues(uuidStore);
 
+  let entries: [string, Json][] = [];
   function findAndReplaceID(json: any) {
     const entries = Array.isArray(json) ? json.entries() : Object.entries(json);
 
@@ -87,7 +88,7 @@ export function reAddIDs(
         } else if (uuidStore[value]) {
           json[k] = uuidStore[value];
         }
-      } else if (typeof value === "object") {
+      } else if (value && typeof value === "object") {
         findAndReplaceID(value);
       }
     }
