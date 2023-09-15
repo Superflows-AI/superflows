@@ -122,7 +122,8 @@ export default async function handler(req: NextRequest) {
 
     let systemPrompt: string | null = null;
     if (redis) {
-      const redisKey = requestData.conversation_id.toString() + "-toConfirm";
+      const redisKey =
+        requestData.conversation_id.toString() + "-system-prompt";
       systemPrompt = await redis.getdel(redisKey);
     }
 
