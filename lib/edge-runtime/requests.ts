@@ -11,7 +11,7 @@ export type IDStore = { [key: string]: string };
 
 export function removeIDs(
   obj: Json | Json[],
-  existingStore?: IDStore
+  existingStore?: IDStore,
 ): {
   cleanedObject: Json | Json[];
   idStore: IDStore;
@@ -39,7 +39,7 @@ export function removeIDs(
             .map((part) =>
               typeof part === "string" && isID(part)
                 ? getOrGenerateID(part)
-                : part
+                : part,
             );
           (json as any)[k] = urlParts.join("/");
         } else if (isID(value)) {
@@ -64,7 +64,7 @@ export function removeIDs(
 
 export function reAddIDs(
   obj: Json | Json[],
-  uuidStore: IDStore
+  uuidStore: IDStore,
 ): Json | Json[] {
   const originalObj = JSON.parse(JSON.stringify(obj));
   uuidStore = swapKeysValues(uuidStore);
@@ -100,7 +100,7 @@ export function reAddIDs(
 
 export function processAPIoutput(
   out: Json | Json[],
-  chosenAction: Action
+  chosenAction: Action,
 ): Json | Json[] {
   if (Array.isArray(out)) {
     out = deduplicateArray(out) as Json[];
@@ -160,7 +160,7 @@ export function constructHttpRequest({
   // Request body
   if (action.request_method !== "GET" && action.request_body_contents) {
     const schema = bodyPropertiesFromRequestBodyContents(
-      action.request_body_contents
+      action.request_body_contents,
     );
     const allParams = fillNoChoiceRequiredParams(parameters, schema);
     const body = buildBody(schema, allParams);
@@ -194,7 +194,7 @@ export function constructHttpRequest({
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name]))
+          encodeURIComponent(String(parameters[param.name])),
         );
       } else if (param.in === "query") {
         queryParams.set(param.name, String(parameters[param.name]));
@@ -204,7 +204,7 @@ export function constructHttpRequest({
         headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
       } else {
         throw new Error(
-          `Parameter "${param.name}" has invalid location: ${param.in}`
+          `Parameter "${param.name}" has invalid location: ${param.in}`,
         );
       }
     }
@@ -217,7 +217,7 @@ export function constructHttpRequest({
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,
     null,
-    2
+    2,
   )}`;
   console.log(logMessage);
 
@@ -244,7 +244,7 @@ export function endpointUrlFromAction(action: {
 }
 
 export function bodyPropertiesFromRequestBodyContents(
-  requestBodyContents: Json
+  requestBodyContents: Json,
 ): OpenAPIV3.SchemaObject {
   const reqBodyContents = requestBodyContents as unknown as {
     [media: string]: MediaTypeObject;
@@ -256,7 +256,7 @@ export function bodyPropertiesFromRequestBodyContents(
   const applicationJson = getJsonMIMEType(reqBodyContents);
   if (!applicationJson) {
     throw new Error(
-      "Only application/json request body contents are supported"
+      "Only application/json request body contents are supported",
     );
   }
 
@@ -265,7 +265,7 @@ export function bodyPropertiesFromRequestBodyContents(
 
 function buildBody(
   schema: OpenAPIV3.SchemaObject,
-  parameters: Record<string, unknown>
+  parameters: Record<string, unknown>,
 ): { [x: string]: any } {
   const properties = schema.properties as {
     [name: string]: OpenAPIV3_1.SchemaObject;
@@ -285,7 +285,7 @@ function buildBody(
 export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit,
-  localHostname: string
+  localHostname: string,
 ): Promise<Json> {
   // TODO: Don't handle redirects manually
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,
