@@ -100,7 +100,7 @@ const supabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE
+  process.env.SERVICE_LEVEL_KEY_SUPABASE,
   // Bring me my Chariot of fire!
 );
 
@@ -119,7 +119,7 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: "Only POST requests allowed",
         }),
-        { status: 405, headers }
+        { status: 405, headers },
       );
     }
 
@@ -189,7 +189,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `You have reached your usage limit of ${USAGE_LIMIT} messages. Upgrade to premium to get unlimited messages.`,
           }),
-          { status: 402, headers }
+          { status: 402, headers },
         );
       }
     }
@@ -204,7 +204,7 @@ export default async function handler(req: NextRequest) {
     }
 
     console.log(
-      `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`
+      `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`,
     );
 
     // TODO: Add non-streaming API support (although the UX is 10x worse)
@@ -213,7 +213,7 @@ export default async function handler(req: NextRequest) {
         JSON.stringify({
           error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
         }),
-        { status: 501, headers }
+        { status: 501, headers },
       );
     }
 
@@ -223,7 +223,7 @@ export default async function handler(req: NextRequest) {
     let conversationId: number;
     if (requestData.conversation_id) {
       console.log(
-        `Conversation ID provided: ${requestData.conversation_id}. Fetching previous messages`
+        `Conversation ID provided: ${requestData.conversation_id}. Fetching previous messages`,
       );
       conversationId = requestData.conversation_id;
       const convResp = await supabase
@@ -241,7 +241,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `Conversation with ID=${requestData.conversation_id} not found`,
           }),
-          { status: 404, headers }
+          { status: 404, headers },
         );
       }
       previousMessages = conversation;
@@ -270,7 +270,7 @@ export default async function handler(req: NextRequest) {
     };
     previousMessages.push(newUserMessage);
     console.log(
-      "Number of previous messages in conversation: " + previousMessages.length
+      "Number of previous messages in conversation: " + previousMessages.length,
     );
     const insertedChatMessagesRes = await supabase
       .from("chat_messages")
@@ -319,7 +319,7 @@ export default async function handler(req: NextRequest) {
           error:
             "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
         }),
-        { status: 404, headers }
+        { status: 404, headers },
       );
     }
     activeActions.forEach((action) => {
@@ -329,15 +329,15 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `No API host found for action with name: ${action.name} - add an API host on the API settings page`,
           }),
-          { status: 400, headers }
+          { status: 400, headers },
         );
       }
     });
 
     console.log(
       `${activeActions.length} active actions found: ${JSON.stringify(
-        activeActions.map((a) => a.name)
-      )}`
+        activeActions.map((a) => a.name),
+      )}`,
     );
     const currentHost = getHost(req);
 
@@ -356,7 +356,7 @@ export default async function handler(req: NextRequest) {
           conversationId,
           previousMessages,
           language,
-          currentHost
+          currentHost,
         );
         const insertedChatMessagesRes = await supabase
           .from("chat_messages")
@@ -367,7 +367,7 @@ export default async function handler(req: NextRequest) {
               conversation_id: conversationId,
               conversation_index: previousMessages.length + idx,
               language,
-            }))
+            })),
           );
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
@@ -417,7 +417,7 @@ export default async function handler(req: NextRequest) {
       JSON.stringify({
         error: message,
       }),
-      { status: 500, headers }
+      { status: 500, headers },
     );
   }
 }
@@ -434,7 +434,7 @@ async function Angela( // Good ol' Angela
   conversationId: number,
   previousMessages: GPTMessageInclSummary[],
   language: string | null,
-  currentHost: string
+  currentHost: string,
 ): Promise<{
   nonSystemMessages: GPTMessageInclSummary[];
   cost: number;
@@ -452,8 +452,8 @@ async function Angela( // Good ol' Angela
           JSON.stringify({
             id: conversationId,
             ...step,
-          })
-      )
+          }),
+      ),
     );
   }
 
@@ -479,7 +479,7 @@ async function Angela( // Good ol' Angela
     await redis.set(
       conversationId.toString(),
       getMessages([], actions, reqData.user_description, org, language)[0]
-        .content
+        .content,
     );
     await redis.expire(conversationId.toString(), 60 * 15);
   }
@@ -495,7 +495,7 @@ async function Angela( // Good ol' Angela
         actions,
         reqData.user_description,
         org,
-        language
+        language,
       );
 
       const { cleanedMessages, idStore } = removeIdsFromMessages(chatGptPrompt);
@@ -504,7 +504,7 @@ async function Angela( // Good ol' Angela
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls(
         [...chatGptPrompt],
-        model === "gpt-4-0613" ? "4" : "3"
+        model === "gpt-4-0613" ? "4" : "3",
       );
 
       const promptInputCost = openAiCost(chatGptPrompt, "in");
@@ -514,11 +514,11 @@ async function Angela( // Good ol' Angela
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
         [chatGptPrompt, completionOptions, model],
-        3
+        3,
       );
       if (res === null || "message" in res) {
         console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}`
+          `OpenAI API call failed for conversation with id: ${conversationId}`,
         );
         streamInfo({
           role: "error",
@@ -539,7 +539,7 @@ async function Angela( // Good ol' Angela
         if (done) break;
 
         const contentItems = parseGPTStreamedData(
-          incompleteChunk + decoder.decode(value)
+          incompleteChunk + decoder.decode(value),
         );
         if (contentItems === undefined) {
           incompleteChunk += decoder.decode(value);
@@ -599,7 +599,7 @@ async function Angela( // Good ol' Angela
               chosenAction,
               command,
               chatGptPrompt.concat(newMessage), // This may contain useful information for the correction
-              getSecondaryModel(model)
+              getSecondaryModel(model),
             );
 
             let needsUserCorrection = false;
@@ -637,7 +637,7 @@ async function Angela( // Good ol' Angela
 
             if (
               ["get", "head", "options", "connect"].includes(
-                chosenAction.request_method!.toLowerCase()
+                chosenAction.request_method!.toLowerCase(),
               )
             ) {
               const { url, requestOptions } =
@@ -675,7 +675,7 @@ async function Angela( // Good ol' Angela
                 name: command.name,
               };
             }
-          })
+          }),
         )
       ).filter((x) => x !== undefined);
 
@@ -697,7 +697,7 @@ async function Angela( // Good ol' Angela
 
       // This is for typing purposes
       const toConfirm: ToConfirm[] = commandMapOutput.filter(
-        (x): x is ToConfirm => x !== null
+        (x): x is ToConfirm => x !== null,
       );
       awaitingConfirmation = toConfirm.length > 0;
       if (awaitingConfirmation) {
@@ -716,7 +716,7 @@ async function Angela( // Good ol' Angela
       numOpenAIRequests++;
       if (numOpenAIRequests >= 5) {
         console.error(
-          `OpenAI API call limit reached for conversation with id: ${conversationId}`
+          `OpenAI API call limit reached for conversation with id: ${conversationId}`,
         );
         streamInfo({
           role: "error",
@@ -738,12 +738,12 @@ async function Angela( // Good ol' Angela
 
 async function storeActionsAwaitingConfirmation(
   toConfirm: ToConfirm[],
-  conversationId: number
+  conversationId: number,
 ) {
   if (toConfirm.length > 0 && redis) {
     if ((await redis.get(conversationId.toString())) !== null)
       throw new Error(
-        `Conversation ID "${conversationId}" already exists in redis, something has gone wrong`
+        `Conversation ID "${conversationId}" already exists in redis, something has gone wrong`,
       );
     console.log("Setting redis key", conversationId.toString());
 

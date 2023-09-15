@@ -318,7 +318,7 @@ describe("constructHttpRequest", () => {
     expect(requestOptions.body).toBe(
       JSON.stringify({
         user: { conversation_id: 1 },
-      })
+      }),
     );
   });
   it("POST - complicated lad", () => {
@@ -398,7 +398,7 @@ describe("constructHttpRequest", () => {
       JSON.stringify({
         user: { conversation_id: 1, something_else: { conversation_id: 2 } },
         list: [1, 2, 3, 4],
-      })
+      }),
     );
   });
   it("POST - 1 body param and 1 no choice param", () => {
@@ -439,7 +439,7 @@ describe("constructHttpRequest", () => {
       Authorization: "Bearer 1234",
     });
     expect(requestOptions.body).toBe(
-      JSON.stringify({ conversation_id: 1, noChoice: "value" })
+      JSON.stringify({ conversation_id: 1, noChoice: "value" }),
     );
   });
   it("GET - fixed header set", () => {
@@ -483,7 +483,7 @@ describe("endpointUrlFromAction", () => {
       path: "/api/v1/Segment/{segment-id}/column/{column-id}",
     });
     expect(result).toEqual(
-      "http://localhost:3000/api/mock/api/v1/Segment/{segment-id}/column/{column-id}"
+      "http://localhost:3000/api/mock/api/v1/Segment/{segment-id}/column/{column-id}",
     );
   });
   it("leading slash in the path and trailing slash in the host", () => {

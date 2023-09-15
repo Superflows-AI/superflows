@@ -25,7 +25,7 @@ export function removeEmptyCharacters(text: string): string {
 export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
   func: (...args: Args) => Promise<Output>,
   args: Args,
-  retries: number
+  retries: number,
 ): Promise<Output> {
   const t1 = Date.now();
   console.log("Starting exponentialRetryWrapper for function " + func.name);
@@ -34,12 +34,12 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
     console.log(
       `Exponential retry wrapper completed in ${Date.now() - t1} ms for func "${
         func.name
-      }". There were ${retries - 1} retries remaining.`
+      }". There were ${retries - 1} retries remaining.`,
     );
     return res;
   } catch (error) {
     console.log(
-      `Error in exponentialRetryWrapper for function ${func.name}. The error is: ${error}}`
+      `Error in exponentialRetryWrapper for function ${func.name}. The error is: ${error}}`,
     );
     if (retries > 0) {
       console.log(`Retrying ${func.name} in ${2 ** (10 - retries)}ms`);
@@ -55,7 +55,7 @@ export function unpackAndCall(
   func: ((...args: any[]) => any) | undefined,
   obj: {
     [p: string]: any;
-  }
+  },
 ): any {
   if (!func) return "";
   // Get the names of the function parameters
@@ -77,7 +77,7 @@ export function unpackAndCall(
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
-  bodySchema: z.ZodType<any>
+  bodySchema: z.ZodType<any>,
 ): body is T {
   const { success } = bodySchema.safeParse(body);
   return success;
@@ -109,7 +109,7 @@ export function isJsonString(str: string) {
 
 export function openAiCost(
   messages: ChatGPTMessage[],
-  put: "in" | "out"
+  put: "in" | "out",
 ): number {
   let costPerToken;
   if (put === "in") {
@@ -131,7 +131,7 @@ export function getTokenCount(messages: ChatGPTMessage[]): number {
 export function chunkString(
   text: string,
   chunkSize: number,
-  overlap: number
+  overlap: number,
 ): string[] {
   /** Splits a long string into chunks of length `chunkSize`, with overlap `overlap`
    * Useful for splitting up long strings for GPT. **/
@@ -158,7 +158,7 @@ export function objectNotEmpty(obj: Object): boolean {
 }
 
 function deleteUndefined<InputType extends Record<string, any | undefined>>(
-  obj: InputType
+  obj: InputType,
 ): Partial<InputType> {
   for (let key in obj) {
     if (obj[key] === undefined) {
@@ -169,7 +169,7 @@ function deleteUndefined<InputType extends Record<string, any | undefined>>(
 }
 
 export function deduplicateArray<ArrType extends any[]>(
-  arr: ArrType
+  arr: ArrType,
 ): Partial<ArrType | { items: Partial<ArrType>[] }> {
   if (arr.length === 0) return {};
   // Check for null, undefined, string, number, boolean or array
@@ -206,7 +206,7 @@ export function deduplicateArray<ArrType extends any[]>(
 
 export function filterKeys<InputObject extends any>(
   obj: InputObject,
-  keysToKeep: string[]
+  keysToKeep: string[],
 ): any {
   if (!obj || typeof obj !== "object") return obj;
   else if (Array.isArray(obj)) {
@@ -247,7 +247,7 @@ export function splitPath(path: string): string[] {
 
 export function jsonSplitter(
   json: any,
-  path: (string | number)[] = []
+  path: (string | number)[] = [],
 ): Chunk[] {
   /**
   Breaks down JSON into individual chunks of data. Each "Chunk" is defined by its path
@@ -356,7 +356,7 @@ export function chunkToString(chunk: Chunk): string {
 export function addGPTdataToProperties(
   properties: Properties,
   gptOutput: string,
-  arrayIdx: number | null = null
+  arrayIdx: number | null = null,
 ): Properties {
   /**
   Add the data outputted by gpt to the properties object. 
