@@ -7,14 +7,17 @@ import { deduplicateArray, filterKeys, swapKeysValues, isID } from "../utils";
 import { getHeader, getJsonMIMEType } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
-type IDStore = { [key: string]: string };
+export type IDStore = { [key: string]: string };
 
-export function removeIDs(obj: Json | Json[]): {
+export function removeIDs(
+  obj: Json | Json[],
+  existingStore?: IDStore
+): {
   cleanedObject: Json | Json[];
   idStore: IDStore;
 } {
+  const store: IDStore = existingStore ?? {};
   const removedObj = JSON.parse(JSON.stringify(obj));
-  const store: IDStore = {};
   let idIdx = 0;
 
   function findAndReplaceID(json: Json | Json[]) {
@@ -59,7 +62,7 @@ export function removeIDs(obj: Json | Json[]): {
   return { cleanedObject: removedObj, idStore: store };
 }
 
-export function reAddUUIDs(
+export function reAddIDs(
   obj: Json | Json[],
   uuidStore: IDStore
 ): Json | Json[] {
