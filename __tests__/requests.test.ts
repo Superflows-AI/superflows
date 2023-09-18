@@ -1,7 +1,14 @@
+import { v4 as uuidv4 } from "uuid";
+import pokemon from "./testData/pokemon.json";
+
 import {
   constructHttpRequest,
   endpointUrlFromAction,
+  reAddIDs,
+  removeIDs,
 } from "../lib/edge-runtime/requests";
+import { Json } from "../lib/database.types";
+import { JsonNumIncrByCommand } from "@upstash/redis/types/pkg/commands/json_numincrby";
 
 const constActionParams = {
   action_type: "http",
@@ -524,5 +531,510 @@ describe("endpointUrlFromAction", () => {
     };
     const result = endpointUrlFromAction(action);
     expect(result).toEqual("http://localhost:3000/api/api/v1/test");
+  });
+});
+
+describe("remove and reAdd Ids", () => {
+  it("basic removal", () => {
+    const id = uuidv4();
+    const obj = {
+      a: id,
+      b: "test",
+    };
+    const originalObj = JSON.parse(JSON.stringify(obj));
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "test",
+    });
+    expect(obj).toEqual(originalObj); // make sure original object is not mutated
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+  it("removal in nested object", () => {
+    const id = uuidv4();
+    const obj = {
+      a: {
+        b: id,
+      },
+      c: "test",
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: {
+        b: "ID1",
+      },
+      c: "test",
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in array", () => {
+    const id = uuidv4();
+    const obj = {
+      a: [id, "test"],
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: ["ID1", "test"],
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in nested array", () => {
+    const id = uuidv4();
+    const obj = {
+      a: [[id, "test"]],
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: [["ID1", "test"]],
+    });
+
+    expect(uuidStore).toEqual({ [id]: "ID1" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("removal in null", () => {
+    const obj = {
+      a: null,
+      b: "test",
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: null,
+      b: "test",
+    });
+
+    expect(uuidStore).toEqual({});
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("multiple UUID removal", () => {
+    const id1 = uuidv4();
+    const id2 = uuidv4();
+    const obj = {
+      a: id1,
+      b: id2,
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "ID2",
+    });
+
+    expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+
+  it("duplicated and nested UUID removal", () => {
+    const id1 = uuidv4();
+    const id2 = uuidv4();
+    const obj = {
+      a: id1,
+      b: "test",
+      c: [id2, null, { d: id1 }, "end"],
+    };
+
+    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    expect(cleanedObject).toEqual({
+      a: "ID1",
+      b: "test",
+      c: ["ID2", null, { d: "ID1" }, "end"],
+    });
+
+    expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+  });
+  it("no uuids not changed", () => {
+    const { cleanedObject, idStore: uuidStore } = removeIDs(pokemon);
+    expect(cleanedObject).toEqual(pokemon);
+    expect(uuidStore).toEqual({});
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(pokemon);
+  });
+
+  it("real world example", () => {
+    const object = {
+      data: {
+        outgoingTransfers: [
+          {
+            requirementConfiguration: {
+              transferDateStatus: "fulfilled",
+              complianceCheckStatus: "not-required",
+              balanceCheckStatus: "not-required",
+              authorizationStatusCheck: "not-required",
+            },
+            id: "b3b84aac-df0c-46eb-8106-32d988375ccf",
+            transactionNumber: "20230822-EQJ2E3",
+            clientId: "09f42c3a-dcea-4468-a77a-40f1e6d456f1",
+            transferDate: "2023-08-23",
+            status: "pending",
+            currency: "USD",
+            amount: 1024,
+            feeAmount: 12.73,
+            beneficiary: {
+              account: {
+                currency: "USD",
+                iban: null,
+                ledgerNumber: "43755142",
+              },
+            },
+            scope: "internal",
+            source: {
+              accountId: "59f36934-02f9-4849-b0bb-06f9ba5bbda9",
+            },
+            destination: {
+              accountId: "1d86d8d9-d41b-4438-9b1d-e3691c62c456",
+            },
+          },
+        ],
+      },
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+
+    const cleanedExpected = {
+      data: {
+        outgoingTransfers: [
+          {
+            requirementConfiguration: {
+              transferDateStatus: "fulfilled",
+              complianceCheckStatus: "not-required",
+              balanceCheckStatus: "not-required",
+              authorizationStatusCheck: "not-required",
+            },
+            id: "ID1",
+            transactionNumber: "ID2",
+            clientId: "ID3",
+            transferDate: "2023-08-23",
+            status: "pending",
+            currency: "USD",
+            amount: 1024,
+            feeAmount: 12.73,
+            beneficiary: {
+              account: {
+                currency: "USD",
+                iban: null,
+                ledgerNumber: "43755142",
+              },
+            },
+            scope: "internal",
+            source: {
+              accountId: "ID4",
+            },
+            destination: {
+              accountId: "ID5",
+            },
+          },
+        ],
+      },
+    };
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+  });
+
+  it("real world with urls", () => {
+    const object = {
+      inactive_count: 0,
+      items: [
+        {
+          name: "SMITH, Christopher Dean Mark",
+          appointed_on: "2022-09-23",
+          officer_role: "director",
+          occupation: "Company Director",
+          links: {
+            officer: {
+              appointments:
+                "/officers/v2pvca1uF1aDlx6XqwhenGxrU3c/appointments",
+            },
+          },
+          address: {
+            address_line_1: "21 Nevern Place",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            postal_code: "SW5 9NR",
+            locality: "London",
+          },
+        },
+        {
+          officer_role: "director",
+          appointed_on: "2023-02-23",
+          name: "SMITH, John James",
+          occupation: "Director",
+          address: {
+            address_line_1: "21 Nevern Place",
+            postal_code: "SW5 9NR",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            locality: "London",
+          },
+          links: {
+            officer: {
+              appointments:
+                "/officers/YzrqtRIBFpm1jHh52B19iY3SwG4/appointments",
+            },
+          },
+        },
+      ],
+      resigned_count: 0,
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+
+    const cleanedExpected = {
+      inactive_count: 0,
+      items: [
+        {
+          name: "SMITH, Christopher Dean Mark",
+          appointed_on: "2022-09-23",
+          officer_role: "director",
+          occupation: "Company Director",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+          address: {
+            address_line_1: "21 Nevern Place",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            postal_code: "SW5 9NR",
+            locality: "London",
+          },
+        },
+        {
+          officer_role: "director",
+          appointed_on: "2023-02-23",
+          name: "SMITH, John James",
+          occupation: "Director",
+          address: {
+            address_line_1: "21 Nevern Place",
+            postal_code: "SW5 9NR",
+            address_line_2: "Earl's Court",
+            premises: "Flat 5",
+            locality: "London",
+          },
+          links: {
+            officer: {
+              appointments: "/officers/ID2/appointments",
+            },
+          },
+        },
+      ],
+      resigned_count: 0,
+    };
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+  });
+
+  it("real world duplicate IDs ", () => {
+    const object = {
+      inactive_count: 0,
+      resigned_count: 2,
+      items: [
+        {
+          officer_role: "secretary",
+          address: {
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            address_line_1: "Cutlers Green Farmhouse",
+            locality: "Radstock",
+            postal_code: "BA3 4ND",
+          },
+          appointed_on: "2006-08-01",
+          name: "SMITH, Judith",
+          links: {
+            officer: {
+              appointments:
+                "/officers/PVKgNCKxdQeG0hzP_D2HHFYIxd0/appointments",
+            },
+          },
+        },
+        {
+          officer_role: "director",
+          occupation: "Administrator",
+          date_of_birth: {
+            year: 1959,
+            month: 3,
+          },
+          appointed_on: "2006-08-01",
+          address: {
+            locality: "Radstock",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            postal_code: "BA3 4ND",
+            address_line_1: "Cutlers Green Farmhouse",
+          },
+          nationality: "British",
+          links: {
+            officer: {
+              appointments:
+                "/officers/PVKgNCKxdQeG0hzP_D2HHFYIxd0/appointments",
+            },
+          },
+          name: "SMITH, Judith",
+        },
+        {
+          appointed_on: "2006-08-01",
+          officer_role: "director",
+          date_of_birth: {
+            month: 1,
+            year: 1958,
+          },
+          occupation: "Heating Engineer",
+          links: {
+            officer: {
+              appointments:
+                "/officers/Yw9FLOLUUOoQTZCD2jAHCB0gRCU/appointments",
+            },
+          },
+          name: "SMITH, Stephen Mark",
+          address: {
+            postal_code: "BA3 4ND",
+            locality: "Radstock",
+            address_line_1: "Cutlers Green Farmhouse",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+          },
+          nationality: "British",
+        },
+        {
+          officer_role: "corporate-nominee-secretary",
+          address: {
+            postal_code: "M7 4AS",
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+          },
+          links: {
+            officer: {
+              appointments:
+                "/officers/Yg4rTn5QucYg_hJOxGTnx3B51WY/appointments",
+            },
+          },
+          appointed_on: "2006-05-15",
+          name: "FORM 10 SECRETARIES FD LTD",
+        },
+        {
+          appointed_on: "2006-05-15",
+          name: "FORM 10 DIRECTORS FD LTD",
+          links: {
+            officer: {
+              appointments:
+                "/officers/aDjhOpnMaB_uAHDxRnMLWpa9C-I/appointments",
+            },
+          },
+          officer_role: "corporate-nominee-director",
+          address: {
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+            postal_code: "M7 4AS",
+          },
+        },
+      ],
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object as Json);
+
+    const cleanedExpected = {
+      inactive_count: 0,
+      resigned_count: 2,
+      items: [
+        {
+          officer_role: "secretary",
+          address: {
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            address_line_1: "Cutlers Green Farmhouse",
+            locality: "Radstock",
+            postal_code: "BA3 4ND",
+          },
+          appointed_on: "2006-08-01",
+          name: "SMITH, Judith",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+        },
+        {
+          officer_role: "director",
+          occupation: "Administrator",
+          date_of_birth: {
+            year: 1959,
+            month: 3,
+          },
+          appointed_on: "2006-08-01",
+          address: {
+            locality: "Radstock",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            postal_code: "BA3 4ND",
+            address_line_1: "Cutlers Green Farmhouse",
+          },
+          nationality: "British",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+          name: "SMITH, Judith",
+        },
+        {
+          appointed_on: "2006-08-01",
+          officer_role: "director",
+          date_of_birth: {
+            month: 1,
+            year: 1958,
+          },
+          occupation: "Heating Engineer",
+          links: {
+            officer: {
+              appointments: "/officers/ID2/appointments",
+            },
+          },
+          name: "SMITH, Stephen Mark",
+          address: {
+            postal_code: "BA3 4ND",
+            locality: "Radstock",
+            address_line_1: "Cutlers Green Farmhouse",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+          },
+          nationality: "British",
+        },
+        {
+          officer_role: "corporate-nominee-secretary",
+          address: {
+            postal_code: "M7 4AS",
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+          },
+          links: {
+            officer: {
+              appointments: "/officers/ID3/appointments",
+            },
+          },
+          appointed_on: "2006-05-15",
+          name: "FORM 10 SECRETARIES FD LTD",
+        },
+        {
+          appointed_on: "2006-05-15",
+          name: "FORM 10 DIRECTORS FD LTD",
+          links: {
+            officer: {
+              appointments: "/officers/ID4/appointments",
+            },
+          },
+          officer_role: "corporate-nominee-director",
+          address: {
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+            postal_code: "M7 4AS",
+          },
+        },
+      ],
+    };
+
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
   });
 });

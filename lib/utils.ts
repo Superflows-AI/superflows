@@ -1,7 +1,9 @@
 import tokenizer from "gpt-tokenizer";
+import { DateTime } from "luxon";
+import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
+import { validate } from "uuid";
 import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
-import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 
 export function classNames(
   ...classes: (string | undefined | null | boolean)[]
@@ -23,7 +25,7 @@ export function removeEmptyCharacters(text: string): string {
 export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
   func: (...args: Args) => Promise<Output>,
   args: Args,
-  retries: number
+  retries: number,
 ): Promise<Output> {
   const t1 = Date.now();
   console.log("Starting exponentialRetryWrapper for function " + func.name);
@@ -32,12 +34,12 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
     console.log(
       `Exponential retry wrapper completed in ${Date.now() - t1} ms for func "${
         func.name
-      }". There were ${retries - 1} retries remaining.`
+      }". There were ${retries - 1} retries remaining.`,
     );
     return res;
   } catch (error) {
     console.log(
-      `Error in exponentialRetryWrapper for function ${func.name}. The error is: ${error}}`
+      `Error in exponentialRetryWrapper for function ${func.name}. The error is: ${error}}`,
     );
     if (retries > 0) {
       console.log(`Retrying ${func.name} in ${2 ** (10 - retries)}ms`);
@@ -53,7 +55,7 @@ export function unpackAndCall(
   func: ((...args: any[]) => any) | undefined,
   obj: {
     [p: string]: any;
-  }
+  },
 ): any {
   if (!func) return "";
   // Get the names of the function parameters
@@ -75,7 +77,7 @@ export function unpackAndCall(
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
-  bodySchema: z.ZodType<any>
+  bodySchema: z.ZodType<any>,
 ): body is T {
   const { success } = bodySchema.safeParse(body);
   return success;
@@ -107,7 +109,7 @@ export function isJsonString(str: string) {
 
 export function openAiCost(
   messages: ChatGPTMessage[],
-  put: "in" | "out"
+  put: "in" | "out",
 ): number {
   let costPerToken;
   if (put === "in") {
@@ -129,7 +131,7 @@ export function getTokenCount(messages: ChatGPTMessage[]): number {
 export function chunkString(
   text: string,
   chunkSize: number,
-  overlap: number
+  overlap: number,
 ): string[] {
   /** Splits a long string into chunks of length `chunkSize`, with overlap `overlap`
    * Useful for splitting up long strings for GPT. **/
@@ -156,7 +158,7 @@ export function objectNotEmpty(obj: Object): boolean {
 }
 
 function deleteUndefined<InputType extends Record<string, any | undefined>>(
-  obj: InputType
+  obj: InputType,
 ): Partial<InputType> {
   for (let key in obj) {
     if (obj[key] === undefined) {
@@ -167,7 +169,7 @@ function deleteUndefined<InputType extends Record<string, any | undefined>>(
 }
 
 export function deduplicateArray<ArrType extends any[]>(
-  arr: ArrType
+  arr: ArrType,
 ): Partial<ArrType | { items: Partial<ArrType>[] }> {
   if (arr.length === 0) return {};
   // Check for null, undefined, string, number, boolean or array
@@ -204,7 +206,7 @@ export function deduplicateArray<ArrType extends any[]>(
 
 export function filterKeys<InputObject extends any>(
   obj: InputObject,
-  keysToKeep: string[]
+  keysToKeep: string[],
 ): any {
   if (!obj || typeof obj !== "object") return obj;
   else if (Array.isArray(obj)) {
@@ -245,7 +247,7 @@ export function splitPath(path: string): string[] {
 
 export function jsonSplitter(
   json: any,
-  path: (string | number)[] = []
+  path: (string | number)[] = [],
 ): Chunk[] {
   /**
   Breaks down JSON into individual chunks of data. Each "Chunk" is defined by its path
@@ -295,7 +297,6 @@ export function jsonReconstruct(chunks: Chunk[]): Record<string, any> {
       layer = layer[key];
     }
   }
-
   return root;
 }
 
@@ -355,7 +356,7 @@ export function chunkToString(chunk: Chunk): string {
 export function addGPTdataToProperties(
   properties: Properties,
   gptOutput: string,
-  arrayIdx: number | null = null
+  arrayIdx: number | null = null,
 ): Properties {
   /**
   Add the data outputted by gpt to the properties object. 
@@ -403,4 +404,70 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
     path: prop.path,
     data: prop.data,
   }));
+}
+
+export function swapKeysValues(json: { [key: string]: string }) {
+  const ret: { [key: string]: string } = {};
+  for (var key in json) {
+    ret[json[key]] = key;
+  }
+  return ret;
+}
+export function isUUID(str: string): boolean {
+  return validate(str);
+}
+
+export function isID(str: string): boolean {
+  if (str.length < 10) return false;
+  if (isUUID(str)) return true;
+  if (isDate(str)) return false;
+  const nTokens = tokenizer.encode(str).length;
+  const x = str.length / nTokens;
+  // Is an ID if there's less than 2.2 characters per token (threshold determined empirically)
+  return x <= 2.2;
+}
+
+const dateFormats = [
+  "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+  "yyyy-MM-dd'T'HH:mm:ss.SSS",
+  "yyyy-MM-dd'T'HH:mm:ss",
+  "yyyy-MM-dd'T'HH:mm",
+  "yyyy-MM-dd'T'HH",
+  "yyyy-MM-dd",
+  "yyyy/MM/dd'T'HH:mm:ss.SSSZ",
+  "yyyy/MM/dd'T'HH:mm:ss.SSS",
+  "yyyy/MM/dd'T'HH:mm:ss",
+  "yyyy/MM/dd'T'HH:mm",
+  "yyyy/MM/dd'T'HH",
+  "yyyy/MM/dd",
+  "yyyy.MM.dd'T'HH:mm:ss.SSSZ",
+  "yyyy.MM.dd'T'HH:mm:ss.SSS",
+  "yyyy.MM.dd'T'HH:mm:ss",
+  "yyyy.MM.dd'T'HH:mm",
+  "yyyy.MM.dd'T'HH",
+  "yyyy.MM.dd",
+  "yyyyMMdd'T'HHmmss.SSSZ",
+  "yyyyMMdd'T'HHmmss.SSS",
+  "yyyyMMdd'T'HHmmss",
+  "yyyyMMdd'T'HHmm",
+  "yyyyMMdd'T'HH",
+  "yyyyMMdd",
+  "HH:mm:ss.SSS",
+  "HH:mm:ss",
+  "HH:mm",
+  "MM-dd-yyyy",
+  "dd.MM.yyyy",
+  "MM/dd/yyyy",
+  "dd/MM/yyyy",
+  "h:mm a",
+];
+
+export function isDate(str: string): boolean {
+  for (const format of dateFormats) {
+    const dt = DateTime.fromFormat(str, format);
+    if (dt.isValid) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -12,6 +12,7 @@ import {
   constructHttpRequest,
   makeHttpRequest,
   processAPIoutput,
+  reAddIDs,
 } from "../../../lib/edge-runtime/requests";
 import summarizeText from "../../../lib/edge-runtime/summarize";
 import {
@@ -31,7 +32,11 @@ import {
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
-import { getSecondaryModel, streamLLMResponse } from "../../../lib/queryLLM";
+import {
+  getSecondaryModel,
+  removeIdsFromMessages,
+  streamLLMResponse,
+} from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
   OrgJoinIsPaidFinetunedModels,
@@ -493,6 +498,12 @@ async function Angela( // Good ol' Angela
         org,
         language
       );
+
+      // Replace messages with `CleanedMessages` which has long IDs.
+      // idStore is a map from the cleaned to the original IDs
+      const { cleanedMessages, idStore } = removeIdsFromMessages(chatGptPrompt);
+      chatGptPrompt = cleanedMessages;
+
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls(
         [...chatGptPrompt],
@@ -583,6 +594,10 @@ async function Angela( // Good ol' Angela
             if (!chosenAction) {
               throw new Error(`Action ${command.name} not found!`);
             }
+
+            // Re-add long IDs before making calls to the API
+            const readdedIds = reAddIDs(command.args, idStore);
+            command.args = readdedIds as FunctionCall["args"];
 
             const { corrections } = await getMissingArgCorrections(
               chosenAction,

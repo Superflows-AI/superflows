@@ -5,6 +5,7 @@ import {
   ChatGPTResponse,
   OpenAIError,
 } from "./models";
+import { IDStore, removeIDs } from "./edge-runtime/requests";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
@@ -18,7 +19,7 @@ export const defaultParams: ChatGPTParams = {
 export async function getLLMResponse(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {},
-  model: string
+  model: string,
 ): Promise<string> {
   const { url, options } = getLLMRequest(messages, params, model);
 
@@ -31,8 +32,8 @@ export async function getLLMResponse(
     throw Error(
       // TODO: Check whether retry_after exists
       `OpenAI API rate limit exceeded. Full error: ${JSON.stringify(
-        responseJson
-      )}`
+        responseJson,
+      )}`,
     );
   }
   if ("error" in responseJson) {
@@ -51,13 +52,13 @@ export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
 export async function streamLLMResponse(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {},
-  model: string
+  model: string,
 ): Promise<ReadableStream | { message: string; status: number } | null> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   const { url, options } = getLLMRequest(
     messages,
     { ...params, stream: true },
-    model
+    model,
   );
   const response = await fetch(url, options);
 
@@ -65,8 +66,8 @@ export async function streamLLMResponse(
     // Throwing an error triggers exponential backoff retry
     throw new Error(
       `LLM rate limit exceeded. Full error: ${JSON.stringify(
-        await response.json()
-      )}`
+        await response.json(),
+      )}`,
     );
   }
   if (!response.ok) {
@@ -78,10 +79,29 @@ export async function streamLLMResponse(
   return response.body;
 }
 
+export function removeIdsFromMessages(messages: ChatGPTMessage[]): {
+  cleanedMessages: ChatGPTMessage[];
+  idStore: IDStore;
+} {
+  let idStore: IDStore = {};
+  const cleanedMessages = messages.map((message) => {
+    if (message.role === "function") {
+      try {
+        let cleanedObject = JSON.parse(message.content);
+        ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
+        message.content = JSON.stringify(cleanedObject);
+      } catch {}
+    }
+    return message;
+  });
+
+  return { cleanedMessages, idStore };
+}
+
 function getLLMRequest(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {},
-  model: string
+  model: string,
 ): {
   url: string;
   options: { method: string; headers: HeadersInit; body: string };
@@ -96,7 +116,7 @@ function getLLMRequest(
     model !== "google/palm-2-chat-bison"
       ? messages
       : messages.map((m) =>
-          m.role !== "function" ? { ...m } : { ...m, role: "assistant" }
+          m.role !== "function" ? { ...m } : { ...m, role: "assistant" },
         );
 
   const options = {
