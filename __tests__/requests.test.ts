@@ -7,6 +7,8 @@ import {
   reAddIDs,
   removeIDs,
 } from "../lib/edge-runtime/requests";
+import { Json } from "../lib/database.types";
+import { JsonNumIncrByCommand } from "@upstash/redis/types/pkg/commands/json_numincrby";
 
 const constActionParams = {
   action_type: "http",
@@ -823,6 +825,215 @@ describe("remove and reAdd Ids", () => {
       ],
       resigned_count: 0,
     };
+    expect(cleanedObject).toEqual(cleanedExpected);
+    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+  });
+
+  it("real world duplicate IDs ", () => {
+    const object = {
+      inactive_count: 0,
+      resigned_count: 2,
+      items: [
+        {
+          officer_role: "secretary",
+          address: {
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            address_line_1: "Cutlers Green Farmhouse",
+            locality: "Radstock",
+            postal_code: "BA3 4ND",
+          },
+          appointed_on: "2006-08-01",
+          name: "SMITH, Judith",
+          links: {
+            officer: {
+              appointments:
+                "/officers/PVKgNCKxdQeG0hzP_D2HHFYIxd0/appointments",
+            },
+          },
+        },
+        {
+          officer_role: "director",
+          occupation: "Administrator",
+          date_of_birth: {
+            year: 1959,
+            month: 3,
+          },
+          appointed_on: "2006-08-01",
+          address: {
+            locality: "Radstock",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            postal_code: "BA3 4ND",
+            address_line_1: "Cutlers Green Farmhouse",
+          },
+          nationality: "British",
+          links: {
+            officer: {
+              appointments:
+                "/officers/PVKgNCKxdQeG0hzP_D2HHFYIxd0/appointments",
+            },
+          },
+          name: "SMITH, Judith",
+        },
+        {
+          appointed_on: "2006-08-01",
+          officer_role: "director",
+          date_of_birth: {
+            month: 1,
+            year: 1958,
+          },
+          occupation: "Heating Engineer",
+          links: {
+            officer: {
+              appointments:
+                "/officers/Yw9FLOLUUOoQTZCD2jAHCB0gRCU/appointments",
+            },
+          },
+          name: "SMITH, Stephen Mark",
+          address: {
+            postal_code: "BA3 4ND",
+            locality: "Radstock",
+            address_line_1: "Cutlers Green Farmhouse",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+          },
+          nationality: "British",
+        },
+        {
+          officer_role: "corporate-nominee-secretary",
+          address: {
+            postal_code: "M7 4AS",
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+          },
+          links: {
+            officer: {
+              appointments:
+                "/officers/Yg4rTn5QucYg_hJOxGTnx3B51WY/appointments",
+            },
+          },
+          appointed_on: "2006-05-15",
+          name: "FORM 10 SECRETARIES FD LTD",
+        },
+        {
+          appointed_on: "2006-05-15",
+          name: "FORM 10 DIRECTORS FD LTD",
+          links: {
+            officer: {
+              appointments:
+                "/officers/aDjhOpnMaB_uAHDxRnMLWpa9C-I/appointments",
+            },
+          },
+          officer_role: "corporate-nominee-director",
+          address: {
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+            postal_code: "M7 4AS",
+          },
+        },
+      ],
+    };
+    const { cleanedObject, idStore: uuidStore } = removeIDs(object as Json);
+
+    const cleanedExpected = {
+      inactive_count: 0,
+      resigned_count: 2,
+      items: [
+        {
+          officer_role: "secretary",
+          address: {
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            address_line_1: "Cutlers Green Farmhouse",
+            locality: "Radstock",
+            postal_code: "BA3 4ND",
+          },
+          appointed_on: "2006-08-01",
+          name: "SMITH, Judith",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+        },
+        {
+          officer_role: "director",
+          occupation: "Administrator",
+          date_of_birth: {
+            year: 1959,
+            month: 3,
+          },
+          appointed_on: "2006-08-01",
+          address: {
+            locality: "Radstock",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+            postal_code: "BA3 4ND",
+            address_line_1: "Cutlers Green Farmhouse",
+          },
+          nationality: "British",
+          links: {
+            officer: {
+              appointments: "/officers/ID1/appointments",
+            },
+          },
+          name: "SMITH, Judith",
+        },
+        {
+          appointed_on: "2006-08-01",
+          officer_role: "director",
+          date_of_birth: {
+            month: 1,
+            year: 1958,
+          },
+          occupation: "Heating Engineer",
+          links: {
+            officer: {
+              appointments: "/officers/ID2/appointments",
+            },
+          },
+          name: "SMITH, Stephen Mark",
+          address: {
+            postal_code: "BA3 4ND",
+            locality: "Radstock",
+            address_line_1: "Cutlers Green Farmhouse",
+            address_line_2: "Dudwell Lane Chewton Mendip",
+          },
+          nationality: "British",
+        },
+        {
+          officer_role: "corporate-nominee-secretary",
+          address: {
+            postal_code: "M7 4AS",
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+          },
+          links: {
+            officer: {
+              appointments: "/officers/ID3/appointments",
+            },
+          },
+          appointed_on: "2006-05-15",
+          name: "FORM 10 SECRETARIES FD LTD",
+        },
+        {
+          appointed_on: "2006-05-15",
+          name: "FORM 10 DIRECTORS FD LTD",
+          links: {
+            officer: {
+              appointments: "/officers/ID4/appointments",
+            },
+          },
+          officer_role: "corporate-nominee-director",
+          address: {
+            locality: "Manchester",
+            address_line_2: "Salford",
+            address_line_1: "39a Leicester Road",
+            postal_code: "M7 4AS",
+          },
+        },
+      ],
+    };
+
     expect(cleanedObject).toEqual(cleanedExpected);
     expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
   });
