@@ -11,8 +11,6 @@ import { classNames } from "../lib/utils";
 import { Api } from "../lib/types";
 import { useRouter } from "next/router";
 import { PRICING_PAGE, USAGE_LIMIT } from "../lib/consts";
-import suggestions1 from "../public/presets/1/suggestions.json";
-import suggestions2 from "../public/presets/2/suggestions.json";
 import { getFreeTierUsage } from "../lib/edge-runtime/utils";
 
 export default function Playground() {
@@ -20,7 +18,7 @@ export default function Playground() {
   const [userDescription, setUserDescription] = useState<string>("");
   const [userApiKey, setUserApiKey] = useState<string>("");
   const [mockApiResponses, setMockApiResponses] = useState<boolean | null>(
-    null
+    null,
   );
   const router = useRouter();
 
@@ -83,7 +81,7 @@ export default function Playground() {
       ) {
         const { numQueriesMade } = await getFreeTierUsage(
           supabase,
-          profile!.org_id!
+          profile!.org_id!,
         );
         setUsageLevel(numQueriesMade);
       }
@@ -119,7 +117,7 @@ export default function Playground() {
             <div
               className={classNames(
                 "absolute bottom-0 inset-x-0 flex flex-col justify-center place-items-center border-0 min-h-20 px-6 py-3 bg-gray-900",
-                USAGE_LIMIT - usageLevel < 5 ? "text-red-500" : "text-gray-200"
+                USAGE_LIMIT - usageLevel < 5 ? "text-red-500" : "text-gray-200",
               )}
             >
               <p>
@@ -148,7 +146,7 @@ export default function Playground() {
             numActions,
             apis,
             mockApiResponses,
-            userApiKey
+            userApiKey,
           )}
           mockAPIresponses={!!mockApiResponses}
         />
@@ -164,7 +162,7 @@ export default function Playground() {
               <div
                 className={classNames(
                   "flex place-items-center justify-center bg-gray-700 rounded-md p-2.5 border w-full",
-                  mockApiResponses ? "border-purple-700" : "border-gray-600"
+                  mockApiResponses ? "border-purple-700" : "border-gray-600",
                 )}
               >
                 {mockApiResponses !== null && (
@@ -208,7 +206,7 @@ export default function Playground() {
         <div
           className={classNames(
             "fixed bottom-0 right-0 w-40 md:w-56 lg:w-72 bg-gray-900 py-4 px-4 transition-opacity",
-            mockApiResponses ? "opacity-0" : "opacity-100"
+            mockApiResponses ? "opacity-0" : "opacity-100",
           )}
         >
           <h2 className="text-gray-100 text-little font-semibold">
@@ -223,7 +221,7 @@ export default function Playground() {
               "rounded mt-2 px-2 py-1 w-full border border-solid",
               !userApiKey
                 ? "border-red-500 ring-2 ring-offset-2 ring-red-400 ring-offset-gray-900"
-                : "border-transparent"
+                : "border-transparent",
             )}
             value={userApiKey}
             onChange={(e) => setUserApiKey(e.target.value)}
@@ -244,7 +242,7 @@ function getErrorMessage(
   numActions: number,
   apis: Api[] | null,
   mockApiResponses: boolean | null,
-  userApiKey: string
+  userApiKey: string,
 ): string {
   // Error message is delivered in stages so that the user can fix one thing at a time
   if (numActions === 0) return "You need to add actions (Actions tab)";

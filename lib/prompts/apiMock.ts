@@ -1,6 +1,5 @@
 import { ChatGPTMessage, Chunk, Properties, RequestMethod } from "../models";
 import { chunkToString } from "../utils";
-import { PRESETS } from "../consts";
 
 export default function apiMockPrompt(
   path: string,
@@ -11,7 +10,7 @@ export default function apiMockPrompt(
     name: string;
     description: string;
   },
-  isArray: boolean = false
+  isArray: boolean = false,
 ): ChatGPTMessage[] {
   // TODO: Maybe add Examples to prompt type as e.g for retrieve_event_counts_for_a_team it's required to infer the shape of
   //  the array they want back
@@ -20,15 +19,10 @@ export default function apiMockPrompt(
     {
       role: "system",
       content: `The user is sending a request to ${
-        orgInfo && !PRESETS.map((p) => p.name).includes(orgInfo.name)
-          ? `${orgInfo.name}'s`
-          : "an"
+        orgInfo?.name ? `${orgInfo.name}'s` : "an"
       } API. ${
-        orgInfo &&
-        !PRESETS.map((p) => p.description).includes(orgInfo.description)
-          ? orgInfo.description
-          : ""
-      } However, they do not have access to the real API.
+        orgInfo?.description ?? ""
+      }. However, they do not have access to the real API.
 
 Your task is to generate a mock API response to the user's request.
 
