@@ -71,185 +71,176 @@ export function Navbar(props: { current: string }) {
         open={warningOpen}
         setOpen={setWarningOpen}
       />
-      <div className="w-full h-16" />
-      <div className="fixed top-0 inset-x-0 border-b border-gray-700 z-20">
-        <Disclosure as="nav" className="bg-gray-800">
-          <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            {/*<button*/}
-            {/*  className={"fixed top-2 left-2 hover:bg-gray-700 rounded-md p-2"}*/}
-            {/*  onClick={() => setOpen(true)}*/}
-            {/*>*/}
-            {/*  <SparklesIcon className="h-6 w-6 text-white" aria-hidden="true" />*/}
-            {/*</button>*/}
-            <div className="flex h-16 items-center justify-between px-4 sm:px-0">
-              <div className="flex items-center">
-                <a
-                  className="text-base sm:text-lg md:text-xl text-white font-medium"
-                  href={"/"}
-                >
-                  Superflows
-                </a>
-                <div className="ml-6 md:ml-14 flex items-baseline gap-x-1 sm:gap-x-2 md:gap-x-4">
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={classNames(
-                        item.name === props.current
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                        "rounded-md px-2 md:px-3 py-2 text-xs sm:text-sm font-medium"
+      <nav className="w-full h-16 bg-gray-800 border-b border-gray-700 z-20">
+        <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-0">
+            <div className="flex items-center">
+              <a
+                className="text-base sm:text-lg md:text-xl text-white font-medium"
+                href={"/"}
+              >
+                Superflows
+              </a>
+              <div className="ml-6 md:ml-14 flex items-baseline gap-x-1 sm:gap-x-2 md:gap-x-4">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={classNames(
+                      item.name === props.current
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                      "rounded-md px-2 md:px-3 py-2 text-xs sm:text-sm font-medium"
+                    )}
+                    aria-current={
+                      item.name === props.current ? "page" : undefined
+                    }
+                    shallow
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
+              <Flyout
+                Button={
+                  <div
+                    className={classNames(
+                      "flex justify-center place-items-center rounded-full h-7 w-7 mt-2 hover:bg-gray-700 focus:border-0 focus:outline-0 focus:ring-0",
+                      profile &&
+                        `progress-bar-${
+                          profile?.onboarding_steps.filter(Boolean).length
+                        }/4`
+                    )}
+                  />
+                }
+              >
+                <div className="flex flex-col gap-y-2 bg-white rounded-md min-w-max px-4 pt-4 pb-6 border shadow">
+                  <h2 className="text-lg pb-1 font-medium border-b border-gray-300">
+                    Setup checklist
+                  </h2>
+                  {onboardingSteps.map((step, idx) => (
+                    <>
+                      {!profile?.onboarding_steps[idx] ? (
+                        <a
+                          key={idx}
+                          className="flex flex-row place-items-center gap-x-2 group"
+                          href={step.link}
+                          target={step.link.startsWith("/") ? "" : "_blank"}
+                          rel="noopener noreferrer"
+                        >
+                          <div className="h-4 w-4 bg-transparent border border-gray-300 rounded-full" />
+                          <div className="group-hover:text-blue-500 group-hover:underline">
+                            {step.name}
+                          </div>
+                        </a>
+                      ) : (
+                        <div
+                          key={idx}
+                          className="flex flex-row place-items-center gap-x-2 cursor-default"
+                        >
+                          <div className="h-4 w-4 bg-transparent overflow-visible border border-gray-300 rounded-full flex justify-center place-items-center">
+                            <CheckIcon className="ml-1 mb-1 min-h-[1.25rem] min-w-[1.25rem] text-green-500" />
+                          </div>
+                          <div className={""}>{step.name}</div>
+                        </div>
                       )}
-                      aria-current={
-                        item.name === props.current ? "page" : undefined
-                      }
-                      shallow
-                    >
-                      {item.name}
-                    </Link>
+                    </>
                   ))}
                 </div>
-              </div>
-              <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
-                <Flyout
-                  Button={
-                    <div
-                      className={classNames(
-                        "flex justify-center place-items-center rounded-full h-7 w-7 mt-2 hover:bg-gray-700 focus:border-0 focus:outline-0 focus:ring-0",
-                        profile &&
-                          `progress-bar-${
-                            profile?.onboarding_steps.filter(Boolean).length
-                          }/4`
-                      )}
+              </Flyout>
+              <a
+                href={
+                  "https://docs.superflows.ai/docs/category/integration-guide"
+                }
+                target={"_blank"}
+                rel={"noopener noreferrer"}
+                className="rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem] text-sm flex flex-row place-items-center"
+              >
+                <BookOpenIcon className={"h-5 w-5 m-1"} /> Integration Guide
+              </a>
+              <FlyoutMenu
+                items={[
+                  {
+                    name: "Read the docs",
+                    href: "https://docs.superflows.ai",
+                    Icon: (
+                      <DocumentTextIcon
+                        className="h-6 w-6"
+                        aria-hidden="true"
+                      />
+                    ),
+                  },
+                  {
+                    name: "Ask in Slack",
+                    href: "https://join.slack.com/t/superflowsusers/shared_invite/zt-1z8ls9rp3-bSohOrMKOsX8zJOUcDy07g",
+                    Icon: <SlackIcon aria-hidden="true" />,
+                  },
+                  {
+                    name: "Add a Github issue",
+                    href: "https://github.com/Superflows-AI/superflows/issues/new",
+                    Icon: <GitHubIcon aria-hidden="true" />,
+                  },
+                ]}
+                getClassName={() =>
+                  "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                }
+                buttonClassName={
+                  "rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
+                }
+                Icon={
+                  <div className="flex flex-row place-items-center gap-x-1 text-sm">
+                    <QuestionMarkCircleIcon
+                      className="h-5 w-5 md:h-6 md:w-6"
+                      aria-hidden="true"
                     />
-                  }
-                >
-                  <div className="flex flex-col gap-y-2 bg-white rounded-md min-w-max px-4 pt-4 pb-6 border shadow">
-                    <h2 className="text-lg pb-1 font-medium border-b border-gray-300">
-                      Setup checklist
-                    </h2>
-                    {onboardingSteps.map((step, idx) => (
-                      <>
-                        {!profile?.onboarding_steps[idx] ? (
-                          <a
-                            key={idx}
-                            className="flex flex-row place-items-center gap-x-2 group"
-                            href={step.link}
-                            target={step.link.startsWith("/") ? "" : "_blank"}
-                            rel="noopener noreferrer"
-                          >
-                            <div className="h-4 w-4 bg-transparent border border-gray-300 rounded-full" />
-                            <div className="group-hover:text-blue-500 group-hover:underline">
-                              {step.name}
-                            </div>
-                          </a>
-                        ) : (
-                          <div
-                            key={idx}
-                            className="flex flex-row place-items-center gap-x-2 cursor-default"
-                          >
-                            <div className="h-4 w-4 bg-transparent overflow-visible border border-gray-300 rounded-full flex justify-center place-items-center">
-                              <CheckIcon className="ml-1 mb-1 min-h-[1.25rem] min-w-[1.25rem] text-green-500" />
-                            </div>
-                            <div className={""}>{step.name}</div>
-                          </div>
-                        )}
-                      </>
-                    ))}
+                    Help
                   </div>
-                </Flyout>
-                <a
-                  href={
-                    "https://docs.superflows.ai/docs/category/integration-guide"
-                  }
-                  target={"_blank"}
-                  rel={"noopener noreferrer"}
-                  className="rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem] text-sm flex flex-row place-items-center"
-                >
-                  <BookOpenIcon className={"h-5 w-5 m-1"} /> Integration Guide
-                </a>
+                }
+                popoverClassName={"w-48 z-50"}
+                title={"Support"}
+              />
+              {process.env.NODE_ENV !== "development" && (
                 <FlyoutMenu
                   items={[
                     {
-                      name: "Read the docs",
-                      href: "https://docs.superflows.ai",
+                      name: "Manage team",
+                      href: "/team",
                       Icon: (
-                        <DocumentTextIcon
+                        <UsersIcon className="h-6 w-6" aria-hidden="true" />
+                      ),
+                    },
+                    {
+                      name: "Sign out",
+                      onClick: () => setWarningOpen(true),
+                      Icon: (
+                        <ArrowRightOnRectangleIcon
                           className="h-6 w-6"
                           aria-hidden="true"
                         />
                       ),
-                    },
-                    {
-                      name: "Ask in Slack",
-                      href: "https://join.slack.com/t/superflowsusers/shared_invite/zt-1z8ls9rp3-bSohOrMKOsX8zJOUcDy07g",
-                      Icon: <SlackIcon aria-hidden="true" />,
-                    },
-                    {
-                      name: "Add a Github issue",
-                      href: "https://github.com/Superflows-AI/superflows/issues/new",
-                      Icon: <GitHubIcon aria-hidden="true" />,
                     },
                   ]}
                   getClassName={() =>
                     "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                   }
                   buttonClassName={
-                    "rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
+                    "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
                   }
                   Icon={
-                    <div className="flex flex-row place-items-center gap-x-1 text-sm">
-                      <QuestionMarkCircleIcon
-                        className="h-5 w-5 md:h-6 md:w-6"
-                        aria-hidden="true"
-                      />
-                      Help
-                    </div>
+                    <Cog6ToothIcon
+                      className="h-5 w-5 md:h-6 md:w-6"
+                      aria-hidden="true"
+                    />
                   }
                   popoverClassName={"w-48 z-50"}
-                  title={"Support"}
                 />
-                {process.env.NODE_ENV !== "development" && (
-                  <FlyoutMenu
-                    items={[
-                      {
-                        name: "Manage team",
-                        href: "/team",
-                        Icon: (
-                          <UsersIcon className="h-6 w-6" aria-hidden="true" />
-                        ),
-                      },
-                      {
-                        name: "Sign out",
-                        onClick: () => setWarningOpen(true),
-                        Icon: (
-                          <ArrowRightOnRectangleIcon
-                            className="h-6 w-6"
-                            aria-hidden="true"
-                          />
-                        ),
-                      },
-                    ]}
-                    getClassName={() =>
-                      "focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    }
-                    buttonClassName={
-                      "rounded-full p-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem]"
-                    }
-                    Icon={
-                      <Cog6ToothIcon
-                        className="h-5 w-5 md:h-6 md:w-6"
-                        aria-hidden="true"
-                      />
-                    }
-                    popoverClassName={"w-48 z-50"}
-                  />
-                )}
-              </div>
+              )}
             </div>
           </div>
-        </Disclosure>
-      </div>
+        </div>
+      </nav>
     </>
   );
 }
