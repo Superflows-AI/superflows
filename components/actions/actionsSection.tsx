@@ -24,7 +24,6 @@ import EditActionModal from "./editActionModal";
 import EditActionTagModal from "./editActionTagModal";
 import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
-import { PRESETS } from "../../lib/consts";
 import ViewSystemPromptModal from "./viewPromptModal";
 import APITabs from "./APITabs";
 
@@ -45,7 +44,7 @@ export default function PageActionsSection(props: {
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [viewPromptOpen, setViewPromptOpen] = React.useState<boolean>(false);
   const [selectedApiTab, setSelectedApiTab] = React.useState<Api | undefined>(
-    props.apis.length > 0 ? props.apis[0] : undefined
+    props.apis.length > 0 ? props.apis[0] : undefined,
   );
 
   useEffect(() => {
@@ -53,7 +52,7 @@ export default function PageActionsSection(props: {
       props.actionTags
         .map((tag) => tag.actions)
         .flat()
-        .filter((action) => action.active).length
+        .filter((action) => action.active).length,
     );
   }, [props.actionTags]);
 
@@ -68,7 +67,7 @@ export default function PageActionsSection(props: {
       setSelectedApiTab({ ...props.apis[0] });
     } else {
       setSelectedApiTab(
-        props.apis.find((api) => api.id === updateSelectedTo) ?? undefined
+        props.apis.find((api) => api.id === updateSelectedTo) ?? undefined,
       );
     }
     setUpdateSelectedTo(null);
@@ -148,7 +147,7 @@ export default function PageActionsSection(props: {
                     items={actionTagsToToggleItems(
                       props.actionTags,
                       props.setActionTags,
-                      supabase
+                      supabase,
                     )}
                   />
                 </>
@@ -159,7 +158,7 @@ export default function PageActionsSection(props: {
                 <button
                   className={classNames(
                     "flex flex-row place-items-center gap-x-1 text-white font-medium text-xs md:text-sm py-1.5 px-2 rounded focus:ring-2",
-                    "bg-gray-900 hover:bg-gray-950"
+                    "bg-gray-900 hover:bg-gray-950",
                   )}
                   onClick={async () => {
                     const res = await supabase
@@ -238,7 +237,7 @@ export default function PageActionsSection(props: {
                 setActionTag={(actionTag: ActionTagJoin) => {
                   const copy = [...props.actionTags];
                   const agIndex = props.actionTags.findIndex(
-                    (ag) => ag.id === actionTag.id
+                    (ag) => ag.id === actionTag.id,
                   );
                   copy[agIndex] = actionTag;
                   props.setActionTags(copy);
@@ -246,7 +245,7 @@ export default function PageActionsSection(props: {
                 deleteActionTag={async () => {
                   const copy = [...props.actionTags];
                   const agIndex = props.actionTags.findIndex(
-                    (ag) => ag.id === actionTag.id
+                    (ag) => ag.id === actionTag.id,
                   );
                   copy.splice(agIndex, 1);
                   props.setActionTags(copy);
@@ -350,7 +349,7 @@ function ActionsSection(props: {
   const [editActionTag, setEditActionTag] = React.useState<boolean>(false);
   const [deleteActionTag, setDeleteActionTag] = React.useState<boolean>(false);
   const [actions, setActions] = React.useState<Action[]>(
-    props.actionTagJoinActions.actions
+    props.actionTagJoinActions.actions,
   );
   const { profile } = useProfile();
 
@@ -371,7 +370,7 @@ function ActionsSection(props: {
           let examplesCopy = [...actions];
           examplesCopy.splice(
             examplesCopy.findIndex((a) => a.id === deleteAction!.id),
-            1
+            1,
           );
           setActions(examplesCopy);
 
@@ -425,7 +424,7 @@ function ActionsSection(props: {
         <EditActionModal
           action={editAction}
           setAction={async (
-            newAction: Database["public"]["Tables"]["actions"]["Row"]
+            newAction: Database["public"]["Tables"]["actions"]["Row"],
           ) => {
             actions[actions.findIndex((a) => a.id === editAction.id)] =
               newAction;
@@ -450,7 +449,7 @@ function ActionsSection(props: {
           "relative px-6 py-4 my-5 border border-gray-600 rounded-lg",
           props.actionTagJoinActions.actions.some((a) => a.active)
             ? "shadow-xl"
-            : ""
+            : "",
         )}
         id={props.actionTagJoinActions.name}
       >
@@ -467,7 +466,7 @@ function ActionsSection(props: {
                 <Checkbox
                   label={"Active"}
                   checked={props.actionTagJoinActions.actions.some(
-                    (a) => a.active
+                    (a) => a.active,
                   )}
                   onChange={async (checked: boolean) => {
                     const newActionTag = { ...props.actionTagJoinActions };
@@ -485,7 +484,7 @@ function ActionsSection(props: {
                     if (res.data === null || res.data.length === 0)
                       throw new Error(
                         "Expected >0 rows to be updated" +
-                          JSON.stringify(res.data)
+                          JSON.stringify(res.data),
                       );
                   }}
                 />
@@ -528,7 +527,7 @@ function ActionsSection(props: {
             "font-bold text-2xl",
             props.actionTagJoinActions.actions.some((a) => a.active)
               ? "text-gray-200"
-              : "text-gray-600"
+              : "text-gray-600",
           )}
         >
           {props.actionTagJoinActions.name}
@@ -538,7 +537,7 @@ function ActionsSection(props: {
             "mt-2",
             props.actionTagJoinActions.actions.some((a) => a.active)
               ? "text-gray-300"
-              : "text-gray-700"
+              : "text-gray-700",
           )}
         >
           {props.actionTagJoinActions.description}
@@ -546,7 +545,7 @@ function ActionsSection(props: {
         <ul
           role="list"
           className={classNames(
-            "relative mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 rounded-md"
+            "relative mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 rounded-md",
           )}
         >
           {actions
@@ -558,14 +557,14 @@ function ActionsSection(props: {
                   "group col-span-1 rounded-lg border cursor-pointer",
                   action.active
                     ? "bg-gray-900 border-purple-500 shadow shadow-purple-800/60 hover:shadow-md hover:shadow-purple-800/60"
-                    : "bg-gray-850 border-gray-700 hover:border-gray-400 hover:shadow-md hover:shadow-gray-300/20"
+                    : "bg-gray-850 border-gray-700 hover:border-gray-400 hover:shadow-md hover:shadow-gray-300/20",
                 )}
               >
                 <div
                   onClick={async () => {
                     const newActionTag = { ...props.actionTagJoinActions };
                     const index = newActionTag.actions.findIndex(
-                      (a) => a.id === action.id
+                      (a) => a.id === action.id,
                     );
                     newActionTag.actions[index].active =
                       !newActionTag.actions[index].active;
@@ -585,7 +584,7 @@ function ActionsSection(props: {
                     <p
                       className={classNames(
                         "truncate max-h-20 text-xs font-mono whitespace-pre-line",
-                        action.active ? "text-gray-400" : "text-gray-500"
+                        action.active ? "text-gray-400" : "text-gray-500",
                       )}
                     >
                       {action.request_method?.toUpperCase()} {action.path}
@@ -593,7 +592,7 @@ function ActionsSection(props: {
                     <h3
                       className={classNames(
                         "font-medium whitespace-wrap break-words",
-                        action.active ? "text-gray-100" : "text-gray-400"
+                        action.active ? "text-gray-100" : "text-gray-400",
                       )}
                     >
                       {action.name}
@@ -682,7 +681,7 @@ function ActionsSection(props: {
 function actionTagsToToggleItems(
   actionTags: ActionTagJoin[],
   setActionTags: (actionTags: ActionTagJoin[]) => void,
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient<Database>,
 ): SelectBoxWithDropdownOption[] {
   const allActions = actionTags.map((actionTag) => actionTag.actions).flat();
 
