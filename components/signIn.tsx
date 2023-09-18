@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { createPagesBrowserClient } from "@supabase/auth-helpers-nextjs";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/router";
+import React, { useEffect } from "react";
 
 function getRedirectUrl(): string {
   return location.origin + "/sign-in/";
@@ -11,8 +11,7 @@ function getRedirectUrl(): string {
 export default function SignInComponent(props: {
   view: "sign_in" | "sign_up" | "update_password";
 }) {
-  const supabase = useSupabaseClient();
-  const router = useRouter();
+  const supabase = createPagesBrowserClient();
   const [redirectUrl, setRedirectUrl] = React.useState<string | null>(null);
   const [view, setView] = React.useState<
     "sign_in" | "sign_up" | "update_password"
@@ -21,7 +20,7 @@ export default function SignInComponent(props: {
   useEffect(() => {
     const url = getRedirectUrl();
     setRedirectUrl(url);
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((event, _) => {
       if (event === "PASSWORD_RECOVERY") {
         setView("update_password");
       }
