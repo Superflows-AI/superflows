@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 
 type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
   organizations: OrgJoinIsPaidFinetunedModels | null;
+  onboarding_steps: boolean[];
 };
 
 const ProfileContext = createContext<{
@@ -50,8 +51,53 @@ export function ProfileContextProvider(props: {
         await router.push("/sign-in");
         return;
       }
-      setProfile(data);
-      return data;
+      let newProfile: ProfilesRow | null;
+
+      // Refresh onboarding steps
+      if (data?.org_id) {
+        // Have actions?
+        const { count: actionCount } = await props.supabase
+          .from("actions")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", data.org_id);
+        console.log("action", actionCount);
+        // Have API endpoint?
+        const { count: apiWithHostSetCount } = await props.supabase
+          .from("apis")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", data.org_id)
+          .neq("api_host", "");
+        console.log("api", apiWithHostSetCount);
+        // >0 conversations (used playground)
+        const { count: conversationsCount } = await props.supabase
+          .from("conversations")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", data.org_id);
+        console.log("conversation", conversationsCount);
+        // Usage num queries >0 (used API)
+        const { count: usageCount } = await props.supabase
+          .from("usage")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", data.org_id)
+          .gt("num_user_queries", 0);
+        console.log("usage", usageCount);
+
+        newProfile = {
+          ...data,
+          onboarding_steps: [
+            (actionCount ?? 0) > 0,
+            (apiWithHostSetCount ?? 0) > 0,
+            (conversationsCount ?? 0) > 0,
+            (usageCount ?? 0) > 0,
+          ],
+        };
+      } else
+        newProfile = {
+          ...data,
+          onboarding_steps: [false, false, false, false],
+        };
+      setProfile(newProfile);
+      return newProfile;
     },
     [session, setProfile, props.supabase]
   );
