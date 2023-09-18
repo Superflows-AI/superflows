@@ -16,6 +16,8 @@ import { useProfile } from "./contextManagers/profile";
 import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
+import Flyout from "../Flyout";
+import { CheckIcon } from "@heroicons/react/20/solid";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -27,10 +29,29 @@ const navigation = [
   // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
+const onboardingSteps = [
+  {
+    name: "Upload your API spec",
+    link: "/actions",
+  },
+  {
+    name: "Connect to your API",
+    link: "/actions",
+  },
+  {
+    name: "Use the playground",
+    link: "/",
+  },
+  {
+    name: "Integrate into your product",
+    link: "https://docs.superflows.ai/docs/integration-guide/react",
+  },
+];
+
 export function Navbar(props: { current: string }) {
   const [warningOpen, setWarningOpen] = useState<boolean>(false);
   const supabase = useSupabaseClient();
-  const { refreshProfile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const router = useRouter();
 
   return (
@@ -90,6 +111,53 @@ export function Navbar(props: { current: string }) {
                 </div>
               </div>
               <div className="ml-4 flex place-items-center justify-center gap-x-1.5 md:gap-x-4 md:ml-6">
+                <Flyout
+                  Button={
+                    <div
+                      className={classNames(
+                        "flex justify-center place-items-center rounded-full h-7 w-7 mt-2 hover:bg-gray-700 focus:border-0 focus:outline-0 focus:ring-0",
+                        profile &&
+                          `progress-bar-${
+                            profile?.onboarding_steps.filter(Boolean).length
+                          }/4`
+                      )}
+                    />
+                  }
+                >
+                  <div className="flex flex-col gap-y-2 bg-white rounded-md min-w-max px-4 pt-4 pb-6 border shadow">
+                    <h2 className="text-lg pb-1 font-medium border-b border-gray-300">
+                      Setup checklist
+                    </h2>
+                    {onboardingSteps.map((step, idx) => (
+                      <>
+                        {!profile?.onboarding_steps[idx] ? (
+                          <a
+                            key={idx}
+                            className="flex flex-row place-items-center gap-x-2 group"
+                            href={step.link}
+                            target={step.link.startsWith("/") ? "" : "_blank"}
+                            rel="noopener noreferrer"
+                          >
+                            <div className="h-4 w-4 bg-transparent border border-gray-300 rounded-full" />
+                            <div className="group-hover:text-blue-500 group-hover:underline">
+                              {step.name}
+                            </div>
+                          </a>
+                        ) : (
+                          <div
+                            key={idx}
+                            className="flex flex-row place-items-center gap-x-2 cursor-default"
+                          >
+                            <div className="h-4 w-4 bg-transparent overflow-visible border border-gray-300 rounded-full flex justify-center place-items-center">
+                              <CheckIcon className="ml-1 mb-1 min-h-[1.25rem] min-w-[1.25rem] text-green-500" />
+                            </div>
+                            <div className={""}>{step.name}</div>
+                          </div>
+                        )}
+                      </>
+                    ))}
+                  </div>
+                </Flyout>
                 <a
                   href={
                     "https://docs.superflows.ai/docs/category/integration-guide"
