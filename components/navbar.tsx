@@ -71,7 +71,8 @@ export function Navbar(props: { current: string }) {
         open={warningOpen}
         setOpen={setWarningOpen}
       />
-      <nav className="w-full h-16 bg-gray-800 border-b border-gray-700 z-20">
+      <div className="w-full h-16" />
+      <nav className="fixed top-0 inset-x-0 bg-gray-800 border-b border-gray-700 z-20">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between px-4 sm:px-0">
             <div className="flex items-center">
@@ -90,7 +91,7 @@ export function Navbar(props: { current: string }) {
                       item.name === props.current
                         ? "bg-gray-900 text-white"
                         : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                      "rounded-md px-2 md:px-3 py-2 text-xs sm:text-sm font-medium"
+                      "rounded-md px-2 md:px-3 py-2 text-xs sm:text-sm font-medium",
                     )}
                     aria-current={
                       item.name === props.current ? "page" : undefined
@@ -111,7 +112,7 @@ export function Navbar(props: { current: string }) {
                       profile &&
                         `progress-bar-${
                           profile?.onboarding_steps.filter(Boolean).length
-                        }/4`
+                        }/4`,
                     )}
                   />
                 }
