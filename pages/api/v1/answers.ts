@@ -498,6 +498,8 @@ async function Angela( // Good ol' Angela
         language,
       );
 
+      // Replace messages with `CleanedMessages` which has long IDs.
+      // idStore is a map from the cleaned to the original IDs
       const { cleanedMessages, idStore } = removeIdsFromMessages(chatGptPrompt);
       chatGptPrompt = cleanedMessages;
 
@@ -592,6 +594,7 @@ async function Angela( // Good ol' Angela
               throw new Error(`Action ${command.name} not found!`);
             }
 
+            // Re-add long IDs before making calls to the API
             const readdedIds = reAddIDs(command.args, idStore);
             command.args = readdedIds as FunctionCall["args"];
 

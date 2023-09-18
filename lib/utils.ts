@@ -423,7 +423,7 @@ export function isID(str: string): boolean {
   if (isDate(str)) return false;
   const nTokens = tokenizer.encode(str).length;
   const x = str.length / nTokens;
-  // Is an ID if there's less than 2 characters per token
+  // Is an ID if there's less than 2.2 characters per token (threshold determined empirically)
   return x <= 2.2;
 }
 

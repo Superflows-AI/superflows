@@ -90,9 +90,7 @@ export function removeIdsFromMessages(messages: ChatGPTMessage[]): {
         let cleanedObject = JSON.parse(message.content);
         ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
         message.content = JSON.stringify(cleanedObject);
-      } catch (e) {
-        console.error("Unable to parse message content or process IDs", e);
-      }
+      } catch {}
     }
     return message;
   });
