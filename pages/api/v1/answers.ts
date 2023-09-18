@@ -521,7 +521,7 @@ async function Angela( // Good ol' Angela
       );
       if (res === null || "message" in res) {
         console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}`
+          `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${res?.message}`
         );
         streamInfo({
           role: "error",
