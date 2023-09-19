@@ -12,7 +12,7 @@ import {
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Database } from "../../lib/database.types";
 import { Action, ActionTagJoin, Api } from "../../lib/types";
-import { classNames } from "../../lib/utils";
+import { classNames, getTokenCount } from "../../lib/utils";
 import Checkbox from "../checkbox";
 import { useProfile } from "../contextManagers/profile";
 import DropdownWithCheckboxes, {
@@ -26,6 +26,7 @@ import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
 import ViewSystemPromptModal from "./viewPromptModal";
 import APITabs from "./APITabs";
+import { getActionDescriptions } from "../../lib/prompts/chatBot";
 
 export default function PageActionsSection(props: {
   actionTags: ActionTagJoin[];
@@ -33,12 +34,15 @@ export default function PageActionsSection(props: {
   loadActions: () => Promise<void>;
   apis: Api[];
   setApis: Dispatch<SetStateAction<Api[] | undefined>>;
+  model?: string | null;
 }) {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
   const [open, setUploadModalOpen] = useState<boolean>(false);
   const [showInactive, setShowInactive] = useState<boolean>(true);
   const [numActiveActions, setNumActiveActions] = useState<number>(0);
+  const [actionsExceedMaxTokens, setActionsExceedMaxTokens] =
+    useState<boolean>(false);
   const [deleteAllActionsModelOpen, setDeleteAllActionsModalOpen] =
     useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -48,11 +52,19 @@ export default function PageActionsSection(props: {
   );
 
   useEffect(() => {
-    setNumActiveActions(
-      props.actionTags
-        .map((tag) => tag.actions)
-        .flat()
-        .filter((action) => action.active).length,
+    const activeActions = props.actionTags
+      .map((tag) => tag.actions)
+      .flat()
+      .filter((action) => action.active);
+    setNumActiveActions(activeActions.length);
+
+    const tokenCount = getTokenCount([
+      { role: "system", content: getActionDescriptions(activeActions) },
+    ]);
+
+    setActionsExceedMaxTokens(
+      tokenCount >
+        (props.model && props.model.includes("gpt-3.5") ? 4096 : 8192),
     );
   }, [props.actionTags]);
 
@@ -319,7 +331,18 @@ export default function PageActionsSection(props: {
             </p>
           </div>
         )}
-        {numActiveActions > 20 && (
+        {actionsExceedMaxTokens && (
+          <div
+            className="fixed bottom-0 inset-x-0 md:mx-10 lg:mx-auto max-w-7xl flex flex-row gap-x-2 bg-red-900 border-l-4 border-red-500 text-white px-4 py-6"
+            role="alert"
+          >
+            <p className="font-bold">Error:</p>
+            <p>
+              {`You have ${numActiveActions} actions enabled. The language model cannot process this many. We recommend enabling around 20 actions.`}
+            </p>
+          </div>
+        )}
+        {!actionsExceedMaxTokens && numActiveActions > 20 && (
           <div
             className="fixed bottom-0 inset-x-0 md:mx-10 lg:mx-auto max-w-7xl flex flex-row gap-x-2 bg-yellow-200 border-l-4 border-yellow-500 text-yellow-700 px-4 py-2"
             role="alert"
