@@ -29,6 +29,8 @@ function Dashboard() {
   // When the page loads, check if they have a join_id query param and store in localStorage
   useEffect(() => {
     // If they have a query param, check and store the join link locally
+    console.log("here we are1", router.query);
+    console.log("here we are2", router);
     if (Object.keys(router.query).length > 0) {
       Object.entries(router.query).forEach(([key, value]) => {
         if (value && typeof value === "string") {
@@ -40,7 +42,19 @@ function Dashboard() {
     }
     // Oddly this is needed for sign up from Google on Firefox. Don't know why, but
     // oauth params aren't grabbed from the URL automagically like on other browsers
-    void supabase.auth.getSession();
+    const getSession = async () => {
+      const session = await supabase.auth.getSession();
+      console.log("session.data", session.data);
+      if (!session.data.session) return;
+      Object.entries(session.data.session).forEach(([key, value]) => {
+        if (value && typeof value === "string") {
+          console.log("setting param to local storage", key, value);
+          localStorage.setItem(key, value);
+        }
+      });
+    };
+
+    getSession();
   }, [router]);
 
   // When they sign in, check if they have a join_id in localStorage and join the org if they do
@@ -79,31 +93,31 @@ function Dashboard() {
   }, []);
 
   // Auto-sign in as local user in dev mode
-  useEffect(() => {
-    if (profile && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-      posthog.identify(profile.id, {
-        name: profile.full_name,
-        email: profile.email_address,
-      });
-    }
-    if (isDev && !session) {
-      (async () => {
-        const res = await supabase.auth.signInWithPassword({
-          email: "localuser@gmail.com",
-          password: "password",
-        });
-        if (!res.data.session) {
-          const res2 = await supabase.auth.signUp({
-            email: "localuser@gmail.com",
-            password: "password",
-            options: { data: { full_name: "Local User" } },
-          });
-        }
-      })();
-    }
-  }, [profile, session, refreshProfile, supabase]);
+  // useEffect(() => {
+  //   if (profile && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  //     posthog.identify(profile.id, {
+  //       name: profile.full_name,
+  //       email: profile.email_address,
+  //     });
+  //   }
+  //   if (isDev && !session) {
+  //     (async () => {
+  //       const res = await supabase.auth.signInWithPassword({
+  //         email: "localuser@gmail.com",
+  //         password: "password",
+  //       });
+  //       if (!res.data.session) {
+  //         const res2 = await supabase.auth.signUp({
+  //           email: "localuser@gmail.com",
+  //           password: "password",
+  //           options: { data: { full_name: "Local User" } },
+  //         });
+  //       }
+  //     })();
+  //   }
+  // }, [profile, session, refreshProfile, supabase]);
 
-  if (isDev) return <LoadingPage />;
+  // if (isDev) return <LoadingPage />;
   return <SignInComponent view={"sign_up"} />;
 }
 
