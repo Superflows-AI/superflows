@@ -62,10 +62,10 @@ enable_confirmations = false
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
 [auth.external.google]
-enabled = false
+enabled = true
 # This is the dev oauth client. THIS IS NOT THE PRODUCTION OAUTH CLIENT
-client_id = ""
-secret = ""
+client_id = "env(GOOGLE_APP_CLIENT_ID)"
+secret = "env(GOOGLE_APP_CLIENT_SECRET)"
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
 # Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,

@@ -62,7 +62,7 @@ export default function APITabs(props: {
                     props.currentApiId === api.id
                       ? "text-gray-300 bg-gray-850 border-gray-400"
                       : "text-gray-500 border-gray-600 hover:border-gray-500 hover:text-gray-400 bg-gray-800",
-                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
+                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1",
                   )}
                   aria-current={
                     props.currentApiId === api.id ? "page" : undefined
@@ -74,7 +74,7 @@ export default function APITabs(props: {
                       props.currentApiId === api.id
                         ? "hover:bg-gray-900 rounded hover:text-gray-100"
                         : "",
-                      "p-0.5 cursor-pointer"
+                      "p-0.5 cursor-pointer",
                     )}
                     onClick={() => setApiIdToEdit(api.id)}
                     disabled={props.currentApiId !== api.id}
@@ -87,7 +87,7 @@ export default function APITabs(props: {
                     props.currentApiId === api.id
                       ? "popup"
                       : "absolute opacity-0",
-                    "right-0 top-9 w-40"
+                    "right-0 top-9 w-40",
                   )}
                 >
                   Click the cog to edit API settings
@@ -111,7 +111,7 @@ export default function APITabs(props: {
                     !profile?.organizations?.is_paid[0].is_premium
                       ? "text-gray-600 border-gray-600 cursor-default"
                       : "cursor-pointer text-gray-500 border-gray-600 hover:border-gray-500 hover:text-gray-400 bg-gray-800",
-                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1"
+                    "peer select-none whitespace-nowrap border rounded-t-md py-1 pl-8 pr-5 text-sm font-medium flex flex-row place-items-center gap-x-1",
                   )}
                 >
                   Add new
@@ -139,10 +139,10 @@ function APISettingsModal(props: {
 }) {
   const supabase = useSupabaseClient<Database>();
   const [apiHost, setApiHostLocal] = React.useState<string>(
-    props.api?.api_host ?? ""
+    props.api?.api_host ?? "",
   );
   const [apiName, setApiNameLocal] = React.useState<string>(
-    props.api?.name ?? ""
+    props.api?.name ?? "",
   );
   const [apiHostSavedFeedback, setApiHostSavedFeedback] = React.useState<
     boolean | null
@@ -195,7 +195,7 @@ function APISettingsModal(props: {
             .eq("id", props.api.id);
           if (res.error) throw new Error(res.error.message);
           props.setApis((prev) =>
-            prev?.filter((api) => api.id !== props.api!.id)
+            prev?.filter((api) => api.id !== props.api!.id),
           );
           await props.onDelete();
           props.close();
@@ -222,7 +222,7 @@ function APISettingsModal(props: {
             <div
               className={classNames(
                 "absolute top-3 -left-32 flex flex-row place-items-center gap-x-1 text-gray-200",
-                apiNameSavedFeedback !== null ? "" : "invisible"
+                apiNameSavedFeedback !== null ? "" : "invisible",
               )}
             >
               {apiNameSavedFeedback ? (
@@ -245,8 +245,8 @@ function APISettingsModal(props: {
                 if (res.error) throw res.error;
                 props.setApis((prev) =>
                   prev?.map((api) =>
-                    api.id === props.api!.id ? { ...api, name: apiName } : api
-                  )
+                    api.id === props.api!.id ? { ...api, name: apiName } : api,
+                  ),
                 );
                 setApiNameSavedFeedback(!res.error);
                 setTimeout(() => {
@@ -267,7 +267,7 @@ function APISettingsModal(props: {
             <div
               className={classNames(
                 "absolute top-1 left-28 flex flex-row place-items-center gap-x-1 text-gray-200",
-                apiHostSavedFeedback !== null ? "" : "invisible"
+                apiHostSavedFeedback !== null ? "" : "invisible",
               )}
             >
               {apiHostSavedFeedback ? (
@@ -293,8 +293,8 @@ function APISettingsModal(props: {
                     prev?.map((api) =>
                       api.id === props.api!.id
                         ? { ...api, api_host: apiHost }
-                        : api
-                    )
+                        : api,
+                    ),
                   );
                   setApiHostSavedFeedback(!res.error);
                   setTimeout(() => {
@@ -351,8 +351,8 @@ function APISettingsModal(props: {
                   prev?.map((api) =>
                     api.id === props.api!.id
                       ? { ...api, auth_header: selected }
-                      : api
-                  )
+                      : api,
+                  ),
                 );
               }}
               theme="dark"
@@ -409,8 +409,8 @@ function APISettingsModal(props: {
                   prev?.map((api) =>
                     api.id === props.api!.id
                       ? { ...api, auth_scheme: selected }
-                      : api
-                  )
+                      : api,
+                  ),
                 );
               }}
               theme={"dark"}
@@ -440,24 +440,24 @@ function APISettingsModal(props: {
                   const res = await supabase
                     .from("fixed_headers")
                     .update(h)
-                    .eq("id", h.id);
+                    .eq("id", h.id!);
                   if (res.error) throw new Error(res.error.message);
                 }}
                 setHeader={(header: HeadersInsert) => {
                   setHeaders((prev) =>
                     prev.map((prevHeader) =>
-                      prevHeader.id === h.id ? header : prevHeader
-                    )
+                      prevHeader.id === h.id ? header : prevHeader,
+                    ),
                   );
                 }}
                 onDelete={async () => {
                   const res = await supabase
                     .from("fixed_headers")
                     .delete()
-                    .eq("id", h.id);
+                    .eq("id", h.id!);
                   if (res.error) throw new Error(res.error.message);
                   setHeaders((prev) =>
-                    prev.filter((prevHeader) => prevHeader.id !== h.id)
+                    prev.filter((prevHeader) => prevHeader.id !== h.id),
                   );
                 }}
               />

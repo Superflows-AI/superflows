@@ -97,7 +97,7 @@ export default function UploadSpec(props: {
         name: json.info?.title,
         description: json.info?.description,
       })
-      .eq("id", props.orgId);
+      .eq("id", props.orgId!);
     if (updateOrgResp.error) throw new Error(updateOrgResp.error.message);
 
     setIsLoading(false);
@@ -110,7 +110,7 @@ export default function UploadSpec(props: {
     const apiResp = await supabase
       .from("apis")
       .select("*")
-      .eq("org_id", props.orgId);
+      .eq("org_id", props.orgId!);
     if (apiResp.error) throw new Error(apiResp.error.message);
     props.setApi(apiResp.data[0]);
     const actionRes = await supabase
@@ -200,7 +200,7 @@ export default function UploadSpec(props: {
         <div className="mt-2 flex flex-col max-h-60 bg-red-200 rounded overflow-y-auto">
           {error &&
             (Object.entries(error.error).filter(
-              ([key, _]) => !isNaN(Number(key))
+              ([key, _]) => !isNaN(Number(key)),
             ).length > 0 ? (
               Object.entries(error.error).map(([key, value]) => {
                 if (isNaN(Number(key))) return;

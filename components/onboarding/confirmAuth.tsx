@@ -1,15 +1,15 @@
-import classNames from "classnames";
 import {
   CheckCircleIcon,
   PlusIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
-import SelectBox from "../selectBox";
-import { Api, HeadersInsert } from "../../lib/types";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Header } from "../actions/APITabs";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import classNames from "classnames";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Database } from "../../lib/database.types";
+import { Api, HeadersInsert } from "../../lib/types";
+import { Header } from "../actions/APITabs";
+import SelectBox from "../selectBox";
 
 export default function ConfirmAuth(props: {
   api: Api;
@@ -72,7 +72,7 @@ export default function ConfirmAuth(props: {
             <div
               className={classNames(
                 "absolute top-1 left-28 flex flex-row place-items-center gap-x-1 text-gray-200",
-                apiHostSavedFeedback !== null ? "" : "invisible"
+                apiHostSavedFeedback !== null ? "" : "invisible",
               )}
             >
               {apiHostSavedFeedback ? (
@@ -227,24 +227,24 @@ export default function ConfirmAuth(props: {
                   const res = await supabase
                     .from("fixed_headers")
                     .update(h)
-                    .eq("id", h.id);
+                    .eq("id", h.id!);
                   if (res.error) throw new Error(res.error.message);
                 }}
                 setHeader={(header: HeadersInsert) => {
                   setHeaders((prev) =>
                     prev.map((prevHeader) =>
-                      prevHeader.id === h.id ? header : prevHeader
-                    )
+                      prevHeader.id === h.id ? header : prevHeader,
+                    ),
                   );
                 }}
                 onDelete={async () => {
                   const res = await supabase
                     .from("fixed_headers")
                     .delete()
-                    .eq("id", h.id);
+                    .eq("id", h.id!);
                   if (res.error) throw new Error(res.error.message);
                   setHeaders((prev) =>
-                    prev.filter((prevHeader) => prevHeader.id !== h.id)
+                    prev.filter((prevHeader) => prevHeader.id !== h.id),
                   );
                 }}
               />

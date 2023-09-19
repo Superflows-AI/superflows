@@ -40,7 +40,16 @@ function Dashboard() {
     }
     // Oddly this is needed for sign up from Google on Firefox. Don't know why, but
     // oauth params aren't grabbed from the URL automagically like on other browsers
-    void supabase.auth.getSession();
+    const getSession = async () => {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) return;
+      Object.entries(session.data.session).forEach(([key, value]) => {
+        if (value && typeof value === "string") {
+          localStorage.setItem(key, value);
+        }
+      });
+    };
+    getSession();
   }, [router]);
 
   // When they sign in, check if they have a join_id in localStorage and join the org if they do

@@ -46,7 +46,7 @@ export function ActionsPage() {
       .from("apis")
       .select("*")
       .order("created_at", { ascending: true })
-      .eq("org_id", profile?.org_id);
+      .eq("org_id", profile?.org_id!);
     if (apisResp.error) throw new Error(JSON.stringify(apisResp.error));
     setApis([...apisResp.data]);
 
@@ -54,7 +54,7 @@ export function ActionsPage() {
       .from("action_tags")
       .select("*, actions(*)")
       .order("id", { ascending: true })
-      .eq("org_id", profile?.org_id);
+      .eq("org_id", profile?.org_id!);
 
     // if you don't sort the actions get shuffled around on the page each time
     actionTagRes.data?.forEach((actionTag) => {

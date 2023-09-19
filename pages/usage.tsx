@@ -144,13 +144,13 @@ function DashboardNumMessages() {
       const res = await supabase
         .from("usage")
         .select("*")
-        .eq("org_id", profile?.org_id);
+        .eq("org_id", profile?.org_id!);
       if (res.error) throw res.error;
       setNumUserMessages(
-        res.data.map((d) => ({ date: d.date, value: d.num_user_queries }))
+        res.data.map((d) => ({ date: d.date, value: d.num_user_queries })),
       );
       setTotalMessages(
-        res.data.reduce((acc, curr) => acc + curr.num_user_queries, 0)
+        res.data.reduce((acc, curr) => acc + curr.num_user_queries, 0),
       );
       setLoading(false);
     })();
@@ -195,7 +195,7 @@ function DashboardCost() {
       const res = await supabase
         .from("usage")
         .select("*")
-        .eq("org_id", profile?.org_id);
+        .eq("org_id", profile?.org_id!);
       if (res.error) throw res.error;
       setCost(res.data.map((d) => ({ date: d.date, value: d.usage })));
       setSum(res.data.reduce((acc, curr) => acc + curr.usage, 0));
