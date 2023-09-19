@@ -20,7 +20,6 @@ export default function SignInComponent(props: {
 
   useEffect(() => {
     const url = getRedirectUrl();
-    console.log("redirecty url", url);
     setRedirectUrl(url);
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {

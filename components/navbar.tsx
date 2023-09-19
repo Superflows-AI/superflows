@@ -202,7 +202,7 @@ export function Navbar(props: { current: string }) {
                 popoverClassName={"w-48 z-50"}
                 title={"Support"}
               />
-              {process.env.NODE_ENV !== "develiiopment" && (
+              {process.env.NODE_ENV !== "development" && (
                 <FlyoutMenu
                   items={[
                     {
