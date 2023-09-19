@@ -66,7 +66,7 @@ function Dashboard() {
     return [...finetunedGPTDefault, ...allLLMsBase, ...openRouterModels];
   });
   const [llm, setLlm] = React.useState<string>(
-    profile ? profile!.organizations!.model : "gpt-4-0613"
+    profile ? profile!.organizations!.model : "gpt-4-0613",
   );
   useEffect(() => {
     if (profile && profile?.organizations?.model !== llm)
@@ -82,7 +82,7 @@ function Dashboard() {
         ...profile.organizations?.finetuned_models
           .sort(
             (a, b) =>
-              Number(new Date(b.created_at)) - Number(new Date(a.created_at))
+              Number(new Date(b.created_at)) - Number(new Date(a.created_at)),
           )
           .map((model, idx, array) => ({
             id: model.openai_name,
@@ -123,7 +123,7 @@ function Dashboard() {
                     .update({
                       model: requestMethod,
                     })
-                    .eq("id", profile?.organizations?.id);
+                    .eq("id", profile?.organizations?.id!);
                   if (error) throw error;
                   await refreshProfile();
                 }}

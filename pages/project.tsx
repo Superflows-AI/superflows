@@ -23,10 +23,10 @@ function Dashboard() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
   const [localName, setLocalName] = useState<string>(
-    profile?.organizations?.name || ""
+    profile?.organizations?.name || "",
   );
   const [localDescription, setLocalDescription] = useState<string>(
-    profile?.organizations?.description || ""
+    profile?.organizations?.description || "",
   );
 
   return (
@@ -55,7 +55,7 @@ function Dashboard() {
                 const res = await supabase
                   .from("organizations")
                   .update({ name: localName })
-                  .eq("id", profile?.organizations?.id);
+                  .eq("id", profile?.organizations?.id!);
                 if (res.error) throw res.error;
                 await refreshProfile();
               }}
@@ -85,7 +85,7 @@ function Dashboard() {
                 const res = await supabase
                   .from("organizations")
                   .update({ description: localDescription })
-                  .eq("id", profile?.organizations?.id);
+                  .eq("id", profile?.organizations?.id!);
                 if (res.error) throw res.error;
                 await refreshProfile();
               }}
