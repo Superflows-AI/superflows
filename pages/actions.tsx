@@ -41,7 +41,6 @@ export function ActionsPage() {
     ActionTagJoin[] | undefined
   >(undefined);
   const [apis, setApis] = useState<Api[] | undefined>(undefined);
-  const [model, setModel] = useState<string | null>(null);
   const loadActions = useCallback(async () => {
     const apisResp = await supabase
       .from("apis")
@@ -56,14 +55,6 @@ export function ActionsPage() {
       .select("*, actions(*)")
       .order("id", { ascending: true })
       .eq("org_id", profile?.org_id!);
-
-    const modelRes = await supabase
-      .from("organizations")
-      .select("model")
-      .eq("id", profile?.org_id!);
-
-    if (!modelRes.error && modelRes.data && modelRes.data[0].model)
-      setModel(modelRes.data[0].model);
 
     // if you don't sort the actions get shuffled around on the page each time
     actionTagRes.data?.forEach((actionTag) => {
@@ -97,7 +88,6 @@ export function ActionsPage() {
           loadActions={loadActions}
           apis={apis}
           setApis={setApis}
-          model={model}
         />
       ) : !isError ? (
         <div className="flex flex-col gap-y-4 text-xl place-items-center justify-center h-full w-full text-gray-300 mt-40">

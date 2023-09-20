@@ -26,7 +26,7 @@ import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
 import ViewSystemPromptModal from "./viewPromptModal";
 import APITabs from "./APITabs";
-import { getActionDescriptions } from "../../lib/prompts/chatBot";
+import getMessages, { getActionDescriptions } from "../../lib/prompts/chatBot";
 
 export default function PageActionsSection(props: {
   actionTags: ActionTagJoin[];
@@ -34,7 +34,6 @@ export default function PageActionsSection(props: {
   loadActions: () => Promise<void>;
   apis: Api[];
   setApis: Dispatch<SetStateAction<Api[] | undefined>>;
-  model?: string | null;
 }) {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
@@ -58,13 +57,27 @@ export default function PageActionsSection(props: {
       .filter((action) => action.active);
     setNumActiveActions(activeActions.length);
 
-    const tokenCount = getTokenCount([
-      { role: "system", content: getActionDescriptions(activeActions) },
-    ]);
+    const tokenCount = getTokenCount(
+      // There's a chance that the user description or a language with a longer name
+      // than "english" could break the camels back, but unlikely
+      getMessages(
+        [],
+        activeActions,
+        "",
+        {
+          name: profile?.organizations?.name ?? "",
+          description: profile?.organizations?.description ?? "",
+        },
+        "english",
+      ),
+    );
 
     setActionsExceedMaxTokens(
       tokenCount >
-        (props.model && props.model.includes("gpt-3.5") ? 4096 : 8192),
+        (profile?.organizations?.model &&
+        profile.organizations.model.includes("gpt-3.5")
+          ? 4096
+          : 8192),
     );
   }, [props.actionTags]);
 
@@ -205,7 +218,7 @@ export default function PageActionsSection(props: {
                 <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
                 Upload
               </button>
-              {props.actionTags.length > 0 && (
+              {props.actionTags.length > 0 && !actionsExceedMaxTokens && (
                 <FlyoutMenu
                   items={[
                     {
@@ -228,6 +241,15 @@ export default function PageActionsSection(props: {
                   }
                   popoverClassName={"w-48"}
                 />
+              )}
+              {actionsExceedMaxTokens && (
+                <button
+                  className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
+                  onClick={() => setViewPromptOpen(true)}
+                >
+                  <ChatBubbleBottomCenterTextIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
+                  View Action Description
+                </button>
               )}
             </div>
           </div>
@@ -337,9 +359,7 @@ export default function PageActionsSection(props: {
             role="alert"
           >
             <p className="font-bold">Error:</p>
-            <p>
-              {`You have ${numActiveActions} actions enabled. The language model cannot process this many. We recommend enabling around 20 actions.`}
-            </p>
+            <p>{`The description of your enabled actions is too long. Please disable some actions. You can view the description by clicking "View Action Description" above`}</p>
           </div>
         )}
         {!actionsExceedMaxTokens && numActiveActions > 20 && (
