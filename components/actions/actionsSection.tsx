@@ -218,7 +218,7 @@ export default function PageActionsSection(props: {
                 <DocumentArrowUpIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
                 Upload
               </button>
-              {props.actionTags.length > 0 && !actionsExceedMaxTokens && (
+              {props.actionTags.length > 0 && (
                 <FlyoutMenu
                   items={[
                     {
@@ -241,15 +241,6 @@ export default function PageActionsSection(props: {
                   }
                   popoverClassName={"w-48"}
                 />
-              )}
-              {actionsExceedMaxTokens && (
-                <button
-                  className="flex flex-row place-items-center gap-x-2 bg-gray-900 text-white font-medium text-xs md:text-sm py-1.5 px-4 rounded hover:bg-gray-950 focus:ring-2"
-                  onClick={() => setViewPromptOpen(true)}
-                >
-                  <ChatBubbleBottomCenterTextIcon className="text-gray-200 w-4 h-4 md:w-5 md:h-5" />{" "}
-                  View Action Description
-                </button>
               )}
             </div>
           </div>
@@ -355,11 +346,15 @@ export default function PageActionsSection(props: {
         )}
         {actionsExceedMaxTokens && (
           <div
-            className="fixed bottom-0 inset-x-0 md:mx-10 lg:mx-auto max-w-7xl flex flex-row gap-x-2 bg-red-900 border-l-4 border-red-500 text-white px-4 py-6"
+            className="fixed bottom-0 inset-x-0 md:mx-10 lg:mx-auto max-w-7xl flex flex-row gap-x-2 bg-red-900 border-l-4 border-red-500 hover:bg-red-800 text-white px-4 py-6 cursor-pointer"
             role="alert"
+            onClick={() => setViewPromptOpen(true)}
           >
             <p className="font-bold">Error:</p>
-            <p>{`The description of your enabled actions is too long. Please disable some actions. You can view the description by clicking "View Action Description" above`}</p>
+            <p>
+              The prompt is too long. Please disable some actions. Click here to
+              view the prompt
+            </p>
           </div>
         )}
         {!actionsExceedMaxTokens && numActiveActions > 20 && (
