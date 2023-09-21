@@ -14,7 +14,7 @@ export default function EditActionGroupModal(props: {
   const saveRef = useRef(null);
   const [invalid, setInvalid] = React.useState<boolean | null>(null);
   const [localActionGroup, setLocalActionGroup] = React.useState<ActionTagJoin>(
-    props.actionTag
+    props.actionTag,
   );
 
   return (
@@ -49,7 +49,7 @@ export default function EditActionGroupModal(props: {
               "absolute top-4 text-xs -right-10 z-10",
               localActionGroup.name.length === 40
                 ? "text-red-500"
-                : "text-gray-500"
+                : "text-gray-500",
             )}
           >
             {localActionGroup.name.length}/40
@@ -60,7 +60,7 @@ export default function EditActionGroupModal(props: {
             "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
             invalid && localActionGroup.name === ""
               ? "ring-2 ring-offset-1 ring-red-500"
-              : ""
+              : "",
           )}
           floatingClassName={
             invalid && localActionGroup.name === ""
@@ -96,7 +96,7 @@ export default function EditActionGroupModal(props: {
           }}
           rows={Math.max(
             Math.ceil(localActionGroup.description.length / 90),
-            2
+            2,
           )}
         />
         {localActionGroup.description &&
@@ -106,7 +106,7 @@ export default function EditActionGroupModal(props: {
                 "absolute bottom-2 text-xs right-3 z-10",
                 localActionGroup.description.length >= 290
                   ? "text-red-500"
-                  : "text-gray-500"
+                  : "text-gray-500",
               )}
             >
               {localActionGroup.description.length}/300
@@ -128,7 +128,7 @@ export default function EditActionGroupModal(props: {
             "absolute pointer-events-none left-4 top-3 peer-focus:scale-75 peer-focus:-translate-y-5/8 text-gray-400 select-none transition duration-300",
             localActionGroup.description
               ? "-translate-x-1/8 -translate-y-5/8 scale-75"
-              : "peer-focus:-translate-x-1/8"
+              : "peer-focus:-translate-x-1/8",
           )}
         >
           Description

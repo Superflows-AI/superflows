@@ -34,7 +34,7 @@ describe("removeOldestFunctionCalls", () => {
   it("should remove 1 function call", () => {
     const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(9000)],
-      "4"
+      "4",
     );
     expect(out).toEqual([systemPrompt, replacementFunctionMessage]);
   });
@@ -48,7 +48,7 @@ describe("removeOldestFunctionCalls", () => {
         userMessage,
         assistantMessage,
       ],
-      "4"
+      "4",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -69,7 +69,7 @@ describe("removeOldestFunctionCalls", () => {
         assistantMessage,
         getLongFunctionCall(9000),
       ],
-      "4"
+      "4",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -89,7 +89,7 @@ describe("removeOldestFunctionCalls", () => {
         assistantMessage,
         getLongFunctionCall(10),
       ],
-      "4"
+      "4",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -109,7 +109,7 @@ describe("removeOldestFunctionCalls", () => {
         assistantMessage,
         getLongFunctionCall(10),
       ],
-      "4"
+      "4",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -123,7 +123,7 @@ describe("removeOldestFunctionCalls", () => {
   it("should remove 1 function call 3k limit", () => {
     const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(5000)],
-      "3"
+      "3",
     );
     expect(out).toEqual([systemPrompt, replacementFunctionMessage]);
   });
@@ -131,7 +131,7 @@ describe("removeOldestFunctionCalls", () => {
   it("should not remove long function 16k limit", () => {
     const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(12000)],
-      "3-16k"
+      "3-16k",
     );
     expect(out).toEqual([systemPrompt, getLongFunctionCall(12000)]);
   });

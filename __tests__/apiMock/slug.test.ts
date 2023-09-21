@@ -149,7 +149,7 @@ describe("getMatchingAction", () => {
     ];
     const slugMatch = slugMatchesPath(
       "/api/0/teams/{organization_slug}/{team_slug}/",
-      "/api/0/teams/teamy/teamymcteamface/mteamystreamfacefaceteam"
+      "/api/0/teams/teamy/teamymcteamface/mteamystreamfacefaceteam",
     );
     expect(slugMatch).toEqual(false);
     const result = getMatchingAction(1, actions, requestMethod, slug);

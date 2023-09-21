@@ -59,7 +59,7 @@ export default function WarningModal(props: {
                       "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10",
                       props.actionColour === "purple"
                         ? "bg-purple-100"
-                        : "bg-red-100"
+                        : "bg-red-100",
                     )}
                   >
                     <ExclamationTriangleIcon
@@ -67,7 +67,7 @@ export default function WarningModal(props: {
                         "h-6 w-6",
                         props.actionColour === "purple"
                           ? "text-purple-600"
-                          : "text-red-600"
+                          : "text-red-600",
                       )}
                       aria-hidden="true"
                     />
@@ -93,7 +93,7 @@ export default function WarningModal(props: {
                       "inline-flex w-full justify-center rounded-md border border-transparent focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2",
                       props.actionColour === "purple"
                         ? "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
-                        : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                        : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
                     )}
                     onClick={() => {
                       props.setOpen(false);

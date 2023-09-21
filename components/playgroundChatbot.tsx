@@ -44,7 +44,7 @@ export default function PlaygroundChatbot(props: {
       if (res.error) throw res.error;
       // Below gets the unique messages and then takes the first 3
       setSuggestions(
-        [...new Set(res.data.map((message) => message.content))].slice(0, 3)
+        [...new Set(res.data.map((message) => message.content))].slice(0, 3),
       );
     })();
   }, []);
@@ -57,7 +57,7 @@ export default function PlaygroundChatbot(props: {
       <div
         className={classNames(
           `pt-8 px-3 pb-6`,
-          "text-gray-900 border-b-2 border-gray-200 bg-gray-50"
+          "text-gray-900 border-b-2 border-gray-200 bg-gray-50",
         )}
       >
         <div className="flex flex-row place-items-center justify-center relative">
@@ -72,7 +72,7 @@ export default function PlaygroundChatbot(props: {
           </div>
           <h1
             className={classNames(
-              "ml-4 block text-2xl font-semibold leading-6"
+              "ml-4 block text-2xl font-semibold leading-6",
             )}
           >
             {profile?.organizations?.name} AI
@@ -97,7 +97,7 @@ export default function PlaygroundChatbot(props: {
             <p
               className={classNames(
                 "flex flex-row grow gap-x-1 mx-4 text-red-500 place-items-center justify-center rounded-md px-1 py-2 text-little font-medium text-center",
-                !props.submitErrorMessage ? "invisible" : "visible"
+                !props.submitErrorMessage ? "invisible" : "visible",
               )}
             >
               {props.submitErrorMessage}

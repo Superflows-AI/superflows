@@ -5,7 +5,7 @@ import { getJsonMIMEType } from "../edge-runtime/utils";
 import { isChoiceRequired } from "../actionUtils";
 
 export function formatDescription(
-  description: string | undefined | null
+  description: string | undefined | null,
 ): string {
   /** Formats a parameter description for GPT. **/
   let des = removeMarkdownLinks(description?.trim() ?? "");
@@ -25,7 +25,7 @@ type typeType =
     )[];
 export function getType(
   type: typeType | undefined,
-  enums: any[] | undefined
+  enums: any[] | undefined,
 ): typeType | string {
   if (enums && enums.length < 10) {
     // TODO: Deal with long enums better - right now we are just ignoring them
@@ -49,7 +49,7 @@ export function formatReqBodySchema(
   schema: OpenAPIV3_1.SchemaObject | undefined,
   nestingLevel: number = 0,
   isRequired: boolean = false,
-  parentArrayOfObjects: boolean = false
+  parentArrayOfObjects: boolean = false,
 ): string {
   /** Recursive function to parse an OpenAPI Schema object into a Superflows GPT-able string.
    * Only works for requestBody right now since readOnly parameters are ignored. **/
@@ -93,13 +93,13 @@ export function formatReqBodySchema(
         isRequired ? " REQUIRED" : ""
       }${
         formatReqBodySchema(items, nestingLevel, false, true).split(
-          "(object)"
+          "(object)",
         )[1]
       }`;
     } else {
       // Arrays of non-objects (incl. other arrays)
       const des = formatDescription(
-        schema.description || `array of ${items.description}`
+        schema.description || `array of ${items.description}`,
       );
       paramString += `(${getType(items.type, items.enum)}[])${des}${
         isRequired ? " REQUIRED" : ""
@@ -113,7 +113,7 @@ export function formatReqBodySchema(
       schema.example && !schema.enum ? ` Example: ${schema.example}.` : "";
     // Non-object, non-array
     paramString += `(${getType(schema.type, schema.enum)})${formatDescription(
-      schema.description ?? schema.format
+      schema.description ?? schema.format,
     )}${example}${isRequired ? " REQUIRED" : ""}`;
   }
   return paramString;
@@ -148,7 +148,7 @@ export function getActionDescriptions(actions: Action[]): string {
 
         paramString += `\n- ${p.name} (${getType(
           schema.type,
-          schema.enum
+          schema.enum,
         )})${formatDescription(p.description)}${example}${
           p.required ? " REQUIRED" : ""
         }`;
@@ -182,7 +182,7 @@ export default function getMessages(
     name: string;
     description: string;
   },
-  language: string | null
+  language: string | null,
 ): ChatGPTMessage[] {
   let userDescriptionSection = "";
   if (userDescription) {

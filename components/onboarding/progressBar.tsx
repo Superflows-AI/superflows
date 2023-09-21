@@ -29,7 +29,7 @@ export default function ProgressBar(props: { step: number }) {
             className={classNames(
               "text-center",
               props.step > 1 && "text-purple-600",
-              props.step === 1 && "text-gray-100"
+              props.step === 1 && "text-gray-100",
             )}
           >
             Upload API Spec
@@ -38,7 +38,7 @@ export default function ProgressBar(props: { step: number }) {
             className={classNames(
               "text-center",
               props.step > 2 && "text-purple-600",
-              props.step === 2 && "text-gray-100"
+              props.step === 2 && "text-gray-100",
             )}
           >
             Connect to API

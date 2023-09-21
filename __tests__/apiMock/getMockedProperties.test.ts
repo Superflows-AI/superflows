@@ -37,7 +37,7 @@ lastName: Smith
           path: ["id"],
           data: "The user's id",
         },
-      ]
+      ],
     );
     expect(res).toEqual({ firstName: "John", lastName: "Smith" });
   });
@@ -80,7 +80,7 @@ lastName: Smith
       "GET",
       null,
       undefined,
-      true
+      true,
     );
     expect(res).toEqual(expected);
   });
@@ -131,7 +131,7 @@ lastName: Smith
           path: ["id"],
           data: "The user's id",
         },
-      ]
+      ],
     );
 
     expect(res).toEqual(expectedOutput);

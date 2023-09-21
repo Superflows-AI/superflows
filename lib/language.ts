@@ -33,7 +33,7 @@ export async function getLanguage(text: string): Promise<string | null> {
   const bestGuess = json.data.detections[0];
   if (bestGuess.isReliable) {
     console.log(
-      "Language from detectlanguage.com:" + JSON.stringify(json, undefined, 2)
+      "Language from detectlanguage.com:" + JSON.stringify(json, undefined, 2),
     );
     // This converts from "en" to "English" etc
     return languageNames.of(bestGuess.language) ?? null;

@@ -41,7 +41,7 @@ describe("missingParamCorrection", () => {
     };
 
     (getLLMResponse as jest.Mock).mockReturnValue(
-      "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked"
+      "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
     );
 
     const originalCommand = {
@@ -54,14 +54,14 @@ describe("missingParamCorrection", () => {
       [action],
       "very lovely user",
       { name: "", description: "" },
-      null
+      null,
     );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       previousConversation,
-      "gpt-3.5-turbo"
+      "gpt-3.5-turbo",
     );
 
     const expected = {
@@ -105,14 +105,14 @@ describe("missingParamCorrection", () => {
       [action],
       "",
       { name: "", description: "" },
-      null
+      null,
     );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       previousConversation,
-      "gpt-3.5-turbo"
+      "gpt-3.5-turbo",
     );
 
     const expected = {
@@ -151,10 +151,10 @@ describe("missingParamCorrection", () => {
 
     (getLLMResponse as jest.Mock)
       .mockReturnValueOnce(
-        "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked"
+        "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
       )
       .mockReturnValueOnce(
-        "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo"
+        "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo",
       );
 
     const originalCommand = {
@@ -167,14 +167,14 @@ describe("missingParamCorrection", () => {
       [action],
       "",
       { name: "", description: "" },
-      null
+      null,
     );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       previousConversation,
-      "gpt-3.5-turbo"
+      "gpt-3.5-turbo",
     );
 
     const expected = {
@@ -228,14 +228,14 @@ describe("missingParamCorrection", () => {
       [action],
       "",
       { name: "", description: "" },
-      null
+      null,
     );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       previousConversation,
-      "gpt-3.5-turbo"
+      "gpt-3.5-turbo",
     );
 
     const expected = {
@@ -291,14 +291,14 @@ describe("missingParamCorrection", () => {
       [action],
       "",
       { name: "", description: "" },
-      null
+      null,
     );
 
     const correctedCommand = await getMissingArgCorrections(
       action,
       originalCommand as FunctionCall,
       previousConversation,
-      "gpt-3.5-turbo"
+      "gpt-3.5-turbo",
     );
 
     const expected = {

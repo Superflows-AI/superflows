@@ -38,7 +38,7 @@ export interface ChatGPTResponse {
       message: ChatGPTMessage;
       finish_reason: string;
       index: number;
-    }
+    },
   ];
 }
 

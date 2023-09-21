@@ -1,5 +1,5 @@
 export function parseGPTStreamedData(
-  gptOutString: string
+  gptOutString: string,
 ): string[] | undefined {
   try {
     return (
@@ -16,7 +16,7 @@ export function parseGPTStreamedData(
     );
   } catch (e) {
     console.log(
-      `Error parsing GPT output string: ${gptOutString}. Error: ${e}`
+      `Error parsing GPT output string: ${gptOutString}. Error: ${e}`,
     );
     return undefined;
   }

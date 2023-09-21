@@ -16,7 +16,7 @@ import { OpenAPIV3_1 } from "openapi-types";
 describe("formatReqBodySchema", () => {
   it("real-world example 1", () => {
     const out = formatReqBodySchema(
-      realWorldExampleSchema1.schema as OpenAPIV3_1.SchemaObject
+      realWorldExampleSchema1.schema as OpenAPIV3_1.SchemaObject,
     );
     // We probably want to simplify the data.exchange object so it's less
     // nested and complex. It should probably be a top-level object instead,
@@ -59,7 +59,7 @@ describe("formatReqBodySchema", () => {
   });
   it("real-world example 1", () => {
     const out = formatReqBodySchema(
-      realWorldExampleSchema2.schema as OpenAPIV3_1.SchemaObject
+      realWorldExampleSchema2.schema as OpenAPIV3_1.SchemaObject,
     );
     expect(out).toEqual(`
 - workflow (object) REQUIRED
@@ -112,7 +112,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1 PARAMETERS: None.\n2. action2 PARAMETERS: None.\n`
+      `1. action1 PARAMETERS: None.\n2. action2 PARAMETERS: None.\n`,
     );
   });
   // Setting parameters
@@ -135,7 +135,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n",
     );
   });
   it("1 parameter, not required", () => {
@@ -156,7 +156,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description.\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description.\n",
     );
   });
   it("1 parameter with string enums", () => {
@@ -178,7 +178,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      'action1: description1. PARAMETERS:\n- param1 ("alpha" | "beta" | "gamma"): a description.\n'
+      'action1: description1. PARAMETERS:\n- param1 ("alpha" | "beta" | "gamma"): a description.\n',
     );
   });
   it("1 parameter with number enums", () => {
@@ -200,7 +200,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (1 | 2 | 3): a description.\n"
+      "action1: description1. PARAMETERS:\n- param1 (1 | 2 | 3): a description.\n",
     );
   });
   it("2 parameters 1 action", () => {
@@ -233,7 +233,7 @@ describe("getActionDescriptions", () => {
       `action1: description1. PARAMETERS:
 - param1 (string): a description.
 - param2 (number): this isn't a description. REQUIRED
-`
+`,
     );
   });
   it("2 parameters 2 actions", () => {
@@ -293,7 +293,7 @@ describe("getActionDescriptions", () => {
 2. action2: description1. PARAMETERS:
 - param3 (string): a description.
 - param4 (number): this isn't a description. REQUIRED
-`
+`,
     );
   });
   it("param with enum with 1 option", () => {
@@ -326,7 +326,7 @@ describe("getActionDescriptions", () => {
     expect(out).toEqual(
       `action1: description1. PARAMETERS:
 - param2 (number): this isn't a description.
-`
+`,
     );
   });
 
@@ -354,7 +354,7 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n"
+      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n",
     );
   });
   it("2 request body items", () => {
@@ -387,7 +387,7 @@ describe("getActionDescriptions", () => {
       `action1: description1. PARAMETERS:
 - param1 (string): a description. REQUIRED
 - param2 (number): this is a number.
-`
+`,
     );
   });
   it("request body simple array", () => {
@@ -464,7 +464,7 @@ describe("getActionDescriptions", () => {
 \t- customField (string): The ID or key of the custom field. For example, \`customfield_10010\`. REQUIRED
 \t- issueIds (integer[]): The list of issue IDs. REQUIRED
 \t- value (any): The value for the custom field. The value must be compatible with the custom field type. REQUIRED
-`
+`,
     );
   });
 
@@ -485,7 +485,7 @@ describe("getActionDescriptions", () => {
 \t- issues (integer[]): List of issue IDs.
 \t- permissions (string[]): List of project permissions. REQUIRED
 \t- projects (integer[]): List of project IDs.
-`
+`,
     );
   });
   it("exampleRequestBody3", () => {
@@ -505,7 +505,7 @@ describe("getActionDescriptions", () => {
 - name (string): The name of the dashboard. REQUIRED
 - sharePermissions (object[]): The share permissions for the dashboard. REQUIRED
 \t- type ("user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown"): user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to. REQUIRED
-`
+`,
     );
   });
   it("exampleRequestBody with enum with 1 option", () => {
@@ -540,7 +540,7 @@ describe("getActionDescriptions", () => {
     expect(out).toEqual(
       `action1: description1. PARAMETERS:
 - description (string): The description of the dashboard.
-`
+`,
     );
   });
   it("exampleRequestBody with examples", () => {
@@ -578,7 +578,7 @@ describe("getActionDescriptions", () => {
       `action1: description1. PARAMETERS:
 - created (string): When it was created. Example: 2021-01-01.
 - enumProp ("option1" | "option2"): enum description. REQUIRED
-`
+`,
     );
   });
   it("params with examples", () => {
@@ -614,7 +614,7 @@ describe("getActionDescriptions", () => {
       `action1: description1. PARAMETERS:
 - param1 (string): a description. Example: example1.
 - updated (integer) Example: 1663734553.
-`
+`,
     );
   });
 });

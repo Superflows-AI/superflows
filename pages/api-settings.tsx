@@ -111,7 +111,7 @@ function Dashboard() {
                     setWarningOpen(true);
                   }}
                   className={classNames(
-                    "border border-gray-600 rounded-md px-2 py-0.5 text-gray-300 flex flex-row gap-x-1 place-items-center bg-gray-800"
+                    "border border-gray-600 rounded-md px-2 py-0.5 text-gray-300 flex flex-row gap-x-1 place-items-center bg-gray-800",
                   )}
                 >
                   <ArrowPathIcon className="h-5 w-5" />

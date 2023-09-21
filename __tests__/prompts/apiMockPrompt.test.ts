@@ -17,7 +17,7 @@ describe("apiMockPrompt", () => {
       null,
       responseType,
       undefined,
-      false
+      false,
     );
 
     const extractedString = res[1].content
@@ -43,7 +43,7 @@ describe("apiMockPrompt", () => {
       null,
       responseType,
       undefined,
-      false
+      false,
     );
 
     const extractedString = res[1].content

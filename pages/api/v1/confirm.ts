@@ -54,7 +54,7 @@ if (
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
 );
 
 const headers = { "Content-Type": "application/json" };
@@ -75,7 +75,7 @@ export default async function handler(req: NextRequest) {
         {
           status: 405,
           headers,
-        }
+        },
       );
     }
 
@@ -130,7 +130,7 @@ export default async function handler(req: NextRequest) {
     }
 
     console.log(
-      `Got call to confirm with valid request body for conversation ID: ${requestData.conversation_id}`
+      `Got call to confirm with valid request body for conversation ID: ${requestData.conversation_id}`,
     );
 
     // Count previous messages in the conversation
@@ -144,8 +144,8 @@ export default async function handler(req: NextRequest) {
 
     console.log(
       `Found ${numPastMessages} past messages: ${JSON.stringify(
-        countMessagesRes
-      )}`
+        countMessagesRes,
+      )}`,
     );
 
     const redisKey = requestData.conversation_id.toString() + "-toConfirm";
@@ -183,7 +183,7 @@ export default async function handler(req: NextRequest) {
         {
           status: 200,
           headers,
-        }
+        },
       );
     }
     // Override api_host if mock_api_responses is set to true
@@ -223,7 +223,7 @@ export default async function handler(req: NextRequest) {
               },
               params: param.args,
             };
-          })
+          }),
         );
         console.log("Got toExecute from redis:", JSON.stringify(toExecute));
       }
@@ -262,7 +262,7 @@ export default async function handler(req: NextRequest) {
             },
             params: command.args,
           };
-        })
+        }),
       );
       console.log("Got toExecute from database:", JSON.stringify(toExecute));
     }
@@ -273,7 +273,7 @@ export default async function handler(req: NextRequest) {
             error:
               "No API host found - add an API host on the API settings page",
           }),
-          { status: 400, headers }
+          { status: 400, headers },
         );
       }
     });
@@ -299,7 +299,7 @@ export default async function handler(req: NextRequest) {
           content: JSON.stringify(
             processAPIoutput(output, execute.action),
             null,
-            2
+            2,
           ),
         } as ChatGPTMessage;
 
@@ -314,7 +314,7 @@ export default async function handler(req: NextRequest) {
         });
         if (funcRes.error) throw new Error(funcRes.error.message);
         return out;
-      })
+      }),
     );
 
     return new Response(JSON.stringify({ outs }), {
@@ -336,7 +336,7 @@ export default async function handler(req: NextRequest) {
       {
         status: 500,
         headers,
-      }
+      },
     );
   }
 }

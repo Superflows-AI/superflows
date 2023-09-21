@@ -22,7 +22,7 @@ const supabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE
+  process.env.SERVICE_LEVEL_KEY_SUPABASE,
   // Bring me my Chariot of fire!
 );
 
@@ -39,7 +39,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
       JSON.stringify({
         error: "Only GET requests allowed",
       }),
-      { status: 405, headers }
+      { status: 405, headers },
     );
   }
   const params = new URLSearchParams(req.url.split("?")[1]);
@@ -64,7 +64,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
       {
         status: 500,
         headers,
-      }
+      },
     );
   }
   if (data === null) {
