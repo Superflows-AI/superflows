@@ -31,7 +31,7 @@ export function ProfileContextProvider(props: {
   supabase: ReturnType<typeof createClient<Database>>;
 }) {
   const [profile, setProfile] = useState<ProfilesRow | null | undefined>(
-    undefined
+    undefined,
   );
   const [pathname, setPathname] = useState<string | null>(null);
   const session = useSession();
@@ -99,7 +99,7 @@ export function ProfileContextProvider(props: {
       setProfile(newProfile);
       return newProfile;
     },
-    [session, setProfile, props.supabase]
+    [session, setProfile, props.supabase],
   );
 
   useEffect(() => {

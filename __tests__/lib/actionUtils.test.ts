@@ -145,7 +145,7 @@ describe("isChoiceRequired", () => {
   it("complex 1 - workflow.code", () => {
     const out = isChoiceRequired(
       // @ts-ignore
-      complexSchema1.properties!.workflow.properties.code
+      complexSchema1.properties!.workflow.properties.code,
     );
     expect(out).toBe(false);
   });
@@ -164,7 +164,7 @@ describe("isChoiceRequired", () => {
   it("complex 2 - workflow.code", () => {
     const out = isChoiceRequired(
       // @ts-ignore
-      complexSchema2.properties!.workflow.properties.code
+      complexSchema2.properties!.workflow.properties.code,
     );
     expect(out).toBe(false);
   });
@@ -206,7 +206,7 @@ describe("fillNoChoiceRequiredParams", () => {
   it("simple schema with choice 1", () => {
     const out = fillNoChoiceRequiredParams(
       { code: "inv" },
-      simpleSchemaWithChoice1
+      simpleSchemaWithChoice1,
     );
     expect(out).toEqual({ code: "inv" });
   });
@@ -214,7 +214,7 @@ describe("fillNoChoiceRequiredParams", () => {
   it("simple schema with choice 2", () => {
     const out = fillNoChoiceRequiredParams(
       { code: "external" },
-      simpleSchemaWithChoice2
+      simpleSchemaWithChoice2,
     );
     expect(out).toEqual({ code: "external" });
   });
@@ -227,7 +227,7 @@ describe("fillNoChoiceRequiredParams", () => {
   it("complex schema 1", () => {
     const out = fillNoChoiceRequiredParams(
       { data: { choiceVar: "option1" } },
-      complexSchema1
+      complexSchema1,
     );
     expect(out).toEqual({
       data: { choiceVar: "option1" },
@@ -238,7 +238,7 @@ describe("fillNoChoiceRequiredParams", () => {
   it("complex schema 2 - missing anotherVal", () => {
     const out = fillNoChoiceRequiredParams(
       { workflow: {}, data: { choiceVar: "option1" } },
-      complexSchema2
+      complexSchema2,
     );
     expect(out).toEqual({
       workflow: { code: "external" },
@@ -248,7 +248,7 @@ describe("fillNoChoiceRequiredParams", () => {
   it("complex schema 2 - anotherVal filled", () => {
     const out = fillNoChoiceRequiredParams(
       { workflow: { anotherVal: "something" }, data: { choiceVar: "option1" } },
-      complexSchema2
+      complexSchema2,
     );
     expect(out).toEqual({
       workflow: { anotherVal: "something", code: "external" },

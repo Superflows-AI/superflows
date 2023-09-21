@@ -4,18 +4,18 @@ import { getActionDescriptions } from "./chatBot";
 
 export default function requestCorrectionPrompt(
   missingParam: string,
-  action: Action
+  action: Action,
 ): ChatGPTMessage[] | null {
   const paramDetails = extractParamDetails(
     getActionDescriptions([action]),
-    missingParam
+    missingParam,
   );
 
   if (!paramDetails) {
     console.warn(
       `Could not find missing parameter "${missingParam}" in action "${action.name}.
 
-It should have no choice associated with it so should be being filled in automatically."`
+It should have no choice associated with it so should be being filled in automatically."`,
     );
     return null;
   }
@@ -75,12 +75,12 @@ Response
 
 export function extractParamDetails(
   query: string,
-  paramName: string
+  paramName: string,
 ): string | null {
   // Matches the parameter name, type within parentheses, and an optional description after the colon.
   const regex = new RegExp(
     `- ${paramName} \\(([^)]+)\\)(: ([A-Za-z0-9 .,]+))?`,
-    "gm"
+    "gm",
   );
   let match = regex.exec(query);
   const param = match ? `${match[0]}` : null;

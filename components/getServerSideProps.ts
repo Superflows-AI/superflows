@@ -2,7 +2,7 @@ import { GetServerSidePropsContext } from "next";
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 export const pageGetServerSideProps = async (
-  ctx: GetServerSidePropsContext
+  ctx: GetServerSidePropsContext,
 ) => {
   // Create authenticated Supabase Client
   const supabase = createServerSupabaseClient(ctx);

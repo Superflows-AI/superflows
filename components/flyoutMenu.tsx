@@ -50,7 +50,7 @@ export default function FlyoutMenu(props: {
               <div
                 className={classNames(
                   "shrink rounded-xl bg-white py-3 px-1 text-sm font-semibold leading-6 text-gray-900 shadow-lg ring-1 ring-gray-900/5",
-                  props.popoverClassName ?? ""
+                  props.popoverClassName ?? "",
                 )}
               >
                 {props.title && (

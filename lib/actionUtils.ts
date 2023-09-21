@@ -2,7 +2,7 @@ import { OpenAPIV3_1 } from "openapi-types";
 
 export function isChoiceRequired(
   schema: OpenAPIV3_1.SchemaObject,
-  parentRequired: boolean = true
+  parentRequired: boolean = true,
 ): boolean {
   /** Determines whether there's a choice to be made by the AI for
    * a parameter. There's no choice if it is required and has 1 enum
@@ -30,7 +30,7 @@ export function isChoiceRequired(
 
 export function getFilledNoChoiceRequiredFields(
   schema: OpenAPIV3_1.SchemaObject | undefined,
-  parentRequired: boolean = true
+  parentRequired: boolean = true,
 ): any {
   /** Gets an object with filled fields where no choice is required by the AI.
    *
@@ -60,7 +60,7 @@ export function getFilledNoChoiceRequiredFields(
       // Else if the property is an object, then recursively fill its parameters.
       const filledChildObject = getFilledNoChoiceRequiredFields(
         childSchema,
-        isKeyRequired
+        isKeyRequired,
       );
       if (filledChildObject) {
         filledObject[key] = filledChildObject;
@@ -73,7 +73,7 @@ export function getFilledNoChoiceRequiredFields(
 
 export function fillNoChoiceRequiredParams<
   Params extends Record<string, unknown>,
-  Output extends Params
+  Output extends Params,
 >(paramsFromAI: Params, schema: OpenAPIV3_1.SchemaObject): Output {
   /** Combines the parameters from the AI with parameters where no
    * choice is required by the AI. **/
@@ -88,7 +88,7 @@ interface Params {
 function combineParams<
   ParamsA extends Params,
   ParamsB extends Params,
-  OutParams extends ParamsA & ParamsB
+  OutParams extends ParamsA & ParamsB,
 >(a: ParamsA, b: ParamsB): OutParams {
   /** This function combines two objects, with b overwriting a in
    * the case of a clash. **/

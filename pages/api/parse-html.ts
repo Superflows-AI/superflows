@@ -8,7 +8,7 @@ type ParseHtmlType = z.infer<typeof ParseHtmlZod>;
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({
@@ -42,7 +42,7 @@ export default async function handler(
 }
 
 export function removeHiddenElements(
-  body: cheerio.Cheerio<cheerio.Element>
+  body: cheerio.Cheerio<cheerio.Element>,
 ): cheerio.Cheerio<cheerio.Element> {
   // Absurd, but can't find a better way to remove hidden elements
   const hidden = [

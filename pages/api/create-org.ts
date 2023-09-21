@@ -16,7 +16,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === undefined) {
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
 );
 
 const CreateOrgZod = z.object({
@@ -28,7 +28,7 @@ type CreateOrgType = z.infer<typeof CreateOrgZod>;
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ): Promise<void> {
   console.log("Create org called");
   if (req.method !== "POST") {

@@ -38,7 +38,7 @@ export default function Modal(props: {
               <Dialog.Panel
                 className={classNames(
                   "relative transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:p-6",
-                  props.classNames ?? ""
+                  props.classNames ?? "",
                 )}
               >
                 <button

@@ -14,7 +14,7 @@ describe("request to function name", () => {
     const fnName = requestToFunctionName(
       "get",
       { parameters: [{ in: "path", name: "id" }] },
-      "/api/v1/organizations/{id}"
+      "/api/v1/organizations/{id}",
     );
     expect(fnName).toEqual("get_organization_by_id");
   });
@@ -26,7 +26,7 @@ describe("request to function name", () => {
     const fnName = requestToFunctionName(
       "get",
       { parameters: [{ in: "path", name: "parent_lookup_organization_id" }] },
-      "/api/organizations/{parent_lookup_organization_id}/domains/"
+      "/api/organizations/{parent_lookup_organization_id}/domains/",
     );
     expect(fnName).toEqual("get_by_parent_lookup_organization_id_domain");
   });
@@ -34,7 +34,7 @@ describe("request to function name", () => {
     const fnName = requestToFunctionName(
       "get",
       { parameters: [{ in: "path", name: "parent_lookup_organization_id" }] },
-      "/api/organizations/{parent_lookup_organization_id}/plugins/activity/"
+      "/api/organizations/{parent_lookup_organization_id}/plugins/activity/",
     );
     expect(fnName).toEqual("get_plugin_activity");
   });

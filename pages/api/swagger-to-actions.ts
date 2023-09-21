@@ -16,7 +16,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL === undefined) {
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SERVICE_LEVEL_KEY_SUPABASE!
+  process.env.SERVICE_LEVEL_KEY_SUPABASE!,
 );
 
 export const config = {
@@ -36,7 +36,7 @@ type SwaggerEndpointType = z.infer<typeof SwaggerEndpointZod>;
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({
@@ -87,7 +87,7 @@ export default async function handler(
     dereferencedSwagger.components?.securitySchemes as Record<
       string,
       OpenAPIV3_1.SecuritySchemeObject
-    >
+    >,
   );
   const api_host = dereferencedSwagger.servers
     ?.reverse()
@@ -213,12 +213,12 @@ export default async function handler(
     .eq("org_id", orgId)
     .in(
       "name",
-      actionInserts.map((action) => action.name)
+      actionInserts.map((action) => action.name),
     );
   if (actionResp.error) throw actionResp.error;
   const existingActionNames = actionResp.data.map((action) => action.name);
   actionInserts = actionInserts.filter(
-    (action) => !existingActionNames.includes(action.name!)
+    (action) => !existingActionNames.includes(action.name!),
   );
   const actionInsertResp = await supabase.from("actions").insert(actionInserts);
   if (actionInsertResp.error) {
@@ -229,7 +229,7 @@ export default async function handler(
 }
 
 export function operationIdToFunctionName(
-  operationId: string | undefined
+  operationId: string | undefined,
 ): string | undefined {
   if (!operationId) return undefined;
   return (
@@ -245,7 +245,7 @@ export function operationIdToFunctionName(
 export function requestToFunctionName(
   method: string,
   methodObj: OpenAPIV3_1.OperationObject,
-  path: string
+  path: string,
 ): string {
   const reqBody = methodObj?.requestBody as
     | OpenAPIV3_1.RequestBodyObject
@@ -272,7 +272,7 @@ export function requestToFunctionName(
     if (parts[i] === "") continue;
     if (
       ["api", "0", "1", "2", "3", "v0", "v1", "v2", "v3"].includes(
-        parts[i].toLowerCase()
+        parts[i].toLowerCase(),
       )
     ) {
       continue;
@@ -302,20 +302,20 @@ export function requestToFunctionName(
 }
 
 export function replaceMarkdownLinks(
-  inputString: string | undefined
+  inputString: string | undefined,
 ): string | undefined {
   if (!inputString) return undefined;
   const markdownLinkRegEx = /\[([^\]]+)\]\(([^)]+)\)/g;
   return inputString.replaceAll(
     markdownLinkRegEx,
-    (match, linkText) => linkText
+    (match, linkText) => linkText,
   );
 }
 
 export function getAuthInfoFromSpec(
   securitySchemes:
     | { [key: string]: OpenAPIV3_1.SecuritySchemeObject }
-    | undefined
+    | undefined,
 ):
   | {
       auth_header: string;

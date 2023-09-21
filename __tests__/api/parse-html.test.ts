@@ -16,7 +16,7 @@ describe("removeHiddenElements", () => {
     allversions.forEach((style) => {
       const cheerioInput = cheerio
         .load(
-          `<body><div ${style}></div><div>Something that's visible</div></body>`
+          `<body><div ${style}></div><div>Something that's visible</div></body>`,
         )
         .root()
         .find("body");

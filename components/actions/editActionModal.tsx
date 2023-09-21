@@ -98,7 +98,7 @@ export default function EditActionModal(props: {
 }) {
   const saveRef = useRef(null);
   const [nameValid, setNameValid] = useState<boolean>(
-    props.action.name.length > 0 && isAlphaNumericUnderscore(props.action.name)
+    props.action.name.length > 0 && isAlphaNumericUnderscore(props.action.name),
   );
 
   const [localAction, setLocalAction] = useState<Action>(props.action);
@@ -109,14 +109,14 @@ export default function EditActionModal(props: {
 
   const [responsesValidJSON, setResponsesValidJSON] = useState<boolean>(true);
   const [includeAllInResposes, setIncludeAllInResponses] = useState<boolean>(
-    localAction.keys_to_keep === null
+    localAction.keys_to_keep === null,
   );
   const [inclInResponsesValidJSON, setInclInResponsesValidJSON] =
     useState<boolean>(true);
 
   // State variable useful for caching the keys to keep when the checkbox is checked
   const [cacheKeysToKeep, setCacheKeysToKeep] = useState<string[]>(
-    localAction.keys_to_keep as string[]
+    localAction.keys_to_keep as string[],
   );
 
   return (
@@ -140,7 +140,7 @@ export default function EditActionModal(props: {
           <FloatingLabelInput
             className={classNames(
               "px-4 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 ",
-              nameValid ? "" : "ring-2 ring-offset-1 ring-red-500"
+              nameValid ? "" : "ring-2 ring-offset-1 ring-red-500",
             )}
             floatingClassName={
               nameValid ? "" : "text-red-500 peer-focus:text-gray-400"
@@ -168,7 +168,7 @@ export default function EditActionModal(props: {
           <div
             className={classNames(
               "text-red-600 mt-0.5 w-full text-center text-sm",
-              nameValid ? "invisible" : "visible"
+              nameValid ? "invisible" : "visible",
             )}
           >
             Must only contain letters, numbers, and underscores
@@ -205,7 +205,7 @@ export default function EditActionModal(props: {
               "absolute bottom-2 text-xs right-3 z-10",
               localAction.description.length >= 290
                 ? "text-red-500"
-                : "text-gray-500"
+                : "text-gray-500",
             )}
           >
             {localAction.description.length}/300
@@ -223,7 +223,7 @@ export default function EditActionModal(props: {
             "absolute pointer-events-none left-4 top-3 peer-focus:scale-75 peer-focus:-translate-y-5/8 text-gray-400 select-none transition duration-300",
             localAction.description
               ? "-translate-x-1/8 -translate-y-5/8 scale-75"
-              : "peer-focus:-translate-x-1/8"
+              : "peer-focus:-translate-x-1/8",
           )}
         >
           Description
@@ -243,7 +243,7 @@ export default function EditActionModal(props: {
                 "px-4 my-0.5 text-gray-900 border-gray-200 border focus:border-sky-500 focus:ring-sky-500 focus:ring-1 w-full py-2.5 rounded outline-0",
                 nameValid && localAction.path === ""
                   ? "ring-2 ring-offset-1 ring-red-500"
-                  : ""
+                  : "",
               )}
               value={localAction.path ?? ""}
               onChange={(e) => {
@@ -314,7 +314,7 @@ export default function EditActionModal(props: {
                 setIncludeAllInResponses(checked);
                 if (checked) {
                   setCacheKeysToKeep(
-                    (localAction.keys_to_keep as string[]) ?? []
+                    (localAction.keys_to_keep as string[]) ?? [],
                   );
                   setLocalAction({ ...localAction, keys_to_keep: null });
                 } else {
@@ -355,7 +355,7 @@ export default function EditActionModal(props: {
             "inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none  sm:order-3  sm:text-sm",
             parametersValidJSON && responsesValidJSON
               ? "bg-sky-600 hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-              : "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-400 cursor-not-allowed",
           )}
           onClick={(event) => {
             event.preventDefault();
@@ -397,7 +397,7 @@ const textToJson = (text: string) => {
 function JsonTextBox(props: JsonTextBoxProps) {
   const [text, setText] = useState(
     // Just format the text once at the start to prevent formatting mid-editing
-    textToJson(JSON.stringify(props.action[props.title]))
+    textToJson(JSON.stringify(props.action[props.title])),
   );
   useEffect(() => {
     setText(textToJson(JSON.stringify(props.action[props.title])));
@@ -410,7 +410,7 @@ function JsonTextBox(props: JsonTextBoxProps) {
           <div
             className={classNames(
               "font-bold text-lg mt-4",
-              props.disabled ? "text-gray-500" : "text-gray-100"
+              props.disabled ? "text-gray-500" : "text-gray-100",
             )}
           >
             {props.title !== "keys_to_keep"
@@ -422,7 +422,7 @@ function JsonTextBox(props: JsonTextBoxProps) {
             <div
               className={classNames(
                 "mt-1 text-sm",
-                props.disabled ? "text-gray-600" : "text-gray-400"
+                props.disabled ? "text-gray-600" : "text-gray-400",
               )}
             >
               Comma-separated list of keys
@@ -434,7 +434,7 @@ function JsonTextBox(props: JsonTextBoxProps) {
             "border border-gray-700 flex-1 px-4 py-3 font-mono text-sm rounded whitespace-pre-wrap resize-none overflow-hidden",
             props.disabled
               ? "bg-gray-700 text-gray-800"
-              : "bg-gray-50 text-black"
+              : "bg-gray-50 text-black",
           )}
           onChange={(e) => {
             setText(e.target.value);
@@ -484,7 +484,7 @@ function JsonTextBox(props: JsonTextBoxProps) {
       <div
         className={classNames(
           "px-32 text-red-500 -mt-10",
-          props.validJSON ? "invisible" : "visible"
+          props.validJSON ? "invisible" : "visible",
         )}
       >
         Invalid JSON

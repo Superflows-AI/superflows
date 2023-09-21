@@ -7,7 +7,7 @@ describe("MessageInclSummaryToGPT", () => {
       MessageInclSummaryToGPT({
         role: "user",
         content: "hello",
-      })
+      }),
     ).toEqual({
       role: "user",
       content: "hello",
@@ -19,7 +19,7 @@ describe("MessageInclSummaryToGPT", () => {
         role: "function",
         name: "test",
         content: "hello",
-      })
+      }),
     ).toEqual({
       role: "function",
       name: "test",
@@ -34,7 +34,7 @@ describe("MessageInclSummaryToGPT", () => {
         content:
           "very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very long string",
         summary: "long string",
-      })
+      }),
     ).toEqual({
       role: "function",
       name: "test",

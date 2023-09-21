@@ -54,12 +54,12 @@ function Dashboard() {
               )}
               <button
                 className={classNames(
-                  "text-gray-100 hover:text-gray-50 bg-blue-600 hover:bg-blue-500 focus:ring-2 ring-offset-2 ring-blue-500 px-3 py-2 rounded-md"
+                  "text-gray-100 hover:text-gray-50 bg-blue-600 hover:bg-blue-500 focus:ring-2 ring-offset-2 ring-blue-500 px-3 py-2 rounded-md",
                 )}
                 onClick={() => {
                   if (!token) return;
                   navigator.clipboard.writeText(
-                    `${location.origin}/?join_id=${token}`
+                    `${location.origin}/?join_id=${token}`,
                   );
                   setCopyFeedback(true);
                   setTimeout(() => {

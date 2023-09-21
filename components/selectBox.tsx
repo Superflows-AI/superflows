@@ -36,7 +36,7 @@ export default function SelectBox(props: {
               className={classNames(
                 "block font-medium leading-6",
                 theme === "light" ? "text-gray-700" : "text-gray-200",
-                size === "small" ? "text-sm" : size === "base" && "text-base"
+                size === "small" ? "text-sm" : size === "base" && "text-base",
               )}
             >
               {props.title}
@@ -53,7 +53,7 @@ export default function SelectBox(props: {
                   : "bg-gray-700 text-gray-50 ring-gray-300",
                 size === "small"
                   ? "text-sm py-1.5"
-                  : size === "base" && "text-base py-[0.6875rem]"
+                  : size === "base" && "text-base py-[0.6875rem]",
               )}
             >
               <div className="flex flex-row place-items-center gap-x-1">
@@ -81,7 +81,7 @@ export default function SelectBox(props: {
               <Listbox.Options
                 className={classNames(
                   "absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-gray-700 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
-                  size === "small" ? "text-sm" : size === "base" && "text-base"
+                  size === "small" ? "text-sm" : size === "base" && "text-base",
                 )}
               >
                 {props.options
@@ -92,7 +92,7 @@ export default function SelectBox(props: {
                       className={({ active }) =>
                         classNames(
                           active ? "bg-purple-300 text-white" : "text-gray-50",
-                          "relative cursor-default select-none py-2 pl-8 pr-4"
+                          "relative cursor-default select-none py-2 pl-8 pr-4",
                         )
                       }
                       value={option.id}
@@ -105,7 +105,7 @@ export default function SelectBox(props: {
                               <span
                                 className={classNames(
                                   selected ? "font-semibold" : "font-normal",
-                                  "block truncate"
+                                  "block truncate",
                                 )}
                               >
                                 {option.name}
@@ -114,7 +114,7 @@ export default function SelectBox(props: {
                                 <span
                                   className={classNames(
                                     active ? "text-gray-600" : "text-gray-300",
-                                    "block text-xs truncate"
+                                    "block text-xs truncate",
                                   )}
                                 >
                                   {option.description}
@@ -127,7 +127,7 @@ export default function SelectBox(props: {
                             <span
                               className={classNames(
                                 active ? "text-white" : "text-purple-300",
-                                "absolute inset-y-0 left-0 flex items-center pl-1.5"
+                                "absolute inset-y-0 left-0 flex items-center pl-1.5",
                               )}
                             >
                               <CheckIcon

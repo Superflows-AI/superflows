@@ -45,7 +45,7 @@ export function slugMatchesPath(path: string, slug: string): boolean {
 
 export function processMultipleMatches(
   matches: Action[],
-  slug: string[]
+  slug: string[],
 ): Action[] {
   // slug = 'api/v1/Customers/location'. matches = /api/v1/Customers/location and /api/v1/Customers/{id}.
   const matchEnd = matches.filter((match) => {
@@ -67,8 +67,8 @@ export function processMultipleMatches(
 
   console.error(
     `Failed to match slug: "${slug}" to single action. Candidate paths: ${matches.map(
-      (match) => match.path
-    )}. Returning first match.`
+      (match) => match.path,
+    )}. Returning first match.`,
   );
   return [matches[0]];
 }
@@ -77,7 +77,7 @@ export function getMatchingAction(
   org_id: number,
   actions: Action[],
   method: RequestMethod,
-  slug: string[]
+  slug: string[],
 ): Action | null {
   // Note: Assumes you have already filtered by request method
 
@@ -89,7 +89,7 @@ export function getMatchingAction(
 
   if (matches.length === 0) {
     console.log(
-      `Could not match slug "${slugString}" with method "${method}" to any action in the database for organisation "${org_id}"`
+      `Could not match slug "${slugString}" with method "${method}" to any action in the database for organisation "${org_id}"`,
     );
     return null;
   }
@@ -97,7 +97,7 @@ export function getMatchingAction(
   if (matches.length > 1) matches = processMultipleMatches(matches, slug);
 
   console.log(
-    `Successfully matched slug "${slugString}" to action with path "${matches[0].path}"`
+    `Successfully matched slug "${slugString}" to action with path "${matches[0].path}"`,
   );
 
   return matches[0];
@@ -105,13 +105,13 @@ export function getMatchingAction(
 
 export function getPathParameters(
   path: string,
-  querySlugs: string[]
+  querySlugs: string[],
 ): { [name: string]: string } {
   let variables: { [name: string]: string } = {};
   const urlSlugs = path.split("/").filter((slug) => slug !== "");
   if (urlSlugs.length !== querySlugs.length)
     throw new Error(
-      `Path and query slugs lengths do not match: [${urlSlugs}] AND [${querySlugs}]`
+      `Path and query slugs lengths do not match: [${urlSlugs}] AND [${querySlugs}]`,
     );
 
   for (let index = 0; index < urlSlugs.length; index++) {
@@ -129,13 +129,13 @@ const supabase = createClient(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? ""
+  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
   // Bring me my Chariot of fire!
 );
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ): Promise<void> {
   console.log("mock api called");
   const queryParams = req.query;
@@ -196,7 +196,7 @@ export default async function handler(
   const response: OpenAPIV3_1.ResponseObject =
     matchingAction && matchingAction.responses
       ? ((responseCode = Object.keys(matchingAction.responses).find(
-          (key) => Number(key) >= 200 && Number(key) < 300
+          (key) => Number(key) >= 200 && Number(key) < 300,
         )),
         responses[responseCode ?? ""] ?? {})
       : {};
@@ -232,7 +232,7 @@ export default async function handler(
       method,
       requestParameters,
       orgInfo,
-      isArray
+      isArray,
     );
 
     res.status(responseCode ? Number(responseCode) : 200).json(gptResultAsJson);
@@ -247,14 +247,14 @@ export default async function handler(
     response;
 
   console.log(
-    "Could not find properties in schema, mocking whole response body in one prompt"
+    "Could not find properties in schema, mocking whole response body in one prompt",
   );
   const json = await getMockedProperties(
     fallback,
     matchingAction?.path ?? slug.join("/"),
     method,
     requestParameters,
-    orgInfo
+    orgInfo,
   );
 
   res.status(responseCode ? Number(responseCode) : 200).json(json);
@@ -269,7 +269,7 @@ export async function getMockedProperties(
     name: string;
     description: string;
   },
-  isArray: boolean = false
+  isArray: boolean = false,
 ): Promise<Record<string, any>> {
   const chunks = jsonSplitter(openApiProperties);
   const allProperties = chunksToProperties(chunks);
@@ -302,13 +302,13 @@ export async function getMockedProperties(
     requestParameters,
     propertiesForAi,
     orgInfo,
-    isArray
+    isArray,
   );
   console.log("Prompt:\n", prompt[1].content);
 
   const nTokens = tokenizer.encodeChat(
     prompt as ChatMessage[],
-    "gpt-3.5-turbo"
+    "gpt-3.5-turbo",
   ).length;
 
   const openAiResponse = await exponentialRetryWrapper(
@@ -319,7 +319,7 @@ export async function getMockedProperties(
       { max_tokens: 600 },
       nTokens < 4096 - 600 ? "gpt-3.5-turbo-0613" : "gpt-3.5-turbo-16k-0613",
     ],
-    3
+    3,
   );
 
   console.log("Response:\n", openAiResponse);
@@ -331,13 +331,13 @@ export async function getMockedProperties(
       hardCodedProperties,
       propertiesForAi,
       openAiResponse,
-      allProperties
+      allProperties,
     );
   return rebuildProperties(
     hardCodedProperties,
     propertiesForAi,
     openAiResponse,
-    allProperties
+    allProperties,
   );
 }
 
@@ -345,11 +345,11 @@ function rebuildProperties(
   hardCodedProperties: Properties,
   propertiesForAi: Properties,
   openAiResponse: string,
-  transformed: Properties
+  transformed: Properties,
 ) {
   const reAdded = addGPTdataToProperties(propertiesForAi, openAiResponse);
   const newChunks = propertiesToChunks(
-    Object.assign({}, transformed, { ...reAdded, ...hardCodedProperties })
+    Object.assign({}, transformed, { ...reAdded, ...hardCodedProperties }),
   );
   return removePropertiesItems(jsonReconstruct(newChunks));
 }
@@ -358,7 +358,7 @@ function rebuildPropertiesArray(
   hardCodedProperties: Properties,
   propertiesForAi: Properties,
   openAiResponse: string,
-  transformed: Properties
+  transformed: Properties,
 ) {
   const arrayResponse = [];
   // Loop through each array element
@@ -367,7 +367,7 @@ function rebuildPropertiesArray(
     const readded = addGPTdataToProperties(
       propertiesForAi,
       openAiResponse,
-      idx
+      idx,
     );
 
     // hardcoded properties are a whole array, so we need to index
@@ -380,7 +380,7 @@ function rebuildPropertiesArray(
     }
 
     const newChunks = propertiesToChunks(
-      Object.assign({}, transformed, { ...readded, ...hardcodedProperiesIdx })
+      Object.assign({}, transformed, { ...readded, ...hardcodedProperiesIdx }),
     );
     arrayResponse.push(jsonReconstruct(newChunks));
   }

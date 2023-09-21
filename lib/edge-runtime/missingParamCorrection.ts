@@ -12,7 +12,7 @@ export async function getMissingArgCorrections(
   action: Action,
   command: FunctionCall,
   previousConversation: ChatGPTMessage[],
-  model: string
+  model: string,
 ): Promise<{
   corrections: { [param: string]: "ask user" | any };
   newSystemMessages: ChatGPTMessage[] | null;
@@ -27,7 +27,7 @@ export async function getMissingArgCorrections(
 
   if (action.request_body_contents) {
     const schema = bodyPropertiesFromRequestBodyContents(
-      action.request_body_contents
+      action.request_body_contents,
     );
     bodyRequired = schema?.required || [];
   }
@@ -36,7 +36,7 @@ export async function getMissingArgCorrections(
   const allRequiredParams = bodyRequired.concat(queryRequired);
 
   const missingParams = allRequiredParams.filter(
-    (param) => !(param in command.args)
+    (param) => !(param in command.args),
   );
 
   let correctionPrompt: ChatGPTMessage[] | null = null;
@@ -47,7 +47,7 @@ export async function getMissingArgCorrections(
       param,
       action,
       previousConversation,
-      model
+      model,
     );
     if (missingParamRes.response) corrections[param] = missingParamRes.response;
     correctionPrompt = missingParamRes.correctionPrompt;
@@ -59,7 +59,7 @@ async function getMissingParam(
   missingParam: string,
   action: Action,
   previousConversation: ChatGPTMessage[],
-  model: string
+  model: string,
 ): Promise<{
   response: string | null;
   correctionPrompt: ChatGPTMessage[] | null;
@@ -70,7 +70,7 @@ async function getMissingParam(
   const prompt = removeOldestFunctionCalls(
     [...previousConversation].concat(correctionPrompt),
     "3",
-    100
+    100,
   );
   console.log("Request correction prompt:\n", prompt);
   let response = await getLLMResponse(
@@ -79,7 +79,7 @@ async function getMissingParam(
       frequency_penalty: 0,
       max_tokens: 100,
     },
-    model
+    model,
   );
   response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);

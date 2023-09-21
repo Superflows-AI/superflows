@@ -540,7 +540,7 @@ describe("cutUnecessaryKeys", () => {
   it("basic example + array", () => {
     const out = filterKeys(
       { name: "Bob", age: 20, address: "123 Main St.", items: [1, 2, 3, 4, 5] },
-      ["age", "address"]
+      ["age", "address"],
     );
     expect(out).toEqual({
       age: 20,
@@ -557,7 +557,7 @@ describe("cutUnecessaryKeys", () => {
         address: "123 Main St.",
         items: [1, null, 3, 4, 5],
       },
-      ["age", "address"]
+      ["age", "address"],
     );
     expect(out).toEqual({
       age: 20,
@@ -573,7 +573,7 @@ describe("cutUnecessaryKeys", () => {
         address: "123 Main St.",
         items: [{ age: 1 }, { age: 55 }],
       },
-      ["age", "address"]
+      ["age", "address"],
     );
     expect(out).toEqual({
       age: 20,
@@ -592,7 +592,7 @@ describe("cutUnecessaryKeys", () => {
           { age: 55, notAProblem: "okay" },
         ],
       },
-      ["age", "address"]
+      ["age", "address"],
     );
     expect(out).toEqual({
       age: 20,
@@ -736,7 +736,7 @@ describe("cutUnecessaryKeys", () => {
         "createdDate",
         "notes",
         "collectoragent",
-      ]
+      ],
     );
     expect(out).toEqual({
       fullname: "Fernando Alvarez",
