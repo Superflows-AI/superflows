@@ -417,10 +417,39 @@ export function isUUID(str: string): boolean {
   return validate(str);
 }
 
+export function isEmail(string: string): boolean {
+  // Check if string is an email address
+  return /\b[\w.-]+@[\w.-]+\.\w{2,}\b/g.test(string);
+}
+
+export function isPhoneNumber(string: string): boolean {
+  const phoneNumRegex =
+    /^(\+?\d{1,3}[-.\s]?)?\(?\d{1,3}\)?[-.\s]?(\d{1,2})?[-.\s]?(\d{3,4})?[-.\s]?(\d{3,9})$/;
+
+  const broadlyRightFormat = phoneNumRegex.test(string);
+  if (!broadlyRightFormat) return false;
+
+  // Check if right number of numbers and no letters
+  const numberCount = string.replace(/\D/g, "").length;
+  const numberCountCorrect = 10 <= numberCount && numberCount <= 13;
+  if (!numberCountCorrect) return false;
+  // Check if there are any letters
+  return !/[a-z]/i.test(string);
+}
+
+export function isName(string: string): boolean {
+  // Check for strings with no numbers, optionally capitalised first letters
+  // which have 1-3 words plus optional hyphenation, commas and full stops
+  return /([A-Z]?[a-z-.,]{1,9}\s){1,2}[A-Z]?[a-z-.,]{1,9}/.test(string);
+}
+
 export function isID(str: string): boolean {
   if (str.length < 10) return false;
   if (isUUID(str)) return true;
   if (isDate(str)) return false;
+  if (isEmail(str)) return false;
+  if (isPhoneNumber(str)) return false;
+  if (isName(str)) return false;
   const nTokens = tokenizer.encode(str).length;
   const x = str.length / nTokens;
   // Is an ID if there's less than 2.2 characters per token (threshold determined empirically)

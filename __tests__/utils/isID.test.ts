@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { isID } from "../../lib/utils";
+import { isEmail, isID, isName, isPhoneNumber } from "../../lib/utils";
 
 const IDs = [
   "id_zx25p",
@@ -71,5 +71,95 @@ describe("isID", () => {
     // False positives are pretty bad and want to avoid completely
     expect(trueNegative).toEqual(notIDs.length);
     expect(truePositive / IDs.length).toBeGreaterThan(0.8);
+  });
+});
+
+const exampleEmails = [
+  "example@example.com",
+  "something-hyphenated@gmail.com",
+  "hyphenateddomain@go-away.com",
+  "another@domain.io",
+  "numbers123@domain.co.uk",
+  "domainwithnumbers@123go.io",
+];
+
+const exampleNonEmails = [
+  "example@example",
+  "something-hyphenated@",
+  "hyphenateddomain@go-away",
+];
+
+describe("isEmail", () => {
+  it("example emails", () => {
+    for (const email of exampleEmails) {
+      expect(isEmail(email)).toBe(true);
+    }
+  });
+  it("example non emails", () => {
+    for (const email of exampleNonEmails) {
+      expect(isEmail(email)).toBe(false);
+    }
+  });
+});
+
+const examplePhoneNumbers = [
+  "+1-800-123-4567",
+  "1 800 123 4567",
+  "(800)123-4567",
+  "800-123-4567",
+  "800.123.4567",
+  "+44 (0) 20 7123 4567",
+  "1.800.123.4567",
+  "18001234567",
+  "+918001234567",
+  "1234567890",
+];
+
+const exampleNonPhoneNumbers = [
+  "+1-800-12-4567 7987",
+  "1 800 123 45678 67987",
+  "(800)1230-45-6-7",
+  "800-123----4567",
+  "800.123.45.67.8",
+  "+44h (0) 20 7123 4567",
+  "1.t800.123.4567",
+  "180012345678910",
+  "+918001234567 ",
+  "1234567890-",
+];
+
+describe("isPhoneNumber", () => {
+  it("example phone numbers", () => {
+    for (const phoneNumber of examplePhoneNumbers) {
+      expect(isPhoneNumber(phoneNumber)).toBe(true);
+    }
+  });
+  it("example non phone numbers", () => {
+    for (const phoneNumber of exampleNonPhoneNumbers) {
+      expect(isPhoneNumber(phoneNumber)).toBe(false);
+    }
+  });
+});
+
+const exampleNames = [
+  // Short names (strings <10 chars) are ignored by isId() function
+  "James Rowland",
+  "James Rowland Jr.",
+  "Henry Herbett-Brown",
+  "Smith, Brown and Sons",
+];
+const exampleNonNames = ["jimbob202", "x2984HZ9g23lgs"];
+
+describe("isName", () => {
+  it("example names", () => {
+    for (const name of exampleNames) {
+      console.log(name);
+      expect(isName(name)).toBe(true);
+    }
+  });
+  it("example non names", () => {
+    for (const name of exampleNonNames) {
+      expect(isName(name)).toBe(false);
+    }
   });
 });
