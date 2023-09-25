@@ -423,14 +423,20 @@ export function isEmail(string: string): boolean {
 }
 
 export function isPhoneNumber(string: string): boolean {
+  // Below regex checks for the format of a phone number. It's a little loose since it
+  // has to allow country codes and different formatting of spaces, hyphens and brackets.
+  // We have further sanity checks below (no letters, right number of numbers)
   const phoneNumRegex =
     /^(\+?\d{1,3}[-.\s]?)?\(?\d{1,3}\)?[-.\s]?(\d{1,2})?[-.\s]?(\d{3,4})?[-.\s]?(\d{3,9})$/;
 
   const broadlyRightFormat = phoneNumRegex.test(string);
   if (!broadlyRightFormat) return false;
 
-  // Check if right number of numbers and no letters
+  // Check if right number of numbers
   const numberCount = string.replace(/\D/g, "").length;
+  // Reason for 10-13 range is phone numbers have 11 numbers, but there's an optional 0
+  // at the front and country code can add 3 (e.g. +44) which replaces the 0
+  // (strictly speaking, a country code can add >3, but these countries are rare)
   const numberCountCorrect = 10 <= numberCount && numberCount <= 13;
   if (!numberCountCorrect) return false;
   // Check if there are any letters
@@ -439,7 +445,9 @@ export function isPhoneNumber(string: string): boolean {
 
 export function isName(string: string): boolean {
   // Check for strings with no numbers, optionally capitalised first letters
-  // which have 1-3 words plus optional hyphenation, commas and full stops
+  // which have 1-3 words plus optional hyphenation, commas and full stops.
+  // Allow ,.- because you can have double-barrelled names (Smith-Jones),
+  // shortenings (Google Inc.) and commas (Smith, Jones and Co.), albeit rarely
   return /([A-Z]?[a-z-.,]{1,9}\s){1,2}[A-Z]?[a-z-.,]{1,9}/.test(string);
 }
 
