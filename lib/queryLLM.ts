@@ -1,15 +1,10 @@
-import { removeEmptyCharacters } from "./utils";
 import {
   ChatGPTMessage,
   ChatGPTParams,
   ChatGPTResponse,
   OpenAIError,
 } from "./models";
-import {
-  StringMapping,
-  removeIDs,
-  removeURLs,
-} from "./edge-runtime/apiResponseSimplification";
+import { removeEmptyCharacters } from "./utils";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
@@ -21,11 +16,19 @@ export const defaultParams: ChatGPTParams = {
 };
 
 export async function getLLMResponse(
-  messages: ChatGPTMessage[],
+  prompt: string | ChatGPTMessage[],
   params: ChatGPTParams = {},
   model: string,
 ): Promise<string> {
-  const { url, options } = getLLMRequest(messages, params, model);
+  if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
+    throw new Error(
+      `String prompts only supported with model gpt-3.5-turbo-instruct. You putted prompt: ${prompt} and model: ${model}`,
+    );
+
+  const { url, options } =
+    typeof prompt === "string"
+      ? getLLMRequestCompletion(prompt, params, model)
+      : getLLMRequestChat(prompt, params, model);
 
   const response = await fetch(url, options);
   const responseJson: ChatGPTResponse | { error: OpenAIError } =
@@ -50,20 +53,27 @@ export async function getLLMResponse(
 
 export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
   /* Assumes that you have set n = 1 in the params */
-  return response.choices[0].message.content;
+  if ("message" in response.choices[0])
+    return response.choices[0].message!.content;
+  return response.choices[0].text!;
 }
 
 export async function streamLLMResponse(
-  messages: ChatGPTMessage[],
+  prompt: ChatGPTMessage[] | string,
   params: ChatGPTParams = {},
   model: string,
 ): Promise<ReadableStream | { message: string; status: number } | null> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
-  const { url, options } = getLLMRequest(
-    messages,
-    { ...params, stream: true },
-    model,
-  );
+  if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
+    throw new Error(
+      `String prompts only supported with model gpt-3.5-turbo-instruct. You putted prompt: ${prompt} and model: ${model}`,
+    );
+
+  const { url, options } =
+    typeof prompt === "string"
+      ? getLLMRequestCompletion(prompt, { ...params, stream: true }, model)
+      : getLLMRequestChat(prompt, { ...params, stream: true }, model);
+
   const response = await fetch(url, options);
 
   if (response.status === 429) {
@@ -83,7 +93,33 @@ export async function streamLLMResponse(
   return response.body;
 }
 
-function getLLMRequest(
+function getLLMRequestCompletion(
+  prompt: string,
+  params: ChatGPTParams = {},
+  model: string,
+): {
+  url: string;
+  options: { method: string; headers: HeadersInit; body: string };
+} {
+  const options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    // Use our default params, rather than OpenAI's when these aren't specified
+    body: JSON.stringify({
+      model,
+      prompt,
+      ...defaultParams,
+      ...params,
+    }),
+  };
+
+  return { url: `https://api.openai.com/v1/completions`, options };
+}
+
+function getLLMRequestChat(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {},
   model: string,
