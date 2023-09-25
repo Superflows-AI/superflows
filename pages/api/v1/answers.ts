@@ -30,8 +30,12 @@ import {
   StreamingStepInput,
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
-import getMessages from "../../../lib/prompts/chatBot";
-import { getSecondaryModel, streamLLMResponse } from "../../../lib/queryLLM";
+import getMessages, { simpleChatPrompt } from "../../../lib/prompts/chatBot";
+import {
+  getLLMResponse,
+  getSecondaryModel,
+  streamLLMResponse,
+} from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
   OrgJoinIsPaidFinetunedModels,
@@ -40,12 +44,10 @@ import {
   exponentialRetryWrapper,
   getTokenCount,
   isValidBody,
+  joinArraysNoDuplicates,
   openAiCost,
 } from "../../../lib/utils";
-import {
-  repopulateVariables,
-  sanitizeMessages,
-} from "../../../lib/edge-runtime/apiResponseSimplification";
+import { actionFilteringPrompt } from "../../../lib/prompts/actionFiltering";
 
 export const config = {
   runtime: "edge",
@@ -451,8 +453,6 @@ async function Angela( // Good ol' Angela
   numUserQueries: number;
 }> {
   const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-
   const nonSystemMessages = [...previousMessages];
 
   function streamInfo(step: StreamingStepInput) {
@@ -467,6 +467,67 @@ async function Angela( // Good ol' Angela
     );
   }
 
+  const model = org.model;
+  const userQuery = nonSystemMessages[nonSystemMessages.length - 1].content;
+
+  actions = await filterActions(actions, conversationId, userQuery, model);
+
+  let numOpenAIRequests = 0;
+  let totalCost = 0;
+
+  if (actions.length === 0) {
+    console.log(
+      "No actions are relevant to the user's request, using simple chat model",
+    );
+    const prompt = simpleChatPrompt(
+      userQuery,
+      reqData.user_description,
+      org,
+      language,
+    );
+
+    totalCost += openAiCost(prompt, "in", model);
+    const simpleMessageResponse = await streamLLMResponse(prompt, {}, model);
+
+    numOpenAIRequests += 1;
+
+    if (simpleMessageResponse === null || "message" in simpleMessageResponse) {
+      console.error(
+        `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${simpleMessageResponse?.message}`,
+      );
+      streamInfo({
+        role: "error",
+        content: "Call to Language Model API failed",
+      });
+      return {
+        nonSystemMessages,
+        cost: totalCost,
+        numUserQueries: numOpenAIRequests,
+      };
+    }
+
+    const rawOutput = await streamResponseToUser(
+      simpleMessageResponse,
+      streamInfo,
+    );
+
+    const simpleMessage = {
+      role: "assistant",
+      content: rawOutput,
+    } as ChatGPTMessage;
+
+    nonSystemMessages.push();
+
+    const outCost = openAiCost([simpleMessage], "out", model);
+    totalCost += outCost;
+
+    return {
+      nonSystemMessages,
+      cost: totalCost,
+      numUserQueries: numOpenAIRequests,
+    };
+  }
+
   let mostRecentParsedOutput = {
     reasoning: "",
     plan: "",
@@ -475,12 +536,9 @@ async function Angela( // Good ol' Angela
     completed: false,
   };
 
-  let numOpenAIRequests = 0;
-  let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
 
-  const model = org.model;
   // When this number is reached, we remove the oldest messages from the context window
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
@@ -509,7 +567,7 @@ async function Angela( // Good ol' Angela
         language,
       );
 
-      // Replace messages with `CleanedMessages` which has long IDs.
+      // Replace messages with `CleanedMessages` which has long IDs replaced with a placeholder.
       // idStore is a map from the cleaned to the original IDs
       const { cleanedMessages, valueVariableMap } =
         sanitizeMessages(chatGptPrompt);
@@ -538,9 +596,11 @@ async function Angela( // Good ol' Angela
         return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
 
-      const promptInputCost = openAiCost(chatGptPrompt, "in");
+      const promptInputCost = openAiCost(chatGptPrompt, "in", model);
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
+
+      console.log("main prompt", chatGptPrompt);
 
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
@@ -559,44 +619,14 @@ async function Angela( // Good ol' Angela
       }
 
       // Stream response from OpenAI
-      const reader = res.getReader();
-      let rawOutput = "";
-      let done = false;
-      let incompleteChunk = "";
-      // https://web.dev/streams/#asynchronous-iteration
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        if (done) break;
+      let rawOutput = await streamResponseToUser(res, streamInfo);
 
-        const contentItems = parseGPTStreamedData(
-          incompleteChunk + decoder.decode(value),
-        );
-        if (contentItems === undefined) {
-          incompleteChunk += decoder.decode(value);
-          continue;
-        }
-
-        incompleteChunk = "";
-        for (const content of contentItems) {
-          if (content === "[DONE]") {
-            done = true;
-            break;
-          }
-          rawOutput += content;
-          const formatted = {
-            role: "assistant",
-            content,
-          };
-          streamInfo(formatted as StreamingStepInput);
-        }
-      }
       const newMessage = {
         role: "assistant",
         content: rawOutput,
       } as ChatGPTMessage;
-      const outCost = openAiCost([newMessage], "out");
-      console.log("GPT output cost: ", outCost);
+
+      const outCost = openAiCost([newMessage], "out", model);
       totalCost += outCost;
 
       mostRecentParsedOutput = parseOutput(rawOutput);
@@ -686,7 +716,6 @@ async function Angela( // Good ol' Angela
                 // @ts-ignore
                 out = `Failed to call ${url}\n\n${e.toString()}`;
               }
-              console.log("Output from API call:", out);
               const outMessage: GPTMessageInclSummary = {
                 role: "function",
                 name: command.name,
@@ -749,7 +778,7 @@ async function Angela( // Good ol' Angela
       }
 
       numOpenAIRequests++;
-      if (numOpenAIRequests >= 5) {
+      if (numOpenAIRequests >= 6) {
         console.error(
           `OpenAI API call limit reached for conversation with id: ${conversationId}`,
         );
@@ -770,7 +799,6 @@ async function Angela( // Good ol' Angela
   }
   return { nonSystemMessages, cost: totalCost, numUserQueries };
 }
-
 async function storeActionsAwaitingConfirmation(
   toConfirm: ToConfirm[],
   conversationId: number,
@@ -787,4 +815,124 @@ async function storeActionsAwaitingConfirmation(
     // 10 minutes seems like a reasonable time if the user gets distracted etc
     await redis.expire(redisKey, 60 * 10);
   }
+}
+
+async function filterActions(
+  actions: ActionPlusApiInfo[],
+  conversationId: number,
+  userQuery: string,
+  model: string,
+): Promise<ActionPlusApiInfo[]> {
+  /**
+   * Only include actions that have either:
+   * Been used previously in the conversation
+   * or
+   * Are relevant to the user's query
+   */
+
+  const actionsUsedRedisKey = conversationId.toString() + "-actions-used";
+  const actionsUsedStr = redis
+    ? ((await redis.get(actionsUsedRedisKey)) as string) ?? ""
+    : "";
+
+  const actionsUsed = actions.filter((action) =>
+    actionsUsedStr.includes(action.name),
+  );
+
+  const relevantActions = await getRelevantActions(actions, userQuery, model);
+
+  console.log(
+    "The following actions were selected as relevant: ",
+    relevantActions.map((a) => a.name),
+  );
+  actions = joinArraysNoDuplicates(relevantActions, actionsUsed, "name");
+
+  redis?.set(
+    actionsUsedRedisKey,
+    actions.map((action) => action.name).join(", "),
+  );
+
+  redis?.expire(actionsUsedRedisKey, 60 * 15);
+  return actions;
+}
+
+async function getRelevantActions(
+  actions: ActionPlusApiInfo[],
+  userQuery: string,
+  model: string,
+): Promise<ActionPlusApiInfo[]> {
+  /**
+   * Filter actions based on the score assigned by the actionFilteringPrompt.
+   * If the score cannot be found in the response, keep the action
+   */
+
+  const keepThreshold = 2;
+
+  const prompt = actionFilteringPrompt(actions, userQuery);
+
+  console.log("System prompt for filtering:\n", prompt[0].content);
+
+  const response = await exponentialRetryWrapper(
+    getLLMResponse,
+    [prompt, { temperature: 0.7 }, model],
+    3,
+  );
+
+  return actions.filter((action) => {
+    const startOfName = response.indexOf(action.name);
+    if (startOfName === -1) return true;
+    const endOfName = response.indexOf(":", startOfName);
+
+    const scoreString = response.substring(endOfName + 1, endOfName + 3).trim();
+    if (
+      ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(scoreString)
+    ) {
+      return Number(scoreString) > keepThreshold;
+    }
+    return true;
+  });
+}
+
+async function streamResponseToUser(
+  res: ReadableStream<any>,
+  streamInfo: (step: StreamingStepInput) => void,
+) {
+  const decoder = new TextDecoder();
+  const reader = res.getReader();
+  let rawOutput = "";
+  let done = false;
+  let incompleteChunk = "";
+  let first = true;
+  // https://web.dev/streams/#asynchronous-iteration
+  while (!done) {
+    const { value, done: doneReading } = await reader.read();
+
+    done = doneReading;
+    if (done) break;
+
+    const contentItems = parseGPTStreamedData(
+      incompleteChunk + decoder.decode(value),
+    );
+
+    if (contentItems.incompleteChunk) {
+      incompleteChunk = contentItems.incompleteChunk;
+    }
+
+    for (let content of contentItems.completeChunks) {
+      // Sometimes starts with a newline
+      if (first) {
+        content = content.trimStart();
+        first = false;
+      }
+      rawOutput += content;
+
+      streamInfo({ role: "assistant", content });
+    }
+
+    if (contentItems.done) {
+      done = true;
+      break;
+    }
+  }
+  return rawOutput;
 }

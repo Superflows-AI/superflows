@@ -22,7 +22,7 @@ export async function getLLMResponse(
 ): Promise<string> {
   if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
     throw new Error(
-      `String prompts only supported with model gpt-3.5-turbo-instruct. You putted prompt: ${prompt} and model: ${model}`,
+      `String prompts only supported with model gpt-3.5-turbo-instruct. You have selected model: ${model}`,
     );
 
   const { url, options } =
@@ -66,7 +66,7 @@ export async function streamLLMResponse(
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
     throw new Error(
-      `String prompts only supported with model gpt-3.5-turbo-instruct. You putted prompt: ${prompt} and model: ${model}`,
+      `String prompts only supported with model gpt-3.5-turbo-instruct. You have selected model: ${model}`,
     );
 
   const { url, options } =

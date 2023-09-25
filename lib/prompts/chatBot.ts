@@ -119,7 +119,10 @@ export function formatReqBodySchema(
   return paramString;
 }
 
-export function getActionDescriptions(actions: Action[]): string {
+export function getActionDescriptions(
+  actions: Action[],
+  includeParams: boolean = true,
+): string {
   /** Gets the GPT-readable numbered list of actions, their parameters
    *  and their descriptions. **/
   if (actions.length === 0) {
@@ -167,7 +170,11 @@ export function getActionDescriptions(actions: Action[]): string {
     numberedActions += `${actions.length > 1 ? `${i}. ` : ""}${
       action.name
     }${formatDescription(action.description)} ${
-      paramString ? "PARAMETERS:" + paramString : "PARAMETERS: None."
+      !includeParams
+        ? ""
+        : paramString
+        ? "PARAMETERS:" + paramString
+        : "PARAMETERS: None."
     }\n`;
     i++;
   });
@@ -235,5 +242,39 @@ FUNCTION_1(PARAM_1=VALUE_1, PARAM_2=VALUE_2, ...)
 FUNCTION_2(PARAM_3=VALUE_3 ...)`,
     },
     ...userCopilotMessages,
+  ];
+}
+
+export function simpleChatPrompt(
+  userQuery: string,
+  userDescription: string | undefined,
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  language: string | null,
+): ChatGPTMessage[] {
+  const userDescriptionSection = userDescription
+    ? `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`
+    : "";
+
+  return [
+    {
+      role: "system",
+      content: `You are ${orgInfo.name} chatbot AI ${orgInfo.description}. Your purpose is to write friendly helpful replies to users in ${orgInfo.name}.
+
+${userDescriptionSection}
+
+You are having a conversation with a user.
+
+You have expert knowledge in the domain of the organisation you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
+
+Your reply should be written in ${language}.
+  `,
+    },
+    {
+      role: "user",
+      content: userQuery,
+    },
   ];
 }
