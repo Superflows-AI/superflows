@@ -25,6 +25,7 @@ export const config = {
       sizeLimit: "2mb", // Allows parsing of larger swagger files
     },
   },
+  maxDuration: 60,
 };
 
 const SwaggerEndpointZod = z.object({
