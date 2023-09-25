@@ -296,7 +296,7 @@ export async function getMockedProperties(
     }
   }
 
-  const prompt = apiMockPrompt(
+  const messages = apiMockPrompt(
     requestPath,
     method,
     requestParameters,
@@ -304,10 +304,9 @@ export async function getMockedProperties(
     orgInfo,
     isArray,
   );
-  console.log("Prompt:\n", prompt[1].content);
 
   const nTokens = tokenizer.encodeChat(
-    prompt as ChatMessage[],
+    messages as ChatMessage[],
     "gpt-3.5-turbo",
   ).length;
 
@@ -315,14 +314,12 @@ export async function getMockedProperties(
     getLLMResponse,
     // Output tokens count towards your total token count
     [
-      prompt,
+      messages,
       { max_tokens: 600 },
       nTokens < 4096 - 600 ? "gpt-3.5-turbo-0613" : "gpt-3.5-turbo-16k-0613",
     ],
     3,
   );
-
-  console.log("Response:\n", openAiResponse);
 
   if (openAiResponse.length === 0) return { message: "Call to OpenAI failed" };
 

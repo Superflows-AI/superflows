@@ -110,20 +110,37 @@ export function isJsonString(str: string) {
 export function openAiCost(
   messages: ChatGPTMessage[],
   put: "in" | "out",
+  model: string,
 ): number {
-  let costPerToken;
-  if (put === "in") {
-    costPerToken = 0.03 / 1000;
-  } else {
-    costPerToken = 0.06 / 1000;
+  let costPerThousand;
+
+  switch (put) {
+    case "in":
+      costPerThousand = model.startsWith("ft:gpt-3.5-turbo-0613")
+        ? 0.012
+        : model === "gpt-3.5-turbo-16k"
+        ? 0.003
+        : model.includes("gpt-3.5")
+        ? 0.0015
+        : 0.03;
+    case "out": {
+      costPerThousand = model.startsWith("ft:gpt-3.5-turbo-0613")
+        ? 0.016
+        : model === "gpt-3.5-turbo-16k"
+        ? 0.004
+        : model.includes("gpt-3.5")
+        ? 0.002
+        : 0.06;
+    }
   }
 
   const nTokens = getTokenCount(messages);
   // For the 8k context model
-  return nTokens * costPerToken;
+  return nTokens * (costPerThousand / 1000);
 }
 
 export function getTokenCount(messages: ChatGPTMessage[]): number {
+  // Per the docs, the tokenizer should be the same for 3.5-turbo and 4.
   const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
   return encoded.length;
 }
@@ -523,4 +540,16 @@ export function isDate(str: string): boolean {
     }
   }
   return false;
+}
+
+export function joinArraysNoDuplicates<T extends Record<string, any>>(
+  arr1: T[],
+  arr2: T[],
+  uniqueKey: keyof T,
+): T[] {
+  // Joins two arrays of objects, removing duplicates based on the uniqueKey
+  if (arr1.length === 0) return arr2;
+  if (arr2.length === 0) return arr1;
+  const ids = new Set(arr1.map((d) => d[uniqueKey]));
+  return [...arr1, ...arr2.filter((d) => !ids.has(d[uniqueKey]))];
 }
