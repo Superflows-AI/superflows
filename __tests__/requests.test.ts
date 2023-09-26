@@ -4,11 +4,13 @@ import pokemon from "./testData/pokemon.json";
 import {
   constructHttpRequest,
   endpointUrlFromAction,
-  reAddIDs,
-  removeIDs,
 } from "../lib/edge-runtime/requests";
 import { Json } from "../lib/database.types";
 import { JsonNumIncrByCommand } from "@upstash/redis/types/pkg/commands/json_numincrby";
+import {
+  reAddIDs,
+  removeIDs,
+} from "../lib/edge-runtime/apiResponseSimplification";
 
 const constActionParams = {
   action_type: "http",

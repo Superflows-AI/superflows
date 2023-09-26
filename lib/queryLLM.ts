@@ -5,7 +5,7 @@ import {
   ChatGPTResponse,
   OpenAIError,
 } from "./models";
-import { IDStore, removeIDs } from "./edge-runtime/requests";
+import { IDStore, removeIDs } from "./edge-runtime/apiResponseSimplification";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
