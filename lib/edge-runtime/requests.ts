@@ -217,6 +217,7 @@ export function constructHttpRequest({
       }
     }
     // Below only adds query params if there are any query params
+    queryParams.set("apiKey", "V1THYJNE468F6KWQRVMQX5FF5KEYY954");
     if ([...queryParams.entries()].length > 0) {
       url += `?${queryParams.toString()}`;
     }
