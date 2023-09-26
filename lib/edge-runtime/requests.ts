@@ -350,7 +350,11 @@ export async function makeHttpRequest(
   const accept = getHeader(reqHeaders, "Accept") ?? "application/json";
 
   if (accept === "application/json") {
-    return JSON.parse(responseText);
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      return responseText;
+    }
   } else if (
     [
       "application/html",
