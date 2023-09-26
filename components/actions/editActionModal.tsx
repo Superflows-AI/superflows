@@ -277,6 +277,16 @@ export default function EditActionModal(props: {
           />
         </div>
         {/* PARAMETERS */}
+        <p className="text-sm text-gray-500 px-8">
+          The following fields must be in JSON-formatter Swagger (OpenAPI
+          specification) format.{" "}
+          <a
+            className="text-blue-500 hover:underline"
+            href={"https://editor.swagger.io/"}
+          >
+            See examples (in YAML, not JSON) here
+          </a>
+        </p>
         <JsonTextBox
           title={"parameters"}
           validJSON={parametersValidJSON}
