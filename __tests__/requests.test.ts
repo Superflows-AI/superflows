@@ -6,7 +6,6 @@ import {
   endpointUrlFromAction,
 } from "../lib/edge-runtime/requests";
 import { Json } from "../lib/database.types";
-import { JsonNumIncrByCommand } from "@upstash/redis/types/pkg/commands/json_numincrby";
 import {
   repopulateVariables,
   removeIDs,
@@ -24,9 +23,16 @@ const constActionParams = {
   name: "confirm",
   description: "",
   api_id: "sefoi-sdfkhj-sdgfbnjkl-hednjkl-gslnk",
-  api_host: "https://api.mock",
-  auth_header: "Authorization",
-  auth_scheme: "Bearer",
+  api: {
+    id: "sefoi-sdfkhj-sdgfbnjkl-hednjkl-gslnk",
+    name: "Mock API",
+    api_host: "https://api.mock",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    auth_query_param_name: "",
+    created_at: "",
+    org_id: 1,
+  },
   headers: [],
 };
 const organization = {
@@ -476,6 +482,31 @@ describe("constructHttpRequest", () => {
       Authorization: "Bearer 1234",
       org_id: "1",
     });
+    expect(requestOptions.body).toBe(undefined);
+  });
+  it("GET - use query parameter auth", () => {
+    const action = {
+      ...constActionParams,
+    };
+    action.api.auth_header = "Query parameter";
+    action.api.auth_query_param_name = "token";
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...action,
+        parameters: null,
+        headers: [],
+        path: "/api/mock/confirm",
+        request_method: "GET",
+        request_body_contents: null,
+      },
+      parameters: {},
+      organization,
+      userApiKey: "1234",
+      stream: () => {},
+    });
+    expect(url).toBe("https://api.mock/api/mock/confirm?token=1234");
+    expect(requestOptions.method).toBe("GET");
+    expect(requestOptions.headers).toEqual({ Accept: "application/json" });
     expect(requestOptions.body).toBe(undefined);
   });
 });

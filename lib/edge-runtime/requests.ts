@@ -35,7 +35,7 @@ export function constructHttpRequest({
   if (!action.request_method) {
     throw new Error("Request method is not provided");
   }
-  if (!action.api_host) {
+  if (!action.api.api_host) {
     throw new Error("API host has not been provided");
   }
 
@@ -45,12 +45,12 @@ export function constructHttpRequest({
   const headers: Record<string, string> = {};
   // TODO: You can only overwrite this header if it's in the parameters
   headers["Accept"] = "application/json";
-  if (userApiKey) {
-    const scheme = action.auth_scheme ? action.auth_scheme + " " : "";
-    headers[action.auth_header] = `${scheme}${userApiKey}`;
+  if (userApiKey && action.api.auth_header !== "Query parameter") {
+    const scheme = action.api.auth_scheme ? action.api.auth_scheme + " " : "";
+    headers[action.api.auth_header] = `${scheme}${userApiKey}`;
   }
 
-  if (action.api_host.includes("api/mock"))
+  if (action.api.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
   // This header is only required for requests with a body
   if (action.request_body_contents)
@@ -77,12 +77,15 @@ export function constructHttpRequest({
   }
 
   // Below URL(...).href deals with "/" between the path and host
-  let url = endpointUrlFromAction(action as { api_host: string; path: string });
+  let url = endpointUrlFromAction({
+    api_host: action.api.api_host,
+    path: action.path,
+  } as { api_host: string; path: string });
 
   // TODO: accept array for JSON?
   // Set parameters
+  const queryParams = new URLSearchParams();
   if (action.parameters && Array.isArray(action.parameters)) {
-    const queryParams = new URLSearchParams();
     const actionParameters =
       action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
 
@@ -117,11 +120,16 @@ export function constructHttpRequest({
         );
       }
     }
-    // Below only adds query params if there are any query params
-    if ([...queryParams.entries()].length > 0) {
-      url += `?${queryParams.toString()}`;
-    }
   }
+  // If the auth header is a query parameter, add it here
+  if (action.api.auth_header === "Query parameter") {
+    queryParams.set(action.api.auth_query_param_name, userApiKey ?? "");
+  }
+  // Below only adds query params if there are any query params
+  if ([...queryParams.entries()].length > 0) {
+    url += `?${queryParams.toString()}`;
+  }
+
   requestOptions.headers = headers;
   const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
     requestOptions,

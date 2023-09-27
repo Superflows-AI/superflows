@@ -311,12 +311,13 @@ export default async function handler(req: NextRequest) {
         // Store the api_host with each action
         return tag.actions.map((a) => ({
           ...a,
-          // Override api_host if mock_api_responses is set to true
-          api_host: requestData.mock_api_responses
-            ? mockUrl
-            : tag.apis?.api_host ?? "",
-          auth_header: tag.apis?.auth_header ?? "",
-          auth_scheme: tag.apis?.auth_scheme ?? null,
+          api: {
+            ...tag.apis!,
+            // Override api_host if mock_api_responses is set to true
+            api_host: requestData.mock_api_responses
+              ? mockUrl
+              : tag.apis!.api_host,
+          },
           headers: tag.apis?.fixed_headers ?? [],
         }));
       })
@@ -333,7 +334,7 @@ export default async function handler(req: NextRequest) {
     }
     activeActions.forEach((action) => {
       // Check that every action has an api_host
-      if (!action.api_host) {
+      if (!action.api.api_host) {
         return new Response(
           JSON.stringify({
             error: `No API host found for action with name: ${action.name} - add an API host on the API settings page`,
