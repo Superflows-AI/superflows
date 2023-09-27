@@ -8,7 +8,7 @@ import {
 import { Json } from "../lib/database.types";
 import { JsonNumIncrByCommand } from "@upstash/redis/types/pkg/commands/json_numincrby";
 import {
-  reAddIDs,
+  repopulateVariables,
   removeIDs,
 } from "../lib/edge-runtime/apiResponseSimplification";
 
@@ -551,7 +551,7 @@ describe("remove and reAdd Ids", () => {
     });
     expect(obj).toEqual(originalObj); // make sure original object is not mutated
     expect(uuidStore).toEqual({ [id]: "ID1" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
   it("removal in nested object", () => {
     const id = uuidv4();
@@ -570,7 +570,7 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({ [id]: "ID1" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
 
   it("removal in array", () => {
@@ -584,7 +584,7 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({ [id]: "ID1" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
 
   it("removal in nested array", () => {
@@ -598,7 +598,7 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({ [id]: "ID1" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
 
   it("removal in null", () => {
@@ -613,7 +613,7 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({});
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
 
   it("multiple UUID removal", () => {
@@ -630,7 +630,7 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
 
   it("duplicated and nested UUID removal", () => {
@@ -650,13 +650,13 @@ describe("remove and reAdd Ids", () => {
     });
 
     expect(uuidStore).toEqual({ [id1]: "ID1", [id2]: "ID2" });
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(obj);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
   it("no uuids not changed", () => {
     const { cleanedObject, idStore: uuidStore } = removeIDs(pokemon);
     expect(cleanedObject).toEqual(pokemon);
     expect(uuidStore).toEqual({});
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(pokemon);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(pokemon);
   });
 
   it("real world example", () => {
@@ -735,7 +735,7 @@ describe("remove and reAdd Ids", () => {
       },
     };
     expect(cleanedObject).toEqual(cleanedExpected);
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(object);
   });
 
   it("real world with urls", () => {
@@ -828,7 +828,7 @@ describe("remove and reAdd Ids", () => {
       resigned_count: 0,
     };
     expect(cleanedObject).toEqual(cleanedExpected);
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(object);
   });
 
   it("real world duplicate IDs ", () => {
@@ -1037,6 +1037,6 @@ describe("remove and reAdd Ids", () => {
     };
 
     expect(cleanedObject).toEqual(cleanedExpected);
-    expect(reAddIDs(cleanedObject, uuidStore)).toEqual(object);
+    expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(object);
   });
 });

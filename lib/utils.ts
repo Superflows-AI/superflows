@@ -464,6 +464,15 @@ export function isID(str: string): boolean {
   return x <= 2.2;
 }
 
+export function isUrl(str: string): boolean {
+  try {
+    new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const dateFormats = [
   "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
   "yyyy-MM-dd'T'HH:mm:ss.SSS",
