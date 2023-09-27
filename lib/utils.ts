@@ -473,12 +473,10 @@ export function isID(str: string): boolean {
 }
 
 export function isUrl(str: string): boolean {
-  try {
-    new URL(str);
-    return true;
-  } catch {
-    return false;
-  }
+  // return /^((https?|ftp):\/\/)?[\w\-.]+((\/[\w\-_.]+)*\/)?([^#?\s]+)(\S*)?(#[\w\-]+)?$/.test(
+  return /^((https?|ftp):\/\/)?([\w\-]+\.)+([a-zA-Z]){2,5}((\/[\w\-_.]+)*\/?)?(\?\S*)?(#[\w\-]+)?$/.test(
+    str,
+  );
 }
 
 const dateFormats = [
