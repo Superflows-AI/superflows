@@ -407,9 +407,17 @@ export function propertiesToChunks(properties: Properties): Chunk[] {
 }
 
 export function swapKeysValues(json: { [key: string]: string }) {
+  const keyValCount = Object.keys(json).length;
   const ret: { [key: string]: string } = {};
-  for (var key in json) {
+  for (const key in json) {
     ret[json[key]] = key;
+  }
+  if (Object.keys(ret).length !== keyValCount) {
+    console.warn(
+      `swapKeysValues() failed sanity check: started with ${keyValCount} key-val pairs, ended with ${Object.keys(
+        ret.length,
+      )}`,
+    );
   }
   return ret;
 }
