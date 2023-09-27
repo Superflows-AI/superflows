@@ -214,11 +214,12 @@ export default async function handler(req: NextRequest) {
             return {
               action: {
                 ...res.data!,
-                api_host: requestData.mock_api_responses
-                  ? mockUrl
-                  : res.data!.apis!.api_host,
-                auth_header: res.data!.apis!.auth_header,
-                auth_scheme: res.data!.apis!.auth_scheme,
+                api: {
+                  ...res.data!.apis!,
+                  api_host: requestData.mock_api_responses
+                    ? mockUrl
+                    : res.data!.apis!.api_host,
+                },
                 headers: res.data!.apis!.fixed_headers,
               },
               params: param.args,
@@ -253,11 +254,12 @@ export default async function handler(req: NextRequest) {
           return {
             action: {
               ...res.data!,
-              api_host: requestData.mock_api_responses
-                ? mockUrl
-                : res.data!.apis!.api_host,
-              auth_header: res.data!.apis!.auth_header,
-              auth_scheme: res.data!.apis!.auth_scheme,
+              api: {
+                ...res.data!.apis!,
+                api_host: requestData.mock_api_responses
+                  ? mockUrl
+                  : res.data!.apis!.api_host,
+              },
               headers: res.data!.apis!.fixed_headers,
             },
             params: command.args,
@@ -267,7 +269,7 @@ export default async function handler(req: NextRequest) {
       console.log("Got toExecute from database:", JSON.stringify(toExecute));
     }
     toExecute.forEach((execute) => {
-      if (!execute.action.api_host) {
+      if (!execute.action.api.api_host) {
         return new Response(
           JSON.stringify({
             error:
