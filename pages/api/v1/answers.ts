@@ -31,11 +31,7 @@ import {
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
-import {
-  getSecondaryModel,
-  sanitizeMessages,
-  streamLLMResponse,
-} from "../../../lib/queryLLM";
+import { getSecondaryModel, streamLLMResponse } from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
   OrgJoinIsPaidFinetunedModels,
@@ -46,7 +42,10 @@ import {
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import { repopulateVariables } from "../../../lib/edge-runtime/apiResponseSimplification";
+import {
+  repopulateVariables,
+  sanitizeMessages,
+} from "../../../lib/edge-runtime/apiResponseSimplification";
 
 export const config = {
   runtime: "edge",
