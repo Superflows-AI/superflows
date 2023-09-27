@@ -5,7 +5,11 @@ import {
   ChatGPTResponse,
   OpenAIError,
 } from "./models";
-import { IDStore, removeIDs } from "./edge-runtime/apiResponseSimplification";
+import {
+  StringMapping,
+  removeIDs,
+  removeURLs,
+} from "./edge-runtime/apiResponseSimplification";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
@@ -77,25 +81,6 @@ export async function streamLLMResponse(
   }
 
   return response.body;
-}
-
-export function removeIdsFromMessages(messages: ChatGPTMessage[]): {
-  cleanedMessages: ChatGPTMessage[];
-  idStore: IDStore;
-} {
-  let idStore: IDStore = {};
-  const cleanedMessages = messages.map((message) => {
-    if (message.role === "function") {
-      try {
-        let cleanedObject = JSON.parse(message.content);
-        ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
-        message.content = JSON.stringify(cleanedObject);
-      } catch {}
-    }
-    return message;
-  });
-
-  return { cleanedMessages, idStore };
 }
 
 function getLLMRequest(
