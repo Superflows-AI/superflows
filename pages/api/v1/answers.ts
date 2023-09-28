@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
+import {
+  repopulateVariables,
+  sanitizeMessages,
+} from "../../../lib/edge-runtime/apiResponseSimplification";
 import { filterActions } from "../../../lib/edge-runtime/filterActions";
 import { getMissingArgCorrections } from "../../../lib/edge-runtime/missingParamCorrection";
 import {
@@ -32,10 +36,7 @@ import {
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
 import getMessages from "../../../lib/prompts/chatBot";
-import {
-  getSecondaryModel,
-  streamLLMResponse,
-} from "../../../lib/queryLLM";
+import { getSecondaryModel, streamLLMResponse } from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
   OrgJoinIsPaidFinetunedModels,
@@ -665,6 +666,7 @@ async function Angela( // Good ol' Angela
                 // @ts-ignore
                 out = `Failed to call ${url}\n\n${e.toString()}`;
               }
+              console.log("Output from API call:", out);
               const outMessage: GPTMessageInclSummary = {
                 role: "function",
                 name: command.name,
