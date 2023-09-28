@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
+import { filterActions } from "../../../lib/edge-runtime/filterActions";
 import { getMissingArgCorrections } from "../../../lib/edge-runtime/missingParamCorrection";
 import {
   constructHttpRequest,
@@ -30,9 +31,8 @@ import {
   StreamingStepInput,
 } from "../../../lib/models";
 import { parseGPTStreamedData } from "../../../lib/parsers/parsers";
-import getMessages, { simpleChatPrompt } from "../../../lib/prompts/chatBot";
+import getMessages from "../../../lib/prompts/chatBot";
 import {
-  getLLMResponse,
   getSecondaryModel,
   streamLLMResponse,
 } from "../../../lib/queryLLM";
@@ -44,10 +44,8 @@ import {
   exponentialRetryWrapper,
   getTokenCount,
   isValidBody,
-  joinArraysNoDuplicates,
   openAiCost,
 } from "../../../lib/utils";
-import { actionFilteringPrompt } from "../../../lib/prompts/actionFiltering";
 
 export const config = {
   runtime: "edge",
@@ -468,65 +466,14 @@ async function Angela( // Good ol' Angela
   }
 
   const model = org.model;
-  const userQuery = nonSystemMessages[nonSystemMessages.length - 1].content;
 
-  actions = await filterActions(actions, conversationId, userQuery, model);
-
-  let numOpenAIRequests = 0;
-  let totalCost = 0;
-
-  if (actions.length === 0) {
-    console.log(
-      "No actions are relevant to the user's request, using simple chat model",
+  if (actions.length > 5)
+    actions = await filterActions(
+      actions,
+      conversationId,
+      nonSystemMessages[nonSystemMessages.length - 1].content,
+      model,
     );
-    const prompt = simpleChatPrompt(
-      userQuery,
-      reqData.user_description,
-      org,
-      language,
-    );
-
-    totalCost += openAiCost(prompt, "in", model);
-    const simpleMessageResponse = await streamLLMResponse(prompt, {}, model);
-
-    numOpenAIRequests += 1;
-
-    if (simpleMessageResponse === null || "message" in simpleMessageResponse) {
-      console.error(
-        `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${simpleMessageResponse?.message}`,
-      );
-      streamInfo({
-        role: "error",
-        content: "Call to Language Model API failed",
-      });
-      return {
-        nonSystemMessages,
-        cost: totalCost,
-        numUserQueries: numOpenAIRequests,
-      };
-    }
-
-    const rawOutput = await streamResponseToUser(
-      simpleMessageResponse,
-      streamInfo,
-    );
-
-    const simpleMessage = {
-      role: "assistant",
-      content: rawOutput,
-    } as ChatGPTMessage;
-
-    nonSystemMessages.push();
-
-    const outCost = openAiCost([simpleMessage], "out", model);
-    totalCost += outCost;
-
-    return {
-      nonSystemMessages,
-      cost: totalCost,
-      numUserQueries: numOpenAIRequests,
-    };
-  }
 
   let mostRecentParsedOutput = {
     reasoning: "",
@@ -536,6 +483,8 @@ async function Angela( // Good ol' Angela
     completed: false,
   };
 
+  let numOpenAIRequests = 0;
+  let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
 
@@ -566,6 +515,8 @@ async function Angela( // Good ol' Angela
         org,
         language,
       );
+
+      console.log("Main system prompt:\n", chatGptPrompt[0].content);
 
       // Replace messages with `CleanedMessages` which has long IDs replaced with a placeholder.
       // idStore is a map from the cleaned to the original IDs
@@ -599,8 +550,6 @@ async function Angela( // Good ol' Angela
       const promptInputCost = openAiCost(chatGptPrompt, "in", model);
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
-
-      console.log("main prompt", chatGptPrompt);
 
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
@@ -817,82 +766,6 @@ async function storeActionsAwaitingConfirmation(
   }
 }
 
-async function filterActions(
-  actions: ActionPlusApiInfo[],
-  conversationId: number,
-  userQuery: string,
-  model: string,
-): Promise<ActionPlusApiInfo[]> {
-  /**
-   * Only include actions that have either:
-   * Been used previously in the conversation
-   * or
-   * Are relevant to the user's query
-   */
-
-  const actionsUsedRedisKey = conversationId.toString() + "-actions-used";
-  const actionsUsedStr = redis
-    ? ((await redis.get(actionsUsedRedisKey)) as string) ?? ""
-    : "";
-
-  const actionsUsed = actions.filter((action) =>
-    actionsUsedStr.includes(action.name),
-  );
-
-  const relevantActions = await getRelevantActions(actions, userQuery, model);
-
-  console.log(
-    "The following actions were selected as relevant: ",
-    relevantActions.map((a) => a.name),
-  );
-  actions = joinArraysNoDuplicates(relevantActions, actionsUsed, "name");
-
-  redis?.set(
-    actionsUsedRedisKey,
-    actions.map((action) => action.name).join(", "),
-  );
-
-  redis?.expire(actionsUsedRedisKey, 60 * 15);
-  return actions;
-}
-
-async function getRelevantActions(
-  actions: ActionPlusApiInfo[],
-  userQuery: string,
-  model: string,
-): Promise<ActionPlusApiInfo[]> {
-  /**
-   * Filter actions based on the score assigned by the actionFilteringPrompt.
-   * If the score cannot be found in the response, keep the action
-   */
-
-  const keepThreshold = 2;
-
-  const prompt = actionFilteringPrompt(actions, userQuery);
-
-  console.log("System prompt for filtering:\n", prompt[0].content);
-
-  const response = await exponentialRetryWrapper(
-    getLLMResponse,
-    [prompt, { temperature: 0.7 }, model],
-    3,
-  );
-
-  return actions.filter((action) => {
-    const startOfName = response.indexOf(action.name);
-    if (startOfName === -1) return true;
-    const endOfName = response.indexOf(":", startOfName);
-
-    const scoreString = response.substring(endOfName + 1, endOfName + 3).trim();
-    if (
-      ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(scoreString)
-    ) {
-      return Number(scoreString) > keepThreshold;
-    }
-    return true;
-  });
-}
-
 async function streamResponseToUser(
   res: ReadableStream<any>,
   streamInfo: (step: StreamingStepInput) => void,
@@ -914,9 +787,9 @@ async function streamResponseToUser(
       incompleteChunk + decoder.decode(value),
     );
 
-    if (contentItems.incompleteChunk) {
-      incompleteChunk = contentItems.incompleteChunk;
-    }
+    incompleteChunk = contentItems.incompleteChunk
+      ? contentItems.incompleteChunk
+      : "";
 
     for (let content of contentItems.completeChunks) {
       // Sometimes starts with a newline
