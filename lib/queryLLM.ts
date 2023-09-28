@@ -54,8 +54,8 @@ export async function getLLMResponse(
 export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
   /* Assumes that you have set n = 1 in the params */
   if ("message" in response.choices[0])
-    return response.choices[0].message!.content;
-  return response.choices[0].text!;
+    return response.choices[0].message.content;
+  return response.choices[0].text;
 }
 
 export async function streamLLMResponse(
