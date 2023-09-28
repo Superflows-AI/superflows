@@ -1,5 +1,6 @@
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
+  ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
   Cog6ToothIcon,
   PlusIcon,
@@ -151,6 +152,7 @@ function APISettingsModal(props: {
     boolean | null
   >(null);
   const [headers, setHeaders] = useState<HeadersInsert[]>([]);
+  const [queryParamName, setQueryParamName] = useState<string>("");
   useEffect(() => {
     if (!props.api) return;
     setApiHostLocal(props.api.api_host);
@@ -175,10 +177,10 @@ function APISettingsModal(props: {
       }
       setHeaders(headers);
     })();
+    if (props.api) {
+      setQueryParamName(props.api.auth_query_param_name);
+    }
   }, [props.api]);
-  const [queryParamName, setQueryParamName] = useState<string>(
-    props.api?.auth_query_param_name ?? "",
-  );
 
   const [deleteClicked, setDeleteClicked] = React.useState<boolean>(false);
   return (
@@ -430,6 +432,7 @@ function APISettingsModal(props: {
                 className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-[0.4375rem] max-w-[9.5rem] focus:border-purple-600 focus:ring-purple-600"
                 onChange={(e) => setQueryParamName(e.target.value)}
                 value={queryParamName}
+                placeholder={"Parameter name"}
                 onBlur={async () => {
                   if (!props.api) return;
                   const res = await supabase
@@ -448,12 +451,20 @@ function APISettingsModal(props: {
               />
             )}
             <div className="relative h-16 flex place-items-center">
-              <code className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-9 text-gray-500 rounded-md text-base font-normal">
-                {"< AUTH PARAMETERS/API-KEY HERE >"}
-              </code>
-              <p className="absolute -bottom-3 text-sm w-full mt-3 flex text-center justify-center place-items-baseline text-gray-300">
-                These are sent in each request to the Superflows API.
+              <p className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-12 text-gray-500 rounded-md text-base font-normal">
+                {"< API-KEY >"}
               </p>
+              <a
+                href={
+                  "https://docs.superflows.ai/docs/connecting-your-api/api-host#authentication"
+                }
+                target={"_blank"}
+                rel={"noreferrer noopener"}
+                className="peer px-2 rounded-md text-sm text-blue-500 hover:text-blue-600 hover:underline"
+              >
+                How to set API key{" "}
+                <ArrowTopRightOnSquareIcon className="h-4 w-4 inline" />
+              </a>
             </div>
           </div>
           <div className="col-start-1 flex flex-col place-items-start pr-4">
