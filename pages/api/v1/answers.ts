@@ -202,6 +202,16 @@ export default async function handler(req: NextRequest) {
       });
     }
 
+    // If there's no past conversation and no user input, return an error
+    if (!requestData.conversation_id && !requestData.user_input) {
+      return new Response(
+        JSON.stringify({
+          error: `You must provide either a user input or a conversation ID for an existing conversation`,
+        }),
+        { status: 400, headers },
+      );
+    }
+
     console.log(
       `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`,
     );
