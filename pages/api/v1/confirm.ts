@@ -30,7 +30,6 @@ const ConfirmZod = z.object({
   user_api_key: OptionalStringZod,
   confirm: z.boolean(),
   mock_api_responses: z.optional(z.boolean()),
-  test_mode: z.optional(z.boolean()),
 });
 
 type ConfirmType = z.infer<typeof ConfirmZod>;
