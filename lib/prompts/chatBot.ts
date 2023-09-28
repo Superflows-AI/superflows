@@ -191,18 +191,66 @@ export default function getMessages(
   },
   language: string | null,
 ): ChatGPTMessage[] {
-  let userDescriptionSection = "";
-  if (userDescription) {
-    userDescriptionSection = `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`;
-  }
+  const userDescriptionSection = userDescription
+    ? `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`
+    : "";
 
-  const numberedActions = getActionDescriptions(actions);
   return [
-    {
-      role: "system",
-      content: `You are ${orgInfo.name} chatbot AI ${
-        orgInfo.description
-      }. Your purpose is to assist users in ${orgInfo.name} via function calls
+    actions.length > 0
+      ? systemPromptWithActions(
+          userDescriptionSection,
+          orgInfo,
+          getActionDescriptions(actions),
+          language,
+        )
+      : simpleChatPrompt(userDescriptionSection, orgInfo, language),
+    ...userCopilotMessages,
+  ];
+}
+
+export function simpleChatPrompt(
+  userDescriptionSection: string,
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  language: string | null,
+): ChatGPTMessage {
+  return {
+    role: "system",
+    content: `You are ${orgInfo.name} chatbot AI. ${
+      orgInfo.description
+    }. Your purpose is to write friendly helpful replies to users in ${
+      orgInfo.name
+    }.
+
+${userDescriptionSection}
+
+You are having a conversation with the user.
+
+You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
+${
+  language &&
+  `
+Your reply should be written in ${language}.`
+}`,
+  };
+}
+
+function systemPromptWithActions(
+  userDescriptionSection: string,
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  numberedActions: string,
+  language: string | null,
+): ChatGPTMessage {
+  return {
+    role: "system",
+    content: `You are ${orgInfo.name} chatbot AI ${
+      orgInfo.description
+    }. Your purpose is to assist users in ${orgInfo.name} via function calls
 
 Seek user assistance when necessary or more information is required
 
@@ -221,10 +269,10 @@ Don't copy the function outputs in full when explaining to the user, instead sum
 Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses
 
 Think and talk to the user in ${language ?? "the same language they write in"}${
-        language !== "English"
-          ? ". This should ONLY affect the Reasoning & Tell user outputs. NOT the commands. And DO NOT translate the keywords: Reasoning, Plan, Tell user or Commands."
-          : ""
-      }
+      language !== "English"
+        ? ". This should ONLY affect the Reasoning & Tell user outputs. NOT the commands. And DO NOT translate the keywords: Reasoning, Plan, Tell user or Commands."
+        : ""
+    }
 
 Think step-by-step. Respond in the format below. Start with your reasoning, your plan, anything to tell the user, then any commands (you can call multiple, separate with a newline). Each section is optional - only output it if you need to. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 
@@ -240,41 +288,5 @@ Tell user: tell the user something. If you need to ask the user a question, do s
 Commands:
 FUNCTION_1(PARAM_1=VALUE_1, PARAM_2=VALUE_2, ...)
 FUNCTION_2(PARAM_3=VALUE_3 ...)`,
-    },
-    ...userCopilotMessages,
-  ];
-}
-
-export function simpleChatPrompt(
-  userQuery: string,
-  userDescription: string | undefined,
-  orgInfo: {
-    name: string;
-    description: string;
-  },
-  language: string | null,
-): ChatGPTMessage[] {
-  const userDescriptionSection = userDescription
-    ? `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`
-    : "";
-
-  return [
-    {
-      role: "system",
-      content: `You are ${orgInfo.name} chatbot AI ${orgInfo.description}. Your purpose is to write friendly helpful replies to users in ${orgInfo.name}.
-
-${userDescriptionSection}
-
-You are having a conversation with a user.
-
-You have expert knowledge in the domain of the organisation you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
-
-Your reply should be written in ${language}.
-  `,
-    },
-    {
-      role: "user",
-      content: userQuery,
-    },
-  ];
+  };
 }
