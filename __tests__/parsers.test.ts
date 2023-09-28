@@ -59,4 +59,20 @@ data: {"id": 123`;
       incompleteChunk: `{"id": 123`,
     });
   });
+
+  it("test spaces dealt with ok with chunk split mid sentence", () => {
+    const firstChunk = `data: {"choices":[{"index":0,"delta":{"content":"double `;
+    const nextChunk = ` space"},"finish_reason":null}]}`;
+    const output1 = parseGPTStreamedData(firstChunk);
+    const incompleteChunk = output1.incompleteChunk;
+    const output2 = parseGPTStreamedData(incompleteChunk + nextChunk);
+
+    console.log(output2);
+
+    expect(output2).toStrictEqual({
+      completeChunks: ["double  space"],
+      done: false,
+      incompleteChunk: null,
+    });
+  });
 });

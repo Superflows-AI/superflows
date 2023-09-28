@@ -26,7 +26,7 @@ export function parseGPTStreamedData(gptOutString: string): ParsedStreamedData {
         const content = "delta" in choice ? choice.delta.content : choice.text;
         if (content) output.completeChunks.push(content);
       } catch (e) {
-        output.incompleteChunk = line.trim();
+        output.incompleteChunk = line;
         return output;
       }
     });
