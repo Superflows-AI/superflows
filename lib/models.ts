@@ -23,6 +23,18 @@ export type GPTMessageInclSummary =
       summary?: string;
     };
 
+interface MessageChoice {
+  message: ChatGPTMessage;
+  finish_reason: string;
+  index: number;
+}
+
+interface TextChoice {
+  text: string;
+  finish_reason: string;
+  index: number;
+}
+
 export interface ChatGPTResponse {
   id: string;
   object: string;
@@ -33,14 +45,8 @@ export interface ChatGPTResponse {
     completion_tokens: number;
     total_tokens: number;
   };
-  choices: [
-    {
-      message?: ChatGPTMessage;
-      text?: string;
-      finish_reason: string;
-      index: number;
-    },
-  ];
+
+  choices: MessageChoice[] | TextChoice[];
 }
 
 export interface OpenAIError {
