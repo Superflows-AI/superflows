@@ -23,6 +23,7 @@ export default function ConfirmAuth(props: {
   >(null);
   const [headers, setHeaders] = useState<HeadersInsert[]>([]);
   const alreadyAddedHeader = React.useRef(false);
+  const [queryParamName, setQueryParamName] = useState<string>("");
 
   useEffect(() => {
     if (!props.api || alreadyAddedHeader.current) return;
@@ -48,6 +49,7 @@ export default function ConfirmAuth(props: {
       }
       setHeaders(headers);
     })();
+    if (props.api) setQueryParamName(props.api.auth_query_param_name ?? "");
   }, [props.api]);
 
   return (
@@ -137,6 +139,10 @@ export default function ConfirmAuth(props: {
                   id: "apiKey",
                   name: "apiKey",
                 },
+                {
+                  id: "Query parameter",
+                  name: "Query parameter",
+                },
               ]}
               selected={props.api?.auth_header ?? null}
               setSelected={async (selected: string) => {
@@ -151,58 +157,79 @@ export default function ConfirmAuth(props: {
               theme="dark"
             />
             :
-            <SelectBox
-              options={[
-                {
-                  id: null,
-                  name: "None",
-                },
-                {
-                  id: "Bearer",
-                  name: "Bearer",
-                },
-                {
-                  id: "Basic",
-                  name: "Basic",
-                },
-                {
-                  id: "app-token",
-                  name: "app-token",
-                },
-                {
-                  id: "Digest",
-                  name: "Digest",
-                },
-                {
-                  id: "HOBA",
-                  name: "HOBA",
-                },
-                {
-                  id: "Mutual",
-                  name: "Mutual",
-                },
-                {
-                  id: "VAPID",
-                  name: "VAPID",
-                },
-                {
-                  id: "SCRAM",
-                  name: "SCRAM",
-                },
-              ]}
-              selected={props.api?.auth_scheme ?? null}
-              setSelected={async (selected: string) => {
-                if (!props.api) return;
-                props.setApi({ ...props.api, auth_scheme: selected });
-                const res = await supabase
-                  .from("apis")
-                  .update({ auth_scheme: selected })
-                  .eq("id", props.api.id);
-                if (res.error) throw res.error;
-              }}
-              theme={"dark"}
-              includeNull={true}
-            />
+            {props.api?.auth_header === "Query parameter" ? (
+              <SelectBox
+                options={[
+                  {
+                    id: null,
+                    name: "None",
+                  },
+                  {
+                    id: "Bearer",
+                    name: "Bearer",
+                  },
+                  {
+                    id: "Basic",
+                    name: "Basic",
+                  },
+                  {
+                    id: "app-token",
+                    name: "app-token",
+                  },
+                  {
+                    id: "Digest",
+                    name: "Digest",
+                  },
+                  {
+                    id: "HOBA",
+                    name: "HOBA",
+                  },
+                  {
+                    id: "Mutual",
+                    name: "Mutual",
+                  },
+                  {
+                    id: "VAPID",
+                    name: "VAPID",
+                  },
+                  {
+                    id: "SCRAM",
+                    name: "SCRAM",
+                  },
+                ]}
+                selected={props.api?.auth_scheme ?? null}
+                setSelected={async (selected: string) => {
+                  if (!props.api) return;
+                  props.setApi({ ...props.api, auth_scheme: selected });
+                  const res = await supabase
+                    .from("apis")
+                    .update({ auth_scheme: selected })
+                    .eq("id", props.api.id);
+                  if (res.error) throw res.error;
+                }}
+                theme={"dark"}
+                includeNull={true}
+              />
+            ) : (
+              <input
+                className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-[0.4375rem] max-w-[9.5rem] focus:border-purple-600 focus:ring-purple-600"
+                onChange={(e) => setQueryParamName(e.target.value)}
+                value={queryParamName}
+                placeholder={"Parameter name"}
+                onBlur={async () => {
+                  if (!props.api) return;
+                  const res = await supabase
+                    .from("apis")
+                    .update({ auth_query_param_name: queryParamName })
+                    .eq("id", props.api.id);
+                  if (res.error) throw res.error;
+                  props.setApi({
+                    ...props.api,
+                    auth_query_param_name: queryParamName,
+                  });
+                }}
+              />
+            )}
             <div className="relative h-16 flex place-items-center">
               <code className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-9 text-gray-500 rounded-md text-base font-normal">
                 {"< AUTH PARAMETERS/API-KEY HERE >"}
