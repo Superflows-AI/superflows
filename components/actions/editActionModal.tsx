@@ -6,7 +6,9 @@ import {
 } from "@heroicons/react/20/solid";
 import {
   LinkIcon,
+  MinusIcon,
   PencilSquareIcon,
+  PlusIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useRef, useState } from "react";
@@ -118,6 +120,16 @@ export default function EditActionModal(props: {
   const [cacheKeysToKeep, setCacheKeysToKeep] = useState<string[]>(
     localAction.keys_to_keep as string[],
   );
+  const [showAdvanced, setShowAdvanced] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (showAdvanced !== null) {
+      let ele = document.getElementById("scroll-modal");
+      // If the element exists, scroll to the bottom
+      if (ele) {
+        ele.scrollTop = ele.scrollHeight;
+      }
+    }
+  }, [showAdvanced]);
 
   return (
     <Modal open={!!props.action} setOpen={props.close} classNames={"max-w-4xl"}>
@@ -313,49 +325,93 @@ export default function EditActionModal(props: {
           setLocalAction={setLocalAction}
         />
 
-        {/* INCLUDE IN RESPONSES */}
-        <div className="w-full px-6 flex flex-row justify-center place-items-center">
-          <div className="font-bold text-lg text-gray-100 w-32">
-            Include all keys in responses
-          </div>
-          <div className="flex flex-row justify-start place-items-center gap-x-10 flex-1">
-            <Checkbox
-              onChange={(checked) => {
-                setIncludeAllInResponses(checked);
-                if (checked) {
-                  setCacheKeysToKeep(
-                    (localAction.keys_to_keep as string[]) ?? [],
-                  );
-                  setLocalAction({ ...localAction, keys_to_keep: null });
-                } else {
-                  setLocalAction({
-                    ...localAction,
-                    keys_to_keep: cacheKeysToKeep,
-                  });
-                }
-              }}
-              checked={includeAllInResposes}
-              label={""}
-              size={"lg"}
-            />
-            <div className="relative z-10">
-              <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-300 transition rounded-full hover:bg-gray-850" />
-              <div className={classNames("-top-8 left-12 w-72 popup")}>
-                Some APIs return lots of data which isn&apos;t useful to the AI.
-                Unchecking this enables you to cut out useless data returned
-                from this endpoint, which improves the AI&apos;s performance.
+        <div
+          className="w-full px-6 select-none cursor-pointer flex flex-row justify-center place-items-center text-gray-100 gap-x-4 rounded border border-gray-600 bg-gray-850 py-1"
+          onClick={() => {
+            setShowAdvanced(!showAdvanced);
+          }}
+        >
+          Advanced options{" "}
+          {showAdvanced ? (
+            <MinusIcon className="w-5 h-5 text-gray-100" />
+          ) : (
+            <PlusIcon className="w-5 h-5 text-gray-100" />
+          )}
+        </div>
+        {showAdvanced && (
+          <>
+            <div className="w-full px-6 flex flex-row justify-center place-items-center">
+              <div className="font-bold text-lg text-gray-100 w-32">
+                Requires confirmation
+              </div>
+              <div className="flex flex-row justify-start place-items-center gap-x-10 flex-1">
+                <Checkbox
+                  onChange={(checked) => {
+                    setLocalAction({
+                      ...localAction,
+                      requires_confirmation: checked,
+                    });
+                  }}
+                  checked={localAction.requires_confirmation}
+                  label={""}
+                  size={"lg"}
+                />
+                <div className="relative z-10">
+                  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-300 transition rounded-full hover:bg-gray-850" />
+                  <div className={classNames("-top-8 left-12 w-72 popup")}>
+                    If enabled, the AI will ask the user to confirm the action
+                    before executing it. E.g. &ldquo;Are you sure you want to
+                    delete this?&rdquo;
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        <JsonTextBox
-          title={"keys_to_keep"}
-          validJSON={inclInResponsesValidJSON}
-          setValidJSON={setInclInResponsesValidJSON}
-          action={localAction}
-          setLocalAction={setLocalAction}
-          disabled={includeAllInResposes}
-        />
+            {/* INCLUDE IN RESPONSES */}
+            <div className="w-full px-6 flex flex-row justify-center place-items-center">
+              <div className="font-bold text-lg text-gray-100 w-32">
+                Include all keys in responses
+              </div>
+              <div className="flex flex-row justify-start place-items-center gap-x-10 flex-1">
+                <Checkbox
+                  onChange={(checked) => {
+                    setIncludeAllInResponses(checked);
+                    if (checked) {
+                      setCacheKeysToKeep(
+                        (localAction.keys_to_keep as string[]) ?? [],
+                      );
+                      setLocalAction({ ...localAction, keys_to_keep: null });
+                    } else {
+                      setLocalAction({
+                        ...localAction,
+                        keys_to_keep: cacheKeysToKeep,
+                      });
+                    }
+                  }}
+                  checked={includeAllInResposes}
+                  label={""}
+                  size={"lg"}
+                />
+                <div className="relative z-10">
+                  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-300 transition rounded-full hover:bg-gray-850" />
+                  <div className={classNames("-top-8 left-12 w-72 popup")}>
+                    Some APIs return lots of data which isn&apos;t useful to the
+                    AI. Unchecking this enables you to cut out useless data
+                    returned from this endpoint, which improves the AI&apos;s
+                    performance.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <JsonTextBox
+              title={"keys_to_keep"}
+              validJSON={inclInResponsesValidJSON}
+              setValidJSON={setInclInResponsesValidJSON}
+              action={localAction}
+              setLocalAction={setLocalAction}
+              disabled={includeAllInResposes}
+            />
+          </>
+        )}
       </div>
 
       <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">

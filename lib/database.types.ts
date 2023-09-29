@@ -89,6 +89,7 @@ export interface Database {
           path: string | null;
           request_body_contents: Json | null;
           request_method: string | null;
+          requires_confirmation: boolean;
           responses: Json | null;
           tag: number | null;
         };
@@ -106,6 +107,7 @@ export interface Database {
           path?: string | null;
           request_body_contents?: Json | null;
           request_method?: string | null;
+          requires_confirmation?: boolean;
           responses?: Json | null;
           tag?: number | null;
         };
@@ -123,6 +125,7 @@ export interface Database {
           path?: string | null;
           request_body_contents?: Json | null;
           request_method?: string | null;
+          requires_confirmation?: boolean;
           responses?: Json | null;
           tag?: number | null;
         };
