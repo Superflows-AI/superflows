@@ -2,17 +2,12 @@ import { actionFilteringPrompt } from "../prompts/actionFiltering";
 import { getLLMResponse } from "../queryLLM";
 import { ActionPlusApiInfo } from "../types";
 import { exponentialRetryWrapper, joinArraysNoDuplicates } from "../utils";
-import { Redis } from "@upstash/redis";
-
-const redis =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? Redis.fromEnv()
-    : null;
+import { GPTMessageInclSummary } from "../models";
+import { parseOutput } from "@superflows/chat-ui-react";
 
 export async function filterActions(
   actions: ActionPlusApiInfo[],
-  conversationId: number,
-  userQuery: string,
+  nonSystemMessages: GPTMessageInclSummary[],
   model: string,
 ): Promise<ActionPlusApiInfo[]> {
   /**
@@ -21,19 +16,20 @@ export async function filterActions(
    * or
    * Are relevant to the user's query
    */
-
-  // TODO: add previously used actions
-
-  const actionsUsedRedisKey = conversationId.toString() + "-actions-used";
-  const actionsUsedStr = redis
-    ? ((await redis.get(actionsUsedRedisKey)) as string) ?? ""
-    : "";
+  const actionsUsedNames = nonSystemMessages
+    .filter((message) => message.role === "assistant")
+    .map((message) => parseOutput(message.content).commands.map((c) => c.name))
+    .flat();
 
   const actionsUsed = actions.filter((action) =>
-    actionsUsedStr.includes(action.name),
+    actionsUsedNames.includes(action.name),
   );
 
-  const relevantActions = await getRelevantActions(actions, userQuery, model);
+  const relevantActions = await getRelevantActions(
+    actions.filter((action) => !actionsUsedNames.includes(action.name)),
+    nonSystemMessages[nonSystemMessages.length - 1].content,
+    model,
+  );
 
   console.log(
     "The following actions were selected as relevant: ",
@@ -41,13 +37,6 @@ export async function filterActions(
   );
 
   actions = joinArraysNoDuplicates(relevantActions, actionsUsed, "name");
-
-  redis?.set(
-    actionsUsedRedisKey,
-    actions.map((action) => action.name).join(", "),
-  );
-
-  redis?.expire(actionsUsedRedisKey, 60 * 15);
 
   return actions;
 }
