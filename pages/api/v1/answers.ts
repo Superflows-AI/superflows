@@ -467,13 +467,18 @@ async function Angela( // Good ol' Angela
 
   const model = org.model;
 
-  if (actions.length > 5)
+  // When this number is reached, we remove the oldest messages from the context window
+  const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
+
+  if (actions.length > 5 && model.includes("3.5")) {
     actions = await filterActions(
       actions,
-      conversationId,
-      nonSystemMessages[nonSystemMessages.length - 1].content,
+      nonSystemMessages.slice(
+        Math.max(0, nonSystemMessages.length - maxConvLength),
+      ),
       model,
     );
+  }
 
   let mostRecentParsedOutput = {
     reasoning: "",
@@ -487,9 +492,6 @@ async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
-
-  // When this number is reached, we remove the oldest messages from the context window
-  const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
 
   if (redis) {
     // Store the system prompt, in case we get feedback on it
