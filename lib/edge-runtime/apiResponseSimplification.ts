@@ -114,7 +114,10 @@ export function removeURLs(
   return { cleanedObject: removedObj, urlStore: store };
 }
 
-export function sanitizeMessages(messages: ChatGPTMessage[]): {
+export function sanitizeMessages(
+  messages: ChatGPTMessage[],
+  sanitizeUrlsFirst: boolean,
+): {
   cleanedMessages: ChatGPTMessage[];
   valueVariableMap: StringMapping;
 } {
@@ -126,8 +129,13 @@ export function sanitizeMessages(messages: ChatGPTMessage[]): {
     if (message.role === "function") {
       try {
         let cleanedObject = JSON.parse(message.content);
-        ({ cleanedObject, urlStore } = removeURLs(cleanedObject, urlStore));
-        ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
+        if (sanitizeUrlsFirst) {
+          ({ cleanedObject, urlStore } = removeURLs(cleanedObject, urlStore));
+          ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
+        } else {
+          ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
+          ({ cleanedObject, urlStore } = removeURLs(cleanedObject, urlStore));
+        }
         message.content = JSON.stringify(cleanedObject);
       } catch {}
     }

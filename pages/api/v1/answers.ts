@@ -521,10 +521,12 @@ async function Angela( // Good ol' Angela
 
       console.log("Main system prompt:\n", chatGptPrompt[0].content);
 
-      // Replace messages with `CleanedMessages` which has long IDs replaced with a placeholder.
-      // idStore is a map from the cleaned to the original IDs
-      const { cleanedMessages, valueVariableMap } =
-        sanitizeMessages(chatGptPrompt);
+      // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
+      // valueVariableMap is a map from the cleaned to the original string
+      const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+        chatGptPrompt,
+        org.sanitize_urls_first,
+      );
       chatGptPrompt = cleanedMessages;
 
       // If over context limit, remove oldest function calls
