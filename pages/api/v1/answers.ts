@@ -654,11 +654,7 @@ async function Angela( // Good ol' Angela
               userApiKey: reqData.user_api_key ?? "",
             };
 
-            if (
-              ["get", "head", "options", "connect"].includes(
-                chosenAction.request_method!.toLowerCase(),
-              )
-            ) {
+            if (!chosenAction.requires_confirmation) {
               const { url, requestOptions } =
                 constructHttpRequest(actionToHttpRequest);
               let out;
@@ -754,6 +750,7 @@ async function Angela( // Good ol' Angela
   }
   return { nonSystemMessages, cost: totalCost, numUserQueries };
 }
+
 async function storeActionsAwaitingConfirmation(
   toConfirm: ToConfirm[],
   conversationId: number,

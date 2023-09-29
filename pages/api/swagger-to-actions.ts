@@ -204,6 +204,8 @@ export default async function handler(
         // @ts-ignore
         responses: methodObj?.responses ?? null,
         api_id,
+        // By default, require confirmation for all actions except GET
+        requires_confirmation: !["get"].includes(method),
       });
     }
   }
