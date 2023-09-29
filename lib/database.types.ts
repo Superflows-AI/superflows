@@ -394,6 +394,7 @@ export interface Database {
           join_link_id: string | null;
           model: string;
           name: string;
+          sanitize_urls_first: boolean;
         };
         Insert: {
           api_key?: string;
@@ -403,6 +404,7 @@ export interface Database {
           join_link_id?: string | null;
           model?: string;
           name?: string;
+          sanitize_urls_first?: boolean;
         };
         Update: {
           api_key?: string;
@@ -412,6 +414,7 @@ export interface Database {
           join_link_id?: string | null;
           model?: string;
           name?: string;
+          sanitize_urls_first?: boolean;
         };
         Relationships: [];
       };

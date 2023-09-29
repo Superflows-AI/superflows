@@ -16,6 +16,12 @@ const validUrls = [
   "https://google.com/search/hello.html?user=me#hello",
 ];
 
+const validUrlsWithIDX = [
+  "x.com/ID1",
+  "www.google.com/ID7",
+  "https://www.google.com?id=ID22",
+];
+
 const invalidUrls = [
   "henry@gmail.com",
   "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df",
@@ -28,13 +34,16 @@ const invalidUrls = [
 describe("isURL", () => {
   it("should return true for valid URLs", () => {
     for (const url of validUrls) {
-      console.log(url);
       expect(isUrl(url)).toBe(true);
     }
   });
   it("should return false for invalid URLs", () => {
     for (const url of invalidUrls) {
-      // console.log(url);
+      expect(isUrl(url)).toBe(false);
+    }
+  });
+  it("Not a URL if it has an IDX in it", () => {
+    for (const url of validUrlsWithIDX) {
       expect(isUrl(url)).toBe(false);
     }
   });

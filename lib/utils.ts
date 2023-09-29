@@ -490,7 +490,7 @@ export function isID(str: string): boolean {
 }
 
 export function isUrl(str: string): boolean {
-  // return /^((https?|ftp):\/\/)?[\w\-.]+((\/[\w\-_.]+)*\/)?([^#?\s]+)(\S*)?(#[\w\-]+)?$/.test(
+  if (/ID[1-9]+/.test(str)) return false;
   return /^((https?|ftp):\/\/)?([\w\-]+\.)+([a-zA-Z]){2,5}((\/[\w\-_.]+)*\/?)?(\?\S*)?(#[\w\-]+)?$/.test(
     str,
   );

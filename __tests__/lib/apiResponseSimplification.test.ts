@@ -2,13 +2,16 @@ import { sanitizeMessages } from "../../lib/edge-runtime/apiResponseSimplificati
 
 describe("sanitizeMessages", () => {
   it("should remove ids from messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
-        name: "test",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
+          name: "test",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -21,18 +24,21 @@ describe("sanitizeMessages", () => {
     });
   });
   it("should give non-unique ids when ids match across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
-        name: "test1",
-      },
-      {
-        role: "function",
-        content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
-        name: "test2",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
+          name: "test1",
+        },
+        {
+          role: "function",
+          content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
+          name: "test2",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -50,18 +56,21 @@ describe("sanitizeMessages", () => {
     });
   });
   it("should give unique ids across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
-        name: "test1",
-      },
-      {
-        role: "function",
-        content: '{"id":"ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10"}',
-        name: "test2",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"id":"183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}',
+          name: "test1",
+        },
+        {
+          role: "function",
+          content: '{"id":"ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10"}',
+          name: "test2",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -80,13 +89,16 @@ describe("sanitizeMessages", () => {
     });
   });
   it("should remove urls from messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"url":"https://www.google.com"}',
-        name: "test",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"url":"https://www.google.com"}',
+          name: "test",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -99,18 +111,21 @@ describe("sanitizeMessages", () => {
     });
   });
   it("should give non-unique url variables across messages when they match", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"url":"https://www.google.com"}',
-        name: "test",
-      },
-      {
-        role: "function",
-        content: '{"url":"https://www.google.com"}',
-        name: "test",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"url":"https://www.google.com"}',
+          name: "test",
+        },
+        {
+          role: "function",
+          content: '{"url":"https://www.google.com"}',
+          name: "test",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -128,18 +143,21 @@ describe("sanitizeMessages", () => {
     });
   });
   it("should give unique url variables across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content: '{"url":"https://www.google.com"}',
-        name: "test",
-      },
-      {
-        role: "function",
-        content: '{"url":"https://www.superflows.ai"}',
-        name: "test",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content: '{"url":"https://www.google.com"}',
+          name: "test",
+        },
+        {
+          role: "function",
+          content: '{"url":"https://www.superflows.ai"}',
+          name: "test",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
@@ -158,20 +176,23 @@ describe("sanitizeMessages", () => {
     });
   });
   it("mixed example", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages([
-      {
-        role: "function",
-        content:
-          '{"url":"https://www.google.com", "nested": {"an id": "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}}',
-        name: "test",
-      },
-      {
-        role: "function",
-        content:
-          '{"url":"https://www.superflows.ai", "an id": "ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10"}',
-        name: "test",
-      },
-    ]);
+    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      [
+        {
+          role: "function",
+          content:
+            '{"url":"https://www.google.com", "nested": {"an id": "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df"}}',
+          name: "test",
+        },
+        {
+          role: "function",
+          content:
+            '{"url":"https://www.superflows.ai", "an id": "ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10"}',
+          name: "test",
+        },
+      ],
+      false,
+    );
     expect(cleanedMessages).toEqual([
       {
         role: "function",
