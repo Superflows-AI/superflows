@@ -8,7 +8,7 @@
 <h2 align="center" >A chat interface that controls your product via API calls</h3>
 <p align="center"></p>
 
-<p align="center"><a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> ·  <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
+<p align="center"><a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> · <a href="https://superflows.ai/crm-demo">🎮 Demo</a> · <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
 <br />
 
 https://github.com/Superflows-AI/superflows/assets/33871096/77c463c1-5e06-45a8-a32a-9f1fd8af0dac
@@ -25,6 +25,8 @@ or more complex questions like:
 
 A user of feedback software could ask:
 > Which bugs reported by users are the most pressing?
+
+**Check out a demo of Superflows in a CRM [here](https://superflows.ai/crm-demo).**
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
 
