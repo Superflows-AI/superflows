@@ -786,7 +786,7 @@ export async function streamResponseToUser(
   let incompleteChunk = "";
   let first = true;
   // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
-  let variableBuffer = "";
+  let placeholderBuffer = "";
   const placeholderToOriginalMap = originalToPlaceholderMap
     ? swapKeysValues(originalToPlaceholderMap)
     : undefined;
@@ -814,9 +814,9 @@ export async function streamResponseToUser(
       // What streams back to the user has the variables replaced with their real values
       //  so URL1 is replaced by the actual URL
       if (placeholderToOriginalMap) {
-        ({ content, variableBuffer } = replaceVariablesDuringStreaming(
+        ({ content, placeholderBuffer } = replacePlaceholdersDuringStreaming(
           content,
-          variableBuffer,
+          placeholderBuffer,
           placeholderToOriginalMap,
         ));
       }
@@ -832,13 +832,13 @@ export async function streamResponseToUser(
   return rawOutput;
 }
 
-export function replaceVariablesDuringStreaming(
+export function replacePlaceholdersDuringStreaming(
   content: string,
   placeholderBuffer: string,
   placeholderToOriginalMap: Record<string, string>,
 ): {
   content: string;
-  variableBuffer: string;
+  placeholderBuffer: string;
 } {
   // If there's something in the placeholderBuffer, we need to add it to the start of the content
   content = placeholderBuffer + content;
@@ -860,7 +860,7 @@ export function replaceVariablesDuringStreaming(
     }
     // If the variable isn't in the map, it means it's not a variable,
     // this is a rare case where IDX is in the string by chance anyway. Do nothing
-    return { content, variableBuffer: placeholderBuffer };
+    return { content, placeholderBuffer };
   }
 
   // ID7 takes up 2 tokens "ID" and "7", so we need to check if there's a partial
@@ -870,5 +870,5 @@ export function replaceVariablesDuringStreaming(
     placeholderBuffer = content;
     content = "";
   }
-  return { content, variableBuffer: placeholderBuffer };
+  return { content, placeholderBuffer };
 }

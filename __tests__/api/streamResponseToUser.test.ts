@@ -20,7 +20,7 @@ describe("streamResponseToUser", () => {
     expect(out).toEqual("hello");
     expect(mockFn).toBeCalledWith({ role: "assistant", content: "hello" });
   });
-  it("replace ID1 with id value correctly", async () => {
+  it("replace ID1 with original id correctly", async () => {
     const mockReadable = new Readable();
     mockReadable.push(
       'data: {"choices": [{"delta": {"content": "The id is"}}]}',
