@@ -45,6 +45,13 @@ describe("replaceVariablesDuringStreaming", () => {
     expect(out.content).toEqual("URL2 ");
     expect(out.valueVariableBuffer).toEqual("");
   });
+  it("variable in 1 chunk, match", () => {
+    const out = replaceVariablesDuringStreaming("content=URL1 ", "", {
+      URL1: "https://google.com",
+    });
+    expect(out.content).toEqual("content=https://google.com ");
+    expect(out.valueVariableBuffer).toEqual("");
+  });
   it("URL variable, buffer filled, match", () => {
     const out = replaceVariablesDuringStreaming("1 ", "URL", {
       URL1: "https://google.com",
