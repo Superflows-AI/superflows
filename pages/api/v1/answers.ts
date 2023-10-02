@@ -776,7 +776,7 @@ async function storeActionsAwaitingConfirmation(
 export async function streamResponseToUser(
   res: ReadableStream,
   streamInfo: (step: StreamingStepInput) => void,
-  valueVariableMap: Record<string, string>,
+  valueVariableMap?: Record<string, string>,
 ): Promise<string> {
   const decoder = new TextDecoder();
   const reader = res.getReader();
@@ -809,11 +809,13 @@ export async function streamResponseToUser(
       rawOutput += content;
       // What streams back to the user has the variables replaced with their real values
       //  so URL1 is replaced by the actual URL
-      ({ content, valueVariableBuffer } = replaceVariablesDuringStreaming(
-        content,
-        valueVariableBuffer,
-        valueVariableMap,
-      ));
+      if (valueVariableMap) {
+        ({ content, valueVariableBuffer } = replaceVariablesDuringStreaming(
+          content,
+          valueVariableBuffer,
+          valueVariableMap,
+        ));
+      }
 
       if (content) streamInfo({ role: "assistant", content });
     }
