@@ -39,7 +39,7 @@ describe("streamResponseToUser", () => {
     const mockFn = jest.fn();
     // @ts-ignore
     const out = await streamResponseToUser(mockStream, mockFn, {
-      ID1: "53fa4-3f3f3-3f3f3-3f3f3-3f3f3",
+      "53fa4-3f3f3-3f3f3-3f3f3-3f3f3": "ID1",
     });
     expect(out).toEqual("The id is ID1");
     expect(mockFn).toBeCalledWith({ role: "assistant", content: "The id is" });
