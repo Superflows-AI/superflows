@@ -523,8 +523,8 @@ async function Angela( // Good ol' Angela
       console.log("Main system prompt:\n", chatGptPrompt[0].content);
 
       // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
-      // valueVariableMap is a map from the cleaned to the original string
-      const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+      // originalToPlaceholderMap is a map from the original string to the placeholder (URLX/IDX)
+      const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
         chatGptPrompt,
         org.sanitize_urls_first,
       );
@@ -577,7 +577,7 @@ async function Angela( // Good ol' Angela
       let rawOutput = await streamResponseToUser(
         res,
         streamInfo,
-        valueVariableMap,
+        originalToPlaceholderMap,
       );
 
       const newMessage = {
@@ -615,7 +615,7 @@ async function Angela( // Good ol' Angela
             // Re-add long IDs before making calls to the API
             const repopulatedArgs = repopulateVariables(
               command.args,
-              valueVariableMap,
+              originalToPlaceholderMap,
             );
             command.args = repopulatedArgs as FunctionCall["args"];
 
@@ -777,7 +777,7 @@ async function storeActionsAwaitingConfirmation(
 export async function streamResponseToUser(
   res: ReadableStream,
   streamInfo: (step: StreamingStepInput) => void,
-  valueVariableMap?: Record<string, string>,
+  originalToPlaceholderMap?: Record<string, string>,
 ): Promise<string> {
   const decoder = new TextDecoder();
   const reader = res.getReader();
@@ -787,8 +787,8 @@ export async function streamResponseToUser(
   let first = true;
   // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
   let variableBuffer = "";
-  const variableValueMap = valueVariableMap
-    ? swapKeysValues(valueVariableMap)
+  const placeholderToOriginalMap = originalToPlaceholderMap
+    ? swapKeysValues(originalToPlaceholderMap)
     : undefined;
   // https://web.dev/streams/#asynchronous-iteration
   while (!done) {
@@ -813,11 +813,11 @@ export async function streamResponseToUser(
       rawOutput += content;
       // What streams back to the user has the variables replaced with their real values
       //  so URL1 is replaced by the actual URL
-      if (variableValueMap) {
+      if (placeholderToOriginalMap) {
         ({ content, variableBuffer } = replaceVariablesDuringStreaming(
           content,
           variableBuffer,
-          variableValueMap,
+          placeholderToOriginalMap,
         ));
       }
 
@@ -834,39 +834,41 @@ export async function streamResponseToUser(
 
 export function replaceVariablesDuringStreaming(
   content: string,
-  variableBuffer: string,
-  variableValueMap: Record<string, string>,
+  placeholderBuffer: string,
+  placeholderToOriginalMap: Record<string, string>,
 ): {
   content: string;
   variableBuffer: string;
 } {
-  // If there's something in the valueVariableBuffer, we need to add it to the start of the content
-  content = variableBuffer + content;
+  // If there's something in the placeholderBuffer, we need to add it to the start of the content
+  content = placeholderBuffer + content;
   // Empty buffer after adding it to the content
-  variableBuffer = "";
+  placeholderBuffer = "";
 
   // Check if there's a full match: if so, replace the variable with the value
-  const fullVariableMatch = /(URL|ID)[1-9]+/g.exec(content);
-  if (fullVariableMatch !== null) {
+  // Note: we get a full match even if the number hasn't finished outputting (e.g.
+  // URL1 is output, but the next chunk is a 0 to make it URL10)
+  const fullPlaceholderMatch = /(URL|ID)[1-9]+/g.exec(content);
+  if (fullPlaceholderMatch !== null) {
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
-    const matchedString = fullVariableMatch[0];
-    if (matchedString in variableValueMap) {
+    const matchedString = fullPlaceholderMatch[0];
+    if (matchedString in placeholderToOriginalMap) {
       content = content.replaceAll(
         matchedString,
-        variableValueMap[matchedString],
+        placeholderToOriginalMap[matchedString],
       );
     }
     // If the variable isn't in the map, it means it's not a variable,
     // this is a rare case where IDX is in the string by chance anyway. Do nothing
-    return { content, variableBuffer: variableBuffer };
+    return { content, variableBuffer: placeholderBuffer };
   }
 
   // ID7 takes up 2 tokens "ID" and "7", so we need to check if there's a partial
   // match with the first half (which ends immediately after the ID/URL)
-  const partialVariableMatch = /(URL|ID)$/g.exec(content);
-  if (partialVariableMatch !== null) {
-    variableBuffer = content;
+  const partialPlaceholderMatch = /(UR?L?|ID?)$/g.exec(content);
+  if (partialPlaceholderMatch !== null) {
+    placeholderBuffer = content;
     content = "";
   }
-  return { content, variableBuffer: variableBuffer };
+  return { content, variableBuffer: placeholderBuffer };
 }
