@@ -573,7 +573,11 @@ async function Angela( // Good ol' Angela
       }
 
       // Stream response from OpenAI
-      let rawOutput = await streamResponseToUser(res, streamInfo);
+      let rawOutput = await streamResponseToUser(
+        res,
+        streamInfo,
+        valueVariableMap,
+      );
 
       const newMessage = {
         role: "assistant",
@@ -769,16 +773,19 @@ async function storeActionsAwaitingConfirmation(
   }
 }
 
-async function streamResponseToUser(
-  res: ReadableStream<any>,
+export async function streamResponseToUser(
+  res: ReadableStream,
   streamInfo: (step: StreamingStepInput) => void,
-) {
+  valueVariableMap: Record<string, string>,
+): Promise<string> {
   const decoder = new TextDecoder();
   const reader = res.getReader();
   let rawOutput = "";
   let done = false;
   let incompleteChunk = "";
   let first = true;
+  // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
+  let valueVariableBuffer = "";
   // https://web.dev/streams/#asynchronous-iteration
   while (!done) {
     const { value, done: doneReading } = await reader.read();
@@ -790,9 +797,7 @@ async function streamResponseToUser(
       incompleteChunk + decoder.decode(value),
     );
 
-    incompleteChunk = contentItems.incompleteChunk
-      ? contentItems.incompleteChunk
-      : "";
+    incompleteChunk = contentItems.incompleteChunk ?? "";
 
     for (let content of contentItems.completeChunks) {
       // Sometimes starts with a newline
@@ -800,9 +805,17 @@ async function streamResponseToUser(
         content = content.trimStart();
         first = false;
       }
+      // Raw output is the actual output from the LLM!
       rawOutput += content;
+      // What streams back to the user has the variables replaced with their real values
+      //  so URL1 is replaced by the actual URL
+      ({ content, valueVariableBuffer } = replaceVariablesDuringStreaming(
+        content,
+        valueVariableBuffer,
+        valueVariableMap,
+      ));
 
-      streamInfo({ role: "assistant", content });
+      if (content) streamInfo({ role: "assistant", content });
     }
 
     if (contentItems.done) {
@@ -811,4 +824,43 @@ async function streamResponseToUser(
     }
   }
   return rawOutput;
+}
+
+export function replaceVariablesDuringStreaming(
+  content: string,
+  valueVariableBuffer: string,
+  valueVariableMap: Record<string, string>,
+): {
+  content: string;
+  valueVariableBuffer: string;
+} {
+  // If there's something in the valueVariableBuffer, we need to add it to the start of the content
+  content = valueVariableBuffer + content;
+  // Empty buffer after adding it to the content
+  valueVariableBuffer = "";
+
+  // Check if there's a full match: if so, replace the variable with the value
+  const fullVariableMatch = /(URL|ID)[1-9]+/g.exec(content);
+  if (fullVariableMatch !== null) {
+    // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
+    const matchedString = fullVariableMatch[0];
+    if (matchedString in valueVariableMap) {
+      content = content.replaceAll(
+        matchedString,
+        valueVariableMap[matchedString],
+      );
+    }
+    // If the variable isn't in the map, it means it's not a variable,
+    // this is a rare case where IDX is in the string by chance anyway. Do nothing
+    return { content, valueVariableBuffer };
+  }
+
+  // ID7 takes up 2 tokens "ID" and "7", so we need to check if there's a partial
+  // match with the first half (which ends immediately after the ID/URL)
+  const partialVariableMatch = /(URL|ID)$/g.exec(content);
+  if (partialVariableMatch !== null) {
+    valueVariableBuffer = content;
+    content = "";
+  }
+  return { content, valueVariableBuffer };
 }
