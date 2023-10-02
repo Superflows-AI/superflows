@@ -46,6 +46,7 @@ import {
   getTokenCount,
   isValidBody,
   openAiCost,
+  swapKeysValues,
 } from "../../../lib/utils";
 
 export const config = {
@@ -785,7 +786,10 @@ export async function streamResponseToUser(
   let incompleteChunk = "";
   let first = true;
   // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
-  let valueVariableBuffer = "";
+  let variableBuffer = "";
+  const variableValueMap = valueVariableMap
+    ? swapKeysValues(valueVariableMap)
+    : undefined;
   // https://web.dev/streams/#asynchronous-iteration
   while (!done) {
     const { value, done: doneReading } = await reader.read();
@@ -809,11 +813,11 @@ export async function streamResponseToUser(
       rawOutput += content;
       // What streams back to the user has the variables replaced with their real values
       //  so URL1 is replaced by the actual URL
-      if (valueVariableMap) {
-        ({ content, valueVariableBuffer } = replaceVariablesDuringStreaming(
+      if (variableValueMap) {
+        ({ content, variableBuffer } = replaceVariablesDuringStreaming(
           content,
-          valueVariableBuffer,
-          valueVariableMap,
+          variableBuffer,
+          variableValueMap,
         ));
       }
 
@@ -830,39 +834,39 @@ export async function streamResponseToUser(
 
 export function replaceVariablesDuringStreaming(
   content: string,
-  valueVariableBuffer: string,
-  valueVariableMap: Record<string, string>,
+  variableBuffer: string,
+  variableValueMap: Record<string, string>,
 ): {
   content: string;
-  valueVariableBuffer: string;
+  variableBuffer: string;
 } {
   // If there's something in the valueVariableBuffer, we need to add it to the start of the content
-  content = valueVariableBuffer + content;
+  content = variableBuffer + content;
   // Empty buffer after adding it to the content
-  valueVariableBuffer = "";
+  variableBuffer = "";
 
   // Check if there's a full match: if so, replace the variable with the value
   const fullVariableMatch = /(URL|ID)[1-9]+/g.exec(content);
   if (fullVariableMatch !== null) {
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
     const matchedString = fullVariableMatch[0];
-    if (matchedString in valueVariableMap) {
+    if (matchedString in variableValueMap) {
       content = content.replaceAll(
         matchedString,
-        valueVariableMap[matchedString],
+        variableValueMap[matchedString],
       );
     }
     // If the variable isn't in the map, it means it's not a variable,
     // this is a rare case where IDX is in the string by chance anyway. Do nothing
-    return { content, valueVariableBuffer };
+    return { content, variableBuffer: variableBuffer };
   }
 
   // ID7 takes up 2 tokens "ID" and "7", so we need to check if there's a partial
   // match with the first half (which ends immediately after the ID/URL)
   const partialVariableMatch = /(URL|ID)$/g.exec(content);
   if (partialVariableMatch !== null) {
-    valueVariableBuffer = content;
+    variableBuffer = content;
     content = "";
   }
-  return { content, valueVariableBuffer };
+  return { content, variableBuffer: variableBuffer };
 }
