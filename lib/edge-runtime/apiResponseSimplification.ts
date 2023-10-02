@@ -158,7 +158,7 @@ export function repopulateVariables(
   // Deepcopy to prevent mutating the original object
   const objWithIDs = JSON.parse(JSON.stringify(obj));
   // Need a lookup table for the original IDs, which is the reverse of uuidStore
-  valueVariableMap = swapKeysValues(valueVariableMap);
+  const variableValueMap = swapKeysValues(valueVariableMap);
 
   function findAndReplaceID(json: any) {
     // Creates the same iterator for both arrays and objects
@@ -170,13 +170,13 @@ export function repopulateVariables(
           // If string is a path, operate on individual segments - this is for IDs in paths
           const segments = value.split("/");
           for (let i = 0; i < segments.length; i++) {
-            if (valueVariableMap[segments[i]]) {
-              segments[i] = valueVariableMap[segments[i]];
+            if (variableValueMap[segments[i]]) {
+              segments[i] = variableValueMap[segments[i]];
             }
           }
           json[key] = segments.join("/");
-        } else if (valueVariableMap[value]) {
-          json[key] = valueVariableMap[value];
+        } else if (variableValueMap[value]) {
+          json[key] = variableValueMap[value];
         }
       } else if (value && typeof value === "object") {
         findAndReplaceID(value);
