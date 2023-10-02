@@ -2,7 +2,7 @@ import { sanitizeMessages } from "../../lib/edge-runtime/apiResponseSimplificati
 
 describe("sanitizeMessages", () => {
   it("should remove ids from messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -19,12 +19,12 @@ describe("sanitizeMessages", () => {
         name: "test",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df": "ID1",
     });
   });
   it("should give non-unique ids when ids match across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -51,12 +51,12 @@ describe("sanitizeMessages", () => {
         name: "test2",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df": "ID1",
     });
   });
   it("should give unique ids across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -83,13 +83,13 @@ describe("sanitizeMessages", () => {
         name: "test2",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df": "ID1",
       "ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10": "ID2",
     });
   });
   it("should remove urls from messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -106,12 +106,12 @@ describe("sanitizeMessages", () => {
         name: "test",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "https://www.google.com": "URL1",
     });
   });
   it("should give non-unique url variables across messages when they match", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -138,12 +138,12 @@ describe("sanitizeMessages", () => {
         name: "test",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "https://www.google.com": "URL1",
     });
   });
   it("should give unique url variables across messages", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -170,13 +170,13 @@ describe("sanitizeMessages", () => {
         name: "test",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "https://www.google.com": "URL1",
       "https://www.superflows.ai": "URL2",
     });
   });
   it("mixed example", () => {
-    const { cleanedMessages, valueVariableMap } = sanitizeMessages(
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
       [
         {
           role: "function",
@@ -205,7 +205,7 @@ describe("sanitizeMessages", () => {
         name: "test",
       },
     ]);
-    expect(valueVariableMap).toEqual({
+    expect(originalToPlaceholderMap).toEqual({
       "183bd6ff-e8fd-44a6-a3a8-eed9cb1082df": "ID1",
       "ff183bd6-e8fd-a3a8-44a6-82dfeed9cb10": "ID2",
       "https://www.google.com": "URL1",
