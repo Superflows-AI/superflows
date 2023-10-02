@@ -202,6 +202,11 @@ export default function getMessages(
           orgInfo,
           getActionDescriptions(actions),
           language,
+          userCopilotMessages.filter(
+            (m) =>
+              m.role === "function" &&
+              (m.content.includes("ID1") || m.content.includes("URL1")),
+          ).length > 0,
         )
       : simpleChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
@@ -245,6 +250,7 @@ function systemPromptWithActions(
   },
   numberedActions: string,
   language: string | null,
+  includeIdUrlLine: boolean,
 ): ChatGPTMessage {
   return {
     role: "system",
@@ -261,7 +267,11 @@ Today's date is ${new Date().toISOString().split("T")[0]}.
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}"
 ${numberedActions}
-
+${
+  includeIdUrlLine
+    ? "\nIDs and URLs from function calls have been replaced by variables IDX or URLY (where X and Y are numbers). These variables are filled in with the real values, so use IDX or URLY as you would use the URLs and IDs they represent\n"
+    : ""
+}
 To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
 
 Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
