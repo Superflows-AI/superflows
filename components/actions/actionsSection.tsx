@@ -678,7 +678,6 @@ function ActionsSection(props: {
             ))}
           <li
             onClick={async () => {
-              const exampleLen = actions.length;
               const resp = await supabase
                 .from("actions")
                 .insert({
@@ -689,6 +688,7 @@ function ActionsSection(props: {
                   active: true,
                   org_id: profile?.org_id,
                   api_id: props.actionTagJoinActions.api_id,
+                  requires_confirmation: false,
                 })
                 .select();
               if (resp.error) throw resp.error;
