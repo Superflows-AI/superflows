@@ -672,7 +672,7 @@ async function Angela( // Good ol' Angela
                 out = `Failed to call ${url}\n\n${e.toString()}`;
               }
               console.log("Output from API call:", out);
-              const outMessage: GPTMessageInclSummary = {
+              let outMessage: GPTMessageInclSummary = {
                 role: "function",
                 name: command.name,
                 content: typeof out === "string" ? out : JSON.stringify(out),
@@ -685,8 +685,15 @@ async function Angela( // Good ol' Angela
               ) {
                 outMessage.summary = await summarizeText(out, org);
               }
-              streamInfo(outMessage);
               nonSystemMessages.push(outMessage);
+              // We can have issues in the frontend if the content is
+              if (outMessage.summary && outMessage.content.length > 2000) {
+                outMessage = { ...outMessage };
+                outMessage.content =
+                  outMessage.content.slice(0, 2000) +
+                  "... output has been concatenated";
+              }
+              streamInfo(outMessage);
             } else {
               // This adds to the toConfirm array
               return {
