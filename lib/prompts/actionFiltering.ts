@@ -35,7 +35,7 @@ Every line of your response must be in the following format:
 
 {function_name}: Relevant | Irrelevant | Not sure.
 
-Your response must be exactly 13 lines, one line for each function.`,
+Your response must be exactly ${actions.length} lines, one line for each function.`,
     },
     { role: "user", content: userQuery },
   ];
