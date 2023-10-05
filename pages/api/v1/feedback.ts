@@ -138,6 +138,58 @@ export default async function handler(req: NextRequest) {
 
     if (updateError) throw new Error(updateError.message);
 
+    if (
+      process.env.CONTEXT_API_KEY &&
+      process.env.USE_CONTEXT_ON &&
+      org!.id === Number(process.env.USE_CONTEXT_ON)
+    ) {
+      // Note: this doesn't include the system messages
+      const { data: messages, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", requestData.conversation_id)
+        .order("conversation_index", { ascending: true });
+      if (error) throw new Error(error.message);
+
+      const { data: feedbacks, error: feedbackError } = await supabase
+        .from("feedback")
+        .select("*")
+        .eq("conversation_id", requestData.conversation_id)
+        .order("conversation_length_at_feedback", { ascending: true });
+      if (feedbackError) throw new Error(feedbackError.message);
+
+      await fetch("https://api.context.ai/api/v1/log/conversation/upsert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.CONTEXT_API_KEY}`,
+        },
+        body: JSON.stringify({
+          conversation: {
+            messages: messages
+              .map((m, idx) => {
+                const feedback = feedbacks.find(
+                  (f) => f.conversation_length_at_feedback === idx + 1,
+                );
+                if (feedback) {
+                  return {
+                    role: m.role,
+                    message: m.content,
+                    rating: feedback.feedback_positive ? 1 : -1,
+                  };
+                }
+                return {
+                  role: m.role,
+                  message: m.content,
+                };
+              })
+              // Context don't support function messages yet(!)
+              .filter((m) => m.role !== "function"),
+          },
+        }),
+      });
+    }
+
     return new Response(
       JSON.stringify({ message: "Feedback updated successfully" }),
       {
