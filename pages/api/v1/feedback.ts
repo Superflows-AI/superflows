@@ -151,13 +151,6 @@ export default async function handler(req: NextRequest) {
         .order("conversation_index", { ascending: true });
       if (error) throw new Error(error.message);
 
-      const { data: feedbacks, error: feedbackError } = await supabase
-        .from("feedback")
-        .select("*")
-        .eq("conversation_id", requestData.conversation_id)
-        .order("conversation_length_at_feedback", { ascending: true });
-      if (feedbackError) throw new Error(feedbackError.message);
-
       await fetch("https://api.context.ai/api/v1/log/conversation/upsert", {
         method: "POST",
         headers: {
@@ -168,14 +161,11 @@ export default async function handler(req: NextRequest) {
           conversation: {
             messages: messages
               .map((m, idx) => {
-                const feedback = feedbacks.find(
-                  (f) => f.conversation_length_at_feedback === idx + 1,
-                );
-                if (feedback) {
+                if (requestData.conversation_length_at_feedback === idx + 1) {
                   return {
                     role: m.role,
                     message: m.content,
-                    rating: feedback.feedback_positive ? 1 : -1,
+                    rating: requestData.feedback_positive ? 1 : -1,
                   };
                 }
                 return {
