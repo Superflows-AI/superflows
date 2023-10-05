@@ -1,12 +1,37 @@
 import { ChatGPTMessage } from "../models";
 import { Action } from "../types";
-import { getActionDescriptions } from "./chatBot";
+import { getActionDescriptions, getIntroText } from "./chatBot";
+
+export function requestCorrectionSystemPrompt(
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  userDescription: string | undefined,
+): ChatGPTMessage {
+  return {
+    role: "system",
+    content: `${getIntroText(orgInfo)}
+${
+  userDescription
+    ? `\nThe following is a description of the user: ${userDescription}\n`
+    : ""
+}
+The main chatbot AI has made a mistake in a function call. Your role is to output a value for the missing parameter to correct this mistake
+
+If you are unsure of what to output, output "ask user". Avoid asking the user unless you absolutely have to
+
+Output only the response or "ask user"
+
+Today's date is ${new Date().toISOString().split("T")[0]}`,
+  };
+}
 
 export default function requestCorrectionPrompt(
   missingParam: string,
   action: Action,
-): ChatGPTMessage[] | null {
-  const paramDetails = extractParamDetails(
+): ChatGPTMessage | null {
+  const paramDetails = extractRequiredParamDetails(
     getActionDescriptions([action]),
     missingParam,
   );
@@ -20,70 +45,33 @@ It should have no choice associated with it so should be being filled in automat
     return null;
   }
 
-  return [
-    {
-      role: "user",
-      content: `Your previous response was incorrect. For function "${action.name}" your response was missing the required parameter "${missingParam}".
+  return {
+    role: "function",
+    name: action.name,
+    content: `Error: Invalid function call. Function "${action.name}" is missing required parameter "${missingParam}"
 
-Using the information above, output a value for the missing parameter. If you are unsure of what to output, output "ask user" for more information.
-
-As above the parameter will be formatted as: "{{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}
-
-Below are two examples of how to generate your response for the parameter.
-
--- EXAMPLE 1 --
-
-Parameter
----
-
-userId (string): The user's ID
-
-Response
----
-
-abc123
-
--- EXAMPLE 2 --
-
-Parameter
----
-
-userName (string): The user's name
-
-Response
----
-
-ask user
-
--- END OF EXAMPLES --
-
-Provide a response for the parameter below. Follow the format exactly from the examples above. Output only the response or "ask user". Do not output the parameter name or description.
-
-
-Parameter
----
-
-${paramDetails}
-
-Response
----
-
-`,
-    },
-  ];
+Parameter definition:
+${paramDetails}`,
+  };
 }
 
-export function extractParamDetails(
+export function extractRequiredParamDetails(
   query: string,
   paramName: string,
 ): string | null {
   // Matches the parameter name, type within parentheses, and an optional description after the colon.
   const regex = new RegExp(
-    `- ${paramName} \\(([^)]+)\\)(: ([A-Za-z0-9 .,]+))?`,
+    `- ${paramName} \\(([^)]+)\\)(: .*?)? REQUIRED`,
     "gm",
   );
   let match = regex.exec(query);
-  const param = match ? `${match[0]}` : null;
+  if (!match) return null;
   // Don't need the leading dash
-  return param ? param.replace(/^(-)+/, "").trim() : null;
+  return (
+    match[0]
+      // -9 is for the "REQUIRED\n" at the end
+      .slice(0, match[0].length - 9)
+      .replace(/^(-)+/, "")
+      .trim()
+  );
 }
