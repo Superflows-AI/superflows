@@ -384,6 +384,33 @@ export default async function handler(req: NextRequest) {
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);
 
+        if (
+          process.env.CONTEXT_API_KEY &&
+          process.env.USE_CONTEXT_ON &&
+          org!.id === Number(process.env.USE_CONTEXT_ON)
+        ) {
+          await fetch("https://api.context.ai/api/v1/log/conversation/upsert", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.CONTEXT_API_KEY}`,
+            },
+            body: JSON.stringify({
+              conversation: {
+                messages: allMessages
+                  .map((m, idx) => {
+                    return {
+                      role: m.role,
+                      message: m.content,
+                    };
+                  })
+                  // Function messages aren't supported by Context yet
+                  .filter((m) => m.role !== "function"),
+              },
+            }),
+          });
+        }
+
         const todaysDate = new Date().toISOString().split("T")[0];
         const { data, error } = await supabase
           .from("usage")
