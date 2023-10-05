@@ -609,7 +609,19 @@ async function Angela( // Good ol' Angela
             console.log("Processing command: ", command);
             const chosenAction = actions.find((a) => a.name === command.name);
             if (!chosenAction) {
-              throw new Error(`Action ${command.name} not found!`);
+              // There are 2 main failure cases:
+              //  1. Totally useless e.g. FUNCTION_1()
+              //  2. Similar but hallucinated e.g. search_turnips()
+              //
+              // In both cases we continue Angela, skip the command and send a function
+              //  message with an error in it
+              console.warn(`Action ${command.name} not found!`);
+              streamInfo({
+                role: "function",
+                name: command.name,
+                content: `Function ${command.name} is invalid! Do not output this again`,
+              });
+              return;
             }
 
             // Re-add long IDs before making calls to the API
