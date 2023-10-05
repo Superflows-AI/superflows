@@ -48,6 +48,7 @@ import {
   openAiCost,
   swapKeysValues,
 } from "../../../lib/utils";
+import { requestCorrectionSystemPrompt } from "../../../lib/prompts/requestCorrection";
 
 export const config = {
   runtime: "edge",
@@ -628,7 +629,7 @@ async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
-      const toUserCorrect: string[] = [];
+      const toUserCorrect: { functionName: string; param: string }[] = [];
       // Call endpoints here
       const commandMapOutput = (
         await Promise.all(
@@ -658,11 +659,13 @@ async function Angela( // Good ol' Angela
             );
             command.args = repopulatedArgs as FunctionCall["args"];
 
-            const { corrections } = await getMissingArgCorrections(
+            const corrections = await getMissingArgCorrections(
               chosenAction,
               command,
-              chatGptPrompt.concat(newMessage), // This may contain useful information for the correction
-              getSecondaryModel(model),
+              [
+                requestCorrectionSystemPrompt(org, reqData.user_description),
+              ].concat(chatGptPrompt.concat(newMessage).slice(1)), // New message may contain useful information for the correction
+              "gpt-4-0613",
             );
 
             let needsUserCorrection = false;
@@ -675,13 +678,46 @@ async function Angela( // Good ol' Angela
                     .replace(/[^A-Z]+/gi, "")
                     .includes("askuser")
                 ) {
+                  // AI set parameter
                   command.args[param] = response;
                 } else {
+                  // AI said we need to 'Ask user'
                   console.info("Needs user correction: ", param);
                   needsUserCorrection = true;
-                  toUserCorrect.push(param);
+                  toUserCorrect.push({ functionName: command.name, param });
                 }
               }
+              // Update the past assistant message with newly-added parameters (so it looks to future AI
+              //  that it got the call right first time - stops it thinking it can skip required parameters)
+              const newCommandLine = `${command.name}(${Object.entries(
+                command.args,
+              )
+                .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+                .join(", ")})`;
+
+              // Update the last assistant message in the nonSystemMessages array
+              const lastAssistantMessageIndex =
+                nonSystemMessages.length -
+                1 -
+                nonSystemMessages
+                  .reverse()
+                  .findIndex((m) => m.role === "assistant");
+              nonSystemMessages[lastAssistantMessageIndex] = {
+                role: "assistant",
+                content: nonSystemMessages[lastAssistantMessageIndex].content
+                  .split("\n") // Split into lines
+                  .map((line) => {
+                    // Below checks if it's the same function call as the one we're updating
+                    if (
+                      line.startsWith(command.name + "(") &&
+                      line.trim().endsWith(")")
+                    ) {
+                      return newCommandLine;
+                    }
+                    return line;
+                  })
+                  .join("\n"), // Re-join lines
+              };
             }
 
             if (needsUserCorrection) {
@@ -747,18 +783,25 @@ async function Angela( // Good ol' Angela
 
       // Below checks for if there are any 'needs correction' messages
       if (commandMapOutput.some((output) => output === null)) {
-        const correctionMessage = {
-          role: "assistant",
-          content:
-            "<<[NEW-MESSAGE]>>" +
-            "Tell user:\n" +
-            "I'm sorry but I need more information before I can do that, please can you provide: " +
-            toUserCorrect.join("\n"),
-        } as ChatGPTMessage;
-
-        nonSystemMessages.push(correctionMessage);
-        streamInfo(correctionMessage);
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
+        const funcToArrToCorrect: { [param: string]: string[] } = {};
+        toUserCorrect.map((toCorrect) => {
+          if (toCorrect.functionName in funcToArrToCorrect) {
+            funcToArrToCorrect[toCorrect.functionName].push(toCorrect.param);
+          } else {
+            funcToArrToCorrect[toCorrect.functionName] = [toCorrect.param];
+          }
+        });
+        Object.entries(funcToArrToCorrect).map(([functionName, params]) => {
+          const missingParamsMessage = {
+            role: "function",
+            name: functionName,
+            content: `Error: function "${functionName}" is missing the following parameters: "${params.join(
+              ", ",
+            )}\n\nIf you want to call the function again, ask the user for the missing parameters"`,
+          } as ChatGPTMessage;
+          nonSystemMessages.push(missingParamsMessage);
+          streamInfo(missingParamsMessage);
+        });
       }
 
       // This is for typing purposes

@@ -242,6 +242,14 @@ Your reply should be written in ${language}.`
   };
 }
 
+export function getIntroText(orgInfo: { name: string; description: string }) {
+  return `You are ${orgInfo.name || "a"} chatbot AI${
+    orgInfo.description ? " " + orgInfo.description : ""
+  }. Your purpose is to assist users ${
+    orgInfo.name ? `in ${orgInfo.name} ` : ""
+  }via function calls`;
+}
+
 function systemPromptWithActions(
   userDescriptionSection: string,
   orgInfo: {
@@ -254,15 +262,13 @@ function systemPromptWithActions(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `You are ${orgInfo.name} chatbot AI ${
-      orgInfo.description
-    }. Your purpose is to assist users in ${orgInfo.name} via function calls
+    content: `${getIntroText(orgInfo)}
 
 Seek user assistance when necessary or more information is required
 
 Avoid directing users, instead complete tasks by outputting "Commands"
 ${userDescriptionSection}
-Today's date is ${new Date().toISOString().split("T")[0]}.
+Today's date is ${new Date().toISOString().split("T")[0]}
 
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}"

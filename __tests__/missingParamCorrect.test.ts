@@ -38,7 +38,7 @@ describe("missingParamCorrection", () => {
       path: "/api/path/{paramToBeMissing}",
       request_method: "GET",
       request_body_contents: { "application/json": { schema: {} } },
-    };
+    } as unknown as Action;
 
     (getLLMResponse as jest.Mock).mockReturnValue(
       "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
@@ -68,7 +68,7 @@ describe("missingParamCorrection", () => {
       paramToBeMissing:
         "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
     };
-    expect(correctedCommand.corrections).toEqual(expected);
+    expect(correctedCommand).toEqual(expected);
   });
 
   it("POST - missing required body param", async () => {
@@ -93,7 +93,7 @@ describe("missingParamCorrection", () => {
           },
         },
       },
-    };
+    } as unknown as Action;
 
     const originalCommand = {
       name: "testAction",
@@ -119,7 +119,7 @@ describe("missingParamCorrection", () => {
       paramToBeMissing: 1976,
     };
 
-    expect(correctedCommand.corrections).toEqual(expected);
+    expect(correctedCommand).toEqual(expected);
   });
   it("GET - missing multiple query params corrections", async () => {
     const action: Action = {
@@ -147,14 +147,14 @@ describe("missingParamCorrection", () => {
       path: "/api/path/{firstParamToBeMissing}/{secondParamToBeMissing}",
       request_method: "GET",
       request_body_contents: { "application/json": { schema: {} } },
-    };
+    } as unknown as Action;
 
     (getLLMResponse as jest.Mock)
       .mockReturnValueOnce(
-        "i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked",
+        '"i-saw-the-best-minds-of-my-generation-destroyed-by-madness-starving-hysterical-naked"',
       )
       .mockReturnValueOnce(
-        "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo",
+        '"angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo"',
       );
 
     const originalCommand = {
@@ -183,7 +183,7 @@ describe("missingParamCorrection", () => {
       secondParamToBeMissing:
         "angelheaded-hipsters-burning-for-the-ancient-heavenly-connection-to-the-starry-dynamo",
     };
-    expect(correctedCommand.corrections).toEqual(expected);
+    expect(correctedCommand).toEqual(expected);
   });
 
   it("POST - missing required multiple body params", async () => {
@@ -191,7 +191,7 @@ describe("missingParamCorrection", () => {
       .mockReturnValueOnce("1976")
       .mockReturnValueOnce("2020");
 
-    const action: Action = {
+    const action = {
       ...constActionParams,
       parameters: null,
       path: "/leekspin/confirm",
@@ -216,7 +216,7 @@ describe("missingParamCorrection", () => {
           },
         },
       },
-    };
+    } as unknown as Action;
 
     const originalCommand = {
       name: "testAction",
@@ -242,7 +242,7 @@ describe("missingParamCorrection", () => {
       firstParamToBeMissing: 1976,
       secondParamToBeMissing: 2020,
     };
-    expect(correctedCommand.corrections).toEqual(expected);
+    expect(correctedCommand).toEqual(expected);
   });
 
   it(" POST -  missing query and body params", async () => {
@@ -276,7 +276,7 @@ describe("missingParamCorrection", () => {
           },
         },
       },
-    };
+    } as unknown as Action;
 
     (getLLMResponse as jest.Mock)
       .mockReturnValueOnce("1976")
@@ -305,6 +305,6 @@ describe("missingParamCorrection", () => {
       queryParamToBeMissing: "missing-query-param-value",
       bodyParamToBeMissing: 1976,
     };
-    expect(correctedCommand.corrections).toEqual(expected);
+    expect(correctedCommand).toEqual(expected);
   });
 });

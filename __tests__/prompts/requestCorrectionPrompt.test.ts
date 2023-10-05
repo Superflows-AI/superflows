@@ -1,5 +1,5 @@
 import requestCorrectionPrompt, {
-  extractParamDetails,
+  extractRequiredParamDetails,
 } from "../../lib/prompts/requestCorrection";
 import { Action } from "../../lib/types";
 
@@ -36,28 +36,13 @@ const action: Action = {
 
 describe("requestCorrectionPrompt function", () => {
   it("test that action is processed correctly", () => {
-    const expected = `
+    const expected = `Error: Invalid function call. Function \"sampleAction\" is missing required parameter \"conversation_id\"
 
-
-Parameter
----
-
-conversation_id (number): The ID of the conversation. REQUIRED
-
-Response
----
-
-`;
-
+Parameter definition:
+conversation_id (number): The ID of the conversation.`;
     const result = requestCorrectionPrompt("conversation_id", action);
-
     expect(result).not.toBeNull();
-
-    expect(
-      result![0].content.split(
-        `Provide a response for the parameter below. Follow the format exactly from the examples above. Output only the response or "ask user". Do not output the parameter name or description.`,
-      )[1],
-    ).toEqual(expected);
+    expect(result!.content).toEqual(expected);
   });
 
   it("parameter not in action", () => {
@@ -79,9 +64,10 @@ His script is you and me, boy
     - falls (number): to the floor
     - his_trick (string): is you and me
     - boy (string)
-    - exampleParam (string): This is an example parameter`;
+    - exampleParam (string): This is an example parameter REQUIRED
+`;
     const paramName = "exampleParam";
-    expect(extractParamDetails(query, paramName)).toEqual(
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
       "exampleParam (string): This is an example parameter",
     );
   });
@@ -90,7 +76,7 @@ His script is you and me, boy
     const query =
       "- anotherExample (number): This is another example parameter";
     const paramName = "nonExistingParam";
-    expect(extractParamDetails(query, paramName)).toEqual(null);
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(null);
   });
 
   it("should correctly extract parameter no description", () => {
@@ -100,9 +86,10 @@ Demanding Billy Dolls
 And other friends of mine
 Take your time
     
-    - exampleParam (number)`;
+    - exampleParam (number) REQUIRED
+`;
     const paramName = "exampleParam";
-    expect(extractParamDetails(query, paramName)).toEqual(
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
       "exampleParam (number)",
     );
   });
@@ -111,18 +98,37 @@ Take your time
     const query = `
     The sniper in the brain 
     regurgitating drain
-    - exampleParam1 (string): This is an example parameter with a numerical value in its name`;
+    - exampleParam1 (string): This is an example parameter with a numerical value in its name REQUIRED
+`;
     const paramName = "exampleParam1";
-    expect(extractParamDetails(query, paramName)).toEqual(
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
       "exampleParam1 (string): This is an example parameter with a numerical value in its name",
     );
   });
 
   it("should handle spaces in the parameter names", () => {
-    const query = `- example_param (string): This is an example parameter with underscores in its name.`;
+    const query = `- example_param (string): This is an example parameter with underscores in its name. REQUIRED\n`;
     const paramName = "example_param";
-    expect(extractParamDetails(query, paramName)).toEqual(
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
       "example_param (string): This is an example parameter with underscores in its name.",
+    );
+  });
+
+  it("don't cut off punctuation", () => {
+    const query = `
+  - exampleParam (string): This is an example parameter: I hope this - doesn't get cut off! REQUIRED\n`;
+    const paramName = "exampleParam";
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
+      "exampleParam (string): This is an example parameter: I hope this - doesn't get cut off!",
+    );
+  });
+  it("don't cut off punctuation, do cut off new parameters", () => {
+    const query = `
+  - exampleParam (string): This is an example parameter: I hope this - doesn't get cut off! REQUIRED
+  - secondParam (string): This is an example parameter: I hope this - doesn't get cut off!`;
+    const paramName = "exampleParam";
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
+      "exampleParam (string): This is an example parameter: I hope this - doesn't get cut off!",
     );
   });
 });
