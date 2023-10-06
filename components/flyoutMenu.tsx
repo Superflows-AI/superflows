@@ -2,7 +2,7 @@ import React, { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import classNames from "classnames";
-import Flyout from "../Flyout";
+import Flyout from "./Flyout";
 
 export type Item = (
   | {

@@ -16,7 +16,7 @@ import { useProfile } from "./contextManagers/profile";
 import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
-import Flyout from "../Flyout";
+import Flyout from "./flyout";
 import { CheckIcon } from "@heroicons/react/20/solid";
 
 const navigation = [
