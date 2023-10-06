@@ -13,6 +13,8 @@ export async function getMissingArgCorrections(
   previousConversation: ChatGPTMessage[],
   model: string,
 ): Promise<{ [param: string]: "ask user" | any }> {
+  // Deepcopy to ensure no changes are made to the original
+  previousConversation = JSON.parse(JSON.stringify(previousConversation));
   let bodyRequired: string[] = [];
 
   if (action.request_body_contents) {
@@ -47,6 +49,7 @@ export async function getMissingArgCorrections(
         };
       }),
     );
+  if (correctionsList.length === 0) return {};
   return Object.assign(correctionsList[0], ...correctionsList.slice(1));
 }
 

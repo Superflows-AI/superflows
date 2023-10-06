@@ -133,3 +133,12 @@ export function getHost(req: NextRequest) {
   const protocol = req.headers.get("x-forwarded-proto") ?? "http";
   return protocol + "://" + req.headers.get("host");
 }
+
+export function getParam(parameters: Record<string, any>, key: string): any {
+  if (key in parameters) return parameters[key];
+  // Sometimes (rarely) the AI replaces hyphens with underscores. This is a hacky fix
+  const found = Object.keys(parameters).find(
+    (k) => k.replaceAll("-", "_") === key.replaceAll("-", "_"),
+  );
+  if (found) return parameters[found];
+}

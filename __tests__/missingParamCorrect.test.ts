@@ -260,7 +260,7 @@ describe("missingParamCorrection", () => {
         },
       ],
       path: "/api/path/{queryParamToBeMissing}",
-      request_method: "GET",
+      request_method: "POST",
       request_body_contents: {
         "application/json": {
           schema: {
@@ -306,5 +306,48 @@ describe("missingParamCorrection", () => {
       bodyParamToBeMissing: 1976,
     };
     expect(correctedCommand).toEqual(expected);
+  });
+  it("Identify param mistyped with hyphen as underscore version", async () => {
+    const action: Action = {
+      ...constActionParams,
+      parameters: [
+        {
+          name: "query-param-missing",
+          in: "path",
+          description: "This is a description for the missing query parameter",
+          required: true,
+          schema: {
+            type: "string",
+          },
+        },
+      ],
+      path: "/api/path/{query-param-missing}",
+      request_method: "POST",
+    } as unknown as Action;
+
+    (getLLMResponse as jest.Mock).mockReturnValueOnce(
+      "missing-query-param-value",
+    );
+
+    const originalCommand = {
+      name: "testAction",
+      args: { query_param_missing: "abc123" },
+    };
+    const previousConversation = getMessages(
+      [],
+      [action],
+      "",
+      { name: "", description: "" },
+      null,
+    );
+
+    const correctedCommand = await getMissingArgCorrections(
+      action,
+      originalCommand as FunctionCall,
+      previousConversation,
+      "gpt-3.5-turbo",
+    );
+
+    expect(correctedCommand).toEqual({});
   });
 });

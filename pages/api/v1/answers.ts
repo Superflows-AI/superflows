@@ -49,6 +49,7 @@ import {
   swapKeysValues,
 } from "../../../lib/utils";
 import { requestCorrectionSystemPrompt } from "../../../lib/prompts/requestCorrection";
+import { updatePastAssistantMessage } from "../../../lib/edge-runtime/angelaUtils";
 
 export const config = {
   runtime: "edge",
@@ -689,35 +690,7 @@ async function Angela( // Good ol' Angela
               }
               // Update the past assistant message with newly-added parameters (so it looks to future AI
               //  that it got the call right first time - stops it thinking it can skip required parameters)
-              const newCommandLine = `${command.name}(${Object.entries(
-                command.args,
-              )
-                .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-                .join(", ")})`;
-
-              // Update the last assistant message in the nonSystemMessages array
-              const lastAssistantMessageIndex =
-                nonSystemMessages.length -
-                1 -
-                nonSystemMessages
-                  .reverse()
-                  .findIndex((m) => m.role === "assistant");
-              nonSystemMessages[lastAssistantMessageIndex] = {
-                role: "assistant",
-                content: nonSystemMessages[lastAssistantMessageIndex].content
-                  .split("\n") // Split into lines
-                  .map((line) => {
-                    // Below checks if it's the same function call as the one we're updating
-                    if (
-                      line.startsWith(command.name + "(") &&
-                      line.trim().endsWith(")")
-                    ) {
-                      return newCommandLine;
-                    }
-                    return line;
-                  })
-                  .join("\n"), // Re-join lines
-              };
+              updatePastAssistantMessage(command, nonSystemMessages);
             }
 
             if (needsUserCorrection) {
