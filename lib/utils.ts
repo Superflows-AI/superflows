@@ -476,11 +476,16 @@ export function isName(string: string): boolean {
   return /([A-Z]?[a-z-.,]{1,9}\s){1,2}[A-Z]?[a-z-.,]{1,9}/.test(string);
 }
 
+function isMoneyValue(str: string): boolean {
+  return /^[$£€]?\d{1,3},(\d\d\d,){0,2}\d{3}(.\d\d)?$/g.test(str);
+}
+
 export function isID(str: string): boolean {
   if (str.length < 10) return false;
   if (isUUID(str)) return true;
   if (isDate(str)) return false;
   if (isEmail(str)) return false;
+  if (isMoneyValue(str)) return false;
   if (isPhoneNumber(str)) return false;
   if (isName(str)) return false;
   const nTokens = tokenizer.encode(str).length;
