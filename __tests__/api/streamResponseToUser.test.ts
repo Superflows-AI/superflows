@@ -1,5 +1,5 @@
-import { streamResponseToUser } from "../../pages/api/v1/answers";
 import { Readable } from "stream";
+import { streamResponseToUser } from "../../lib/edge-runtime/angelaUtils";
 
 describe("streamResponseToUser", () => {
   it("very simple", async () => {
