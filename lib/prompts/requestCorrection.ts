@@ -35,6 +35,9 @@ export default function requestCorrectionPrompt(
     getActionDescriptions([action]),
     missingParam,
   );
+  console.log(
+    `Extracted missing param called "${missingParam}":\n${paramDetails}`,
+  );
 
   if (!paramDetails) {
     console.warn(
@@ -61,17 +64,13 @@ export function extractRequiredParamDetails(
 ): string | null {
   // Matches the parameter name, type within parentheses, and an optional description after the colon.
   const regex = new RegExp(
-    `- ${paramName} \\(([^)]+)\\)(: .*?)? REQUIRED`,
-    "gm",
+    `- ${paramName} \\(([^)]+)\\)(: .*?)? REQUIRED(.*?\n-)?`,
+    "gs",
   );
   let match = regex.exec(query);
   if (!match) return null;
-  // Don't need the leading dash
-  return (
-    match[0]
-      // -9 is for the "REQUIRED\n" at the end
-      .slice(0, match[0].length - 9)
-      .replace(/^(-)+/, "")
-      .trim()
-  );
+  if (match[0].endsWith("-")) {
+    return match[0].slice(0, -1).trim();
+  }
+  return match[0].trim();
 }

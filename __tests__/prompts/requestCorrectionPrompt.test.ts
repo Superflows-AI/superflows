@@ -39,7 +39,7 @@ describe("requestCorrectionPrompt function", () => {
     const expected = `Error: Invalid function call. Function \"sampleAction\" is missing required parameter \"conversation_id\"
 
 Parameter definition:
-conversation_id (number): The ID of the conversation.`;
+- conversation_id (number): The ID of the conversation. REQUIRED`;
     const result = requestCorrectionPrompt("conversation_id", action);
     expect(result).not.toBeNull();
     expect(result!.content).toEqual(expected);
@@ -68,7 +68,7 @@ His script is you and me, boy
 `;
     const paramName = "exampleParam";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "exampleParam (string): This is an example parameter",
+      "- exampleParam (string): This is an example parameter REQUIRED",
     );
   });
 
@@ -90,7 +90,7 @@ Take your time
 `;
     const paramName = "exampleParam";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "exampleParam (number)",
+      "- exampleParam (number) REQUIRED",
     );
   });
 
@@ -102,7 +102,7 @@ Take your time
 `;
     const paramName = "exampleParam1";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "exampleParam1 (string): This is an example parameter with a numerical value in its name",
+      "- exampleParam1 (string): This is an example parameter with a numerical value in its name REQUIRED",
     );
   });
 
@@ -110,7 +110,7 @@ Take your time
     const query = `- example_param (string): This is an example parameter with underscores in its name. REQUIRED\n`;
     const paramName = "example_param";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "example_param (string): This is an example parameter with underscores in its name.",
+      "- example_param (string): This is an example parameter with underscores in its name. REQUIRED",
     );
   });
 
@@ -119,7 +119,7 @@ Take your time
   - exampleParam (string): This is an example parameter: I hope this - doesn't get cut off! REQUIRED\n`;
     const paramName = "exampleParam";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "exampleParam (string): This is an example parameter: I hope this - doesn't get cut off!",
+      "- exampleParam (string): This is an example parameter: I hope this - doesn't get cut off! REQUIRED",
     );
   });
   it("don't cut off punctuation, do cut off new parameters", () => {
@@ -128,7 +128,30 @@ Take your time
   - secondParam (string): This is an example parameter: I hope this - doesn't get cut off!`;
     const paramName = "exampleParam";
     expect(extractRequiredParamDetails(query, paramName)).toEqual(
-      "exampleParam (string): This is an example parameter: I hope this - doesn't get cut off!",
+      "- exampleParam (string): This is an example parameter: I hope this - doesn't get cut off! REQUIRED",
+    );
+  });
+  it("include full object description", () => {
+    const query = `
+- exampleParam (object): Don't cut this off. REQUIRED
+  - nestedItem (string): This is an example parameter: I hope this - doesn't get cut off!
+  - nestedSecondItem (number): 6
+- secondParam (string): This should be cut off!`;
+    const paramName = "exampleParam";
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
+      "- exampleParam (object): Don't cut this off. REQUIRED\n  - nestedItem (string): This is an example parameter: I hope this - doesn't get cut off!\n  - nestedSecondItem (number): 6",
+    );
+  });
+  it("include full object description, don't include further parameters", () => {
+    const query = `
+- exampleParam (object): Don't cut this off. REQUIRED
+  - nestedItem (string): This is an example parameter: I hope this - doesn't get cut off!
+  - nestedSecondItem (number): 6
+- secondParam (string): This should be cut off!
+- finalParam (string): This should be cut off!`;
+    const paramName = "exampleParam";
+    expect(extractRequiredParamDetails(query, paramName)).toEqual(
+      "- exampleParam (object): Don't cut this off. REQUIRED\n  - nestedItem (string): This is an example parameter: I hope this - doesn't get cut off!\n  - nestedSecondItem (number): 6",
     );
   });
 });
