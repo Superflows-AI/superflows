@@ -110,6 +110,7 @@ function DatesBarGraph(props: {
             <Label
               value={props.ylabel}
               angle={-90}
+              style={{ textAnchor: "middle" }}
               position="insideLeft"
               offset={-5}
             />
@@ -131,27 +132,55 @@ function DatesBarGraph(props: {
 function DashboardNumMessages() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
-  const [numUserMessages, setNumUserMessages] = useState([{}] as {
+  const [queriesTimeseries, setQueriesTimeseries] = useState([{}] as {
     date: string;
     value: number;
   }[]);
-  const [totalMessages, setTotalMessages] = useState(0);
+  const [totalThisMonth, setTotalThisMonth] = useState(0);
+  const [totalLastMonth, setTotalLastMonth] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const today = new Date();
+  const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const startOfPreviousMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    1,
+  );
+  const endOfPreviousMonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const res = await supabase
+      const thisMonthRes = await supabase
         .from("usage")
         .select("*")
-        .eq("org_id", profile?.org_id!);
-      if (res.error) throw res.error;
-      setNumUserMessages(
-        res.data.map((d) => ({ date: d.date, value: d.num_user_queries })),
+        .eq("org_id", profile?.org_id!)
+        .gte("date", firstOfThisMonth.toISOString());
+      if (thisMonthRes.error) throw thisMonthRes.error;
+
+      setQueriesTimeseries(
+        thisMonthRes.data.map((d) => ({
+          date: d.date,
+          value: d.num_user_queries,
+        })),
       );
-      setTotalMessages(
-        res.data.reduce((acc, curr) => acc + curr.num_user_queries, 0),
+      setTotalThisMonth(
+        thisMonthRes.data.reduce((acc, curr) => acc + curr.num_user_queries, 0),
       );
+
+      const lastMonthRes = await supabase
+        .from("usage")
+        .select("*")
+        .eq("org_id", profile?.org_id!)
+        .gte("date", startOfPreviousMonth.toISOString())
+        .lte("date", endOfPreviousMonth.toISOString());
+
+      if (lastMonthRes.error) throw thisMonthRes.error;
+      setTotalLastMonth(
+        lastMonthRes.data.reduce((acc, curr) => acc + curr.num_user_queries, 0),
+      );
+
       setLoading(false);
     })();
   }, [profile, refreshProfile, supabase]);
@@ -163,14 +192,16 @@ function DashboardNumMessages() {
           <div className="text-center">
             <h1 className="text-2xl text-gray-100">Superflows usage</h1>
             <p className="mt-2 text-xl font-bold text-purple-500">
-              {!loading &&
-                `Total user queries: ${Math.round(totalMessages * 100) / 100}`}
+              {!loading && `Total user queries this month: ${totalThisMonth}`}
+            </p>
+            <p className="mt-2 text-lg font-bold text-purple-500">
+              {!loading && `(Last month: ${totalLastMonth})`}
             </p>
           </div>
           <div className="max-w-5xl mx-auto">
             {!loading && (
               <DatesBarGraph
-                data={numUserMessages}
+                data={queriesTimeseries}
                 ylabel="Number of user queries"
               />
             )}
