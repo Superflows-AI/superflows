@@ -689,8 +689,9 @@ async function Angela( // Good ol' Angela
                   toUserCorrect.push({ functionName: command.name, param });
                 }
               }
-              // Update the past assistant message with newly-added parameters (so it looks to future AI
-              //  that it got the call right first time - stops it thinking it can skip required parameters)
+              // Update the past assistant message with all newly-added parameters (so it looks to future AI
+              //  that it got the call right first time - stops it thinking it can skip required parameters).
+              //  All are added since `command.args` has all the newly-added parameters
               updatePastAssistantMessage(command, nonSystemMessages);
             }
 
@@ -757,6 +758,7 @@ async function Angela( // Good ol' Angela
 
       // Below checks for if there are any 'needs correction' messages
       if (commandMapOutput.some((output) => output === null)) {
+        // funcToArrToCorrect maps from function name to array of parameters that need user correction
         const funcToArrToCorrect: { [param: string]: string[] } = {};
         toUserCorrect.map((toCorrect) => {
           if (toCorrect.functionName in funcToArrToCorrect) {
@@ -765,6 +767,7 @@ async function Angela( // Good ol' Angela
             funcToArrToCorrect[toCorrect.functionName] = [toCorrect.param];
           }
         });
+        // For each function that has parameters requiring correction, send an error function message
         Object.entries(funcToArrToCorrect).map(([functionName, params]) => {
           const missingParamsMessage = {
             role: "function",
