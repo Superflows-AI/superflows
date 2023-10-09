@@ -134,4 +134,63 @@ describe("updatePastAssistantMessage", () => {
       },
     ]);
   });
+  it("multiple new parameters", () => {
+    const pastMessages: GPTMessageInclSummary[] = [
+      { role: "user", content: "Test my application" },
+      {
+        role: "assistant",
+        content:
+          "Reasoning:\nHere's some thinking\n\nPlan:\n- Go to the shops\n\nCommands:\ntest(a=b)",
+      },
+      {
+        role: "function",
+        name: "test",
+        content: "This test was successful",
+      },
+      {
+        role: "assistant",
+        content:
+          "Reasoning:\nHere's some thinking\n\nPlan:\n- Go to the shops\n\nCommands:\ntest(a=b)\nanother_test()",
+      },
+      {
+        role: "function",
+        name: "another_test",
+        content: "This other test was successful",
+      },
+    ];
+    updatePastAssistantMessage(
+      {
+        name: "test",
+        args: {
+          a: "b",
+          requiredArg: "Second arg",
+          anotherRequiredArg: "Third arg",
+        },
+      },
+      pastMessages,
+    );
+    expect(pastMessages).toEqual([
+      { role: "user", content: "Test my application" },
+      {
+        role: "assistant",
+        content:
+          "Reasoning:\nHere's some thinking\n\nPlan:\n- Go to the shops\n\nCommands:\ntest(a=b)",
+      },
+      {
+        role: "function",
+        name: "test",
+        content: "This test was successful",
+      },
+      {
+        role: "assistant",
+        content:
+          'Reasoning:\nHere\'s some thinking\n\nPlan:\n- Go to the shops\n\nCommands:\ntest(a="b", requiredArg="Second arg", anotherRequiredArg="Third arg")\nanother_test()',
+      },
+      {
+        role: "function",
+        name: "another_test",
+        content: "This other test was successful",
+      },
+    ]);
+  });
 });
