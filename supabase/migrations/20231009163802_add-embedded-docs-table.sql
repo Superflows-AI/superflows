@@ -1,0 +1,47 @@
+create extension if not exists "vector" with schema "extensions";
+create sequence "public"."docs_id_seq";
+create table "public"."docs" (
+    "id" integer not null default nextval('docs_id_seq'::regclass),
+    "text_chunk" text not null,
+    "embedding" vector(1536),
+    "org_id" bigint not null
+);
+alter table "public"."docs" enable row level security;
+alter sequence "public"."docs_id_seq" owned by "public"."docs"."id";
+CREATE UNIQUE INDEX docs_pkey ON public.docs USING btree (id);
+alter table "public"."docs"
+add constraint "docs_pkey" PRIMARY KEY using index "docs_pkey";
+alter table "public"."docs"
+add constraint "docs_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) not valid;
+alter table "public"."docs" validate constraint "docs_org_id_fkey";
+create policy "Enable select for users based on organization id" on "public"."docs" as permissive for
+select to public using (
+        (
+            auth.uid() IN (
+                SELECT profiles.id
+                FROM profiles
+                WHERE (profiles.org_id = docs.org_id)
+            )
+        )
+    );
+-- Similarity search
+create or replace function match_embeddings (
+        query_embedding vector(1536),
+        similarity_threshold float,
+        match_count int,
+        _org_id int
+    ) returns table (
+        id integer,
+        text_chunk text,
+        similarity float
+    ) language plpgsql as $$ begin return query
+select docs.id,
+    docs.text_chunk,
+    1 - (docs.embedding <=> query_embedding) as similarity
+from docs
+where 1 - (docs.embedding <=> query_embedding) > similarity_threshold
+    and docs.org_id = _org_id
+order by docs.embedding <=> query_embedding
+limit match_count;
+end;
+$$;
