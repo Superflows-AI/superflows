@@ -275,7 +275,9 @@ export default async function handler(req: NextRequest) {
       conversationId = convoInsertRes.data.id;
     }
     // If the language is not set, try to detect it using detectlanguage.com
-    if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
+    if (org.language !== "Detect Language") {
+      language = org.language;
+    } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
       language = await getLanguage(requestData.user_input);
     }
     const newUserMessage: ChatGPTMessage = {
