@@ -267,6 +267,34 @@ export interface Database {
           },
         ];
       };
+      docs: {
+        Row: {
+          embedding: string | null;
+          id: number;
+          org_id: number;
+          text_chunk: string;
+        };
+        Insert: {
+          embedding?: string | null;
+          id?: number;
+          org_id: number;
+          text_chunk: string;
+        };
+        Update: {
+          embedding?: string | null;
+          id?: number;
+          org_id?: number;
+          text_chunk?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "docs_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       feedback: {
         Row: {
           conversation_id: number;
@@ -500,7 +528,19 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      match_embeddings: {
+        Args: {
+          query_embedding: string;
+          similarity_threshold: number;
+          match_count: number;
+          _org_id: number;
+        };
+        Returns: {
+          id: number;
+          text_chunk: string;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
