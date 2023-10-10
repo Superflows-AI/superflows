@@ -8,6 +8,10 @@ import { z } from "zod";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
 import {
+  streamResponseToUser,
+  updatePastAssistantMessage,
+} from "../../../lib/edge-runtime/angelaUtils";
+import {
   repopulateVariables,
   sanitizeMessages,
 } from "../../../lib/edge-runtime/apiResponseSimplification";
@@ -15,15 +19,16 @@ import { filterActions } from "../../../lib/edge-runtime/filterActions";
 import { getMissingArgCorrections } from "../../../lib/edge-runtime/missingParamCorrection";
 import {
   constructHttpRequest,
+  getDocsChatRequest,
   makeHttpRequest,
   processAPIoutput,
 } from "../../../lib/edge-runtime/requests";
 import summarizeText from "../../../lib/edge-runtime/summarize";
 import {
   DBChatMessageToGPT,
+  MessageInclSummaryToGPT,
   getFreeTierUsage,
   getHost,
-  MessageInclSummaryToGPT,
   removeOldestFunctionCalls,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
@@ -35,6 +40,7 @@ import {
   StreamingStepInput,
 } from "../../../lib/models";
 import getMessages from "../../../lib/prompts/chatBot";
+import { requestCorrectionSystemPrompt } from "../../../lib/prompts/requestCorrection";
 import { streamLLMResponse } from "../../../lib/queryLLM";
 import {
   ActionPlusApiInfo,
@@ -46,11 +52,6 @@ import {
   isValidBody,
   openAiCost,
 } from "../../../lib/utils";
-import { requestCorrectionSystemPrompt } from "../../../lib/prompts/requestCorrection";
-import {
-  streamResponseToUser,
-  updatePastAssistantMessage,
-} from "../../../lib/edge-runtime/angelaUtils";
 
 export const config = {
   runtime: "edge",
@@ -748,8 +749,12 @@ async function Angela( // Good ol' Angela
 
             if (!chosenAction.requires_confirmation) {
               const { url, requestOptions } =
-                constructHttpRequest(actionToHttpRequest);
+                chosenAction.name === "get_info_from_docs"
+                  ? getDocsChatRequest(chosenAction, reqData.user_input, org.id)
+                  : constructHttpRequest(actionToHttpRequest);
+
               let out;
+
               try {
                 out = await makeHttpRequest(url, requestOptions, currentHost);
                 out = processAPIoutput(out, chosenAction);

@@ -295,6 +295,8 @@ export default function EditActionModal(props: {
           <a
             className="text-blue-500 hover:underline"
             href={"https://editor.swagger.io/"}
+            target="_blank"
+            rel="noreferrer"
           >
             See examples (in YAML, not JSON) here
           </a>

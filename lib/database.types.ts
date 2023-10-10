@@ -530,7 +530,7 @@ export interface Database {
     Functions: {
       match_embeddings: {
         Args: {
-          query_embedding: string;
+          query_embedding: unknown;
           similarity_threshold: number;
           match_count: number;
           _org_id: number;
