@@ -91,18 +91,24 @@ Set up an account on https://detectlanguage.com/ and add the api key as NEXT_PUB
 }
 
 let redis: Redis | null = null,
-  ratelimit: Ratelimit | null = null;
+  ratelimitFree: Ratelimit | null = null,
+  ratelimitProduction: Ratelimit | null = null;
 if (
   process.env.UPSTASH_REDIS_REST_URL &&
   process.env.UPSTASH_REDIS_REST_TOKEN
 ) {
   redis = Redis.fromEnv();
 
-  // Create a new ratelimiter, that allows 3 requests per 10 seconds
-  ratelimit = new Ratelimit({
+  // Free tier rate limit is 3 requests per 10 seconds
+  ratelimitFree = new Ratelimit({
     redis: redis,
-    // TODO: When someone is in production, this should be raised
     limiter: Ratelimit.slidingWindow(3, "10 s"),
+  });
+  // TODO: Raise this limit when necessary
+  // Production tier rate limit is 30 requests per 10 seconds
+  ratelimitProduction = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(30, "10 s"),
   });
 }
 
@@ -147,9 +153,9 @@ export default async function handler(req: NextRequest) {
       });
     }
 
-    // Check that the user hasn't surpassed the rate limit
-    if (ratelimit) {
-      const { success } = await ratelimit.limit(orgApiKey);
+    // Check that the user hasn't surpassed the production rate limit (protects DB query below)
+    if (ratelimitProduction) {
+      const { success } = await ratelimitProduction.limit(orgApiKey);
       if (!success) {
         return new Response(JSON.stringify({ error: "Rate limit hit" }), {
           status: 429,
@@ -172,6 +178,23 @@ export default async function handler(req: NextRequest) {
         status: 401,
         headers,
       });
+    }
+
+    // If free tier user, check that the user hasn't surpassed the free tier rate limit
+    if (ratelimitFree && !org.is_paid[0].is_premium) {
+      const { success } = await ratelimitFree.limit(orgApiKey);
+      if (!success) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Rate limit hit - upgrade to a paid tier to use a higher rate limit",
+          }),
+          {
+            status: 429,
+            headers,
+          },
+        );
+      }
     }
 
     // Check the cookie to see if the user is logged in via supabase (in playground) or not
