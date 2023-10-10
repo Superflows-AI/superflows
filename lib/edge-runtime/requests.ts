@@ -2,8 +2,8 @@ import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
-import { Action } from "../types";
-import { deduplicateArray, filterKeys, swapKeysValues, isID } from "../utils";
+import { Action, ActionPlusApiInfo } from "../types";
+import { deduplicateArray, filterKeys } from "../utils";
 import { getHeader, getJsonMIMEType, getParam } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
@@ -295,4 +295,25 @@ export async function makeHttpRequest(
     return res.text();
   }
   return responseText;
+}
+
+export function getDocsChatRequest(
+  chosenAction: ActionPlusApiInfo,
+  user_input: string,
+  org_id: number,
+): { url: any; requestOptions: any } {
+  return {
+    url: endpointUrlFromAction({
+      api_host: chosenAction.api.api_host,
+      path: chosenAction.path!,
+    }),
+    requestOptions: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: user_input,
+        org_id: org_id,
+      }),
+    },
+  };
 }
