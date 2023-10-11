@@ -105,12 +105,16 @@ function Dashboard() {
       : [];
     return [...finetunedGPTDefault, ...allLLMsBase, ...openRouterModels];
   });
-  const [llm, setLlm] = React.useState<string>(
-    profile ? profile!.organizations!.model : "gpt-4-0613",
+  const [llm, setLlm] = React.useState<null | string>(
+    profile?.organizations?.model ?? null,
   );
+  const [loaded, setLoaded] = React.useState<boolean>(false);
   useEffect(() => {
-    if (profile && profile?.organizations?.model !== llm)
+    if (profile && !loaded) {
+      setLoaded(true);
       setLlm(profile!.organizations!.model);
+      setLlmLanguage(profile!.organizations!.language);
+    }
   }, [profile]);
 
   useEffect(() => {
@@ -135,8 +139,8 @@ function Dashboard() {
       ]);
     }
   }, [profile?.organizations?.finetuned_models]);
-  const [llmLanguage, setLlmLanguage] = React.useState<string>(
-    profile ? profile!.organizations!.language : "Detect Language",
+  const [llmLanguage, setLlmLanguage] = React.useState<null | string>(
+    profile?.organizations?.language ?? null,
   );
 
   return (
