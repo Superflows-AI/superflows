@@ -82,6 +82,13 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
 if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
 }
+if (!process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
+  console.warn(
+    `Warning: NEXT_PUBLIC_DETECT_LANGUAGE_KEY environment variable is not defined!
+
+Set up an account on https://detectlanguage.com/ and add the api key as NEXT_PUBLIC_DETECT_LANGUAGE_KEY to ensure Superflows replies in the same language the user writes in.`,
+  );
+}
 
 let redis: Redis | null = null,
   ratelimit: Ratelimit | null = null;
