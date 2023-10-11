@@ -1,4 +1,4 @@
-import { Disclosure } from "@headlessui/react";
+import { CheckIcon } from "@heroicons/react/20/solid";
 import {
   ArrowRightOnRectangleIcon,
   BookOpenIcon,
@@ -13,11 +13,10 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { classNames } from "../lib/utils";
 import { useProfile } from "./contextManagers/profile";
+import Flyout from "./flyout";
 import FlyoutMenu from "./flyoutMenu";
 import { GitHubIcon, SlackIcon } from "./icons";
 import WarningModal from "./warningModal";
-import Flyout from "./flyout";
-import { CheckIcon } from "@heroicons/react/20/solid";
 
 const navigation = [
   { name: "Playground", href: "/" },
@@ -26,6 +25,7 @@ const navigation = [
   { name: "Project", href: "/project" },
   { name: "API", href: "/api-settings" },
   { name: "Usage", href: "/usage" },
+  { name: "Chat to docs", href: "/chat-to-docs" },
   // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
