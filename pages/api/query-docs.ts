@@ -2,7 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import { queryEmbedding } from "../../lib/queryLLM";
-import { exponentialRetryWrapper, isValidBody } from "../../lib/utils";
+import {
+  exponentialRetryWrapper,
+  getTokenCount,
+  isValidBody,
+} from "../../lib/utils";
 import { Database } from "../../lib/database.types";
 
 const supabase = createClient<Database>(
@@ -12,6 +16,7 @@ const supabase = createClient<Database>(
 
 const SwaggerEndpointZod = z.object({
   org_id: z.number(),
+  tokenCount: z.number(),
   query: z.string(),
 });
 type SwaggerEndpointType = z.infer<typeof SwaggerEndpointZod>;
@@ -48,19 +53,60 @@ export default async function handler(
     query_embedding: embedding[0],
     // Magic number - cosine distance threshold used in matching embeddings
     // this was determined empirically.
-    similarity_threshold: 0,
+    similarity_threshold: 0.4,
     // Max number of matches to output
-    match_count: 3,
-    _org_id: 1,
+    match_count: 100,
+    _org_id: req.body.org_id,
   });
-
   if (error) throw new Error(error.message);
 
-  const output: { rank: number; doc_chunk: string }[] = [];
-
-  for (let i = 0; i < data.length; i++) {
-    output.push({ rank: i, doc_chunk: data[i].text_chunk });
+  if (!data || data.length === 0) {
+    res.status(200).json({ message: "No relevant documentation found" });
+    return;
   }
 
-  res.status(200).json(output);
+  const remaining = 8192 - req.body.tokenCount;
+
+  const maxTokens =
+    remaining > 700 ? 500 : remaining > 200 ? remaining - 200 : remaining;
+
+  const dataKeep = [];
+  let runningTokenCount = 0;
+  for (const chunk of data) {
+    runningTokenCount += getTokenCount([
+      { role: "assistant", content: chunk.text_chunk },
+    ]);
+
+    if (runningTokenCount > maxTokens) break;
+
+    if (chunk.similarity > 0.8) {
+      dataKeep.push(chunk);
+      continue;
+    }
+    // If we've got over 300 tokens of > 0.8 similarity text, we're done
+    if (chunk.similarity < 0.8 && runningTokenCount > 300) break;
+
+    // Otherwise go up to the max token limit
+    dataKeep.push(chunk);
+  }
+
+  console.log(
+    `Selected relevant doc chunks for user query "${
+      req.body.query
+    }":\n${dataKeep
+      .map(
+        (chunk, idx) =>
+          `Chunk${idx + 1}. Similarity ${
+            Math.round(chunk.similarity * 100) / 100
+          }\n${chunk.text_chunk.trim()}`,
+      )
+      .join("\n\n")}"}"`,
+  );
+
+  res.status(200).json(
+    dataKeep.map((chunk, idx) => ({
+      rank: idx + 1,
+      doc_chunk: chunk.text_chunk,
+    })),
+  );
 }

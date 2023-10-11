@@ -301,6 +301,7 @@ export function getDocsChatRequest(
   chosenAction: ActionPlusApiInfo,
   user_input: string,
   org_id: number,
+  tokenCount: number,
 ): { url: any; requestOptions: any } {
   return {
     url: endpointUrlFromAction({
@@ -312,7 +313,8 @@ export function getDocsChatRequest(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         query: user_input,
-        org_id: org_id,
+        org_id,
+        tokenCount,
       }),
     },
   };
