@@ -155,12 +155,16 @@ export default async function handler(req: NextRequest) {
 
     // Check that the user hasn't surpassed the production rate limit (protects DB query below)
     if (ratelimitProduction) {
+      // If over limit, success is false
       const { success } = await ratelimitProduction.limit(orgApiKey);
       if (!success) {
-        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
-          status: 429,
-          headers,
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limit hit (30 requests/10s)" }),
+          {
+            status: 429,
+            headers,
+          },
+        );
       }
     }
 
@@ -182,12 +186,13 @@ export default async function handler(req: NextRequest) {
 
     // If free tier user, check that the user hasn't surpassed the free tier rate limit
     if (ratelimitFree && !org.is_paid[0].is_premium) {
+      // If over limit, success is false
       const { success } = await ratelimitFree.limit(orgApiKey);
       if (!success) {
         return new Response(
           JSON.stringify({
             error:
-              "Rate limit hit - upgrade to a paid tier to use a higher rate limit",
+              "Rate limit hit (3 requests/10s) - upgrade to a paid tier to use a higher rate limit",
           }),
           {
             status: 429,

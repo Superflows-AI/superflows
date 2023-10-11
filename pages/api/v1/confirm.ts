@@ -101,10 +101,13 @@ export default async function handler(req: NextRequest) {
     if (ratelimitProduction) {
       const { success } = await ratelimitProduction.limit(token);
       if (!success) {
-        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
-          status: 429,
-          headers,
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limit hit (30 requests/10s)" }),
+          {
+            status: 429,
+            headers,
+          },
+        );
       }
     }
 
@@ -132,7 +135,7 @@ export default async function handler(req: NextRequest) {
         return new Response(
           JSON.stringify({
             error:
-              "Rate limit hit - upgrade to a paid tier to use a higher rate limit",
+              "Rate limit hit (3 requests/10s) - upgrade to a paid tier to use a higher rate limit",
           }),
           {
             status: 429,
