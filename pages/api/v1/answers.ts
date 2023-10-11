@@ -750,7 +750,12 @@ async function Angela( // Good ol' Angela
             if (!chosenAction.requires_confirmation) {
               const { url, requestOptions } =
                 chosenAction.name === "get_info_from_docs"
-                  ? getDocsChatRequest(chosenAction, reqData.user_input, org.id)
+                  ? getDocsChatRequest(
+                      chosenAction,
+                      reqData.user_input,
+                      org.id,
+                      tokenCount,
+                    )
                   : constructHttpRequest(actionToHttpRequest);
 
               let out;
