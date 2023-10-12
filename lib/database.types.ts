@@ -269,22 +269,37 @@ export interface Database {
       };
       docs: {
         Row: {
+          chunk_idx: number;
           embedding: string | null;
           id: number;
           org_id: number;
+          page_title: string | null;
+          page_url: string | null;
+          section_title: string | null;
           text_chunk: string;
+          window_length: number;
         };
         Insert: {
+          chunk_idx: number;
           embedding?: string | null;
           id?: number;
           org_id: number;
+          page_title?: string | null;
+          page_url?: string | null;
+          section_title?: string | null;
           text_chunk: string;
+          window_length: number;
         };
         Update: {
+          chunk_idx?: number;
           embedding?: string | null;
           id?: number;
           org_id?: number;
+          page_title?: string | null;
+          page_url?: string | null;
+          section_title?: string | null;
           text_chunk?: string;
+          window_length?: number;
         };
         Relationships: [
           {
@@ -419,6 +434,7 @@ export interface Database {
       organizations: {
         Row: {
           api_key: string;
+          chat_to_docs_enabled: boolean;
           created_at: string | null;
           description: string;
           id: number;
@@ -430,6 +446,7 @@ export interface Database {
         };
         Insert: {
           api_key?: string;
+          chat_to_docs_enabled?: boolean;
           created_at?: string | null;
           description?: string;
           id?: number;
@@ -441,6 +458,7 @@ export interface Database {
         };
         Update: {
           api_key?: string;
+          chat_to_docs_enabled?: boolean;
           created_at?: string | null;
           description?: string;
           id?: number;

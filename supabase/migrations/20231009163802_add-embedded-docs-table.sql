@@ -6,10 +6,10 @@ create table "public"."docs" (
     "embedding" vector(1536),
     "org_id" bigint not null,
     "page_url" text,
-    "chunk_idx": integer not null,
+    "chunk_idx" integer not null,
     "page_title" text,
     "section_title" text,
-    "window_length" integer not null,
+    "window_length" integer not null
 );
 alter table "public"."docs" enable row level security;
 alter sequence "public"."docs_id_seq" owned by "public"."docs"."id";
