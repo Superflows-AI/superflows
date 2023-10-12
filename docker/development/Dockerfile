@@ -10,8 +10,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # to the /app working directory
 COPY package*.json ./
 # Install dependencies in /app
-RUN npm install 
-# RUN npm i && npm cache clean --force
+RUN npm i && npm cache clean --force
 # Copy the rest of our Next.js folder into /app
 COPY . /app
 
