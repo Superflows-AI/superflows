@@ -539,6 +539,11 @@ export interface Database {
           id: number;
           text_chunk: string;
           similarity: number;
+          page_url: string;
+          chunk_idx: number;
+          page_title: string;
+          section_title: string;
+          window_length: number;
         }[];
       };
     };

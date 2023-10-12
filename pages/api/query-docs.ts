@@ -47,14 +47,9 @@ export default async function handler(
     3,
   );
 
-  // TODO: For now just returning the top 3 matches. Need to think about length
-  // and the actual similarity threshold to use.
   const { data, error } = await supabase.rpc("match_embeddings", {
     query_embedding: embedding[0],
-    // Magic number - cosine distance threshold used in matching embeddings
-    // this was determined empirically.
     similarity_threshold: 0.4,
-    // Max number of matches to output
     match_count: 100,
     _org_id: req.body.org_id,
   });

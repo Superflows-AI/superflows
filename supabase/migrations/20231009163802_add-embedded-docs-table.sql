@@ -4,7 +4,12 @@ create table "public"."docs" (
     "id" integer not null default nextval('docs_id_seq'::regclass),
     "text_chunk" text not null,
     "embedding" vector(1536),
-    "org_id" bigint not null
+    "org_id" bigint not null,
+    "page_url" text,
+    "chunk_idx": integer not null,
+    "page_title" text,
+    "section_title" text,
+    "window_length" integer not null,
 );
 alter table "public"."docs" enable row level security;
 alter sequence "public"."docs_id_seq" owned by "public"."docs"."id";
@@ -33,7 +38,12 @@ create or replace function match_embeddings (
     ) returns table (
         id integer,
         text_chunk text,
-        similarity float
+        similarity float,
+        page_url text,
+        chunk_idx integer,
+        page_title text,
+        section_title text,
+        window_length integer
     ) language plpgsql as $$ begin return query
 select docs.id,
     docs.text_chunk,
