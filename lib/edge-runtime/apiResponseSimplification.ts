@@ -126,7 +126,8 @@ export function sanitizeMessages(
   let idStore: StringMapping = {},
     urlStore: StringMapping = {};
   const cleanedMessages = messages.map((message) => {
-    if (message.role === "function") {
+    // // I THOUGHT YOU COULD AND RANDO ROLES BUT YOU CANNT
+    if (message.role === "function" || message.role === "documentation") {
       try {
         let cleanedObject = JSON.parse(message.content);
         if (sanitizeUrlsFirst) {

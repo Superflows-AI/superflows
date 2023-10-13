@@ -147,6 +147,7 @@ export default function Playground() {
             apis,
             mockApiResponses,
             userApiKey,
+            profile?.organizations?.chat_to_docs_enabled ?? false,
           )}
           mockAPIresponses={!!mockApiResponses}
         />
@@ -243,14 +244,22 @@ function getErrorMessage(
   apis: Api[] | null,
   mockApiResponses: boolean | null,
   userApiKey: string,
+  chatToDocsEnabled: boolean,
 ): string {
   // Error message is delivered in stages so that the user can fix one thing at a time
-  if (numActions === 0) return "You need to add actions (Actions tab)";
+  if (numActions === 0 && !chatToDocsEnabled)
+    return "You need to add actions (Actions tab)";
 
-  if (apis?.length && apis.some((api) => !api.api_host) && !mockApiResponses)
+  if (
+    apis?.length &&
+    apis.some((api) => !api.api_host) &&
+    !mockApiResponses &&
+    !chatToDocsEnabled
+  )
     return "You need to add API hosts (Actions tab), or turn on mock API responses.";
 
-  if (!userApiKey && !mockApiResponses) return "You need to add an API key ->";
+  if (!userApiKey && !mockApiResponses && !chatToDocsEnabled)
+    return "You need to add an API key ->";
 
   return "";
 }

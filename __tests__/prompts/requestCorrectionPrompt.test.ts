@@ -32,6 +32,7 @@ const action: Action = {
   request_method: "get",
   responses: {},
   tag: 1,
+  requires_confirmation: false,
 };
 
 describe("requestCorrectionPrompt function", () => {

@@ -21,6 +21,7 @@ function ChatToDocsPage() {
   const { profile } = useProfile();
 
   const [orgHasDocs, setOrgHasDocs] = useState<boolean>(false);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -29,12 +30,29 @@ function ChatToDocsPage() {
         .select("*")
         .eq("org_id", profile?.organizations?.id!)
         .limit(1);
-
       if (data && data.length === 1) setOrgHasDocs(true);
+
+      const { data: data2 } = await supabase
+        .from("organizations")
+        .select("chat_to_docs_enabled")
+        .eq("id", profile?.organizations?.id!)
+        .single();
+
+      if (data2) setEnabled(data2.chat_to_docs_enabled);
     })();
   }, [profile, supabase]);
 
-  const [enabled, setEnabled] = useState<boolean>(false);
+  useEffect(() => {
+    (async () => {
+      if (enabled === null) return;
+      const { error } = await supabase
+        .from("organizations")
+        .update({ chat_to_docs_enabled: enabled })
+        .eq("id", profile?.organizations?.id!);
+      if (error) throw new Error(error.message);
+    })();
+  }, [enabled, profile, supabase]);
+
   return (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={"Chat to docs"} />
@@ -51,7 +69,11 @@ function ChatToDocsPage() {
               <div className="col-start-1 flex flex-col place-items-start">
                 <h2 className="text-lg text-gray-200 ">Enable Chat to Docs</h2>
               </div>
-              <Toggle enabled={enabled} setEnabled={setEnabled} size="md" />
+              <Toggle
+                enabled={enabled || false}
+                setEnabled={setEnabled}
+                size="md"
+              />
             </div>
           ) : (
             <h2 className="text-lg text-gray-500 mt-8">

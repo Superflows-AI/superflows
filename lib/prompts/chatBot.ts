@@ -188,6 +188,7 @@ export default function getMessages(
   orgInfo: {
     name: string;
     description: string;
+    chat_to_docs_enabled?: boolean;
   },
   language: string | null,
 ): ChatGPTMessage[] {
@@ -208,9 +209,54 @@ export default function getMessages(
               (m.content.includes("ID1") || m.content.includes("URL1")),
           ).length > 0,
         )
+      : orgInfo.chat_to_docs_enabled
+      ? chatToDocsPrompt(userDescriptionSection, orgInfo, language)
       : simpleChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
   ];
+}
+
+function chatToDocsPrompt(
+  userDescriptionSection: string,
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  language: string | null,
+): ChatGPTMessage {
+  return {
+    role: "system",
+    content: `You are ${orgInfo.name || "a"} chatbot AI${
+      orgInfo.description ? " " + orgInfo.description : ""
+    }. Your purpose is to assist users ${
+      orgInfo.name ? `in ${orgInfo.name} ` : ""
+    }by reading information from the organization's documentation.
+
+${userDescriptionSection}
+Today's date is ${new Date().toISOString().split("T")[0]}
+
+You will be shown chunks of potentially relevant documentation. 
+
+You can ask the user questions to clarify their request.
+
+You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
+
+You can output either:
+
+Your answer to the user's query 
+
+or 
+
+"More documentation"
+
+If you output "More documentation", you will be shown more documentation. You can output "More documentation" as many times as you like.
+
+Think and talk to the user in ${language ?? "the same language they write in"}${
+      language !== "English" &&
+      "Do not translate the keywords: More documentation"
+    }
+    `,
+  };
 }
 
 export function simpleChatPrompt(
