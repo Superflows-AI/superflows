@@ -14,7 +14,11 @@ import {
   repopulateVariables,
   sanitizeMessages,
 } from "./apiResponseSimplification";
-import { MessageInclSummaryToGPT, removeOldestMessages } from "./utils";
+import {
+  MessageInclSummaryToGPT,
+  deduplicateChunks,
+  removeOldestFunctionCalls,
+} from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
 import { queryEmbedding, streamLLMResponse } from "../queryLLM";
 import { MAX_TOKENS_OUT } from "../consts";
@@ -95,21 +99,34 @@ export async function Dottie( // Dottie talks to docs
         language,
       );
 
-      const relevantDocChunks = await getRelevantDocChunks(
+      const allRelevantDocChunks = await getRelevantDocChunks(
         reqData.user_input,
         org.id,
       );
 
-      console.log("Dottie main system prompt:\n", chatGptPrompt[0].content);
+      const chunksForPrompt = allRelevantDocChunks
+        ? JSON.stringify(
+            deduplicateChunks(
+              allRelevantDocChunks.slice(
+                nChunksRejected,
+                nChunksRejected + nChunksInclude,
+              ),
+            ).map((chunk, index) => ({
+              index: index,
+              chunky: chunk.join("\n\n"),
+            })),
+          )
+        : "No relevant documentation found";
+
+      const docMessage = {
+        role: "function",
+        content: chunksForPrompt,
+        name: "get_info_from_docs",
+      } as ChatGPTMessage;
+
       // TODO: only include unique sentences
-      // I THOUGHT YOU COULD AND RANDO ROLES BUT YOU CANNT
-      chatGptPrompt.push({
-        role: "documentation",
-        content:
-          relevantDocChunks
-            ?.slice(nChunksRejected, nChunksRejected + nChunksInclude)
-            .join("\n\n") ?? "No relevant documentation found",
-      });
+      chatGptPrompt.push(docMessage);
+      streamInfo(docMessage);
 
       // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
       // originalToPlaceholderMap is a map from the original string to the placeholder (URLX/IDX)
@@ -121,16 +138,16 @@ export async function Dottie( // Dottie talks to docs
       chatGptPrompt = cleanedMessages;
 
       // If over context limit, remove oldest documentation chunks
-      chatGptPrompt = removeOldestMessages(
+      chatGptPrompt = removeOldestFunctionCalls(
         [...chatGptPrompt],
         model === "gpt-4-0613" ? "4" : "3",
-        "documentation",
       );
 
       const promptInputCost = openAiCost(chatGptPrompt, "in", model);
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
 
+      console.log("Dottie prompt:\n", JSON.stringify(chatGptPrompt), "\n\n");
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
         [chatGptPrompt, completionOptions, model],
@@ -285,10 +302,9 @@ export async function Angela( // Angela takes actions
       chatGptPrompt = cleanedMessages;
 
       // If over context limit, remove oldest function calls
-      chatGptPrompt = removeOldestMessages(
+      chatGptPrompt = removeOldestFunctionCalls(
         [...chatGptPrompt],
         model === "gpt-4-0613" ? "4" : "3",
-        "function",
       );
 
       // If still over the context limit tell the user to remove actions
@@ -614,7 +630,7 @@ async function storeActionsAwaitingConfirmation(
 async function getRelevantDocChunks(
   userQuery: string,
   org_id: number,
-): Promise<string[] | null> {
+): Promise<string[][] | null> {
   const embedding = await exponentialRetryWrapper(
     queryEmbedding,
     [userQuery],
@@ -633,5 +649,6 @@ async function getRelevantDocChunks(
     console.warn("Found no relevant documentation for query: ", userQuery);
     return null;
   }
-  return data.map((chunk) => chunk.text_chunks.join("\n"));
+
+  return data.map((chunk) => chunk.text_chunks);
 }

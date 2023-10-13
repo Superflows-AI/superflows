@@ -47,11 +47,9 @@ export function MessageInclSummaryToGPT(
   return out;
 }
 
-export function removeOldestMessages(
+export function removeOldestFunctionCalls(
   chatGptPrompt: ChatGPTMessage[],
   model: "3" | "3-16k" | "4",
-  // I THOUGHT YOU COULD AND RANDO ROLES BUT YOU CANNT
-  roleToRemove: "function" | "documentation",
   maxTokensOut: number = MAX_TOKENS_OUT,
 ): ChatGPTMessage[] {
   /** Remove old function calls if over the context limit **/
@@ -62,22 +60,22 @@ export function removeOldestMessages(
   // Keep removing until under the context limit
   while (tokenCount >= maxTokens - maxTokensOut) {
     // Removes the oldest function call
-    const oldestMessageIndex = chatGptPrompt.findIndex(
+    const oldestFunctionCallIndex = chatGptPrompt.findIndex(
       // 204 since 4 tokens are added to the prompt for each message
-      (m) => m.role === roleToRemove && getTokenCount([m]) >= 204,
+      (m) => m.role === "function" && getTokenCount([m]) >= 204,
     );
-    if (oldestMessageIndex === -1) {
-      // No function calls / documentations left to remove
+    if (oldestFunctionCallIndex === -1) {
+      // No function calls left to remove
       break;
     }
-    chatGptPrompt[oldestMessageIndex].content = "Cut due to context limit";
+    chatGptPrompt[oldestFunctionCallIndex].content = "Cut due to context limit";
     tokenCount = getTokenCount(chatGptPrompt);
     numberRemoved += 1;
   }
   console.info(
     "Removed " +
       numberRemoved +
-      ` ${roleToRemove}s due to context limit. Original token count: ` +
+      " function calls due to context limit. Original token count: " +
       originalTokenCount +
       ", new token count: " +
       tokenCount,
@@ -143,4 +141,23 @@ export function getParam(parameters: Record<string, any>, key: string): any {
     (k) => k.replaceAll("-", "_") === key.replaceAll("-", "_"),
   );
   if (found) return parameters[found];
+}
+
+export function deduplicateChunks(chunks: string[][]): string[][] {
+  // TODO: test me
+  const seen: string[] = [...chunks[0]];
+  const deduped = JSON.parse(JSON.stringify(chunks));
+
+  // Don't need to dedupe the first chunk
+  for (let i = 1; i < chunks.length; i++) {
+    const chunk = deduped[i];
+    for (const sentence of chunk) {
+      if (seen.includes(sentence)) {
+        deduped[i] = deduped[i].filter((s: string[]) => s !== sentence);
+      } else {
+        seen.push(sentence);
+      }
+    }
+  }
+  return deduped;
 }

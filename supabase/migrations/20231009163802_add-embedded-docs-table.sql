@@ -1,7 +1,10 @@
+alter table "public"."organizations"
+add column "chat_to_docs_enabled" boolean not null default false;
 create extension if not exists "vector" with schema "extensions";
 create sequence "public"."docs_id_seq";
 create table "public"."docs" (
     "id" integer not null default nextval('docs_id_seq'::regclass),
+    "created_at" timestamp with time zone default now(),
     "text_chunk" text not null,
     "embedding" vector(1536),
     "org_id" bigint not null,
@@ -9,7 +12,6 @@ create table "public"."docs" (
     "chunk_idx" integer not null,
     "page_title" text,
     "section_title" text,
-    "window_length" integer not null
 );
 alter table "public"."docs" enable row level security;
 alter sequence "public"."docs_id_seq" owned by "public"."docs"."id";

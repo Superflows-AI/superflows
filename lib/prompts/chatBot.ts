@@ -241,6 +241,8 @@ You can ask the user questions to clarify their request.
 
 You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
 
+Be extremely concise in your responses
+
 You can output either:
 
 Your answer to the user's query 
@@ -253,7 +255,7 @@ If you output "More documentation", you will be shown more documentation. You ca
 
 Think and talk to the user in ${language ?? "the same language they write in"}${
       language !== "English" &&
-      "Do not translate the keywords: More documentation"
+      " Do not translate the keywords: More documentation"
     }
     `,
   };

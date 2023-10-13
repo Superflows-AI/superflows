@@ -2,10 +2,9 @@ import { z } from "zod";
 import { ActionPlusApiInfo } from "./types";
 import { FunctionCall } from "@superflows/chat-ui-react";
 
-// I THOUGHT YOU COULD AND RANDO ROLES BUT YOU CANNT
 export type ChatGPTMessage =
   | {
-      role: "system" | "user" | "assistant" | "documentation";
+      role: "system" | "user" | "assistant";
       content: string;
     }
   | {
