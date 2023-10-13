@@ -1,4 +1,4 @@
-import { removeOldestMessages } from "../../../lib/edge-runtime/utils";
+import { removeOldestFunctionCalls } from "../../../lib/edge-runtime/utils";
 import { ChatGPTMessage } from "../../../lib/models";
 
 const systemPrompt: ChatGPTMessage = {
@@ -25,34 +25,21 @@ function getLongFunctionCall(numTokens: number): ChatGPTMessage {
     name: "longFunctionCall",
   };
 }
-// I THOUGHT YOU COULD AND RANDO ROLES BUT YOU CANNT
-const replacementDocumentationMessage: ChatGPTMessage = {
-  role: "documentation",
-  content: "Cut due to context limit",
-};
-function getLongDocumentation(numTokens: number): ChatGPTMessage {
-  return {
-    role: "documentation",
-    content: new Array(numTokens + 1).join(" function"),
-  };
-}
 
 describe("removeOldestFunctionCalls", () => {
   it("should leave unchanged - not over context limit", () => {
-    const out = removeOldestMessages([systemPrompt], "4", "function");
-    ("function");
+    const out = removeOldestFunctionCalls([systemPrompt], "4");
     expect(out).toEqual([systemPrompt]);
   });
   it("should remove 1 function call", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(9000)],
       "4",
-      "function",
     );
     expect(out).toEqual([systemPrompt, replacementFunctionMessage]);
   });
   it("should remove function call, leaving user and assistant messages (start)", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [
         systemPrompt,
         getLongFunctionCall(9000),
@@ -62,7 +49,6 @@ describe("removeOldestFunctionCalls", () => {
         assistantMessage,
       ],
       "4",
-      "function",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -74,7 +60,7 @@ describe("removeOldestFunctionCalls", () => {
     ]);
   });
   it("should remove function call, leaving user and assistant messages (end)", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [
         systemPrompt,
         userMessage,
@@ -84,7 +70,6 @@ describe("removeOldestFunctionCalls", () => {
         getLongFunctionCall(9000),
       ],
       "4",
-      "function",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -96,7 +81,7 @@ describe("removeOldestFunctionCalls", () => {
     ]);
   });
   it("should remove 1 long call, leaving later short function call", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [
         systemPrompt,
         getLongFunctionCall(9000),
@@ -105,7 +90,6 @@ describe("removeOldestFunctionCalls", () => {
         getLongFunctionCall(10),
       ],
       "4",
-      "function",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -116,7 +100,7 @@ describe("removeOldestFunctionCalls", () => {
     ]);
   });
   it("should remove 1st of 2 long ones", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [
         systemPrompt,
         getLongFunctionCall(4500),
@@ -126,7 +110,6 @@ describe("removeOldestFunctionCalls", () => {
         getLongFunctionCall(10),
       ],
       "4",
-      "function",
     );
     expect(out).toEqual([
       systemPrompt,
@@ -138,36 +121,18 @@ describe("removeOldestFunctionCalls", () => {
     ]);
   });
   it("should remove 1 function call 3k limit", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(5000)],
       "3",
-      "function",
     );
     expect(out).toEqual([systemPrompt, replacementFunctionMessage]);
   });
-  it("should remove no functions, target documentation", () => {
-    const out = removeOldestMessages(
-      [systemPrompt, getLongFunctionCall(5000)],
-      "3",
-      "documentation",
-    );
-    expect(out).toEqual([systemPrompt, getLongFunctionCall(5000)]);
-  });
 
   it("should not remove long function 16k limit", () => {
-    const out = removeOldestMessages(
+    const out = removeOldestFunctionCalls(
       [systemPrompt, getLongFunctionCall(12000)],
       "3-16k",
-      "function",
     );
     expect(out).toEqual([systemPrompt, getLongFunctionCall(12000)]);
-  });
-  it("should remove documentation ", () => {
-    const out = removeOldestMessages(
-      [systemPrompt, getLongDocumentation(5000)],
-      "3",
-      "documentation",
-    );
-    expect(out).toEqual([systemPrompt, replacementDocumentationMessage]);
   });
 });
