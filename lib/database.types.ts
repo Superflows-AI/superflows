@@ -270,35 +270,35 @@ export interface Database {
       docs: {
         Row: {
           chunk_idx: number;
-          embedding: string | null;
+          embedding: number[];
           id: number;
           org_id: number;
           page_title: string | null;
           page_url: string | null;
           section_title: string | null;
-          text_chunk: string;
+          text_chunks: string[];
           window_length: number;
         };
         Insert: {
           chunk_idx: number;
-          embedding?: string | null;
+          embedding?: number[];
           id?: number;
           org_id: number;
           page_title?: string | null;
           page_url?: string | null;
           section_title?: string | null;
-          text_chunk: string;
+          text_chunks: string[];
           window_length: number;
         };
         Update: {
           chunk_idx?: number;
-          embedding?: string | null;
+          embedding?: number[];
           id?: number;
           org_id?: number;
           page_title?: string | null;
           page_url?: string | null;
           section_title?: string | null;
-          text_chunk?: string;
+          text_chunks?: string[];
           window_length?: number;
         };
         Relationships: [
@@ -555,7 +555,7 @@ export interface Database {
         };
         Returns: {
           id: number;
-          text_chunk: string;
+          text_chunks: string[];
           similarity: number;
           page_url: string;
           chunk_idx: number;

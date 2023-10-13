@@ -5,7 +5,7 @@ import requestCorrectionPrompt from "../prompts/requestCorrection";
 import { bodyPropertiesFromRequestBodyContents } from "./requests";
 import { getLLMResponse } from "../queryLLM";
 import { ChatGPTMessage } from "../models";
-import { removeOldestFunctionCalls } from "./utils";
+import { removeOldestMessages } from "./utils";
 
 export async function getMissingArgCorrections(
   action: Action,
@@ -62,9 +62,10 @@ async function getMissingParam(
   console.log(`Parameter ${missingParam} is missing. Attempt to get it`);
   const correctionPrompt = requestCorrectionPrompt(missingParam, action);
   if (!correctionPrompt) return null;
-  const prompt = removeOldestFunctionCalls(
+  const prompt = removeOldestMessages(
     [...previousConversation].concat(correctionPrompt),
     "4",
+    "function",
     200,
   );
   console.log("Request correction prompt:\n", prompt);

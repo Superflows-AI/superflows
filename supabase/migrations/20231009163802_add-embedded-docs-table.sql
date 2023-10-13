@@ -37,7 +37,7 @@ create or replace function match_embeddings (
         _org_id int
     ) returns table (
         id integer,
-        text_chunk text,
+        text_chunks text [],
         similarity float,
         page_url text,
         chunk_idx integer,
@@ -46,8 +46,13 @@ create or replace function match_embeddings (
         window_length integer
     ) language plpgsql as $$ begin return query
 select docs.id,
-    docs.text_chunk,
-    1 - (docs.embedding <=> query_embedding) as similarity
+    docs.text_chunks,
+    1 - (docs.embedding <=> query_embedding) as similarity,
+    docs.page_url,
+    docs.chunk_idx,
+    docs.page_title,
+    docs.section_title,
+    docs.window_length
 from docs
 where 1 - (docs.embedding <=> query_embedding) > similarity_threshold
     and docs.org_id = _org_id

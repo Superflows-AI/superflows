@@ -34,6 +34,7 @@ const constActionParams = {
     org_id: 1,
   },
   headers: [],
+  requires_confirmation: false,
 };
 const organization = {
   id: 1,
@@ -48,6 +49,7 @@ describe("constructHttpRequest", () => {
         path: "/api/mock/confirm",
         request_method: "GET",
         request_body_contents: null,
+        requires_confirmation: false,
       },
       parameters: {},
       organization,
