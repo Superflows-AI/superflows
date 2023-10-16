@@ -14,7 +14,7 @@ import {
   OrgJoinIsPaidFinetunedModels,
   SimilaritySearchResult,
 } from "../types";
-import getMessages from "../prompts/chatBot";
+import getMessages, { chatToDocsPrompt } from "../prompts/chatBot";
 import {
   repopulateVariables,
   sanitizeMessages,
@@ -95,16 +95,12 @@ export async function Dottie( // Dottie talks to docs
 
   try {
     while (!mostRecentParsedOutput.completed) {
-      let chatGptPrompt: ChatGPTMessage[] = getMessages(
-        // To stop going over the context limit: only remember the last 'maxConvLength' messages
-        nonSystemMessages.slice(
+      let chatGptPrompt: ChatGPTMessage[] = [
+        chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
+        ...nonSystemMessages.slice(
           Math.max(0, nonSystemMessages.length - maxConvLength),
         ),
-        actions,
-        reqData.user_description,
-        org,
-        language,
-      );
+      ];
 
       const allRelevantDocChunks = await getRelevantDocChunks(
         reqData.user_input,
