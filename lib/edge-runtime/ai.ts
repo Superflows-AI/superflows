@@ -276,27 +276,26 @@ export async function Angela( // Good ol' Angela
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
-      let chatGptPrompt: ChatGPTMessage[] = getMessages(
-        // To stop going over the context limit: only remember the last 'maxConvLength' messages
-        nonSystemMessages
-          .slice(Math.max(0, nonSystemMessages.length - maxConvLength))
-          // Set summaries to 'content' - don't show AI un-summarized output
-          .map(MessageInclSummaryToGPT),
-        actions,
-        reqData.user_description,
-        org,
-        language,
-      );
-
-      console.log("Angela main system prompt:\n", chatGptPrompt[0].content);
+      // To stop going over the context limit: only remember the last 'maxConvLength' messages
+      let recentMessages = nonSystemMessages
+        .slice(Math.max(0, nonSystemMessages.length - maxConvLength))
+        // Set summaries to 'content' - don't show AI un-summarized output
+        .map(MessageInclSummaryToGPT);
 
       // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
       // originalToPlaceholderMap is a map from the original string to the placeholder (URLX/IDX)
       const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
-        chatGptPrompt,
+        recentMessages,
         org.sanitize_urls_first,
       );
-      chatGptPrompt = cleanedMessages;
+      let chatGptPrompt: ChatGPTMessage[] = getMessages(
+        cleanedMessages,
+        actions,
+        reqData.user_description,
+        org,
+        language,
+        Object.entries(originalToPlaceholderMap).length > 0,
+      );
 
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls(
