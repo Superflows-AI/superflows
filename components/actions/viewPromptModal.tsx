@@ -88,6 +88,7 @@ export default function ViewSystemPromptModal(props: {
                       "<ORG DESCRIPTION>",
                   },
                   "English",
+                  false,
                 )[0].content,
               )
             : addTabsToVariables(getActionDescriptions(props.actions))}

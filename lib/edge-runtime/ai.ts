@@ -8,25 +8,15 @@ import {
   StreamingStepInput,
   ToConfirm,
 } from "../models";
-import {
-  ActionPlusApiInfo,
-  DocChunk,
-  OrgJoinIsPaidFinetunedModels,
-  SimilaritySearchResult,
-} from "../types";
+import { ActionPlusApiInfo, OrgJoinIsPaidFinetunedModels } from "../types";
 import getMessages, { chatToDocsPrompt } from "../prompts/chatBot";
 import {
   repopulateVariables,
   sanitizeMessages,
 } from "./apiResponseSimplification";
-import {
-  MessageInclSummaryToGPT,
-  deduplicateChunks,
-  removeOldestFunctionCalls,
-  chunksToString,
-} from "./utils";
+import { MessageInclSummaryToGPT, removeOldestFunctionCalls } from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
-import { queryEmbedding, streamLLMResponse } from "../queryLLM";
+import { streamLLMResponse } from "../queryLLM";
 import { MAX_TOKENS_OUT } from "../consts";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { filterActions } from "./filterActions";
@@ -45,6 +35,10 @@ import {
 import summarizeText from "./summarize";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../database.types";
+import {
+  getRelevantDocChunks,
+  getSearchDocsAction,
+} from "../embed-docs/docsSearch";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -58,7 +52,6 @@ const supabase = createClient<Database>(
 export async function Dottie( // Dottie talks to docs
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
-  actions: ActionPlusApiInfo[],
   org: OrgJoinIsPaidFinetunedModels,
   conversationId: number,
   previousMessages: ChatGPTMessage[],
@@ -72,7 +65,7 @@ export async function Dottie( // Dottie talks to docs
   const streamInfo = await preamble(
     controller,
     conversationId,
-    actions,
+    [],
     reqData,
     org,
     language,
@@ -81,142 +74,85 @@ export async function Dottie( // Dottie talks to docs
   const model = org.model;
   const nonSystemMessages = [...previousMessages];
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
-  // TODO: Sort these out
-  let numOpenAIRequests = 0;
-  let totalCost = 0;
-  let numUserQueries = 0;
-  const nChunksInclude = 3;
-  let nChunksRejected = 0;
+  let cost = 0;
 
-  let mostRecentParsedOutput = {
-    tellUser: "",
-    completed: false,
-  };
+  // Const controlling how much context to include
+  const nChunksInclude = 3;
 
   try {
-    while (!mostRecentParsedOutput.completed) {
-      let chatGptPrompt: ChatGPTMessage[] = [
-        chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
-        ...nonSystemMessages.slice(
-          Math.max(0, nonSystemMessages.length - maxConvLength),
-        ),
-      ];
+    let chatGptPrompt: ChatGPTMessage[] = [
+      chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
+      ...nonSystemMessages.slice(
+        Math.max(0, nonSystemMessages.length - maxConvLength),
+      ),
+    ];
 
-      const allRelevantDocChunks = await getRelevantDocChunks(
-        reqData.user_input,
-        org.id,
+    const relevantDocs = await getRelevantDocChunks(
+      reqData.user_input,
+      org.id,
+      nChunksInclude,
+      supabase,
+    );
+
+    const docMessage = {
+      role: "function",
+      content: relevantDocs,
+      name: "search_docs",
+    } as ChatGPTMessage;
+
+    chatGptPrompt.push(docMessage);
+    streamInfo(docMessage);
+
+    // If over context limit, remove oldest documentation chunks
+    chatGptPrompt = removeOldestFunctionCalls(
+      [...chatGptPrompt],
+      model === "gpt-4-0613" ? "4" : "3",
+    );
+
+    const promptInputCost = openAiCost(chatGptPrompt, "in", model);
+    console.log("GPT input cost:", promptInputCost);
+    cost += promptInputCost;
+
+    console.log("Dottie prompt:\n", JSON.stringify(chatGptPrompt), "\n\n");
+    const res = await exponentialRetryWrapper(
+      streamLLMResponse,
+      [chatGptPrompt, completionOptions, model],
+      3,
+    );
+    if (res === null || "message" in res) {
+      console.error(
+        `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
+          res,
+        )}`,
       );
-      console.log("All relevant doc chunks:", allRelevantDocChunks);
-
-      const chunksForPrompt = allRelevantDocChunks
-        ? chunksToString(
-            deduplicateChunks(
-              allRelevantDocChunks.slice(
-                nChunksRejected,
-                nChunksRejected + nChunksInclude,
-              ),
-            ),
-          )
-        : "No relevant documentation found";
-
-      const docMessage = {
-        role: "function",
-        content: chunksForPrompt,
-        name: "get_info_from_docs",
-      } as ChatGPTMessage;
-
-      chatGptPrompt.push(docMessage);
-      streamInfo(docMessage);
-
-      // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
-      // originalToPlaceholderMap is a map from the original string to the placeholder (URLX/IDX)
-      const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
-        chatGptPrompt,
-        org.sanitize_urls_first,
-      );
-
-      chatGptPrompt = cleanedMessages;
-
-      // If over context limit, remove oldest documentation chunks
-      chatGptPrompt = removeOldestFunctionCalls(
-        [...chatGptPrompt],
-        model === "gpt-4-0613" ? "4" : "3",
-      );
-
-      const promptInputCost = openAiCost(chatGptPrompt, "in", model);
-      console.log("GPT input cost:", promptInputCost);
-      totalCost += promptInputCost;
-
-      console.log("Dottie prompt:\n", JSON.stringify(chatGptPrompt), "\n\n");
-      const res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [chatGptPrompt, completionOptions, model],
-        3,
-      );
-      if (res === null || "message" in res) {
-        console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
-            res,
-          )}`,
-        );
-        streamInfo({
-          role: "error",
-          content: "Call to Language Model API failed",
-        });
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
-      }
-
-      // Stream response from OpenAI
-      let rawOutput = await streamResponseToUser(
-        res,
-        streamInfo,
-        originalToPlaceholderMap,
-      );
-      numOpenAIRequests++;
-
-      const newMessage = {
-        role: "assistant",
-        content: rawOutput,
-      } as ChatGPTMessage;
-
-      const outCost = openAiCost([newMessage], "out", model);
-      totalCost += outCost;
-
-      const needsMoreDocs = rawOutput
-        .toLowerCase()
-        .trim()
-        .includes("more documentation");
-      // TODO: only increment usage if the docs are used? Bit tricky
-      if (!needsMoreDocs) numUserQueries += 1;
-      if (needsMoreDocs) nChunksRejected += nChunksInclude;
-
-      // Add assistant message to nonSystemMessages
-      nonSystemMessages.push(newMessage);
-
-      /// TODO: is this in the right place?
-      if (numOpenAIRequests >= 6) {
-        console.error(
-          `OpenAI API call limit reached for conversation with id: ${conversationId}`,
-        );
-        streamInfo({
-          role: "error",
-          content: "OpenAI API call limit reached",
-        });
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
-      }
-
-      if (!needsMoreDocs) {
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
-      }
+      streamInfo({
+        role: "error",
+        content: "Call to Language Model API failed",
+      });
+      return { nonSystemMessages, cost, numUserQueries: 0 };
     }
-    return { nonSystemMessages, cost: totalCost, numUserQueries };
+
+    // Stream response from OpenAI
+    let rawOutput = await streamResponseToUser(res, streamInfo, {});
+
+    const newMessage = {
+      role: "assistant",
+      content: rawOutput,
+    } as ChatGPTMessage;
+
+    const outCost = openAiCost([newMessage], "out", model);
+    cost += outCost;
+
+    // Add assistant message to nonSystemMessages
+    nonSystemMessages.push(newMessage);
+    return { nonSystemMessages, cost, numUserQueries: 1 };
   } catch (e) {
     console.error(e?.toString() ?? "Internal server error");
     streamInfo({
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return { nonSystemMessages, cost: totalCost, numUserQueries };
+    return { nonSystemMessages, cost, numUserQueries: 1 };
   }
 }
 
@@ -264,6 +200,11 @@ export async function Angela( // Good ol' Angela
   let numUserQueries = 0;
   let awaitingConfirmation = false;
 
+  // This allows us to add the 'Search docs' action if it's enabled
+  if (org.chat_to_docs_enabled) {
+    actions.push(getSearchDocsAction(org, currentHost));
+  }
+
   if (actions.length > 5 && model.includes("3.5")) {
     actions = await filterActions(
       actions,
@@ -277,7 +218,7 @@ export async function Angela( // Good ol' Angela
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
       // To stop going over the context limit: only remember the last 'maxConvLength' messages
-      let recentMessages = nonSystemMessages
+      const recentMessages = nonSystemMessages
         .slice(Math.max(0, nonSystemMessages.length - maxConvLength))
         // Set summaries to 'content' - don't show AI un-summarized output
         .map(MessageInclSummaryToGPT);
@@ -296,6 +237,13 @@ export async function Angela( // Good ol' Angela
         language,
         Object.entries(originalToPlaceholderMap).length > 0,
       );
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "Angela system prompt:\n",
+          chatGptPrompt[0].content,
+          "\n\n",
+        );
+      }
 
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls(
@@ -595,11 +543,19 @@ async function preamble(
   if (redis) {
     // Store the system prompt, in case we get feedback on it
     const redisKey = conversationId.toString() + "-system-prompt";
-    await redis.set(
-      redisKey,
-      getMessages([], actions, reqData.user_description, org, language)[0]
-        .content,
-    );
+    const systemPrompt =
+      actions.length > 0
+        ? getMessages(
+            [],
+            actions,
+            reqData.user_description,
+            org,
+            language,
+            // TODO: ID line isn't always included, but we don't know whether it should be at this point (no functions called yet)
+            false,
+          )[0].content
+        : chatToDocsPrompt(reqData.user_description, org, language).content;
+    await redis.set(redisKey, systemPrompt);
     await redis.expire(redisKey, 60 * 15);
   }
   return streamInfo;
@@ -621,30 +577,4 @@ async function storeActionsAwaitingConfirmation(
     // 10 minutes seems like a reasonable time if the user gets distracted etc
     await redis.expire(redisKey, 60 * 10);
   }
-}
-
-async function getRelevantDocChunks(
-  userQuery: string,
-  org_id: number,
-): Promise<SimilaritySearchResult[] | null> {
-  const embedding = await exponentialRetryWrapper(
-    queryEmbedding,
-    [userQuery],
-    3,
-  );
-
-  const { data, error } = await supabase.rpc("match_embeddings", {
-    query_embedding: embedding[0],
-    similarity_threshold: 0.4,
-    match_count: 20,
-    _org_id: org_id,
-  });
-  if (error) throw new Error(error.message);
-
-  if (!data || data.length === 0) {
-    console.warn("Found no relevant documentation for query: ", userQuery);
-    return null;
-  }
-
-  return data;
 }
