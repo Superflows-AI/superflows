@@ -191,6 +191,7 @@ export default function getMessages(
     chat_to_docs_enabled?: boolean;
   },
   language: string | null,
+  includeIdLine: boolean,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
     ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
@@ -203,11 +204,7 @@ export default function getMessages(
           orgInfo,
           getActionDescriptions(actions),
           language,
-          userCopilotMessages.filter(
-            (m) =>
-              m.role === "function" &&
-              (m.content.includes("ID1") || m.content.includes("URL1")),
-          ).length > 0,
+          includeIdLine,
         )
       : simpleChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
