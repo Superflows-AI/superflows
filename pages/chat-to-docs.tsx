@@ -26,7 +26,7 @@ function ChatToDocsPage() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from("docs")
+        .from("doc_chunks")
         .select("*")
         .eq("org_id", profile?.organizations?.id!)
         .limit(1);

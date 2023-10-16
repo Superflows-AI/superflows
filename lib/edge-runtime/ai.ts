@@ -8,7 +8,12 @@ import {
   StreamingStepInput,
   ToConfirm,
 } from "../models";
-import { ActionPlusApiInfo, OrgJoinIsPaidFinetunedModels } from "../types";
+import {
+  ActionPlusApiInfo,
+  DocChunk,
+  OrgJoinIsPaidFinetunedModels,
+  SimilaritySearchResult,
+} from "../types";
 import getMessages from "../prompts/chatBot";
 import {
   repopulateVariables,
@@ -18,6 +23,7 @@ import {
   MessageInclSummaryToGPT,
   deduplicateChunks,
   removeOldestFunctionCalls,
+  chunksToString,
 } from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
 import { queryEmbedding, streamLLMResponse } from "../queryLLM";
@@ -75,6 +81,7 @@ export async function Dottie( // Dottie talks to docs
   const model = org.model;
   const nonSystemMessages = [...previousMessages];
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
+  // TODO: Sort these out
   let numOpenAIRequests = 0;
   let totalCost = 0;
   let numUserQueries = 0;
@@ -86,7 +93,7 @@ export async function Dottie( // Dottie talks to docs
     completed: false,
   };
 
-  async function main() {
+  try {
     while (!mostRecentParsedOutput.completed) {
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
         // To stop going over the context limit: only remember the last 'maxConvLength' messages
@@ -103,18 +110,16 @@ export async function Dottie( // Dottie talks to docs
         reqData.user_input,
         org.id,
       );
+      console.log("All relevant doc chunks:", allRelevantDocChunks);
 
       const chunksForPrompt = allRelevantDocChunks
-        ? JSON.stringify(
+        ? chunksToString(
             deduplicateChunks(
               allRelevantDocChunks.slice(
                 nChunksRejected,
                 nChunksRejected + nChunksInclude,
               ),
-            ).map((chunk, index) => ({
-              index: index,
-              chunky: chunk.join("\n\n"),
-            })),
+            ),
           )
         : "No relevant documentation found";
 
@@ -124,7 +129,6 @@ export async function Dottie( // Dottie talks to docs
         name: "get_info_from_docs",
       } as ChatGPTMessage;
 
-      // TODO: only include unique sentences
       chatGptPrompt.push(docMessage);
       streamInfo(docMessage);
 
@@ -210,10 +214,6 @@ export async function Dottie( // Dottie talks to docs
       }
     }
     return { nonSystemMessages, cost: totalCost, numUserQueries };
-  }
-
-  try {
-    return await main();
   } catch (e) {
     console.error(e?.toString() ?? "Internal server error");
     streamInfo({
@@ -228,7 +228,8 @@ const completionOptions: ChatGPTParams = {
   max_tokens: MAX_TOKENS_OUT,
 };
 
-export async function Angela( // Angela takes actions
+// Angela takes actions
+export async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
   reqData: AnswersType,
   actions: ActionPlusApiInfo[],
@@ -575,7 +576,7 @@ export async function Angela( // Angela takes actions
 }
 
 async function preamble(
-  controller: ReadableStreamDefaultController<any>,
+  controller: ReadableStreamDefaultController,
   conversationId: number,
   actions: ActionPlusApiInfo[],
   reqData: AnswersType,
@@ -630,7 +631,7 @@ async function storeActionsAwaitingConfirmation(
 async function getRelevantDocChunks(
   userQuery: string,
   org_id: number,
-): Promise<string[][] | null> {
+): Promise<SimilaritySearchResult[] | null> {
   const embedding = await exponentialRetryWrapper(
     queryEmbedding,
     [userQuery],
@@ -650,5 +651,5 @@ async function getRelevantDocChunks(
     return null;
   }
 
-  return data.map((chunk) => chunk.text_chunks);
+  return data;
 }
