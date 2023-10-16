@@ -359,7 +359,6 @@ export default async function handler(req: NextRequest) {
           ? await Dottie(
               controller,
               requestData,
-              activeActions,
               org!,
               conversationId,
               previousMessages,
