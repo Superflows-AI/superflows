@@ -193,7 +193,7 @@ export default function getMessages(
   language: string | null,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
-    ? `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`
+    ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
     : "";
 
   return [
@@ -214,14 +214,17 @@ export default function getMessages(
   ];
 }
 
-function chatToDocsPrompt(
-  userDescriptionSection: string,
+export function chatToDocsPrompt(
+  userDescription: string | undefined,
   orgInfo: {
     name: string;
     description: string;
   },
   language: string | null,
 ): ChatGPTMessage {
+  const userDescriptionSection = userDescription
+    ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
+    : "";
   return {
     role: "system",
     content: `${getIntroText(orgInfo)}using information from ${
@@ -231,8 +234,9 @@ ${userDescriptionSection}
 You will be shown chunks of potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
 
 ${
-  orgInfo.name ??
-  `You have expert knowledge in ${orgInfo}'s domain. Use this to help the user. `
+  orgInfo.name
+    ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. `
+    : ""
 }Do not invent new knowledge. THIS IS VERY IMPORTANT.
 
 Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question. Do not output anything else.
