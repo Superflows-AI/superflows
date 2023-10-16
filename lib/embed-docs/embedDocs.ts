@@ -173,21 +173,22 @@ export function getDocsLoader(
             await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log("Attempting to get HTML");
             out = await page.evaluate(() => {
-              function removeFromHtml(node: Node, tags: string[]) {
+              function removeFromHtml(node: HTMLBodyElement, tags: string[]) {
                 for (const tag of tags) {
                   let elements = node.getElementsByTagName(tag);
                   while (elements.length) {
                     if (!elements[0]) break;
-                    elements[0].parentNode.removeChild(elements[0]);
+                    elements[0].parentNode?.removeChild(elements[0]);
                     elements = node.getElementsByTagName(tag);
                   }
                 }
                 return node;
               }
 
-              let clone = document.body.cloneNode(true);
+              let clone = document.body.cloneNode(true) as HTMLBodyElement;
               if (!clone) return "";
               const main = clone.getElementsByTagName("main")[0];
+              // @ts-ignore
               if (main) clone = main;
               // In Docusaurus, the title is <page name> | <site name>
               const title = document.title.split("|")[0];
@@ -218,21 +219,22 @@ export function getDocsLoader(
             await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log("Attempting to get HTML");
             out = await page.evaluate(() => {
-              function removeFromHtml(node: Node, tags: string[]) {
+              function removeFromHtml(node: HTMLBodyElement, tags: string[]) {
                 for (const tag of tags) {
                   let elements = node.getElementsByTagName(tag);
                   while (elements.length) {
                     if (!elements[0]) break;
-                    elements[0].parentNode.removeChild(elements[0]);
+                    elements[0].parentNode?.removeChild(elements[0]);
                     elements = node.getElementsByTagName(tag);
                   }
                 }
                 return node;
               }
 
-              let clone = document.body.cloneNode(true);
+              let clone = document.body.cloneNode(true) as HTMLBodyElement;
               if (!clone) return "";
               const main = clone.getElementsByTagName("main")[0];
+              // @ts-ignore
               if (main) clone = main;
               const title = document.title;
 
