@@ -8,7 +8,18 @@ services:
     build:
       context: ../../
       dockerfile: ./docker/development/Dockerfile
+    container_name: superflows
     depends_on:
       - kong # defined by another_domain
     ports:
-      - "0.0.0.0:3000:3000"
+      - ${SUPERFLOWS_PORT}:3000
+    env_file:
+      - .env
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+
+
+networks:
+  superflows:
+   
