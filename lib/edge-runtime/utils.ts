@@ -145,13 +145,24 @@ export function getParam(parameters: Record<string, any>, key: string): any {
 
 export function deduplicateChunks(
   chunks: SimilaritySearchResult[],
+  nTextChunksInclude: number,
 ): SimilaritySearchResult[] {
+  /** Deduplicate chunks by combining chunks with the same page_url, page_title and
+   * section_title.
+   *
+   * Each doc_chunk in the DB has multiple text chunks. If the doc_chunks with the
+   * most similar embeddings are from the same document, we don't want to add the
+   * same text twice.
+   *
+   * E.g. If one doc_chunk contains [a,b,c], the other [b,c,d], then we have a chunk
+   * with [a,b,c,d] (no duplication of b and c). **/
   chunks = JSON.parse(JSON.stringify(chunks));
   const deduped: SimilaritySearchResult[] = [chunks[0]];
 
   // Don't need to dedupe the first chunk
   for (let i = 1; i < chunks.length; i++) {
     const chunk = chunks[i];
+    // Check if there's another chunk with the same page_url, page_title and section_title
     const matchedChunk = deduped.find(
       (seenCh) =>
         seenCh.page_url === chunk.page_url &&
@@ -159,22 +170,40 @@ export function deduplicateChunks(
         seenCh.section_title === chunk.section_title,
     );
     if (matchedChunk) {
-      if (chunk.chunk_idx > matchedChunk.chunk_idx) {
+      if (
+        chunk.chunk_idx > matchedChunk.chunk_idx &&
+        // Below check stops gaps in the text chunks
+        chunk.chunk_idx - matchedChunk.chunk_idx <=
+          matchedChunk.text_chunks.length
+      ) {
         chunk.text_chunks.forEach((textChunk) => {
           if (!matchedChunk.text_chunks.includes(textChunk)) {
+            // push() adds to the end of the array
             matchedChunk.text_chunks.push(textChunk);
           }
         });
-      } else {
+      } else if (
+        chunk.chunk_idx < matchedChunk.chunk_idx &&
+        matchedChunk.chunk_idx - chunk.chunk_idx <= chunk.text_chunks.length
+      ) {
         // Equality of chunk indices is impossible - the chunks should all have different indices
         chunk.text_chunks.forEach((textChunk) => {
           if (!matchedChunk.text_chunks.includes(textChunk)) {
+            // unshift() adds to the start of the array
             matchedChunk.text_chunks.unshift(textChunk);
           }
         });
+      } else {
+        deduped.push(chunk);
       }
     } else {
       deduped.push(chunk);
+    }
+    if (
+      deduped.map((ch) => ch.text_chunks.length).reduce((a, b) => a + b, 0) >=
+      nTextChunksInclude
+    ) {
+      break;
     }
   }
   return deduped;

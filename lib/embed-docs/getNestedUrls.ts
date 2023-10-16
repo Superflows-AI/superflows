@@ -2,7 +2,11 @@ import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
 import { isUrlRelative, makeUrlAbsolute } from "../utils";
 import { PlaywrightWebBaseLoader } from "langchain/document_loaders/web/playwright";
 import { Browser, Page } from "playwright";
-import { Link } from "./utils";
+
+export interface Link {
+  name: string;
+  href: string;
+}
 
 export async function getNestedUrls(
   url_docs: string,
@@ -81,16 +85,7 @@ export async function getNestedUrls(
     });
   }
 
-  // Conversion to Set removes duplicates
-  const uniqueLinks = [...new Set(links.map((item: any) => item.href))]
-    // Filter out links that are not relative or to subpages of the original site
-    .filter((ref) => isUrlRelative(ref) || ref.startsWith(base_url))
-    // Cut out links to the original site
-    .filter((ref) => ref !== url_docs)
-    // Below is a hack to remove links that are not links
-    .filter((link) => !link.href.includes("javascript:void(0)"))
-    // Convert to Link objects
-    .map((href: string) => links.find((item) => item.href === href)!);
+  const uniqueLinks = getUniqueLinks(links, base_url, url_docs);
 
   let outputLinks = [...uniqueLinks];
 
@@ -115,9 +110,16 @@ export async function getNestedUrls(
     outputLinks = outputLinks.concat(links);
   }
 
-  // Conversion to Set removes duplicates
+  return getUniqueLinks(links, base_url, url_docs);
+}
+
+function getUniqueLinks(
+  links: Link[],
+  base_url: string,
+  url_docs: string,
+): Link[] {
   return (
-    [...new Set(outputLinks.map((item: any) => item.href))]
+    [...new Set(links.map((item: any) => item.href))]
       // Filter out links that are not relative or to subpages of the original site
       .filter((ref) => isUrlRelative(ref) || ref.startsWith(base_url))
       // Cut out links to the original site
@@ -125,6 +127,6 @@ export async function getNestedUrls(
       // Below is a hack to remove links that are not links
       .filter((link) => !link.href.includes("javascript:void(0)"))
       // Convert to Link objects
-      .map((href: string) => outputLinks.find((item) => item.href === href)!)
+      .map((href: string) => links.find((item) => item.href === href)!)
   );
 }

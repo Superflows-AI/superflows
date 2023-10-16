@@ -7,12 +7,6 @@ import { getTokenCount, isDate, isEmail, isPhoneNumber, isUrl } from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
 
-const EmbedDocsZod = z.object({
-  docsUrl: z.string(),
-  orgId: z.string(),
-});
-type EmbedDocsType = z.infer<typeof EmbedDocsZod>;
-
 const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
   headingStyle: "atx",
@@ -22,6 +16,7 @@ export async function embedDocs(
   docsUrls: string[],
   orgId: number,
   isDocusaurus: boolean,
+  ignoreLines: string[],
 ): Promise<DocChunkInsert[]> {
   // Split the links into chunks of 10 to avoid overloading the API
   const docUrlChunks = [];
@@ -78,16 +73,13 @@ export async function embedDocs(
 
               // Split the documents into chunks
               const lines = section
+                // TODO: (V2) don't always split by newline
                 .split("\n")
                 .filter((chunk) => isTextWithSubstance(chunk))
                 // Don't just restate the title
                 .filter(
                   (chunk) =>
-                    ![
-                      title,
-                      "Saltar a contenido principal;)",
-                      "Fecha de la última publicación",
-                    ].includes(RemoveMarkdown(chunk)),
+                    ![title, ...ignoreLines].includes(RemoveMarkdown(chunk)),
                 )
                 // Tabs are more token-efficient than 4 spaces
                 .map((chunk) => chunk.replaceAll(/ {4}/g, "\t"))
@@ -151,10 +143,6 @@ function isTextWithSubstance(text: string): boolean {
     !isUrl(text) &&
     !isDate(text)
   );
-}
-
-function ensureEndsInFullStop(text: string): string {
-  return text.endsWith(".") ? text : text + ".";
 }
 
 export function getDocsLoader(
