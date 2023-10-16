@@ -82,7 +82,7 @@ describe("deduplicateChunks", () => {
       },
     ];
 
-    const res = deduplicateChunks(chunks);
+    const res = deduplicateChunks(chunks, 9);
 
     expect(res).toEqual([
       {
@@ -127,7 +127,7 @@ describe("deduplicateChunks", () => {
       },
     ];
 
-    const res = deduplicateChunks(chunks);
+    const res = deduplicateChunks(chunks, 9);
 
     expect(res).toEqual([
       {
@@ -163,7 +163,7 @@ describe("deduplicateChunks", () => {
       },
     ];
 
-    const res = deduplicateChunks(chunks);
+    const res = deduplicateChunks(chunks, 9);
 
     expect(res).toEqual([
       {
@@ -173,6 +173,111 @@ describe("deduplicateChunks", () => {
         section_title: "c",
         text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3", "Chunk 4"],
         chunk_idx: 2,
+        similarity: 1,
+      },
+    ]);
+  });
+  it("multiple duplicates - keep appending", () => {
+    const chunks = [
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+      {
+        id: 14,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 4", "Chunk 5", "Chunk 6"],
+        chunk_idx: 4,
+        similarity: 1,
+      },
+    ];
+
+    const res = deduplicateChunks(chunks, 9);
+
+    expect(res).toEqual([
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: [
+          "Chunk 1",
+          "Chunk 2",
+          "Chunk 3",
+          "Chunk 4",
+          "Chunk 5",
+          "Chunk 6",
+        ],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+    ]);
+  });
+  it("multiple duplicates - doesn't add new doc_chunk", () => {
+    const chunks = [
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+      {
+        id: 14,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 5", "Chunk 6", "Chunk 7"],
+        chunk_idx: 5,
+        similarity: 1,
+      },
+    ];
+
+    const res = deduplicateChunks(chunks, 9);
+
+    expect(res).toEqual([
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: [
+          "Chunk 1",
+          "Chunk 2",
+          "Chunk 3",
+          "Chunk 4",
+          "Chunk 5",
+          "Chunk 6",
+          "Chunk 7",
+        ],
+        chunk_idx: 1,
         similarity: 1,
       },
     ]);

@@ -32,7 +32,9 @@ export async function getRelevantDocChunks(
 
   console.log("All relevant doc chunks:", data);
 
-  return chunksToString(deduplicateChunks(data.slice(0, nChunksInclude)));
+  return chunksToString(
+    deduplicateChunks(data, nChunksInclude * data[0].text_chunks.length),
+  );
 }
 
 export function getSearchDocsAction(
