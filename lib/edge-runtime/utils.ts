@@ -184,7 +184,9 @@ export function chunksToString(chunks: SimilaritySearchResult[]): string {
   return chunks
     .map((chunk) => {
       return `Page: ${chunk.page_title}${
-        chunk.section_title ? "\nSection: " + chunk.section_title : ""
+        chunk.section_title && chunk.section_title !== chunk.page_title
+          ? "\nSection: " + chunk.section_title
+          : ""
       }\n\n${chunk.text_chunks.filter((ch) => ch).join("\n")}`;
     })
     .join("\n\n---\n");

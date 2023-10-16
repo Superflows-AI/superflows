@@ -23,6 +23,7 @@ export async function embedDocs(
   orgId: number,
   isDocusaurus: boolean,
 ): Promise<DocChunkInsert[]> {
+  // Split the links into chunks of 10 to avoid overloading the API
   const docUrlChunks = [];
   for (let i = 0; i < docsUrls.length; i += 10) {
     docUrlChunks.push(docsUrls.slice(i, i + 10));
@@ -119,7 +120,9 @@ export async function embedDocs(
             // (ch) => RemoveMarkdown(ch.text_chunks.join("\n")),
             (ch) =>
               `Page: ${ch.page_title}${
-                ch.section_title ? "\nSection: " + ch.section_title : ""
+                ch.section_title && ch.section_title !== ch.page_title
+                  ? "\nSection: " + ch.section_title
+                  : ""
               }\n${RemoveMarkdown(ch.text_chunks.join("\n"))}`,
           );
           console.log(textToEmbed);
