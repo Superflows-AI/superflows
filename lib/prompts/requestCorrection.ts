@@ -11,7 +11,7 @@ export function requestCorrectionSystemPrompt(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)}
+    content: `${getIntroText(orgInfo)}via function calls
 ${
   userDescription
     ? `\nThe following is a description of the user: ${userDescription}\n`

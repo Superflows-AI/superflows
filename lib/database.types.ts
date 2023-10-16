@@ -267,9 +267,10 @@ export interface Database {
           },
         ];
       };
-      docs: {
+      doc_chunks: {
         Row: {
           chunk_idx: number;
+          created_at: string | null;
           embedding: number[];
           id: number;
           org_id: number;
@@ -277,10 +278,10 @@ export interface Database {
           page_url: string | null;
           section_title: string | null;
           text_chunks: string[];
-          window_length: number;
         };
         Insert: {
           chunk_idx: number;
+          created_at?: string | null;
           embedding?: number[];
           id?: number;
           org_id: number;
@@ -288,10 +289,10 @@ export interface Database {
           page_url?: string | null;
           section_title?: string | null;
           text_chunks: string[];
-          window_length: number;
         };
         Update: {
           chunk_idx?: number;
+          created_at?: string | null;
           embedding?: number[];
           id?: number;
           org_id?: number;
@@ -299,11 +300,10 @@ export interface Database {
           page_url?: string | null;
           section_title?: string | null;
           text_chunks?: string[];
-          window_length?: number;
         };
         Relationships: [
           {
-            foreignKeyName: "docs_org_id_fkey";
+            foreignKeyName: "doc_chunks_org_id_fkey";
             columns: ["org_id"];
             referencedRelation: "organizations";
             referencedColumns: ["id"];
@@ -548,7 +548,7 @@ export interface Database {
     Functions: {
       match_embeddings: {
         Args: {
-          query_embedding: unknown;
+          query_embedding: number[];
           similarity_threshold: number;
           match_count: number;
           _org_id: number;
@@ -561,7 +561,6 @@ export interface Database {
           chunk_idx: number;
           page_title: string;
           section_title: string;
-          window_length: number;
         }[];
       };
     };

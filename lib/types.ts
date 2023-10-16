@@ -16,6 +16,9 @@ export type ActionTagJoin = ActionTag & { actions: Action[] };
 export type DBChatMessage =
   Database["public"]["Tables"]["chat_messages"]["Row"];
 
+export type DocChunkInsert =
+  Database["public"]["Tables"]["doc_chunks"]["Insert"];
+
 export type DocChunk = Database["public"]["Tables"]["doc_chunks"]["Row"];
 
 export type SimilaritySearchResult = { similarity: number } & Omit<

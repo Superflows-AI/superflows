@@ -1,6 +1,6 @@
 import { getTokenCount } from "../utils";
 import { ChatGPTMessage, GPTMessageInclSummary } from "../models";
-import { DBChatMessage } from "../types";
+import { DBChatMessage, SimilaritySearchResult } from "../types";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
@@ -143,21 +143,49 @@ export function getParam(parameters: Record<string, any>, key: string): any {
   if (found) return parameters[found];
 }
 
-export function deduplicateChunks(chunks: string[][]): string[][] {
-  // TODO: test me
-  const seen: string[] = [...chunks[0]];
-  const deduped = JSON.parse(JSON.stringify(chunks));
+export function deduplicateChunks(
+  chunks: SimilaritySearchResult[],
+): SimilaritySearchResult[] {
+  chunks = JSON.parse(JSON.stringify(chunks));
+  const deduped: SimilaritySearchResult[] = [chunks[0]];
 
   // Don't need to dedupe the first chunk
   for (let i = 1; i < chunks.length; i++) {
-    const chunk = deduped[i];
-    for (const sentence of chunk) {
-      if (seen.includes(sentence)) {
-        deduped[i] = deduped[i].filter((s: string[]) => s !== sentence);
+    const chunk = chunks[i];
+    const matchedChunk = deduped.find(
+      (seenCh) =>
+        seenCh.page_url === chunk.page_url &&
+        seenCh.page_title === chunk.page_title &&
+        seenCh.section_title === chunk.section_title,
+    );
+    if (matchedChunk) {
+      if (chunk.chunk_idx > matchedChunk.chunk_idx) {
+        chunk.text_chunks.forEach((textChunk) => {
+          if (!matchedChunk.text_chunks.includes(textChunk)) {
+            matchedChunk.text_chunks.push(textChunk);
+          }
+        });
       } else {
-        seen.push(sentence);
+        // Equality of chunk indices is impossible - the chunks should all have different indices
+        chunk.text_chunks.forEach((textChunk) => {
+          if (!matchedChunk.text_chunks.includes(textChunk)) {
+            matchedChunk.text_chunks.unshift(textChunk);
+          }
+        });
       }
+    } else {
+      deduped.push(chunk);
     }
   }
   return deduped;
+}
+
+export function chunksToString(chunks: SimilaritySearchResult[]): string {
+  return chunks
+    .map((chunk) => {
+      return `Page: ${chunk.page_title}${
+        chunk.section_title ? "\nSection: " + chunk.section_title : ""
+      }\n\n${chunk.text_chunks.filter((ch) => ch).join("\n")}`;
+    })
+    .join("\n\n---\n");
 }

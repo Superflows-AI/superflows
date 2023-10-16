@@ -5,7 +5,7 @@ import { Redis } from "@upstash/redis";
 import { NextRequest, NextResponse } from "next/server";
 import { USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
-import { Angela, Dottie } from "../../../lib/edge-runtime/AI";
+import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
 import {
   DBChatMessageToGPT,
   getFreeTierUsage,

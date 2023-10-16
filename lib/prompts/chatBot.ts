@@ -209,8 +209,6 @@ export default function getMessages(
               (m.content.includes("ID1") || m.content.includes("URL1")),
           ).length > 0,
         )
-      : orgInfo.chat_to_docs_enabled
-      ? chatToDocsPrompt(userDescriptionSection, orgInfo, language)
       : simpleChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
   ];
@@ -226,38 +224,22 @@ function chatToDocsPrompt(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `You are ${orgInfo.name || "a"} chatbot AI${
-      orgInfo.description ? " " + orgInfo.description : ""
-    }. Your purpose is to assist users ${
-      orgInfo.name ? `in ${orgInfo.name} ` : ""
-    }by reading information from the organization's documentation.
-
+    content: `${getIntroText(orgInfo)}using information from ${
+      orgInfo.name ? orgInfo.name + "'s" : "their"
+    } documentation
 ${userDescriptionSection}
-Today's date is ${new Date().toISOString().split("T")[0]}
+You will be shown chunks of potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
 
-You will be shown chunks of potentially relevant documentation. 
+${
+  orgInfo.name ??
+  `You have expert knowledge in ${orgInfo}'s domain. Use this to help the user. `
+}Do not invent new knowledge. THIS IS VERY IMPORTANT.
 
-You can ask the user questions to clarify their request.
+Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question. Do not output anything else.
 
-You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
+Never tell the user to find the answer in the documentation.
 
-Be extremely concise in your responses
-
-You can output either:
-
-Your answer to the user's query 
-
-or 
-
-"More documentation"
-
-If you output "More documentation", you will be shown more documentation. You can output "More documentation" as many times as you like.
-
-Think and talk to the user in ${language ?? "the same language they write in"}${
-      language !== "English" &&
-      " Do not translate the keywords: More documentation"
-    }
-    `,
+Reply to the user in ${language ?? "the language they write in"}`,
   };
 }
 
@@ -271,11 +253,7 @@ export function simpleChatPrompt(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `You are ${orgInfo.name} chatbot AI. ${
-      orgInfo.description
-    }. Your purpose is to write friendly helpful replies to users in ${
-      orgInfo.name
-    }.
+    content: `${getIntroText(orgInfo)}with helpful replies
 
 ${userDescriptionSection}
 
@@ -292,10 +270,10 @@ Your reply should be written in ${language}.`
 
 export function getIntroText(orgInfo: { name: string; description: string }) {
   return `You are ${orgInfo.name || "a"} chatbot AI${
-    orgInfo.description ? " " + orgInfo.description : ""
-  }. Your purpose is to assist users ${
+    orgInfo.description ? ". " + orgInfo.description : ""
+  } Your purpose is to assist users ${
     orgInfo.name ? `in ${orgInfo.name} ` : ""
-  }via function calls`;
+  }`;
 }
 
 function systemPromptWithActions(
@@ -310,7 +288,7 @@ function systemPromptWithActions(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)}
+    content: `${getIntroText(orgInfo)}via function calls
 
 Seek user assistance when necessary or more information is required
 

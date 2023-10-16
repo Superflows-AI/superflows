@@ -60,25 +60,121 @@ describe("getParam", () => {
 });
 
 describe("deduplicateChunks", () => {
-  it("simple", () => {
+  it("no match", () => {
     const chunks = [
-      ["i've", "seen"],
-      ["seen", "things"],
+      {
+        id: 12,
+        page_url: "tta",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
     ];
 
     const res = deduplicateChunks(chunks);
 
-    expect(res).toEqual([["i've", "seen"], ["things"]]);
+    expect(res).toEqual([
+      {
+        id: 12,
+        page_url: "tta",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+    ]);
   });
-  it("no change no duplicates", () => {
+  it("duplicate - append to end", () => {
     const chunks = [
-      ["you", "people"],
-      ["wouldn't", "believe"],
-      ["attack", "ships", "on", "fire"],
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
     ];
 
     const res = deduplicateChunks(chunks);
 
-    expect(res).toEqual(chunks);
+    expect(res).toEqual([
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+    ]);
+  });
+  it("duplicate - append to start", () => {
+    const chunks = [
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+      {
+        id: 12,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3"],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+    ];
+
+    const res = deduplicateChunks(chunks);
+
+    expect(res).toEqual([
+      {
+        id: 13,
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        text_chunks: ["Chunk 1", "Chunk 2", "Chunk 3", "Chunk 4"],
+        chunk_idx: 2,
+        similarity: 1,
+      },
+    ]);
   });
 });
