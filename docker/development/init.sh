@@ -75,13 +75,33 @@ then
     echo "Git is not installed. Please install it and try again."
     exit 1
 fi
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null
+then
+    echo "Docker is not installed. Please install it and try again."
+    exit 1
+fi
+
+# Check if Docker Compose is installed and decide the compose command to use
+if command -v docker-compose &> /dev/null
+then
+    COMPOSE_CMD="docker-compose"
+elif docker compose version &> /dev/null
+then
+    COMPOSE_CMD="docker compose"
+else
+    echo "Neither docker-compose nor docker compose is available. Please install one of them and try again."
+    exit 1
+fi
+
 # Clone the repositories
 manage_supabase_repo
 # Copy the .env.example files
 manage_env_file
 # Build the containers
 echo "Attempting to run the containers...you can press Ctrl+C to stop the process. or wait for container to build."
-docker-compose up -d --build
+$COMPOSE_CMD up -d --build
 # Run the migrations
 echo "Attempting to run migrations"
 run_migrations
