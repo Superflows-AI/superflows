@@ -122,6 +122,8 @@ make run
 
 ### Docker Setup
 
+Locate the init.sh file in the docker/development directory after cloning the project.
+
 #### Prerequisites
  - Ensure that git is installed on your system. If it's not installed, the script will notify you.
  - Install docker and docker compose using the relevant installation guide for your operating system
