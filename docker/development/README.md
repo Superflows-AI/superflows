@@ -3,8 +3,8 @@
 This script is designed to facilitate the process of setting up and managing the Superflows development environment with Supabase and also to setup the base environment configuration in your project. It ensures that the Supabase repository is either cloned or updated, and it also checks and manages the .env file, merging the existing .env.example files if necessary.
 
 ### Prerequisites
-Ensure that git is installed on your system. If it's not installed, the script will notify you.
-Also install docker and docker compose using the relevant installation guide for your operating system
+ - Ensure that git is installed on your system. If it's not installed, the script will notify you.
+ - Install docker and docker compose using the relevant installation guide for your operating system
 
 #### Usage
 Make the Script Executable
