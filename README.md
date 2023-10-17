@@ -89,9 +89,11 @@ We haven't written a self-hosting guide for Superflows yet. If you're interested
 
 [Available here.](https://docs.superflows.ai/blog/roadmap)
 
-### Setting up locally
 
-## Local setup
+
+## Setting up locally
+
+- ### Local setup
 
 You need to be running a local version of [Supabase](https://supabase.io) to develop this project locally.
 
@@ -120,7 +122,7 @@ make run
 
 (Alternatively, if you don't have `make`, use `npm run dev`)
 
-### Docker Setup
+- ### Docker Setup
 
 Locate the init.sh file in the docker/development directory after cloning the project.
 
