@@ -10,14 +10,23 @@ CONTAINERNAME=supabase-db
 SUPERFLOWS_PORT=8080
 
 manage_supabase_repo() {
-    if [ -d "supabase/.git" ]; then
-        echo "Supabase repository already exists. Pulling the latest changes..."
-        cd supabase && git pull && cd ..
+    if [ -d "supabase" ]; then
+        if [ -d "supabase/.git" ]; then
+            echo "Supabase repository already exists. Pulling the latest changes..."
+            cd supabase && git pull && cd ..
+        else
+            echo "Directory named supabase exists but is not a git repository. Removing it..."
+            rm -rf supabase
+            echo "Cloning the Supabase repository..."
+            git clone -n --depth=1 --filter=tree:0 https://github.com/supabase/supabase && cd supabase && git sparse-checkout set --no-cone docker && git checkout && cd ..
+        fi
     else
         echo "Cloning the Supabase repository..."
+        rm -rf supabase
         git clone -n --depth=1 --filter=tree:0 https://github.com/supabase/supabase && cd supabase && git sparse-checkout set --no-cone docker && git checkout && cd ..
     fi
 }
+
 
 # Function to manage the .env file
 manage_env_file() {
@@ -103,5 +112,5 @@ manage_env_file
 echo "Attempting to run the containers...you can press Ctrl+C to stop the process. or wait for container to build."
 $COMPOSE_CMD up -d --build
 # Run the migrations
-echo "Attempting to run migrations"
-run_migrations
+# echo "Attempting to run migrations"
+# run_migrations
