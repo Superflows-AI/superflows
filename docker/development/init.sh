@@ -26,6 +26,8 @@ manage_env_file() {
         if [ -f "../../.env.example" ] && [ -f "supabase/docker/.env.example" ]; then
             echo "Creating .env file from .env.example files..."
             cat "supabase/docker/.env.example" "../../.env.example" > $env_file
+            echo "ENABLE_EMAIL_AUTOCONFIRM=true" >> $env_file
+            echo "API_SUPABASE_URL=http://kong:8000" >> $env_file
             if [ -f "$env_file" ]; then 
                 POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" "$env_file" | cut -d '=' -f2)
                 POSTGRES_DB=$(grep "^POSTGRES_DB=" "$env_file" | cut -d '=' -f2)
