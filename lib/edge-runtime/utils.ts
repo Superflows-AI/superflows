@@ -216,7 +216,7 @@ export function chunksToString(chunks: SimilaritySearchResult[]): string {
         chunk.section_title && chunk.section_title !== chunk.page_title
           ? "\nSection: " + chunk.section_title
           : ""
-      }\n\n${chunk.text_chunks.filter((ch) => ch).join("\n")}`;
+      }\n\n${chunk.text_chunks.join("").trim()}`;
     })
     .join("\n\n---\n");
 }
