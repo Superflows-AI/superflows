@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { PlaywrightWebBaseLoader } from "langchain/document_loaders/web/playwright";
 import { Browser, Page } from "playwright";
 import TurndownService from "turndown";
@@ -53,6 +52,7 @@ export async function embedDocs(
           // For each heading, split the text into chunks by newline, filter out useless chunks, and split into 3s
           const doc_chunks = Object.entries(headerToSection)
             .map(([header, section]) => {
+              // If a line is just the title, skip it
               if (!section.replaceAll(title, "").trim()) return [];
               // Split the documents into text chunks
               const lines = splitIntoTextChunks(section, [
@@ -260,9 +260,9 @@ export function splitIntoTextChunks(
   return joinShortChunks(
     sectionText
       .split("\n")
-      .filter((chunk) => isTextWithSubstance(chunk))
-      // Don't just restate the title
       .filter((chunk) => !ignoreLines.includes(RemoveMarkdown(chunk)))
+      // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
+      .filter((chunk) => isTextWithSubstance(chunk))
       // Tabs are more token-efficient than 4 spaces
       .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
       .map((chunk) => {
@@ -277,6 +277,10 @@ export function splitIntoTextChunks(
 }
 
 export function splitMarkdownIntoSentences(markdown: string) {
+  /** Does what it says on the tin.
+   *
+   * Splits a paragraph of markdown (since we previously split by newline) into
+   * sentences. *Does not* split by newline. **/
   let tmpMarkedItems: string[] = [];
   let tmpString = markdown;
 
