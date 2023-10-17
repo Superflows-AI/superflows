@@ -129,7 +129,7 @@ const supabase = createClient(
   // Bring me my arrows of desire:
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   // Bring me my Spear: O clouds unfold!
-  process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
+  process.env.API_SUPABASE_URL ?? process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
   // Bring me my Chariot of fire!
 );
 
