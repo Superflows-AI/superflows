@@ -8,7 +8,7 @@ POSTGRES_PORT=5432
 POSTGRES_HOST=db
 CONTAINERNAME=supabase-db
 SUPERFLOWS_PORT=8080
-
+API_SUPABASE_URL=http://kong:8000
 manage_supabase_repo() {
     if [ -d "supabase" ]; then
         if [ -d "supabase/.git" ]; then
@@ -35,8 +35,6 @@ manage_env_file() {
         if [ -f "../../.env.example" ] && [ -f "supabase/docker/.env.example" ]; then
             echo "Creating .env file from .env.example files..."
             cat "supabase/docker/.env.example" "../../.env.example" > $env_file
-            echo "ENABLE_EMAIL_AUTOCONFIRM=true" >> $env_file
-            echo "API_SUPABASE_URL=http://kong:8000" >> $env_file
             if [ -f "$env_file" ]; then 
                 POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" "$env_file" | cut -d '=' -f2)
                 POSTGRES_DB=$(grep "^POSTGRES_DB=" "$env_file" | cut -d '=' -f2)
@@ -51,6 +49,14 @@ manage_env_file() {
                     sed -i "s/^SERVICE_LEVEL_KEY_SUPABASE=.*/SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}/" "$env_file"
                 else
                     echo "SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}" >> "$env_file"
+                fi
+                if grep -q "^ENABLE_EMAIL_AUTOCONFIRM=" "$env_file"; then
+                    sed -i "s/^ENABLE_EMAIL_AUTOCONFIRM=.*/ENABLE_EMAIL_AUTOCONFIRM=true/" "$env_file"
+                fi
+                if grep -q "^API_SUPABASE_URL=" "$env_file"; then
+                    sed -i "s/^API_SUPABASE_URL=.*/API_SUPABASE_URL=$API_SUPABASE_URL/" "$env_file"
+                else
+                    echo "API_SUPABASE_URL=$API_SUPABASE_URL" >> "$env_file"
                 fi
             fi
         else

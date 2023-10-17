@@ -4,6 +4,7 @@ This script is designed to facilitate the process of setting up and managing the
 
 ### Prerequisites
 Ensure that git is installed on your system. If it's not installed, the script will notify you.
+Also install docker and docker compose using the relevant installation guide for your operating system
 
 #### Usage
 Make the Script Executable
@@ -15,10 +16,10 @@ Before using the script for the first time, ensure it is executable then run it:
 
 #### Verify contents
 This should create the supabase folder and also a .env file.
-- Review the env variables and correct or change to suit your environment
+- Review the env variables and correct or change to suit your environment - the env should already contain sensible defaults (however)
+    - Set in your OPENAI key  [OPENAI_API_KEY] 
+    - [optional] set in your SMTP credentials to enable email
+
 - Run the compose file (depending on what version of compose you have installed)
-
-
     docker compose up -d build 
     or docker-compose up -d build 
-    
