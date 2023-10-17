@@ -139,9 +139,15 @@ export function openAiCost(
   return nTokens * (costPerThousand / 1000);
 }
 
-export function getTokenCount(messages: ChatGPTMessage[]): number {
+export function getTokenCount(prompt: ChatGPTMessage[] | string): number {
+  let chatGptMessages: ChatMessage[];
+  if (typeof prompt === "string") {
+    chatGptMessages = [{ role: "user", content: prompt }];
+  } else {
+    chatGptMessages = prompt as ChatMessage[];
+  }
   // Per the docs, the tokenizer should be the same for 3.5-turbo and 4.
-  const encoded = tokenizer.encodeChat(messages as ChatMessage[], "gpt-4");
+  const encoded = tokenizer.encodeChat(chatGptMessages, "gpt-4");
   return encoded.length;
 }
 
@@ -438,6 +444,31 @@ export function swapKeysValues(json: { [key: string]: string }) {
   }
   return ret;
 }
+
+const absoluteChecker = new RegExp("^(?:[a-z+]+:)?//", "i");
+export function isUrlRelative(url: string): boolean {
+  return !absoluteChecker.test(url);
+}
+
+export function makeUrlAbsolute(url: string, href: string): string {
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    return href;
+  }
+
+  // Capture the protocol and host from the href (until the first '/')
+  const baseRegex = /^(https?:\/\/[^\/]*)/;
+  let match = url.match(baseRegex);
+  if (match) url = match[0];
+  // Ensure there isn't double slashes when concatenating
+  if (url.endsWith("/") && href.startsWith("/")) {
+    return url.slice(0, -1) + href;
+  } else if (!url.endsWith("/") && !href.startsWith("/")) {
+    return `${url}/${href}`;
+  } else {
+    return url + href;
+  }
+}
+
 export function isUUID(str: string): boolean {
   return validate(str);
 }
@@ -476,11 +507,16 @@ export function isName(string: string): boolean {
   return /([A-Z]?[a-z-.,]{1,9}\s){1,2}[A-Z]?[a-z-.,]{1,9}/.test(string);
 }
 
+function isMoneyValue(str: string): boolean {
+  return /^[$£€]?\d{1,3},(\d\d\d,){0,2}\d{3}(.\d\d)?$/g.test(str);
+}
+
 export function isID(str: string): boolean {
   if (str.length < 10) return false;
   if (isUUID(str)) return true;
   if (isDate(str)) return false;
   if (isEmail(str)) return false;
+  if (isMoneyValue(str)) return false;
   if (isPhoneNumber(str)) return false;
   if (isName(str)) return false;
   const nTokens = tokenizer.encode(str).length;

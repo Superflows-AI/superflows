@@ -25,6 +25,7 @@ const actions: Action[] = [
     request_method: "POST",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
   {
     tag: 1,
@@ -42,6 +43,7 @@ const actions: Action[] = [
     request_method: "GET",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
   {
     tag: 1,
@@ -59,6 +61,7 @@ const actions: Action[] = [
     request_method: "PUT",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
   {
     tag: 1,
@@ -76,6 +79,7 @@ const actions: Action[] = [
     request_method: "PUT",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
   {
     tag: 1,
@@ -93,6 +97,7 @@ const actions: Action[] = [
     request_method: "PUT",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
   {
     tag: 1,
@@ -110,6 +115,7 @@ const actions: Action[] = [
     request_method: "PUT",
     responses: null,
     api_id: "12345",
+    requires_confirmation: false,
   },
 ];
 

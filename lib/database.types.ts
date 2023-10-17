@@ -3,7 +3,7 @@ export type Json =
   | number
   | boolean
   | null
-  | { [key: string]: Json }
+  | { [key: string]: Json | undefined }
   | Json[];
 
 export interface Database {
@@ -267,6 +267,49 @@ export interface Database {
           },
         ];
       };
+      doc_chunks: {
+        Row: {
+          chunk_idx: number;
+          created_at: string | null;
+          embedding: number[];
+          id: number;
+          org_id: number;
+          page_title: string | null;
+          page_url: string | null;
+          section_title: string | null;
+          text_chunks: string[];
+        };
+        Insert: {
+          chunk_idx: number;
+          created_at?: string | null;
+          embedding?: number[];
+          id?: number;
+          org_id: number;
+          page_title?: string | null;
+          page_url?: string | null;
+          section_title?: string | null;
+          text_chunks: string[];
+        };
+        Update: {
+          chunk_idx?: number;
+          created_at?: string | null;
+          embedding?: number[];
+          id?: number;
+          org_id?: number;
+          page_title?: string | null;
+          page_url?: string | null;
+          section_title?: string | null;
+          text_chunks?: string[];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "doc_chunks_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       feedback: {
         Row: {
           conversation_id: number;
@@ -391,30 +434,36 @@ export interface Database {
       organizations: {
         Row: {
           api_key: string;
+          chat_to_docs_enabled: boolean;
           created_at: string | null;
           description: string;
           id: number;
           join_link_id: string | null;
+          language: string;
           model: string;
           name: string;
           sanitize_urls_first: boolean;
         };
         Insert: {
           api_key?: string;
+          chat_to_docs_enabled?: boolean;
           created_at?: string | null;
           description?: string;
           id?: number;
           join_link_id?: string | null;
+          language?: string;
           model?: string;
           name?: string;
           sanitize_urls_first?: boolean;
         };
         Update: {
           api_key?: string;
+          chat_to_docs_enabled?: boolean;
           created_at?: string | null;
           description?: string;
           id?: number;
           join_link_id?: string | null;
+          language?: string;
           model?: string;
           name?: string;
           sanitize_urls_first?: boolean;
@@ -497,7 +546,23 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      match_embeddings: {
+        Args: {
+          query_embedding: number[];
+          similarity_threshold: number;
+          match_count: number;
+          _org_id: number;
+        };
+        Returns: {
+          id: number;
+          text_chunks: string[];
+          similarity: number;
+          page_url: string;
+          chunk_idx: number;
+          page_title: string;
+          section_title: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -614,12 +679,6 @@ export interface Database {
             foreignKeyName: "objects_bucketId_fkey";
             columns: ["bucket_id"];
             referencedRelation: "buckets";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "objects_owner_fkey";
-            columns: ["owner"];
-            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];

@@ -3,7 +3,6 @@ import {
   DocumentArrowUpIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline";
 import {
   SupabaseClient,
@@ -26,7 +25,7 @@ import UploadModal from "./uploadModal";
 import { LoadingSpinner } from "../loadingspinner";
 import ViewSystemPromptModal from "./viewPromptModal";
 import APITabs from "./APITabs";
-import getMessages, { getActionDescriptions } from "../../lib/prompts/chatBot";
+import getMessages from "../../lib/prompts/chatBot";
 
 export default function PageActionsSection(props: {
   actionTags: ActionTagJoin[];
@@ -69,6 +68,7 @@ export default function PageActionsSection(props: {
           description: profile?.organizations?.description ?? "",
         },
         "english",
+        false,
       ),
     );
 

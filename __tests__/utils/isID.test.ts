@@ -22,6 +22,7 @@ const IDs = [
   "dataID_r42A752X",
   "ID_s3721aZ_ID",
   "userID_j549MbpEgZ2931fjds",
+  "152745785763256",
 ];
 
 const notIDs = [
@@ -45,6 +46,8 @@ const notIDs = [
   "summer_sunflower_garden37",
   "blue_bird_joyfulChirp",
   "mountain_majesticView01",
+  "1,153,623,575.33",
+  "$1,153,623,575.33",
 ];
 
 describe("isID", () => {

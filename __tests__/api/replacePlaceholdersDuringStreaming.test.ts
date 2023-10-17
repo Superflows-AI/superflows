@@ -1,4 +1,4 @@
-import { replacePlaceholdersDuringStreaming } from "../../pages/api/v1/answers";
+import { replacePlaceholdersDuringStreaming } from "../../lib/edge-runtime/angelaUtils";
 
 describe("replacePlaceholdersDuringStreaming", () => {
   it("no placeholders", () => {

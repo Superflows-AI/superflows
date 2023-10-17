@@ -2,9 +2,9 @@ import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
-import { Action } from "../types";
-import { deduplicateArray, filterKeys, swapKeysValues, isID } from "../utils";
-import { getHeader, getJsonMIMEType } from "./utils";
+import { Action, ActionPlusApiInfo } from "../types";
+import { deduplicateArray, filterKeys } from "../utils";
+import { getHeader, getJsonMIMEType, getParam } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
 export function processAPIoutput(
@@ -29,6 +29,14 @@ export function constructHttpRequest({
   userApiKey,
   stream,
 }: ActionToHttpRequest): { url: string; requestOptions: RequestInit } {
+  /** Constructs an HTTP request from an action and parameters
+   *
+   * @param action - The action to construct the request from
+   * @param parameters - The parameters output by the AI to use in the API call
+   * @param organization - The organization info to use for the API call
+   * @param userApiKey - The user's API key to use for the API call
+   * @param stream - The stream function to use for logging
+   * **/
   if (!action.path) {
     throw new Error("Path is not provided");
   }
@@ -106,14 +114,16 @@ export function constructHttpRequest({
       if (param.in === "path") {
         url = url.replace(
           `{${param.name}}`,
-          encodeURIComponent(String(parameters[param.name])),
+          encodeURIComponent(String(getParam(parameters, param.name))),
         );
       } else if (param.in === "query") {
-        queryParams.set(param.name, String(parameters[param.name]));
+        queryParams.set(param.name, String(getParam(parameters, param.name)));
       } else if (param.in === "header") {
-        headers[param.name] = String(parameters[param.name]);
+        headers[param.name] = String(getParam(parameters, param.name));
       } else if (param.in === "cookie") {
-        headers["Cookie"] = `${param}=${String(parameters[param.name])}`;
+        headers["Cookie"] = `${param}=${String(
+          getParam(parameters, param.name),
+        )}`;
       } else {
         throw new Error(
           `Parameter "${param.name}" has invalid location: ${param.in}`,
@@ -192,8 +202,9 @@ function buildBody(
   const bodyArray = Object.entries(properties).map(([name, property]) => {
     // Throw out readonly attributes
     if (property.readOnly) return undefined;
-    if (parameters[name]) {
-      return { [name]: parameters[name] };
+    const paramValue = getParam(parameters, name);
+    if (paramValue) {
+      return { [name]: paramValue };
     }
   });
   return Object.assign({}, ...bodyArray);
@@ -284,4 +295,27 @@ export async function makeHttpRequest(
     return res.text();
   }
   return responseText;
+}
+
+export function getDocsChatRequest(
+  chosenAction: ActionPlusApiInfo,
+  user_input: string,
+  org_id: number,
+  tokenCount: number,
+): { url: any; requestOptions: any } {
+  return {
+    url: endpointUrlFromAction({
+      api_host: chosenAction.api.api_host,
+      path: chosenAction.path!,
+    }),
+    requestOptions: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: user_input,
+        org_id,
+        tokenCount,
+      }),
+    },
+  };
 }

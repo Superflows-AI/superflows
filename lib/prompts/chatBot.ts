@@ -188,11 +188,13 @@ export default function getMessages(
   orgInfo: {
     name: string;
     description: string;
+    chat_to_docs_enabled?: boolean;
   },
   language: string | null,
+  includeIdLine: boolean,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
-    ? `\nThe following is a description of the user and instructions on how you should address them - it's important that you take notice of this. ${userDescription}\n`
+    ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
     : "";
 
   return [
@@ -202,15 +204,44 @@ export default function getMessages(
           orgInfo,
           getActionDescriptions(actions),
           language,
-          userCopilotMessages.filter(
-            (m) =>
-              m.role === "function" &&
-              (m.content.includes("ID1") || m.content.includes("URL1")),
-          ).length > 0,
+          includeIdLine,
         )
       : simpleChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
   ];
+}
+
+export function chatToDocsPrompt(
+  userDescription: string | undefined,
+  orgInfo: {
+    name: string;
+    description: string;
+  },
+  language: string | null,
+): ChatGPTMessage {
+  const userDescriptionSection = userDescription
+    ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
+    : "";
+  return {
+    role: "system",
+    content: `${getIntroText(orgInfo)}using information from ${
+      orgInfo.name ? orgInfo.name + "'s" : "their"
+    } documentation
+${userDescriptionSection}
+You will be shown chunks of potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
+
+${
+  orgInfo.name
+    ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. `
+    : ""
+}Do not invent new knowledge. THIS IS VERY IMPORTANT.
+
+Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question. Do not output anything else.
+
+Never tell the user to find the answer in the documentation.
+
+Reply to the user in ${language ?? "the language they write in"}`,
+  };
 }
 
 export function simpleChatPrompt(
@@ -223,11 +254,7 @@ export function simpleChatPrompt(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `You are ${orgInfo.name} chatbot AI. ${
-      orgInfo.description
-    }. Your purpose is to write friendly helpful replies to users in ${
-      orgInfo.name
-    }.
+    content: `${getIntroText(orgInfo)}with helpful replies
 
 ${userDescriptionSection}
 
@@ -242,6 +269,14 @@ Your reply should be written in ${language}.`
   };
 }
 
+export function getIntroText(orgInfo: { name: string; description: string }) {
+  return `You are ${orgInfo.name || "a"} chatbot AI${
+    orgInfo.description ? ". " + orgInfo.description : ""
+  } Your purpose is to assist users ${
+    orgInfo.name ? `in ${orgInfo.name} ` : ""
+  }`;
+}
+
 function systemPromptWithActions(
   userDescriptionSection: string,
   orgInfo: {
@@ -254,15 +289,13 @@ function systemPromptWithActions(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `You are ${orgInfo.name} chatbot AI ${
-      orgInfo.description
-    }. Your purpose is to assist users in ${orgInfo.name} via function calls
+    content: `${getIntroText(orgInfo)}via function calls
 
 Seek user assistance when necessary or more information is required
 
 Avoid directing users, instead complete tasks by outputting "Commands"
 ${userDescriptionSection}
-Today's date is ${new Date().toISOString().split("T")[0]}.
+Today's date is ${new Date().toISOString().split("T")[0]}
 
 You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}"

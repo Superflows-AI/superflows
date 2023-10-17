@@ -2,6 +2,7 @@ import {
   ChatGPTMessage,
   ChatGPTParams,
   ChatGPTResponse,
+  EmbeddingResponse,
   OpenAIError,
 } from "./models";
 import { removeEmptyCharacters } from "./utils";
@@ -182,4 +183,38 @@ export function getSecondaryModel(mainModel: string): string {
     // Default for fine-tuned models
     return "gpt-3.5-turbo-0613";
   }
+}
+
+export async function queryEmbedding(
+  textToEmbed: string | string[],
+): Promise<number[][]> {
+  const response = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "text-embedding-ada-002",
+      input: textToEmbed,
+    }),
+  });
+
+  const responseJson: EmbeddingResponse | { error: OpenAIError } =
+    await response.json();
+
+  if (response.status === 429) {
+    // Throwing an error triggers exponential backoff retry
+    throw new Error(
+      `OpenAI API rate limit exceeded. Full error: ${JSON.stringify(
+        responseJson,
+      )}`,
+    );
+  }
+  if ("error" in responseJson) {
+    console.error("Error from embedding: ", responseJson.error);
+    return [];
+  }
+
+  return responseJson.data.map((item) => item.embedding);
 }

@@ -46,6 +46,46 @@ const openRouterBaseModels = [
   },
 ];
 
+const languages = [
+  {
+    id: "Detect Language",
+    name: "Detect Language (recommended)",
+    description: "Best for multilingual projects",
+  },
+  {
+    id: "English",
+    name: "English",
+  },
+  {
+    id: "Spanish",
+    name: "Spanish",
+  },
+  {
+    id: "French",
+    name: "French",
+  },
+  {
+    id: "German",
+    name: "German",
+  },
+  {
+    id: "Portuguese",
+    name: "Portuguese",
+  },
+  {
+    id: "Chinese",
+    name: "Chinese",
+  },
+  {
+    id: "Russian",
+    name: "Russian",
+  },
+  {
+    id: "Arabic",
+    name: "Arabic",
+  },
+];
+
 function Dashboard() {
   const supabase = useSupabaseClient<Database>();
   const { profile, refreshProfile } = useProfile();
@@ -65,12 +105,16 @@ function Dashboard() {
       : [];
     return [...finetunedGPTDefault, ...allLLMsBase, ...openRouterModels];
   });
-  const [llm, setLlm] = React.useState<string>(
-    profile ? profile!.organizations!.model : "gpt-4-0613",
+  const [llm, setLlm] = React.useState<null | string>(
+    profile?.organizations?.model ?? null,
   );
+  const [loaded, setLoaded] = React.useState<boolean>(false);
   useEffect(() => {
-    if (profile && profile?.organizations?.model !== llm)
+    if (profile && !loaded) {
+      setLoaded(true);
       setLlm(profile!.organizations!.model);
+      setLlmLanguage(profile!.organizations!.language);
+    }
   }, [profile]);
 
   useEffect(() => {
@@ -95,6 +139,9 @@ function Dashboard() {
       ]);
     }
   }, [profile?.organizations?.finetuned_models]);
+  const [llmLanguage, setLlmLanguage] = React.useState<null | string>(
+    profile?.organizations?.language ?? null,
+  );
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -123,6 +170,30 @@ function Dashboard() {
                     .update({
                       model: requestMethod,
                     })
+                    .eq("id", profile?.organizations?.id!);
+                  if (error) throw error;
+                  await refreshProfile();
+                }}
+                size={"base"}
+              />
+            </div>
+            <div className="col-start-1 flex flex-col place-items-start pr-4">
+              <h2 className="text-lg text-gray-200">Language Used</h2>
+              <p className="text-gray-400 text-sm">
+                Only change from &ldquo;Detect Language&rdquo; if you only want
+                to respond in one language.
+              </p>
+            </div>
+            <div className="mt-4 col-start-3 col-span-2">
+              <SelectBox
+                options={languages}
+                theme={"dark"}
+                selected={llmLanguage}
+                setSelected={async (language) => {
+                  setLlmLanguage(language);
+                  const { error } = await supabase
+                    .from("organizations")
+                    .update({ language })
                     .eq("id", profile?.organizations?.id!);
                   if (error) throw error;
                   await refreshProfile();

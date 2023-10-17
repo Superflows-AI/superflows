@@ -11,8 +11,7 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { Database } from "../../../lib/database.types";
 import { Ratelimit } from "@upstash/ratelimit";
-import { ToConfirm } from "./answers";
-import { ChatGPTMessage } from "../../../lib/models";
+import { ChatGPTMessage, ToConfirm } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
 import { getHost } from "../../../lib/edge-runtime/utils";
 
@@ -35,7 +34,8 @@ const ConfirmZod = z.object({
 type ConfirmType = z.infer<typeof ConfirmZod>;
 
 let redis: Redis | null = null,
-  ratelimit: Ratelimit | null = null;
+  ratelimitFree: Ratelimit | null = null,
+  ratelimitProduction: Ratelimit | null = null;
 if (
   !process.env.UPSTASH_REDIS_REST_URL ||
   !process.env.UPSTASH_REDIS_REST_TOKEN
@@ -43,11 +43,16 @@ if (
   console.log("Redis not found, falling back to supabase");
 } else {
   redis = Redis.fromEnv();
-  // Create a new ratelimiter, that allows 3 requests per 10 seconds
-  ratelimit = new Ratelimit({
+  // Free tier ratelimiter, that allows 3 requests per 10 seconds
+  ratelimitFree = new Ratelimit({
     redis,
-    // TODO: When someone is in production, this should be raised
     limiter: Ratelimit.slidingWindow(3, "10 s"),
+  });
+  // TODO: Increase this as necessary
+  // Production ratelimiter, that allows 30 requests per 10 seconds
+  ratelimitProduction = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(30, "10 s"),
   });
 }
 
@@ -92,13 +97,16 @@ export default async function handler(req: NextRequest) {
     }
 
     // Check that the user hasn't surpassed the rate limit
-    if (ratelimit) {
-      const { success } = await ratelimit.limit(token);
+    if (ratelimitProduction) {
+      const { success } = await ratelimitProduction.limit(token);
       if (!success) {
-        return new Response(JSON.stringify({ error: "Rate limit hit" }), {
-          status: 429,
-          headers,
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limit hit (30 requests/10s)" }),
+          {
+            status: 429,
+            headers,
+          },
+        );
       }
     }
 
@@ -117,6 +125,23 @@ export default async function handler(req: NextRequest) {
         status: 401,
         headers,
       });
+    }
+
+    // If free tier user, check that the user hasn't surpassed the free tier rate limit
+    if (ratelimitFree && !org.is_paid[0].is_premium) {
+      const { success } = await ratelimitFree.limit(token);
+      if (!success) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "Rate limit hit (3 requests/10s) - upgrade to a paid tier to use a higher rate limit",
+          }),
+          {
+            status: 429,
+            headers,
+          },
+        );
+      }
     }
 
     // Validate that the request body is of the correct format

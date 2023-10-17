@@ -1,4 +1,6 @@
+import { z } from "zod";
 import { ActionPlusApiInfo } from "./types";
+import { FunctionCall } from "@superflows/chat-ui-react";
 
 export type ChatGPTMessage =
   | {
@@ -109,4 +111,32 @@ export interface Properties {
     path: (string | number)[];
     data?: any;
   };
+}
+
+export interface EmbeddingResponse {
+  data: { embedding: number[]; index: number; object: string }[];
+  model: string;
+  object: string;
+  usage: {
+    prompt_tokens: number;
+    total_tokens: number;
+  };
+}
+
+const OptionalStringZod = z.optional(z.string());
+
+export const AnswersZod = z.object({
+  user_input: z.string(),
+  conversation_id: z.nullable(z.number()),
+  user_description: OptionalStringZod,
+  user_api_key: OptionalStringZod,
+  stream: z.optional(z.boolean()),
+  mock_api_responses: z.optional(z.boolean()),
+  test_mode: z.optional(z.boolean()),
+});
+
+export type AnswersType = z.infer<typeof AnswersZod>;
+
+export interface ToConfirm extends FunctionCall {
+  actionId: number;
 }

@@ -1,6 +1,6 @@
 import { getTokenCount } from "../utils";
 import { ChatGPTMessage, GPTMessageInclSummary } from "../models";
-import { DBChatMessage } from "../types";
+import { DBChatMessage, SimilaritySearchResult } from "../types";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
@@ -132,4 +132,91 @@ export function getHost(req: NextRequest) {
   // (github.com/vercel/next.js/issues/2469#issuecomment-313194091)
   const protocol = req.headers.get("x-forwarded-proto") ?? "http";
   return protocol + "://" + req.headers.get("host");
+}
+
+export function getParam(parameters: Record<string, any>, key: string): any {
+  if (key in parameters) return parameters[key];
+  // Sometimes (rarely) the AI replaces hyphens with underscores. This is a hacky fix
+  const found = Object.keys(parameters).find(
+    (k) => k.replaceAll("-", "_") === key.replaceAll("-", "_"),
+  );
+  if (found) return parameters[found];
+}
+
+export function deduplicateChunks(
+  chunks: SimilaritySearchResult[],
+  nTextChunksInclude: number,
+): SimilaritySearchResult[] {
+  /** Deduplicate chunks by combining chunks with the same page_url, page_title and
+   * section_title.
+   *
+   * Each doc_chunk in the DB has multiple text chunks. If the doc_chunks with the
+   * most similar embeddings are from the same document, we don't want to add the
+   * same text twice.
+   *
+   * E.g. If one doc_chunk contains [a,b,c], the other [b,c,d], then we have a chunk
+   * with [a,b,c,d] (no duplication of b and c). **/
+  chunks = JSON.parse(JSON.stringify(chunks));
+  const deduped: SimilaritySearchResult[] = [chunks[0]];
+
+  // Don't need to dedupe the first chunk
+  for (let i = 1; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    // Check if there's another chunk with the same page_url, page_title and section_title
+    const matchedChunk = deduped.find(
+      (seenCh) =>
+        seenCh.page_url === chunk.page_url &&
+        seenCh.page_title === chunk.page_title &&
+        seenCh.section_title === chunk.section_title,
+    );
+    if (matchedChunk) {
+      if (
+        chunk.chunk_idx > matchedChunk.chunk_idx &&
+        // Below check stops gaps in the text chunks
+        chunk.chunk_idx - matchedChunk.chunk_idx <=
+          matchedChunk.text_chunks.length
+      ) {
+        chunk.text_chunks.forEach((textChunk) => {
+          if (!matchedChunk.text_chunks.includes(textChunk)) {
+            // push() adds to the end of the array
+            matchedChunk.text_chunks.push(textChunk);
+          }
+        });
+      } else if (
+        chunk.chunk_idx < matchedChunk.chunk_idx &&
+        matchedChunk.chunk_idx - chunk.chunk_idx <= chunk.text_chunks.length
+      ) {
+        // Equality of chunk indices is impossible - the chunks should all have different indices
+        chunk.text_chunks.forEach((textChunk) => {
+          if (!matchedChunk.text_chunks.includes(textChunk)) {
+            // unshift() adds to the start of the array
+            matchedChunk.text_chunks.unshift(textChunk);
+          }
+        });
+      } else {
+        deduped.push(chunk);
+      }
+    } else {
+      deduped.push(chunk);
+    }
+    if (
+      deduped.map((ch) => ch.text_chunks.length).reduce((a, b) => a + b, 0) >=
+      nTextChunksInclude
+    ) {
+      break;
+    }
+  }
+  return deduped;
+}
+
+export function chunksToString(chunks: SimilaritySearchResult[]): string {
+  return chunks
+    .map((chunk) => {
+      return `Page: ${chunk.page_title}${
+        chunk.section_title && chunk.section_title !== chunk.page_title
+          ? "\nSection: " + chunk.section_title
+          : ""
+      }\n\n${chunk.text_chunks.filter((ch) => ch).join("\n")}`;
+    })
+    .join("\n\n---\n");
 }

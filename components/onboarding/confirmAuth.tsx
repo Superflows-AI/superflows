@@ -157,7 +157,7 @@ export default function ConfirmAuth(props: {
               theme="dark"
             />
             :
-            {props.api?.auth_header === "Query parameter" ? (
+            {props.api?.auth_header !== "Query parameter" ? (
               <SelectBox
                 options={[
                   {
