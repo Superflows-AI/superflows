@@ -1,4 +1,7 @@
-import { splitTextByHeaders } from "../../../lib/embed-docs/embedDocs";
+import {
+  isTextWithSubstance,
+  splitTextByHeaders,
+} from "../../../lib/embed-docs/embedDocs";
 
 describe("markdownToObject", () => {
   it("Simple", () => {
@@ -62,5 +65,16 @@ This is some text below heading 3.
       "Heading 2.1": "This is some text below heading 2.1.",
       "Heading 3": "This is some text below heading 3.",
     });
+  });
+});
+
+describe("isTextWithSubstance", () => {
+  it("Simple", () => {
+    expect(isTextWithSubstance("")).toEqual(false);
+  });
+  it("", () => {
+    const text =
+      "*   Invítanos con el correo [integrations@woffu.com](mailto:integrations@woffu.com) a tu cuenta de a3innuva Nómina para vincularla con tu cuenta de Woffu.";
+    expect(isTextWithSubstance(text)).toEqual(true);
   });
 });

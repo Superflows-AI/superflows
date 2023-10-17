@@ -88,7 +88,11 @@ export async function embedDocs(
                 ch.section_title && ch.section_title !== ch.page_title
                   ? "\nSection: " + ch.section_title
                   : ""
-              }\n${RemoveMarkdown(ch.text_chunks.join("\n"))}`,
+              }\n${RemoveMarkdown(ch.text_chunks.join(""), {
+                useImgAltText: false,
+              })
+                .trim()
+                .replaceAll(/\n\n+/g, "\n")}`,
           );
           console.log(textToEmbed);
 
@@ -107,7 +111,7 @@ export async function embedDocs(
   return out.flat().flat();
 }
 
-function isTextWithSubstance(text: string): boolean {
+export function isTextWithSubstance(text: string): boolean {
   return (
     // If very short number of characters, likely it's not a useful chunk
     text.length > 3 &&
@@ -260,9 +264,9 @@ export function splitIntoTextChunks(
   return joinShortChunks(
     sectionText
       .split("\n")
-      .filter((chunk) => !ignoreLines.includes(RemoveMarkdown(chunk)))
+      .filter((chunk) => !ignoreLines.includes(RemoveMarkdown(chunk.trim())))
       // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
-      .filter((chunk) => isTextWithSubstance(chunk))
+      .filter((chunk) => isTextWithSubstance(chunk.trim()))
       // Tabs are more token-efficient than 4 spaces
       .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
       .map((chunk) => {
@@ -276,7 +280,7 @@ export function splitIntoTextChunks(
   );
 }
 
-export function splitMarkdownIntoSentences(markdown: string) {
+export function splitMarkdownIntoSentences(markdown: string): string[] {
   /** Does what it says on the tin.
    *
    * Splits a paragraph of markdown (since we previously split by newline) into
@@ -306,7 +310,10 @@ export function splitMarkdownIntoSentences(markdown: string) {
   });
 
   // Remove the space at the end of the last sentence
-  sentences[sentences.length - 1] = sentences[sentences.length - 1].trim();
+  sentences[sentences.length - 1] = sentences[sentences.length - 1].slice(
+    0,
+    -1,
+  );
   return sentences;
 }
 
