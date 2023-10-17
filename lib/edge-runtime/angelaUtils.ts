@@ -95,7 +95,7 @@ export async function streamResponseToUser(
       break;
     }
   }
-  return rawOutput;
+  return stripExampleFunctions(rawOutput);
 }
 
 export function replacePlaceholdersDuringStreaming(
@@ -137,4 +137,15 @@ export function replacePlaceholdersDuringStreaming(
     content = "";
   }
   return { content, placeholderBuffer };
+}
+
+export function stripExampleFunctions(rawOutput: string): string {
+  /**
+   * Often if the LLM doesn't output any useful commands, it will output
+   * the functions given as examples in the prompt (e.g. FUNCTION_1 and FUNCTION_2)
+   * manually strip this out of the response.
+   */
+
+  const functionPattern = /(FUNCTION_1\([^\)]*\)|FUNCTION_2\([^\)]*\))/g;
+  return rawOutput.replace(functionPattern, "");
 }
