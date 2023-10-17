@@ -15,7 +15,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === undefined) {
 }
 
 const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.API_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
 );
 
