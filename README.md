@@ -131,6 +131,8 @@ Locate the init.sh file in the docker/development directory after cloning the pr
  - Install docker and docker compose using the relevant installation guide for your operating system
 
 #### Usage
+If you are running on windows, preferably use the git bash cli or WSL, you might need sudo permissions 
+
 Make the Script Executable
 Before using the script for the first time, ensure it is executable then run it:
 

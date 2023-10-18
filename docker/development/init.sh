@@ -9,6 +9,9 @@ POSTGRES_HOST=db
 CONTAINERNAME=supabase-db
 SUPERFLOWS_PORT=8080
 API_SUPABASE_URL=http://kong:8000
+
+
+# Function to clone supabase docker files
 manage_supabase_repo() {
     if [ -d "supabase" ]; then
         if [ -d "supabase/.git" ]; then
@@ -27,15 +30,14 @@ manage_supabase_repo() {
     fi
 }
 
-
 # Function to manage the .env file
 manage_env_file() {
     env_file=".env"
     if [ ! -f "$env_file" ]; then
         if [ -f "../../.env.example" ] && [ -f "supabase/docker/.env.example" ]; then
             echo "Creating .env file from .env.example files..."
-            cat "supabase/docker/.env.example" "../../.env.example" > $env_file
-            if [ -f "$env_file" ]; then 
+            cat "supabase/docker/.env.example" "../../.env.example" > "$env_file"
+            if [ -f "$env_file" ]; then
                 POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" "$env_file" | cut -d '=' -f2)
                 POSTGRES_DB=$(grep "^POSTGRES_DB=" "$env_file" | cut -d '=' -f2)
                 POSTGRES_PORT=$(grep "^POSTGRES_PORT=" "$env_file" | cut -d '=' -f2)
@@ -46,21 +48,25 @@ manage_env_file() {
                     # macOS
                     sed_command="sed -i ''"
                 fi
+
                 if grep -q "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" "$env_file"; then
                     $sed_command "s/^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*/NEXT_PUBLIC_SUPABASE_ANON_KEY=\${ANON_KEY}/" "$env_file"
                 else
                     echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=\${ANON_KEY}" >> "$env_file"
                 fi
+
                 if grep -q "^SERVICE_LEVEL_KEY_SUPABASE=" "$env_file"; then
                     $sed_command "s/^SERVICE_LEVEL_KEY_SUPABASE=.*/SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}/" "$env_file"
                 else
                     echo "SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}" >> "$env_file"
                 fi
+
                 if grep -q "^ENABLE_EMAIL_AUTOCONFIRM=" "$env_file"; then
                     $sed_command "s/^ENABLE_EMAIL_AUTOCONFIRM=.*/ENABLE_EMAIL_AUTOCONFIRM=true/" "$env_file"
                 fi
+
                 if grep -q "^API_SUPABASE_URL=" "$env_file"; then
-                    $sed_command "s/^API_SUPABASE_URL=.*/API_SUPABASE_URL=$API_SUPABASE_URL/" "$env_file"
+                    $sed_command "s|^API_SUPABASE_URL=.*|API_SUPABASE_URL=$API_SUPABASE_URL|" "$env_file"
                 else
                     echo "API_SUPABASE_URL=$API_SUPABASE_URL" >> "$env_file"
                 fi
@@ -76,7 +82,7 @@ manage_env_file() {
 
 run_migrations() {
     limit=5
-    while ! docker ps | grep $CONTAINERNAME; do
+    while ! docker ps | grep "$CONTAINERNAME"; do
         echo "Waiting for container to start..."
         limit=$((limit - 1))
         if [ $limit -eq 0 ]; then
@@ -91,25 +97,21 @@ run_migrations() {
 }
 
 # Check if git is installed
-if ! command -v git &> /dev/null
-then
+if ! command -v git &> /dev/null; then
     echo "Git is not installed. Please install it and try again."
     exit 1
 fi
 
 # Check if Docker is installed
-if ! command -v docker &> /dev/null
-then
+if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install it and try again."
     exit 1
 fi
 
 # Check if Docker Compose is installed and decide the compose command to use
-if command -v docker-compose &> /dev/null
-then
+if command -v docker-compose &> /dev/null; then
     COMPOSE_CMD="docker-compose"
-elif docker compose version &> /dev/null
-then
+elif docker compose version &> /dev/null; then
     COMPOSE_CMD="docker compose"
 else
     echo "Neither docker-compose nor docker compose is available. Please install one of them and try again."
