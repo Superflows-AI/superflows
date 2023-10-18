@@ -66,6 +66,25 @@ This is some text below heading 3.
       "Heading 3": "This is some text below heading 3.",
     });
   });
+  it("Includes an empty heading", () => {
+    let markdownText = `
+This is some text at the top.
+## Heading 2
+This is some text below heading 2.
+This is more text below heading 2.
+## 
+This is even more text below heading 2.
+# Heading 3
+This is some text below heading 3.
+`;
+    const out = splitTextByHeaders(markdownText);
+    expect(out).toEqual({
+      "": "This is some text at the top.",
+      "Heading 2":
+        "This is some text below heading 2.\nThis is more text below heading 2.\nThis is even more text below heading 2.",
+      "Heading 3": "This is some text below heading 3.",
+    });
+  });
 });
 
 describe("isTextWithSubstance", () => {
