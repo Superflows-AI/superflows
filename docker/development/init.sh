@@ -40,21 +40,27 @@ manage_env_file() {
                 POSTGRES_DB=$(grep "^POSTGRES_DB=" "$env_file" | cut -d '=' -f2)
                 POSTGRES_PORT=$(grep "^POSTGRES_PORT=" "$env_file" | cut -d '=' -f2)
                 SUPERFLOWS_PORT=$(grep "^SUPERFLOWS_PORT=" "$env_file" | cut -d '=' -f2)
+                sed_command="sed -i"
+
+                if [ "$(uname)" == "Darwin" ]; then
+                    # macOS
+                    sed_command="sed -i ''"
+                fi
                 if grep -q "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" "$env_file"; then
-                    sed -i "s/^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*/NEXT_PUBLIC_SUPABASE_ANON_KEY=\${ANON_KEY}/" "$env_file"
+                    $sed_command "s/^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*/NEXT_PUBLIC_SUPABASE_ANON_KEY=\${ANON_KEY}/" "$env_file"
                 else
                     echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=\${ANON_KEY}" >> "$env_file"
                 fi
                 if grep -q "^SERVICE_LEVEL_KEY_SUPABASE=" "$env_file"; then
-                    sed -i "s/^SERVICE_LEVEL_KEY_SUPABASE=.*/SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}/" "$env_file"
+                    $sed_command "s/^SERVICE_LEVEL_KEY_SUPABASE=.*/SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}/" "$env_file"
                 else
                     echo "SERVICE_LEVEL_KEY_SUPABASE=\${SERVICE_ROLE_KEY}" >> "$env_file"
                 fi
                 if grep -q "^ENABLE_EMAIL_AUTOCONFIRM=" "$env_file"; then
-                    sed -i "s/^ENABLE_EMAIL_AUTOCONFIRM=.*/ENABLE_EMAIL_AUTOCONFIRM=true/" "$env_file"
+                    $sed_command "s/^ENABLE_EMAIL_AUTOCONFIRM=.*/ENABLE_EMAIL_AUTOCONFIRM=true/" "$env_file"
                 fi
                 if grep -q "^API_SUPABASE_URL=" "$env_file"; then
-                    sed -i "s/^API_SUPABASE_URL=.*/API_SUPABASE_URL=$API_SUPABASE_URL/" "$env_file"
+                    $sed_command "s/^API_SUPABASE_URL=.*/API_SUPABASE_URL=$API_SUPABASE_URL/" "$env_file"
                 else
                     echo "API_SUPABASE_URL=$API_SUPABASE_URL" >> "$env_file"
                 fi
