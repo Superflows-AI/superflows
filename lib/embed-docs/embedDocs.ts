@@ -225,10 +225,11 @@ export function getDocsLoader(
 export function splitTextByHeaders(
   markdownText: string,
 ): Record<string, string> {
-  const regex = /(#{1,3}) (.+?)\n([\s\S]*?)(?=\n#{1,3} |$)/g;
+  const regex = /(#{1,3}) (.*?)\n([\s\S]*?)(?=\n#{1,3} |$)/g;
   let match;
   let results: Record<string, string> = {};
   let isFirstChunk = true;
+  let prevHeading = "";
 
   while ((match = regex.exec(markdownText)) !== null) {
     // This is necessary to avoid infinite loops with zero-width matches
@@ -244,7 +245,7 @@ export function splitTextByHeaders(
     }
     isFirstChunk = false;
 
-    let heading = RemoveMarkdown(match[2]);
+    let heading = RemoveMarkdown(match[2]) || prevHeading;
     let text = match[3].trim();
     // If the heading already exists, append the text to it
     if (results.hasOwnProperty(heading)) {
@@ -252,6 +253,7 @@ export function splitTextByHeaders(
     } else {
       results[heading] = text;
     }
+    prevHeading = heading;
   }
 
   return results;
