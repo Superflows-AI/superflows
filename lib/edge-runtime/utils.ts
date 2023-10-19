@@ -57,7 +57,6 @@ export function removeOldestFunctionCalls(
   let tokenCount = getTokenCount(chatGptPrompt);
   maxTokens =
     maxTokens ?? (model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192);
-  console.log(maxTokens);
   const originalTokenCount = tokenCount;
   let numberRemoved = 0;
   // Keep removing until under the context limit
