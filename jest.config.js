@@ -23,6 +23,7 @@ const customJestConfig = {
     "@/(.*)$": "<rootDir>/src/$1",
   },
   testEnvironment: "node",
+  modulePathIgnorePatterns: ["<rootDir>/docker/"],
 
   setupFiles: ["./global-jest-setup.ts"],
   testMatch: ["**.test.ts"],

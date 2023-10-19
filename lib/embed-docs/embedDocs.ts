@@ -1,9 +1,15 @@
-import { z } from "zod";
 import { PlaywrightWebBaseLoader } from "langchain/document_loaders/web/playwright";
 import { Browser, Page } from "playwright";
 import TurndownService from "turndown";
 import RemoveMarkdown from "remove-markdown";
-import { getTokenCount, isDate, isEmail, isPhoneNumber, isUrl } from "../utils";
+import {
+  exponentialRetryWrapper,
+  getTokenCount,
+  isDate,
+  isEmail,
+  isPhoneNumber,
+  isUrl,
+} from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
 
@@ -53,38 +59,13 @@ export async function embedDocs(
           // For each heading, split the text into chunks by newline, filter out useless chunks, and split into 3s
           const doc_chunks = Object.entries(headerToSection)
             .map(([header, section]) => {
+              // If a line is just the title, skip it
               if (!section.replaceAll(title, "").trim()) return [];
-              // If the chunk is a small number of tokens, just embed it as-is
-              if (
-                getTokenCount(
-                  RemoveMarkdown(section.replaceAll(/ {4}/g, "\t")),
-                ) < 80
-              ) {
-                return [
-                  {
-                    page_url: url,
-                    page_title: title,
-                    section_title: header || null,
-                    text_chunks: [section],
-                    org_id: orgId,
-                  },
-                ];
-              }
-
-              // Split the documents into chunks
-              const lines = section
-                // TODO: (V2) don't always split by newline
-                .split("\n")
-                .filter((chunk) => isTextWithSubstance(chunk))
-                // Don't just restate the title
-                .filter(
-                  (chunk) =>
-                    ![title, ...ignoreLines].includes(RemoveMarkdown(chunk)),
-                )
-                // Tabs are more token-efficient than 4 spaces
-                .map((chunk) => chunk.replaceAll(/ {4}/g, "\t"))
-                // TODO: (V2) Split sentences up
-                .flat();
+              // Split the documents into text chunks
+              const lines = splitIntoTextChunks(section, [
+                title,
+                ...ignoreLines,
+              ]);
 
               const chunkGroups = lines
                 // Remove null values (at end of array) e.g. ["text", null, null] -> ["text"]
@@ -109,17 +90,24 @@ export async function embedDocs(
 
           // Convert Markdown text to plain text to get rid of images, urls etc
           const textToEmbed = doc_chunks.map(
-            // (ch) => RemoveMarkdown(ch.text_chunks.join("\n")),
             (ch) =>
               `Page: ${ch.page_title}${
                 ch.section_title && ch.section_title !== ch.page_title
                   ? "\nSection: " + ch.section_title
                   : ""
-              }\n${RemoveMarkdown(ch.text_chunks.join("\n"))}`,
+              }\n${RemoveMarkdown(ch.text_chunks.join(""), {
+                useImgAltText: false,
+              })
+                .trim()
+                .replaceAll(/\n\n+/g, "\n")}`,
           );
           console.log(textToEmbed);
 
-          const embeddings = await queryEmbedding(textToEmbed);
+          const embeddings = await exponentialRetryWrapper(
+            queryEmbedding,
+            [textToEmbed],
+            3,
+          );
           console.log("Embedded successfully!");
           return doc_chunks.map((chunk, idx) => ({
             ...chunk,
@@ -134,10 +122,10 @@ export async function embedDocs(
   return out.flat().flat();
 }
 
-function isTextWithSubstance(text: string): boolean {
+export function isTextWithSubstance(text: string): boolean {
   return (
-    text.length > 10 &&
-    text.trim().split(" ").length > 3 &&
+    // If very short number of characters, likely it's not a useful chunk
+    text.length > 3 &&
     !isEmail(text) &&
     !isPhoneNumber(text) &&
     !isUrl(text) &&
@@ -155,7 +143,7 @@ export function getDocsLoader(
     evaluate: isDocusaurus
       ? async function (page: Page, browser: Browser) {
           await page.waitForLoadState("domcontentloaded");
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 10000));
           let out = "";
           while (!out) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -201,7 +189,7 @@ export function getDocsLoader(
         }
       : async function (page: Page, browser: Browser) {
           await page.waitForLoadState("domcontentloaded");
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 10000));
           let out = "";
           while (!out) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -248,10 +236,12 @@ export function getDocsLoader(
 export function splitTextByHeaders(
   markdownText: string,
 ): Record<string, string> {
-  const regex = /(#{1,3}) (.+?)\n([\s\S]*?)(?=\n#{1,3} |$)/g;
+  const regex = /(#{1,3}) (.*?)\n([\s\S]*?)(?=\n#{1,3} |$)/g;
   let match;
   let results: Record<string, string> = {};
   let isFirstChunk = true;
+  // This is to deal with empty headings (so we can use the value of the previous non-empty heading)
+  let prevHeading = "";
 
   while ((match = regex.exec(markdownText)) !== null) {
     // This is necessary to avoid infinite loops with zero-width matches
@@ -267,7 +257,7 @@ export function splitTextByHeaders(
     }
     isFirstChunk = false;
 
-    let heading = RemoveMarkdown(match[2]);
+    let heading = RemoveMarkdown(match[2]) || prevHeading;
     let text = match[3].trim();
     // If the heading already exists, append the text to it
     if (results.hasOwnProperty(heading)) {
@@ -275,7 +265,89 @@ export function splitTextByHeaders(
     } else {
       results[heading] = text;
     }
+    prevHeading = heading;
   }
 
   return results;
+}
+
+export function splitIntoTextChunks(
+  sectionText: string,
+  ignoreLines: string[],
+): string[] {
+  return joinShortChunks(
+    sectionText
+      .split("\n")
+      .filter((chunk) => !ignoreLines.includes(RemoveMarkdown(chunk.trim())))
+      // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
+      .filter((chunk) => isTextWithSubstance(chunk.trim()))
+      // Tabs are more token-efficient than 4 spaces
+      .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
+      .map((chunk) => {
+        // Break up large paragraphs into sentences
+        const chunkTokenCount = getTokenCount(chunk);
+        if (chunkTokenCount <= 80) return chunk;
+        return splitMarkdownIntoSentences(chunk);
+      })
+      .flat(),
+    25,
+  );
+}
+
+export function splitMarkdownIntoSentences(markdown: string): string[] {
+  /** Does what it says on the tin.
+   *
+   * Splits a paragraph of markdown (since we previously split by newline) into
+   * sentences. *Does not* split by newline. **/
+  let tmpMarkedItems: string[] = [];
+  let tmpString = markdown;
+
+  const markdownUrlRegex = /(!\[[\w\s\W]+]\([\w.\-\/]+\))/g;
+  let result;
+  while ((result = markdownUrlRegex.exec(markdown))) {
+    tmpMarkedItems.push(result[0]);
+    tmpString = tmpString.replace(result[0], `{${tmpMarkedItems.length - 1}}`);
+  }
+
+  let sentences = tmpString
+    .split(/(?<=[.!?])\s/g)
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  sentences = sentences.map((sentence) => {
+    const placeholderRegex = /\{(\d+)}/g;
+    let result;
+    while ((result = placeholderRegex.exec(sentence))) {
+      sentence = sentence.replace(result[0], tmpMarkedItems[Number(result[1])]);
+    }
+    return sentence + " ";
+  });
+
+  // Remove the space at the end of the last sentence
+  sentences[sentences.length - 1] = sentences[sentences.length - 1].slice(
+    0,
+    -1,
+  );
+  return sentences;
+}
+
+export function joinShortChunks(arr: string[], tokenLimit: number): string[] {
+  const result = [];
+  let tempStr = "";
+  for (let i = 0; i < arr.length; i++) {
+    if (
+      getTokenCount(RemoveMarkdown(tempStr + arr[i]).trim()) <=
+      tokenLimit + 7 // +7 corrects for chat formatting
+    ) {
+      tempStr += arr[i];
+    } else {
+      // Do this in case the final string is too short
+      if (tempStr) result.push(tempStr);
+      tempStr = arr[i];
+    }
+    //add the last short string sequence if it exists
+    if (i === arr.length - 1 && tempStr) result.push(tempStr);
+  }
+
+  return result;
 }

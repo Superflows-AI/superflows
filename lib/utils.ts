@@ -475,7 +475,7 @@ export function isUUID(str: string): boolean {
 
 export function isEmail(string: string): boolean {
   // Check if string is an email address
-  return /\b[\w.-]+@[\w.-]+\.\w{2,}\b/g.test(string);
+  return /^[\w.-]+@[\w.-]+\.\w{2,}$/g.test(string);
 }
 
 export function isPhoneNumber(string: string): boolean {
@@ -566,6 +566,11 @@ const dateFormats = [
   "MM/dd/yyyy",
   "dd/MM/yyyy",
   "h:mm a",
+  "dd/MM/yyyy HH:mm",
+  "d/MM/yyyy HH:mm",
+  "d/MM/yy HH:mm",
+  "d/MM/yy H:mm",
+  "dd/MM/yyyy HH:mm:ss",
 ];
 
 export function isDate(str: string): boolean {

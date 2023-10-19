@@ -224,7 +224,9 @@ export function chatToDocsPrompt(
     : "";
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)}using information from ${
+    content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
+      orgInfo.name ? `in ${orgInfo.name} ` : ""
+    }using information from ${
       orgInfo.name ? orgInfo.name + "'s" : "their"
     } documentation
 ${userDescriptionSection}
@@ -232,15 +234,13 @@ You will be shown chunks of potentially relevant documentation. If a user's requ
 
 ${
   orgInfo.name
-    ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. `
-    : ""
-}Do not invent new knowledge. THIS IS VERY IMPORTANT.
+    ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. However, i`
+    : "I"
+}f there's nothing relevant in the docs for answering a question, tell the user that this isn't mentioned in the docs. Be very cautious about answering if the docs aren't clear. Do not invent things. I cannot express how disappointed I will be if you do. THIS IS VERY IMPORTANT
 
-Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question. Do not output anything else.
+Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question.
 
-Never tell the user to find the answer in the documentation.
-
-Reply to the user in ${language ?? "the language they write in"}`,
+Never tell the user to find the answer in the documentation.`,
   };
 }
 
@@ -254,7 +254,9 @@ export function simpleChatPrompt(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)}with helpful replies
+    content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
+      orgInfo.name ? `in ${orgInfo.name} ` : ""
+    }with helpful replies
 
 ${userDescriptionSection}
 
@@ -272,8 +274,6 @@ Your reply should be written in ${language}.`
 export function getIntroText(orgInfo: { name: string; description: string }) {
   return `You are ${orgInfo.name || "a"} chatbot AI${
     orgInfo.description ? ". " + orgInfo.description : ""
-  } Your purpose is to assist users ${
-    orgInfo.name ? `in ${orgInfo.name} ` : ""
   }`;
 }
 
@@ -289,7 +289,9 @@ function systemPromptWithActions(
 ): ChatGPTMessage {
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)}via function calls
+    content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
+      orgInfo.name ? `in ${orgInfo.name} ` : ""
+    }via function calls
 
 Seek user assistance when necessary or more information is required
 
