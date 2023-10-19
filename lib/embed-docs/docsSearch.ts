@@ -19,8 +19,8 @@ export async function getRelevantDocChunks(
 
   const { data, error } = await supabase.rpc("match_embeddings", {
     query_embedding: embedding[0],
-    similarity_threshold: 0.4,
-    match_count: 20,
+    similarity_threshold: 0.8,
+    match_count: 10,
     _org_id: org_id,
   });
   if (error) throw new Error(error.message);
@@ -30,7 +30,15 @@ export async function getRelevantDocChunks(
     return "No relevant documentation found";
   }
 
-  console.log("All relevant doc chunks:", data);
+  console.log(
+    "All relevant doc chunks:",
+    data.map(
+      (d) =>
+        `Page: ${d.page_title}\nSection: ${d.section_title}\nSimilarity: ${
+          Math.round(d.similarity * 1000) / 1000
+        }\n`,
+    ),
+  );
 
   return chunksToString(
     deduplicateChunks(data, nChunksInclude * data[0].text_chunks.length),

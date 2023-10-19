@@ -212,8 +212,10 @@ export async function queryEmbedding(
     );
   }
   if ("error" in responseJson) {
-    console.error("Error from embedding: ", responseJson.error);
-    return [];
+    throw new Error(
+      "Error from embedding: " +
+        JSON.stringify(responseJson.error, undefined, 2),
+    );
   }
 
   return responseJson.data.map((item) => item.embedding);
