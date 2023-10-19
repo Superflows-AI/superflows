@@ -140,7 +140,7 @@ export async function Dottie( // Dottie talks to docs
     );
     const res = await exponentialRetryWrapper(
       streamLLMResponse,
-      [chatGptPrompt, { ...completionOptions, temperature: 0.5 }, model],
+      [chatGptPrompt, { ...completionOptions, temperature: 0.4 }, model],
       3,
     );
     if (res === null || "message" in res) {
