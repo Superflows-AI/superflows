@@ -5,6 +5,7 @@ import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { NextRequest } from "next/server";
+import * as cheerio from "cheerio";
 
 export function DBChatMessageToGPT(
   message: DBChatMessage,
@@ -221,4 +222,16 @@ export function chunksToString(chunks: SimilaritySearchResult[]): string {
       }\n\n${chunk.text_chunks.join("").trim()}`;
     })
     .join("\n\n---\n");
+}
+
+export function parseErrorHtml(str: string): string {
+  const DOM = cheerio.load(str).root();
+  const elements = [
+    DOM.find("title").text().trim().replace(/\s+/g, " "),
+    DOM.find("h1").text().trim().replace(/\s+/g, " "),
+    DOM.find("h2").text().trim().replace(/\s+/g, " "),
+    DOM.find("h3").text().trim().replace(/\s+/g, " "),
+  ];
+  const result = elements.filter((element) => element !== "").join("\n");
+  return result.length > 0 ? result : str;
 }
