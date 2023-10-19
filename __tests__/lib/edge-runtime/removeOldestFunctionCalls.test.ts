@@ -135,4 +135,12 @@ describe("removeOldestFunctionCalls", () => {
     );
     expect(out).toEqual([systemPrompt, getLongFunctionCall(12000)]);
   });
+  it("maxTokens works", () => {
+    const out = removeOldestFunctionCalls(
+      [systemPrompt, getLongFunctionCall(2000)],
+      undefined,
+      2000,
+    );
+    expect(out).toEqual([systemPrompt, replacementFunctionMessage]);
+  });
 });

@@ -16,7 +16,7 @@ import {
 } from "./apiResponseSimplification";
 import { MessageInclSummaryToGPT, removeOldestFunctionCalls } from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
-import { streamLLMResponse } from "../queryLLM";
+import { getLLMResponse, streamLLMResponse } from "../queryLLM";
 import { MAX_TOKENS_OUT } from "../consts";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { filterActions } from "./filterActions";
@@ -40,6 +40,7 @@ import {
   getRelevantDocChunks,
   getSearchDocsAction,
 } from "../embed-docs/docsSearch";
+import { hallucinateDocsSystemPrompt } from "../prompts/hallucinateDocs";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -74,22 +75,38 @@ export async function Dottie( // Dottie talks to docs
 
   const model = org.model;
   const nonSystemMessages = [...previousMessages];
-  const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
+  const maxConvLength = model === "gpt-4-0613" ? 20 : 10;
   let cost = 0;
 
   // Const controlling how much context to include
   const nChunksInclude = 3;
 
   try {
-    let chatGptPrompt: ChatGPTMessage[] = [
-      chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
+    const recentMessages = [
       ...nonSystemMessages.slice(
         Math.max(0, nonSystemMessages.length - maxConvLength),
       ),
     ];
+    const hallucinatedDocsPrompt = [
+      hallucinateDocsSystemPrompt(reqData.user_description, org),
+      ...recentMessages.filter((m) => m.role !== "function"),
+    ];
 
+    const hallucinatedRes = await exponentialRetryWrapper(
+      getLLMResponse,
+      [hallucinatedDocsPrompt, { ...completionOptions, temperature: 1 }, model],
+      3,
+    );
+    console.log("Hallucination: ", hallucinatedRes);
+
+    let chatGptPrompt: ChatGPTMessage[] = [
+      chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
+      ...recentMessages,
+    ];
+
+    // We do embedding and similarity search on the hallucinated docs
     const relevantDocs = await getRelevantDocChunks(
-      reqData.user_input,
+      hallucinatedRes,
       org.id,
       nChunksInclude,
       supabase,
@@ -102,22 +119,28 @@ export async function Dottie( // Dottie talks to docs
     } as ChatGPTMessage;
 
     chatGptPrompt.push(docMessage);
+    nonSystemMessages.push(docMessage);
     streamInfo(docMessage);
 
-    // If over context limit, remove oldest documentation chunks
+    // If function response too old, remove oldest documentation chunks
     chatGptPrompt = removeOldestFunctionCalls(
       [...chatGptPrompt],
-      model === "gpt-4-0613" ? "4" : "3",
+      undefined,
+      1500, // Cut out old docs retrieved, but keep old questions & answers
     );
 
     const promptInputCost = openAiCost(chatGptPrompt, "in", model);
     console.log("GPT input cost:", promptInputCost);
     cost += promptInputCost;
 
-    console.log("Dottie prompt:\n", JSON.stringify(chatGptPrompt), "\n\n");
+    console.log(
+      "Dottie prompt:\n",
+      JSON.stringify(chatGptPrompt, undefined, 2),
+      "\n\n",
+    );
     const res = await exponentialRetryWrapper(
       streamLLMResponse,
-      [chatGptPrompt, completionOptions, model],
+      [chatGptPrompt, { ...completionOptions, temperature: 0.5 }, model],
       3,
     );
     if (res === null || "message" in res) {

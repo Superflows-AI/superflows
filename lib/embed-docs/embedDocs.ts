@@ -2,7 +2,14 @@ import { PlaywrightWebBaseLoader } from "langchain/document_loaders/web/playwrig
 import { Browser, Page } from "playwright";
 import TurndownService from "turndown";
 import RemoveMarkdown from "remove-markdown";
-import { getTokenCount, isDate, isEmail, isPhoneNumber, isUrl } from "../utils";
+import {
+  exponentialRetryWrapper,
+  getTokenCount,
+  isDate,
+  isEmail,
+  isPhoneNumber,
+  isUrl,
+} from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
 
@@ -96,7 +103,11 @@ export async function embedDocs(
           );
           console.log(textToEmbed);
 
-          const embeddings = await queryEmbedding(textToEmbed);
+          const embeddings = await exponentialRetryWrapper(
+            queryEmbedding,
+            [textToEmbed],
+            3,
+          );
           console.log("Embedded successfully!");
           return doc_chunks.map((chunk, idx) => ({
             ...chunk,

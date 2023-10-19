@@ -49,12 +49,15 @@ export function MessageInclSummaryToGPT(
 
 export function removeOldestFunctionCalls(
   chatGptPrompt: ChatGPTMessage[],
-  model: "3" | "3-16k" | "4",
+  model?: "3" | "3-16k" | "4",
+  maxTokens?: number,
   maxTokensOut: number = MAX_TOKENS_OUT,
 ): ChatGPTMessage[] {
   /** Remove old function calls if over the context limit **/
   let tokenCount = getTokenCount(chatGptPrompt);
-  const maxTokens = model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192;
+  maxTokens =
+    maxTokens ?? (model === "3" ? 4096 : model === "3-16k" ? 16384 : 8192);
+  console.log(maxTokens);
   const originalTokenCount = tokenCount;
   let numberRemoved = 0;
   // Keep removing until under the context limit
