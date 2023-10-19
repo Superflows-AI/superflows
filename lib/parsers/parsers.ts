@@ -32,3 +32,10 @@ export function parseGPTStreamedData(gptOutString: string): ParsedStreamedData {
     });
   return output;
 }
+
+export function parseFollowUpSuggestions(text: string): string[] {
+  return text
+    .split("\n")
+    .filter((line) => line.trim().length > 0 && line.startsWith("-"))
+    .map((line) => line.slice(1).trim());
+}
