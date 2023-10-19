@@ -229,6 +229,7 @@ export function splitTextByHeaders(
   let match;
   let results: Record<string, string> = {};
   let isFirstChunk = true;
+  // This is to deal with empty headings (so we can use the value of the previous non-empty heading)
   let prevHeading = "";
 
   while ((match = regex.exec(markdownText)) !== null) {
