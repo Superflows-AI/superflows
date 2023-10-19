@@ -57,7 +57,7 @@ export async function getRelevantActions(
 
   const response = await exponentialRetryWrapper(
     getLLMResponse,
-    [prompt, { temperature: 0.7 }, model],
+    [prompt, { temperature: 0 }, model],
     3,
   );
 
