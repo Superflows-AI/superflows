@@ -243,7 +243,6 @@ Be extremely concise and to the point in your responses. Only output what is nec
 Never tell the user to find the answer in the documentation.`,
   };
 }
-// Reply to the user in ${language ?? "the language they write in"}
 
 export function simpleChatPrompt(
   userDescriptionSection: string,
