@@ -4,7 +4,7 @@ import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action, ActionPlusApiInfo } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
-import { getHeader, getJsonMIMEType, getParam } from "./utils";
+import { getHeader, getJsonMIMEType, getParam, parseErrorHtml } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
 export function processAPIoutput(
@@ -250,15 +250,16 @@ export async function makeHttpRequest(
   // If there's no response body, return a status message
   if (!responseText) {
     return responseStatus >= 200 && responseStatus < 300
-      ? { status: "Action completed successfully" }
-      : { status: "Action failed" };
+      ? { status: responseStatus, message: "Action completed successfully" }
+      : { status: responseStatus, message: "Action failed" };
   }
 
   if (responseStatus >= 300)
-    return (
-      `The function returned a ${responseStatus}, the response was: ` +
-      responseText
-    );
+    // the responseText may be html in which case extract useful info
+    return {
+      status: responseStatus,
+      message: parseErrorHtml(responseText),
+    };
 
   const reqHeaders: Record<string, any> | null =
     requestOptions?.headers ?? null;
