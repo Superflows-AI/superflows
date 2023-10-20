@@ -82,7 +82,7 @@ export function Navbar(props: { current: string }) {
               >
                 Superflows
               </a>
-              <div className="ml-6 md:ml-14 flex items-baseline gap-x-1 sm:gap-x-2 md:gap-x-4">
+              <div className="ml-6 md:ml-14 flex items-center gap-x-1 sm:gap-x-2 md:gap-x-4">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}

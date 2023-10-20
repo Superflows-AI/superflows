@@ -205,6 +205,7 @@ export default async function handler(req: NextRequest) {
     );
 
     const suggestions = parseFollowUpSuggestions(gptOut);
+    console.log("Suggestions: ", suggestions);
 
     return new Response(JSON.stringify({ suggestions }), {
       status: 200,
