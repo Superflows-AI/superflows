@@ -192,6 +192,7 @@ export default async function handler(req: NextRequest) {
       ),
       ...filterConversationForFollowUps(conversation),
     ];
+    console.log("Follow up prompt: ", fullPrompt);
 
     const gptOut = await exponentialRetryWrapper(
       getLLMResponse,

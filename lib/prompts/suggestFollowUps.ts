@@ -16,8 +16,10 @@ export function getFollowUpSuggestionSystemPrompt(
     role: "system",
     content: `${getIntroText(orgInfo)}
 
-You task is to generate 3 suggested follow-up questions that the user might ask to continue the conversation.
+Your task is to generate 3 suggested follow-up questions that the user might ask to continue the conversation.
 ${userDescriptionSection}
+DO NOT UNDER ANY CIRCUMSTANCES reply to the user
+
 Provide the 3 suggested questions as a bullet-point list like below:
 - Suggested question 1?
 - Suggested question 2?
@@ -25,7 +27,7 @@ Provide the 3 suggested questions as a bullet-point list like below:
 
 Write in ${language ?? "the same language the user writes in"}.
 
-Keep the suggestions extremely short and concise. THIS IS VERY IMPORTANT`,
+Keep the suggestions extremely short and concise. THIS IS VERY IMPORTANT. You cannot fathom how disappointed I will be if you give long suggestions`,
   };
 }
 
