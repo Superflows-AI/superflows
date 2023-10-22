@@ -19,7 +19,9 @@ import {
   isJsonString,
 } from "../../lib/utils";
 import { AutoGrowingTextArea } from "../autoGrowingTextarea";
-import FloatingLabelInput from "../floatingLabelInput";
+import FloatingLabelInput, {
+  FloatingLabelTextArea,
+} from "../floatingLabelInput";
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
 import Checkbox from "../checkbox";
@@ -147,7 +149,7 @@ export default function EditActionModal(props: {
         </div>
       </div>
 
-      <div className="mt-10 mb-4 grid grid-cols-2 gap-x-6">
+      <div className="mt-10 mb-7 grid grid-cols-2 gap-x-6">
         <div className="relative">
           <FloatingLabelInput
             className={classNames(
@@ -199,48 +201,20 @@ export default function EditActionModal(props: {
           size={"base"}
         />
       </div>
-      <div className="w-full relative mt-3">
-        <textarea
-          className="w-full bg-gray-50 peer resize-none overflow-y-clip text-gray-800 pl-4 pr-10 pt-4 pb-2 rounded border-gray-200 focus:border-sky-500 focus:ring-sky-500 whitespace-pre-line outline-0"
-          value={localAction.description ? localAction.description : ""}
-          onChange={(e) => {
-            setLocalAction({
-              ...localAction,
-              description: e.target.value.slice(0, 300),
-            });
-          }}
-          rows={Math.max(Math.ceil(localAction.description.length / 90), 2)}
-        />
-        {localAction.description && localAction.description.length > 250 && (
-          <div
-            className={classNames(
-              "absolute bottom-2 text-xs right-3 z-10",
-              localAction.description.length >= 290
-                ? "text-red-500"
-                : "text-gray-500",
-            )}
-          >
-            {localAction.description.length}/300
-          </div>
-        )}
-        <div className="absolute top-3 right-3">
-          <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-500 transition rounded-full" />
-          <div className={classNames("right-0 -top-20 w-64 popup")}>
-            Information given to the AI about what this action does. E.g.
-            &#34;Sends a message to the user.&#34;
-          </div>
-        </div>
-        <div
-          className={classNames(
-            "absolute pointer-events-none left-4 top-3 peer-focus:scale-75 peer-focus:-translate-y-5/8 text-gray-400 select-none transition duration-300",
-            localAction.description
-              ? "-translate-x-1/8 -translate-y-5/8 scale-75"
-              : "peer-focus:-translate-x-1/8",
-          )}
-        >
-          Description
-        </div>
-      </div>
+      <FloatingLabelTextArea
+        content={localAction.description}
+        onChange={(e) => {
+          setLocalAction({
+            ...localAction,
+            description: e.target.value.slice(0, 300),
+          });
+        }}
+        labelText={"Description"}
+        helpTooltipText={
+          'Information given to the AI about what this action does. E.g. "Sends a message to the user."'
+        }
+        maxStringLength={300}
+      />
 
       {/* DIVIDER*/}
       <div className={"h-px w-full bg-gray-300 my-4"} />
