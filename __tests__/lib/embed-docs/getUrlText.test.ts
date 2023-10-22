@@ -1,7 +1,7 @@
 import {
   isTextWithSubstance,
   splitTextByHeaders,
-} from "../../../lib/embed-docs/embedDocs";
+} from "../../../lib/embed-docs/utils";
 
 describe("markdownToObject", () => {
   it("Simple", () => {

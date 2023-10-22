@@ -2,7 +2,7 @@ import {
   joinShortChunks,
   splitIntoTextChunks,
   splitMarkdownIntoSentences,
-} from "../../../lib/embed-docs/embedDocs";
+} from "../../../lib/embed-docs/utils";
 
 describe("splitIntoTextChunks", () => {
   it("should split into newline chunks", () => {
