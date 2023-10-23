@@ -30,15 +30,11 @@ function Dashboard() {
     process.env.NODE_ENV === "development" ||
     profile?.organizations?.is_paid[0]?.is_premium
   ) {
-    return (
-      <>
-        <ChatToDocsPage />
-      </>
-    );
+    return <ChatToDocsPage />;
   }
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
-      <Navbar current={"Chat to docs"} />
+      <Navbar current={"Chat to Docs"} />
       <main className="flex flex-col items-center justify-start py-20 flex-1 px-20 text-center bg-gray-800 w-screen h-screen">
         <div className="bg-gray-850 rounded-md px-20 lg:px-40 py-10">
           <h1 className="text-4xl text-gray-200 font-medium">
@@ -104,7 +100,7 @@ function ChatToDocsPage() {
   return (
     <div className="min-h-screen bg-gray-800">
       <AddDocsModal open={addDocsModal} setOpen={setAddDocsModal} />
-      <Navbar current={"Chat to docs"} />
+      <Navbar current={"Chat to Docs"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4">
           <h1 className="text-xl text-gray-100">Chat to Docs</h1>
@@ -211,7 +207,7 @@ function AddDocsModal(props: {
             className={classNames(
               "inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none  sm:order-3  sm:text-sm",
               docsText
-                ? "bg-sky-600 hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                ? "bg-purple-700 hover:bg-purple-600 focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 focus:ring-offset-gray-800"
                 : "bg-gray-400 cursor-not-allowed",
             )}
             onClick={async (event) => {
@@ -229,14 +225,14 @@ function AddDocsModal(props: {
                   title,
                 }),
               });
-              const { data, error } = await res.json();
-              if (error) throw new Error(error.message);
+              const { error } = await res.json();
+              if (error) console.error(error.message);
             }}
           >
             {loading ? <LoadingSpinner classes={"h-5 w-5"} /> : "Save"}
           </button>
           <button
-            className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 sm:mt-0 sm:text-sm"
+            className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-gray-800 sm:mt-0 sm:text-sm"
             onClick={() => props.setOpen(false)}
           >
             Cancel

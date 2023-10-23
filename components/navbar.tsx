@@ -25,7 +25,7 @@ const navigation = [
   { name: "Project", href: "/project" },
   { name: "API", href: "/api-settings" },
   { name: "Usage", href: "/usage" },
-  { name: "Chat to docs", href: "/chat-to-docs" },
+  { name: "Chat to Docs", href: "/chat-to-docs" },
   // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 

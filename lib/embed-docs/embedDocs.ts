@@ -12,7 +12,11 @@ import {
 } from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
-import { splitIntoTextChunks, splitTextByHeaders } from "./utils";
+import {
+  removeRepetition,
+  splitIntoTextChunks,
+  splitTextByHeaders,
+} from "./utils";
 
 const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
