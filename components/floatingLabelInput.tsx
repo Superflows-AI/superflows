@@ -15,7 +15,7 @@ export default function FloatingLabelInput(props: {
     <div className="relative">
       <input
         className={classNames(
-          "peer w-full pt-4 pb-1 rounded outline-0",
+          "peer w-full pt-4 pb-1 rounded outline-0  border-gray-200 focus:border-purple-600 focus:ring-purple-600",
           props.className || "",
         )}
         placeholder=""
@@ -50,7 +50,7 @@ export function FloatingLabelTextArea(props: {
   return (
     <div className="w-full relative">
       <AutoGrowingTextArea
-        className="w-full bg-gray-50 peer resize-none overflow-y-clip text-gray-800 pl-4 pr-10 pt-4 pb-2 rounded border-gray-200 focus:border-sky-500 focus:ring-sky-500 whitespace-pre-line outline-0"
+        className="w-full bg-gray-50 peer resize-none overflow-y-clip text-gray-800 pl-4 pr-10 pt-4 pb-2 rounded border-gray-200 focus:border-purple-600 focus:ring-purple-600 whitespace-pre-line outline-0"
         ref={props.ref}
         placeholder={""}
         value={props.content}

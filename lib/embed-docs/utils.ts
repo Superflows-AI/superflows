@@ -36,7 +36,7 @@ export function splitTextByHeaders(
     }
     isFirstChunk = false;
 
-    let heading = RemoveMarkdown(match[2]) || prevHeading;
+    let heading = removeRepetition(RemoveMarkdown(match[2])) || prevHeading;
     let text = match[3].trim();
     // If the heading already exists, append the text to it
     if (results.hasOwnProperty(heading)) {
@@ -129,4 +129,9 @@ export function joinShortChunks(arr: string[], tokenLimit: number): string[] {
   }
 
   return result;
+}
+
+export function removeRepetition(str: string): string {
+  const regex = /^(.*?)(?:\s)?\1$/;
+  return str.replace(regex, "$1");
 }
