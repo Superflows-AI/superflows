@@ -2,21 +2,10 @@ import { PlaywrightWebBaseLoader } from "langchain/document_loaders/web/playwrig
 import { Browser, Page } from "playwright";
 import TurndownService from "turndown";
 import RemoveMarkdown from "remove-markdown";
-import {
-  exponentialRetryWrapper,
-  getTokenCount,
-  isDate,
-  isEmail,
-  isPhoneNumber,
-  isUrl,
-} from "../utils";
+import { exponentialRetryWrapper } from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
-import {
-  removeRepetition,
-  splitIntoTextChunks,
-  splitTextByHeaders,
-} from "./utils";
+import { splitIntoTextChunks, splitTextByHeaders } from "./utils";
 
 const turndownService = new TurndownService({
   codeBlockStyle: "fenced",

@@ -15,7 +15,14 @@ export function isTextWithSubstance(text: string): boolean {
 export function splitTextByHeaders(
   markdownText: string,
 ): Record<string, string> {
-  const regex = /(#{1,3}) (.*?)\n([\s\S]*?)(?=\n#{1,3} |$)/g;
+  // Regex below captures a section as defined as starting with a heading (h1-h5)
+  // and ending with the next heading of the same or higher level, or the end of the string
+  const regex = /(#{1,5}) (.*?)\n([\s\S]*?)(?=\n#{1,5} |$)/g;
+  // (#{1,5}) captures the heading level (e.g. ###)
+  // (.*?) captures the heading text
+  // ([\s\S]*?) captures the text until the next heading or end of string
+  // (?=\n#{1,5} |$) is a a non-capturing group that looks ahead to ensure the
+  //   next heading is captured in the next match or the end of the string is reached
   let match;
   let results: Record<string, string> = {};
   let isFirstChunk = true;
@@ -36,8 +43,12 @@ export function splitTextByHeaders(
     }
     isFirstChunk = false;
 
-    let heading = removeRepetition(RemoveMarkdown(match[2])) || prevHeading;
+    let heading = removeRepetition(RemoveMarkdown(match[2])) || "";
     let text = match[3].trim();
+    if (!heading) {
+      ({ text, heading } = findHeading(text));
+      if (!heading) heading = prevHeading;
+    }
     // If the heading already exists, append the text to it
     if (results.hasOwnProperty(heading)) {
       results[heading] += `\n${text}`;
@@ -54,23 +65,127 @@ export function splitIntoTextChunks(
   sectionText: string,
   ignoreLines: string[],
 ): string[] {
-  return joinShortChunks(
-    sectionText
-      .split("\n")
-      .filter((chunk) => !ignoreLines.includes(RemoveMarkdown(chunk.trim())))
-      // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
-      .filter((chunk) => isTextWithSubstance(chunk.trim()))
-      // Tabs are more token-efficient than 4 spaces
-      .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
-      .map((chunk) => {
-        // Break up large paragraphs into sentences
-        const chunkTokenCount = getTokenCount(chunk);
-        if (chunkTokenCount <= 80) return chunk;
-        return splitMarkdownIntoSentences(chunk);
-      })
-      .flat(),
-    25,
+  const codeAndNonCodeChunks = splitOutCodeChunks(sectionText);
+  return codeAndNonCodeChunks
+    .map((codeNonCodeChunk): string[] => {
+      if (codeNonCodeChunk.startsWith("```")) {
+        return [codeNonCodeChunk];
+      }
+      return joinShortChunks(
+        codeNonCodeChunk
+          .split("\n")
+          .filter(
+            (chunk) => !ignoreLines.includes(RemoveMarkdown(chunk.trim())),
+          )
+          // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
+          .filter((chunk) => isTextWithSubstance(chunk.trim()))
+          // Tabs are more token-efficient than 4 spaces
+          .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
+          .map((chunk) => {
+            // Break up large paragraphs into sentences
+            const chunkTokenCount = getTokenCount(chunk);
+            if (chunkTokenCount <= 80) return chunk;
+            return splitMarkdownIntoSentences(chunk);
+          })
+          .flat(),
+        25,
+      );
+    })
+    .flat();
+}
+
+export function splitOutCodeChunks(sectionText: string): string[] {
+  const chunks: string[] = [];
+  const codeBlockPattern = /```(\w*)\n([\s\S]+?)```/g;
+  // (\w*) to capture the language abbreviation
+  // [\s\S]+? to capture the code content (non-greedy)
+  // [\s\S] includes newlines
+  let match;
+
+  // Find initial index for cutting the string
+  let currentIndex = 0;
+
+  while ((match = codeBlockPattern.exec(sectionText))) {
+    const nonCodeChunk = sectionText.slice(currentIndex, match.index);
+
+    // If there is any non-code text between two code blocks
+    if (nonCodeChunk.trim().length !== 0) {
+      chunks.push(nonCodeChunk);
+    }
+
+    const languageAbbrev = match[1] ?? "";
+    // Extract code content from a code block, trim additional redundant spaces
+    let codeChunk = match[2].trim();
+    if (isJson(codeChunk)) {
+      const jsonChunk = getPossibleJsonChunk(codeChunk);
+      // If the code chunk is JSON, reduce tokens by removing unnecessary prettification
+      const prePost = codeChunk.split(jsonChunk);
+
+      // Nothing to do if first line or not found (-1)
+      codeChunk = prePost[0] + unprettifyJsonString(jsonChunk) + prePost[1];
+    }
+
+    // Re-add the code block markdown formatting, so it's obvious it's a code block
+    chunks.push(`\`\`\`${languageAbbrev}\n${codeChunk}\n\`\`\``);
+
+    // Move to the end of the current match
+    currentIndex = codeBlockPattern.lastIndex;
+  }
+
+  // If there is a non-code section after the last code block
+  if (currentIndex < sectionText.length - 1) {
+    const finalChunk = sectionText.slice(currentIndex).trim();
+    if (finalChunk.length !== 0) {
+      chunks.push(finalChunk);
+    }
+  }
+
+  return chunks;
+}
+
+export function getPossibleJsonChunk(text: string): string {
+  // Regex to check if text contains [] or {}
+  const match = /(\[[\s\S]+]|{[\s\S]+})/g.exec(text);
+  return !match ? "" : match[0];
+}
+
+export function isJson(text: string): boolean {
+  const possibleJsonChunk = getPossibleJsonChunk(text);
+  if (!possibleJsonChunk) {
+    console.log(`No possible JSON chunk found in:\n${text}`);
+    return false;
+  }
+
+  const commentLessJson = possibleJsonChunk.replace(
+    /\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g,
+    (m, g) => (g ? "" : m),
   );
+
+  try {
+    JSON.parse(commentLessJson);
+    return true;
+  } catch {
+    try {
+      // Try to see if outer brackets are missing
+      JSON.parse(`[${commentLessJson}]`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export function unprettifyJsonString(jsonString: string): string {
+  // Convert all comments to /* */ style
+  let noWhiteSpace = jsonString.replace(/\/\/(.*)/g, "/*$1*/");
+  noWhiteSpace = noWhiteSpace.replace(/\/\*((.|\n|\r)*)\*\//g, "/*$1*/");
+
+  // Unprettify JSON by removal of line breaks, tabs, and excessive spaces
+  noWhiteSpace = noWhiteSpace.trim().replace(/[\r\n\t ]*\n[\r\n\t ]*/g, "");
+  noWhiteSpace = noWhiteSpace.replace(/[\r\n\t ]+/g, " ");
+  noWhiteSpace = noWhiteSpace.replace(/, /g, ",");
+  noWhiteSpace = noWhiteSpace.replace(/": "/g, '":"');
+  return noWhiteSpace;
 }
 
 export function splitMarkdownIntoSentences(markdown: string): string[] {
@@ -134,4 +249,18 @@ export function joinShortChunks(arr: string[], tokenLimit: number): string[] {
 export function removeRepetition(str: string): string {
   const regex = /^(.*?)(?:\s)?\1$/;
   return str.replace(regex, "$1");
+}
+
+export function findHeading(text: string): { text: string; heading: string } {
+  const lines = text.split("\n");
+  const firstLineIdx = lines.findIndex(Boolean);
+  if (firstLineIdx === -1) return { text: "", heading: "" };
+  const firstLineClean = RemoveMarkdown(lines[firstLineIdx]);
+  const isHeading = firstLineClean.length < 100;
+
+  return {
+    // The <100 is to remove paragraphs after genuine empty headings
+    text: (isHeading ? lines.slice(firstLineIdx + 1) : lines).join("\n"),
+    heading: isHeading ? firstLineClean : "",
+  };
 }
