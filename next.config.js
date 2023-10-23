@@ -31,6 +31,10 @@ module.exports = {
         source: "/api/v1/feedback",
         headers: headers,
       },
+      {
+        source: "/api/v1/follow-ups",
+        headers: headers,
+      },
     ];
   },
 };

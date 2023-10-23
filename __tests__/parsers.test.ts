@@ -1,5 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
-import { parseGPTStreamedData } from "../lib/parsers/parsers";
+import {
+  parseFollowUpSuggestions,
+  parseGPTStreamedData,
+} from "../lib/parsers/parsers";
 
 describe("Parse GPT Streaming output", () => {
   it("First streamed response", () => {
@@ -74,5 +77,43 @@ data: {"id": 123`;
       done: false,
       incompleteChunk: null,
     });
+  });
+});
+
+describe("parseFollowUpSuggestions", () => {
+  it("Simple", () => {
+    const out = parseFollowUpSuggestions(`- Suggestion 1
+- Suggestion 2
+- Suggestion 3`);
+    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+  });
+  it("Empty lines", () => {
+    const out = parseFollowUpSuggestions(`- Suggestion 1
+
+
+- Suggestion 2
+- Suggestion 3`);
+    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+  });
+  it("Extra text", () => {
+    const out =
+      parseFollowUpSuggestions(`Absolutely! Let me handle that for you right away.
+
+- Suggestion 1
+- Suggestion 2
+- Suggestion 3`);
+    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+  });
+  it("4 suggestions", () => {
+    const out = parseFollowUpSuggestions(`- Suggestion 1
+- Suggestion 2
+- Suggestion 3
+- Suggestion 4`);
+    expect(out).toStrictEqual([
+      "Suggestion 1",
+      "Suggestion 2",
+      "Suggestion 3",
+      "Suggestion 4",
+    ]);
   });
 });
