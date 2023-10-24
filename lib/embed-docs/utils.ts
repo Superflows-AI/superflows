@@ -3,12 +3,14 @@ import { getTokenCount, isDate, isEmail, isPhoneNumber, isUrl } from "../utils";
 
 export function isTextWithSubstance(text: string): boolean {
   return (
+    // Hack to include multi-line images or links
+    ["[", "!["].includes(text) ||
     // If very short number of characters, likely it's not a useful chunk
-    text.length > 3 &&
-    !isEmail(text) &&
-    !isPhoneNumber(text) &&
-    !isUrl(text) &&
-    !isDate(text)
+    (text.length > 3 &&
+      !isEmail(text) &&
+      !isPhoneNumber(text) &&
+      !isUrl(text) &&
+      !isDate(text))
   );
 }
 
@@ -263,4 +265,9 @@ export function findHeading(text: string): { text: string; heading: string } {
     text: (isHeading ? lines.slice(firstLineIdx + 1) : lines).join("\n"),
     heading: isHeading ? firstLineClean : "",
   };
+}
+
+export function removeMDLinksImgs(text: string): string {
+  /** Remove Markdown doesn't remove links which are spread over multiple lines **/
+  return text.replace(/!?\[([\s\S.]*?)]\((.*?)\)/g, "$1");
 }
