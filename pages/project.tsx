@@ -28,6 +28,11 @@ function Dashboard() {
   const [localDescription, setLocalDescription] = useState<string>(
     profile?.organizations?.description || "",
   );
+  useEffect(() => {
+    if (!profile) return;
+    setLocalName(profile.organizations?.name || "");
+    setLocalDescription(profile.organizations?.description || "");
+  }, [profile]);
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -67,9 +72,8 @@ function Dashboard() {
                 about how to use your API.
                 <br />
                 <br />
-                E.g. Stripe is an API for payments. The dashboard is used by
-                developers. To create a payment link, you need to have a product
-                id and a price id...
+                E.g. &ldquo;Stripe is an API for payments. The dashboard is used
+                by developers.&rdquo;
               </p>
             </div>
             <AutoGrowingTextArea
