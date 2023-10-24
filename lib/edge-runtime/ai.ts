@@ -82,11 +82,20 @@ export async function Dottie( // Dottie talks to docs
   const nChunksInclude = 3;
 
   try {
-    const recentMessages = [
+    // To stop going over the context limit: only remember the last 'maxConvLength' messages
+    let recentMessages = [
       ...nonSystemMessages.slice(
         Math.max(0, nonSystemMessages.length - maxConvLength),
       ),
     ];
+
+    // If function response too old, remove oldest documentation chunks
+    recentMessages = removeOldestFunctionCalls(
+      recentMessages,
+      undefined,
+      1000, // Cut out old docs retrieved, but keep old questions & answers
+    );
+
     const hallucinatedDocsPrompt = [
       hallucinateDocsSystemPrompt(reqData.user_description, org),
       ...recentMessages.filter((m) => m.role !== "function"),
@@ -98,11 +107,6 @@ export async function Dottie( // Dottie talks to docs
       3,
     );
     console.log("Hallucination: ", hallucinatedRes);
-
-    let chatGptPrompt: ChatGPTMessage[] = [
-      chatToDocsPrompt(reqData.user_description, org, language), // To stop going over the context limit: only remember the last 'maxConvLength' messages
-      ...recentMessages,
-    ];
 
     // We do embedding and similarity search on the hallucinated docs
     const relevantDocs = await getRelevantDocChunks(
@@ -118,16 +122,25 @@ export async function Dottie( // Dottie talks to docs
       name: "search_docs",
     } as ChatGPTMessage;
 
-    chatGptPrompt.push(docMessage);
+    recentMessages.push(docMessage);
     nonSystemMessages.push(docMessage);
     streamInfo(docMessage);
 
-    // If function response too old, remove oldest documentation chunks
-    chatGptPrompt = removeOldestFunctionCalls(
-      [...chatGptPrompt],
-      undefined,
-      1500, // Cut out old docs retrieved, but keep old questions & answers
+    const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
+      recentMessages,
+      true,
     );
+    console.log("Original to placeholder map", originalToPlaceholderMap);
+
+    let chatGptPrompt: ChatGPTMessage[] = [
+      chatToDocsPrompt(
+        reqData.user_description,
+        org,
+        Object.entries(originalToPlaceholderMap).length > 0,
+        language,
+      ),
+      ...cleanedMessages,
+    ];
 
     const promptInputCost = openAiCost(chatGptPrompt, "in", model);
     console.log("GPT input cost:", promptInputCost);
@@ -157,7 +170,11 @@ export async function Dottie( // Dottie talks to docs
     }
 
     // Stream response from OpenAI
-    let rawOutput = await streamResponseToUser(res, streamInfo, {});
+    let rawOutput = await streamResponseToUser(
+      res,
+      streamInfo,
+      originalToPlaceholderMap,
+    );
 
     const newMessage = {
       role: "assistant",
@@ -578,7 +595,8 @@ async function preamble(
             // TODO: ID line isn't always included, but we don't know whether it should be at this point (no functions called yet)
             false,
           )[0].content
-        : chatToDocsPrompt(reqData.user_description, org, language).content;
+        : chatToDocsPrompt(reqData.user_description, org, false, language)
+            .content;
     await redis.set(redisKey, systemPrompt);
     await redis.expire(redisKey, 60 * 15);
   }

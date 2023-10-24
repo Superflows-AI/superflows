@@ -8,7 +8,7 @@ import {
 import { Json } from "../lib/database.types";
 import {
   repopulateVariables,
-  removeIDs,
+  removeIdsFromObjs,
 } from "../lib/edge-runtime/apiResponseSimplification";
 
 const constActionParams = {
@@ -577,7 +577,7 @@ describe("remove and reAdd Ids", () => {
       b: "test",
     };
     const originalObj = JSON.parse(JSON.stringify(obj));
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "test",
@@ -594,7 +594,7 @@ describe("remove and reAdd Ids", () => {
       },
       c: "test",
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: {
         b: "ID1",
@@ -611,7 +611,7 @@ describe("remove and reAdd Ids", () => {
     const obj = {
       a: [id, "test"],
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: ["ID1", "test"],
     });
@@ -625,7 +625,7 @@ describe("remove and reAdd Ids", () => {
     const obj = {
       a: [[id, "test"]],
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: [["ID1", "test"]],
     });
@@ -639,7 +639,7 @@ describe("remove and reAdd Ids", () => {
       a: null,
       b: "test",
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: null,
       b: "test",
@@ -656,7 +656,7 @@ describe("remove and reAdd Ids", () => {
       a: id1,
       b: id2,
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "ID2",
@@ -675,7 +675,7 @@ describe("remove and reAdd Ids", () => {
       c: [id2, null, { d: id1 }, "end"],
     };
 
-    const { cleanedObject, idStore: uuidStore } = removeIDs(obj);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(obj);
     expect(cleanedObject).toEqual({
       a: "ID1",
       b: "test",
@@ -686,7 +686,7 @@ describe("remove and reAdd Ids", () => {
     expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(obj);
   });
   it("no uuids not changed", () => {
-    const { cleanedObject, idStore: uuidStore } = removeIDs(pokemon);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(pokemon);
     expect(cleanedObject).toEqual(pokemon);
     expect(uuidStore).toEqual({});
     expect(repopulateVariables(cleanedObject, uuidStore)).toEqual(pokemon);
@@ -729,7 +729,7 @@ describe("remove and reAdd Ids", () => {
         ],
       },
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(object);
 
     const cleanedExpected = {
       data: {
@@ -816,7 +816,7 @@ describe("remove and reAdd Ids", () => {
       ],
       resigned_count: 0,
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(object);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(object);
 
     const cleanedExpected = {
       inactive_count: 0,
@@ -968,7 +968,9 @@ describe("remove and reAdd Ids", () => {
         },
       ],
     };
-    const { cleanedObject, idStore: uuidStore } = removeIDs(object as Json);
+    const { cleanedObject, idStore: uuidStore } = removeIdsFromObjs(
+      object as Json,
+    );
 
     const cleanedExpected = {
       inactive_count: 0,

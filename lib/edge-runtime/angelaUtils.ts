@@ -56,6 +56,7 @@ export async function streamResponseToUser(
   const placeholderToOriginalMap = originalToPlaceholderMap
     ? swapKeysValues(originalToPlaceholderMap)
     : undefined;
+  console.log("placeholder to original map: ", placeholderToOriginalMap);
   // https://web.dev/streams/#asynchronous-iteration
   while (!done) {
     const { value, done: doneReading } = await reader.read();
@@ -116,6 +117,7 @@ export function replacePlaceholdersDuringStreaming(
   // URL1 is output, but the next chunk is a 0 to make it URL10)
   const fullPlaceholderMatch = /(URL|ID)[1-9]+/g.exec(content);
   if (fullPlaceholderMatch !== null) {
+    console.log("Full match:", fullPlaceholderMatch);
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
     const matchedString = fullPlaceholderMatch[0];
     if (matchedString in placeholderToOriginalMap) {
