@@ -18,6 +18,7 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules",
     "local",
-    "api/local"
+    "pages/api/local",
+    "docker/development/supabase"
   ]
 }

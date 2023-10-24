@@ -1,5 +1,5 @@
 import { ChatGPTMessage } from "../models";
-import { Action } from "../types";
+import { Action, Organization } from "../types";
 import { OpenAPIV3_1 } from "openapi-types";
 import { getJsonMIMEType } from "../edge-runtime/utils";
 import { isChoiceRequired } from "../actionUtils";
@@ -185,16 +185,12 @@ export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
   actions: Action[],
   userDescription: string | undefined,
-  orgInfo: {
-    name: string;
-    description: string;
-    chat_to_docs_enabled?: boolean;
-  },
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
   includeIdLine: boolean,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
-    ? `\nThe following is a description of the user - it's important that you take notice of this. ${userDescription}\n`
+    ? `\nUser description: ${userDescription}\n`
     : "";
 
   return [
@@ -213,10 +209,7 @@ export default function getMessages(
 
 export function chatToDocsPrompt(
   userDescription: string | undefined,
-  orgInfo: {
-    name: string;
-    description: string;
-  },
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
 ): ChatGPTMessage {
   const userDescriptionSection = userDescription
@@ -229,7 +222,9 @@ export function chatToDocsPrompt(
     }using information from ${
       orgInfo.name ? orgInfo.name + "'s" : "their"
     } documentation
-${userDescriptionSection}
+${
+  orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""
+}${userDescriptionSection}
 You will be shown chunks of potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
 
 ${
@@ -240,16 +235,15 @@ ${
 
 Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question.
 
-Never tell the user to find the answer in the documentation.`,
+Never tell the user to find the answer in the documentation.
+
+Reply in ${language ?? "the language they write in"}`,
   };
 }
 
 export function simpleChatPrompt(
   userDescriptionSection: string,
-  orgInfo: {
-    name: string;
-    description: string;
-  },
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
 ): ChatGPTMessage {
   return {
@@ -257,9 +251,9 @@ export function simpleChatPrompt(
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
       orgInfo.name ? `in ${orgInfo.name} ` : ""
     }with helpful replies
-
-${userDescriptionSection}
-
+${
+  orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""
+}${userDescriptionSection}
 You are having a conversation with the user.
 
 You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
@@ -279,10 +273,7 @@ export function getIntroText(orgInfo: { name: string; description: string }) {
 
 function systemPromptWithActions(
   userDescriptionSection: string,
-  orgInfo: {
-    name: string;
-    description: string;
-  },
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   numberedActions: string,
   language: string | null,
   includeIdUrlLine: boolean,
@@ -292,7 +283,7 @@ function systemPromptWithActions(
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
       orgInfo.name ? `in ${orgInfo.name} ` : ""
     }via function calls
-
+${orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""}
 Seek user assistance when necessary or more information is required
 
 Avoid directing users, instead complete tasks by outputting "Commands"

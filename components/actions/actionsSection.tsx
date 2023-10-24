@@ -66,6 +66,8 @@ export default function PageActionsSection(props: {
         {
           name: profile?.organizations?.name ?? "",
           description: profile?.organizations?.description ?? "",
+          chatbot_instructions:
+            profile?.organizations?.chatbot_instructions ?? "",
         },
         "english",
         false,
