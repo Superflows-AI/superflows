@@ -50,7 +50,7 @@ export default function SelectBox(props: {
                   ? "bg-gray-50 text-gray-900 ring-purple-300"
                   : props.selected === null
                   ? "bg-gray-700 text-gray-400 ring-gray-300"
-                  : "bg-gray-700 text-gray-50 ring-gray-300",
+                  : "bg-gray-800 text-gray-300 ring-gray-400",
                 size === "small"
                   ? "text-sm py-1.5"
                   : size === "base" && "text-base py-[0.6875rem]",
