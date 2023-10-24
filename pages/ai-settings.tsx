@@ -6,6 +6,7 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import SelectBox, { SelectBoxOption } from "../components/selectBox";
 import { Database } from "../lib/database.types";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
+import { AutoGrowingTextArea } from "../components/autoGrowingTextarea";
 
 export default function App() {
   return (
@@ -119,6 +120,7 @@ function Dashboard() {
       setLoaded(true);
       setLlm(profile!.organizations!.model);
       setLlmLanguage(profile!.organizations!.language);
+      setChatInstructions(profile!.organizations!.chatbot_instructions);
     }
   }, [profile]);
 
@@ -146,6 +148,9 @@ function Dashboard() {
   }, [profile?.organizations?.finetuned_models]);
   const [llmLanguage, setLlmLanguage] = React.useState<null | string>(
     profile?.organizations?.language ?? null,
+  );
+  const [chatInstructions, setChatInstructions] = React.useState<string>(
+    profile?.organizations?.chatbot_instructions ?? "",
   );
 
   return (
@@ -206,6 +211,36 @@ function Dashboard() {
                 size={"base"}
               />
             </div>
+            <div className="col-start-1 flex flex-col place-items-start pr-4">
+              <h2 className="text-lg text-gray-200">Chatbot Instructions</h2>
+              <p className="text-gray-400 text-sm">
+                Use this to give the chatbot instructions on how to respond, how
+                to call certain endpoints, etc.
+                <br />
+                <br />
+                E.g. &ldquo;Banks are referred to as service providers. IDs of
+                objects never contain slashes (/).&rdquo;
+              </p>
+            </div>
+            <AutoGrowingTextArea
+              className={
+                "col-start-3 col-span-2 resize-none overflow-hidden bg-gray-800 text-gray-300 rounded-md px-3 py-1.5 focus:ring-gray-200 focus:border-gray-900"
+              }
+              placeholder={"Instructions for the chatbot"}
+              value={chatInstructions}
+              onChange={(e) =>
+                setChatInstructions(e.target.value.slice(0, 1000))
+              }
+              onBlur={async () => {
+                const res = await supabase
+                  .from("organizations")
+                  .update({ chatbot_instructions: chatInstructions })
+                  .eq("id", profile?.organizations?.id!);
+                if (res.error) throw res.error;
+                await refreshProfile();
+              }}
+              minHeight={80}
+            />
           </div>
         </div>
       </div>
