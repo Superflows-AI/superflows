@@ -4,7 +4,7 @@ import { ChatGPTMessage } from "../models";
 
 export type StringMapping = { [key: string]: string };
 
-export function removeIDs(
+export function removeIdsFromObjs(
   obj: Json | Json[],
   existingStore?: StringMapping,
 ): {
@@ -62,7 +62,7 @@ export function removeIDs(
   return { cleanedObject: removedObj, idStore: store };
 }
 
-export function removeURLs(
+export function removeUrlsFromObjs(
   obj: Json | Json[],
   existingStore?: StringMapping,
 ): {
@@ -114,6 +114,49 @@ export function removeURLs(
   return { cleanedObject: removedObj, urlStore: store };
 }
 
+export function removeUrlsFromMarkdown(
+  markdown: string,
+  existingStore?: StringMapping,
+): {
+  cleanedMarkdown: string;
+  urlStore: StringMapping;
+} {
+  /**
+   * Removes Markdown URLs from a Markdown-formatted string.
+   * Replace the url with a placeholder in the form URL1, URL2, etc.
+   * Returns the cleaned string and a lookup table of the original URLs
+   * to the placeholder URL values.
+   */
+  const urlStore: StringMapping = existingStore ?? {};
+  // If already have an idStore, start counting from the last index
+  let idx = Object.entries(urlStore).length;
+  // Matches both links and images
+  const regex = /\[[\s\S.]*?]\((.*?)\)/g;
+  let match;
+  let cleanedMarkdown = markdown;
+
+  while ((match = regex.exec(markdown)) !== null) {
+    console.log(markdown, match);
+    const url = match[1];
+    if (url.startsWith("URL")) {
+      // If the URL is already a placeholder, skip it
+      continue;
+    }
+    let placeholder = urlStore[url];
+    if (!placeholder) {
+      placeholder = `URL${++idx}`;
+      urlStore[url] = placeholder;
+    }
+    cleanedMarkdown = cleanedMarkdown.replaceAll(url, placeholder);
+    // This is necessary to avoid infinite loops with zero-width matches
+    if (match.index === regex.lastIndex) {
+      regex.lastIndex++;
+    }
+  }
+
+  return { cleanedMarkdown, urlStore };
+}
+
 export function sanitizeMessages(
   messages: ChatGPTMessage[],
   sanitizeUrlsFirst: boolean,
@@ -125,19 +168,40 @@ export function sanitizeMessages(
    * and returns the cleaned messages and a lookup table of {value: variable} */
   let idStore: StringMapping = {},
     urlStore: StringMapping = {};
-  const cleanedMessages = messages.map((message) => {
+  const cleanedMessages = (
+    JSON.parse(JSON.stringify(messages)) as ChatGPTMessage[]
+  ).map((message) => {
     if (message.role === "function") {
       try {
         let cleanedObject = JSON.parse(message.content);
         if (sanitizeUrlsFirst) {
-          ({ cleanedObject, urlStore } = removeURLs(cleanedObject, urlStore));
-          ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
+          ({ cleanedObject, urlStore } = removeUrlsFromObjs(
+            cleanedObject,
+            urlStore,
+          ));
+          ({ cleanedObject, idStore } = removeIdsFromObjs(
+            cleanedObject,
+            idStore,
+          ));
         } else {
-          ({ cleanedObject, idStore } = removeIDs(cleanedObject, idStore));
-          ({ cleanedObject, urlStore } = removeURLs(cleanedObject, urlStore));
+          ({ cleanedObject, idStore } = removeIdsFromObjs(
+            cleanedObject,
+            idStore,
+          ));
+          ({ cleanedObject, urlStore } = removeUrlsFromObjs(
+            cleanedObject,
+            urlStore,
+          ));
         }
         message.content = JSON.stringify(cleanedObject);
-      } catch {}
+      } catch {
+        let cleanedMarkdown;
+        ({ cleanedMarkdown, urlStore } = removeUrlsFromMarkdown(
+          message.content,
+          urlStore,
+        ));
+        message.content = cleanedMarkdown;
+      }
     }
     return message;
   });
