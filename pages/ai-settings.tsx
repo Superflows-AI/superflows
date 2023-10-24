@@ -26,6 +26,11 @@ let allLLMsBase: SelectBoxOption[] = [
     name: "GPT-4",
     description: "Speed: 1/3 | Accuracy: 3/3",
   },
+  {
+    id: "gpt-3.5-turbo-0613",
+    name: "GPT-3.5",
+    description: "Speed: 3/3 | Accuracy: 1/3",
+  },
 ];
 
 const openRouterBaseModels = [

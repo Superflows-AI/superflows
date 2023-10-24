@@ -435,6 +435,7 @@ export interface Database {
         Row: {
           api_key: string;
           chat_to_docs_enabled: boolean;
+          chatbot_instructions: string;
           created_at: string | null;
           description: string;
           id: number;
@@ -447,6 +448,7 @@ export interface Database {
         Insert: {
           api_key?: string;
           chat_to_docs_enabled?: boolean;
+          chatbot_instructions?: string;
           created_at?: string | null;
           description?: string;
           id?: number;
@@ -459,6 +461,7 @@ export interface Database {
         Update: {
           api_key?: string;
           chat_to_docs_enabled?: boolean;
+          chatbot_instructions?: string;
           created_at?: string | null;
           description?: string;
           id?: number;
