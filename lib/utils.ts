@@ -571,6 +571,7 @@ const dateFormats = [
   "d/MM/yy HH:mm",
   "d/MM/yy H:mm",
   "dd/MM/yyyy HH:mm:ss",
+  "MMMM dd, yyyy",
 ];
 
 export function isDate(str: string): boolean {

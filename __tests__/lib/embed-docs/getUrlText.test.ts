@@ -1,7 +1,7 @@
 import {
   isTextWithSubstance,
   splitTextByHeaders,
-} from "../../../lib/embed-docs/embedDocs";
+} from "../../../lib/embed-docs/utils";
 
 describe("markdownToObject", () => {
   it("Simple", () => {
@@ -66,14 +66,15 @@ This is some text below heading 3.
       "Heading 3": "This is some text below heading 3.",
     });
   });
-  it("Includes an empty heading", () => {
+  it("Includes a heading with newline before text", () => {
     let markdownText = `
 This is some text at the top.
 ## Heading 2
 This is some text below heading 2.
 This is more text below heading 2.
 ## 
-This is even more text below heading 2.
+Heading 2.1
+This is some text below heading 2.1.
 # Heading 3
 This is some text below heading 3.
 `;
@@ -81,7 +82,8 @@ This is some text below heading 3.
     expect(out).toEqual({
       "": "This is some text at the top.",
       "Heading 2":
-        "This is some text below heading 2.\nThis is more text below heading 2.\nThis is even more text below heading 2.",
+        "This is some text below heading 2.\nThis is more text below heading 2.",
+      "Heading 2.1": "This is some text below heading 2.1.",
       "Heading 3": "This is some text below heading 3.",
     });
   });
