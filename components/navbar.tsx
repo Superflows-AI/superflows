@@ -122,10 +122,9 @@ export function Navbar(props: { current: string }) {
                     Setup checklist
                   </h2>
                   {onboardingSteps.map((step, idx) => (
-                    <>
+                    <div key={idx}>
                       {!profile?.onboarding_steps[idx] ? (
                         <a
-                          key={idx}
                           className="flex flex-row place-items-center gap-x-2 group"
                           href={step.link}
                           target={step.link.startsWith("/") ? "" : "_blank"}
@@ -137,17 +136,14 @@ export function Navbar(props: { current: string }) {
                           </div>
                         </a>
                       ) : (
-                        <div
-                          key={idx}
-                          className="flex flex-row place-items-center gap-x-2 cursor-default"
-                        >
+                        <div className="flex flex-row place-items-center gap-x-2 cursor-default">
                           <div className="h-4 w-4 bg-transparent overflow-visible border border-gray-300 rounded-full flex justify-center place-items-center">
                             <CheckIcon className="ml-1 mb-1 min-h-[1.25rem] min-w-[1.25rem] text-green-500" />
                           </div>
                           <div className={""}>{step.name}</div>
                         </div>
                       )}
-                    </>
+                    </div>
                   ))}
                 </div>
               </Flyout>
