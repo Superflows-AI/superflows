@@ -1,14 +1,14 @@
 # Dockerfile
 
 # Use node alpine as it's a small node image
-FROM node:alpine 
+FROM --platform=linux/amd64 node:alpine 
 RUN mkdir -p /app
 # Set /app as the working directory
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # Copy package.json and package-lock.json
-# to the /app working directory
-COPY package*.json ./
+# to the /app working directorys
+COPY package.json ./
 # Install dependencies in /app
 RUN npm i && npm cache clean --force
 # Copy the rest of our Next.js folder into /app

@@ -5,6 +5,7 @@ include:
 
 services:
   superflows:
+    platform: linux/amd64
     build:
       context: ../../
       dockerfile: ./docker/development/Dockerfile
