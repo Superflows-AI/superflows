@@ -1,4 +1,5 @@
 import {
+  removeMDLinksImgs,
   removeRepetition,
   splitOutCodeChunks,
 } from "../../../lib/embed-docs/utils";
@@ -147,5 +148,50 @@ This is a title
     expect(out).toEqual([
       '```\n{"key":"value"/* This is a comment*/},{"second_key":"second_value"}\n```',
     ]);
+  });
+});
+
+describe("removeMDLinksImgs", () => {
+  it("No links to remove", () => {
+    const out = removeMDLinksImgs("Hello world");
+    expect(out).toEqual("Hello world");
+  });
+  it("No partial link to remove, but MarkDown link", () => {
+    const out = removeMDLinksImgs("Hello [world](https://www.google.com)");
+    expect(out).toEqual("Hello world");
+  });
+  it("Remove link split over multiple lines", () => {
+    const out = removeMDLinksImgs("Hello [\nworld\n](/world)");
+    expect(out).toEqual("Hello \nworld\n");
+  });
+  it("Remove image", () => {
+    const out = removeMDLinksImgs("Hello \n![world\n](/world)");
+    expect(out).toEqual("Hello \nworld\n");
+  });
+  it("Real example", () => {
+    const out = removeMDLinksImgs(`[
+
+Sage
+
+](/resources/knowledge-base/feature-faqs)
+
+[
+
+KNOWLEDGE BASE
+
+](/resources/knowledge-base)
+
+[
+
+WATCH A DEMO
+
+](#)[
+
+FEATURES
+
+](/software/tools-and-features)`);
+    expect(out).toEqual(
+      "\n\nSage\n\n\n\n\n\nKNOWLEDGE BASE\n\n\n\n\n\nWATCH A DEMO\n\n\n\nFEATURES\n\n",
+    );
   });
 });

@@ -5,7 +5,11 @@ import RemoveMarkdown from "remove-markdown";
 import { exponentialRetryWrapper } from "../utils";
 import { DocChunkInsert } from "../types";
 import { queryEmbedding } from "../queryLLM";
-import { splitIntoTextChunks, splitTextByHeaders } from "./utils";
+import {
+  removeMDLinksImgs,
+  splitIntoTextChunks,
+  splitTextByHeaders,
+} from "./utils";
 
 const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
@@ -89,7 +93,7 @@ export async function embedDocsFromUrl(
                 ch.section_title && ch.section_title !== ch.page_title
                   ? "\nSection: " + ch.section_title
                   : ""
-              }\n${RemoveMarkdown(ch.text_chunks.join(""), {
+              }\n${RemoveMarkdown(removeMDLinksImgs(ch.text_chunks.join("")), {
                 useImgAltText: false,
               })
                 .trim()
