@@ -10,8 +10,10 @@ export function AutoGrowingTextArea(props: {
   maxHeight?: number;
   onBlur?: React.FocusEventHandler<HTMLTextAreaElement>;
   disabled?: boolean;
+  ref?: React.RefObject<HTMLTextAreaElement>;
 }) {
-  const ref = useRef(null);
+  const localRef = useRef(null);
+  const ref = props.ref ?? localRef;
 
   useEffect(() => {
     if (ref.current === null) return;
