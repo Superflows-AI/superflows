@@ -386,6 +386,48 @@ export default function EditActionModal(props: {
               setLocalAction={setLocalAction}
               disabled={includeAllInResposes}
             />
+            <div className="w-full px-6 flex flex-row justify-center place-items-center">
+              <div className="w-32 inline">
+                <p className="font-bold text-lg text-gray-100 shrink">
+                  Action URL
+                </p>
+                <div className="relative z-10">
+                  <QuestionMarkCircleIcon className="peer h-6 w-6 text-gray-400 hover:text-gray-300 transition rounded-full hover:bg-gray-850" />
+                  <div className={classNames("-top-24 left-12 w-72 popup")}>
+                    This provides a link to the users so they can verify the
+                    information given in the AI response is true.
+                    <br />
+                    <br />
+                    You can use the variable names in the API body and
+                    parameters enclosed in curly braces &#123;&#125; in the name
+                    and URL.
+                  </div>
+                </div>
+              </div>
+              <div className="relative w-[calc(100%-5rem)] grid grid-cols-2 gap-x-4">
+                <FloatingLabelInput
+                  value={localAction.link_name ?? ""}
+                  onChange={(e) => {
+                    setLocalAction({
+                      ...localAction,
+                      link_name: e.target.value,
+                    });
+                  }}
+                  label={"Name"}
+                />
+                <FloatingLabelInput
+                  className={"flex-grow"}
+                  value={localAction.link_url ?? ""}
+                  onChange={(e) => {
+                    setLocalAction({
+                      ...localAction,
+                      link_url: e.target.value,
+                    });
+                  }}
+                  label={"URL"}
+                />
+              </div>
+            </div>
           </>
         )}
       </div>
