@@ -83,6 +83,8 @@ export interface Database {
           description: string;
           id: number;
           keys_to_keep: Json | null;
+          link_name: string;
+          link_url: string;
           name: string;
           org_id: number | null;
           parameters: Json | null;
@@ -101,6 +103,8 @@ export interface Database {
           description?: string;
           id?: number;
           keys_to_keep?: Json | null;
+          link_name?: string;
+          link_url?: string;
           name?: string;
           org_id?: number | null;
           parameters?: Json | null;
@@ -119,6 +123,8 @@ export interface Database {
           description?: string;
           id?: number;
           keys_to_keep?: Json | null;
+          link_name?: string;
+          link_url?: string;
           name?: string;
           org_id?: number | null;
           parameters?: Json | null;

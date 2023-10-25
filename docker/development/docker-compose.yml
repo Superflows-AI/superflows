@@ -10,7 +10,12 @@ services:
       context: ../../
       dockerfile: ./docker/development/Dockerfile
     container_name: superflows
-    command: ["sh", "-c", "echo 'y' | npx supabase db push --db-url='postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}' && npm run dev"]
+    command:
+      [
+        "sh",
+        "-c",
+        "echo 'y' | npx supabase db push --db-url='postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}' && npm run dev",
+      ]
     depends_on:
       - kong # defined by another_domain
     ports:
@@ -21,7 +26,5 @@ services:
       - ../../:/app
       - /app/node_modules
 
-
 networks:
   superflows:
-   
