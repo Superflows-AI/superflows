@@ -94,7 +94,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
     3,
     supabase,
   );
-  return new Response(relevantDocs, {
+  return new Response(relevantDocs.text, {
     status: 200,
     headers,
   });

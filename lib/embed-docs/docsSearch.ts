@@ -3,14 +3,14 @@ import { exponentialRetryWrapper } from "../utils";
 import { queryEmbedding } from "../queryLLM";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database, Json } from "../database.types";
-import { chunksToString, deduplicateChunks } from "../edge-runtime/utils";
+import { combineChunks, deduplicateChunks } from "../edge-runtime/utils";
 
 export async function getRelevantDocChunks(
   userQuery: string,
   org_id: number,
   nChunksInclude: number,
   supabase: SupabaseClient<Database>,
-): Promise<string> {
+): Promise<{ text: string; urls: { name: string; url: string }[] }> {
   const embedding = await exponentialRetryWrapper(
     queryEmbedding,
     [userQuery],
@@ -27,7 +27,7 @@ export async function getRelevantDocChunks(
 
   if (!data || data.length === 0) {
     console.warn("Found no relevant documentation for query: ", userQuery);
-    return "No relevant documentation found";
+    return { text: "No relevant documentation found", urls: [] };
   }
 
   console.log(
@@ -40,7 +40,7 @@ export async function getRelevantDocChunks(
     ),
   );
 
-  return chunksToString(
+  return combineChunks(
     deduplicateChunks(data, nChunksInclude * data[0].text_chunks.length),
   );
 }

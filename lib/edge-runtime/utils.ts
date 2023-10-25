@@ -6,6 +6,7 @@ import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
+import RemoveMarkdown from "remove-markdown";
 
 export function DBChatMessageToGPT(
   message: DBChatMessage,
@@ -212,16 +213,48 @@ export function deduplicateChunks(
   return deduped;
 }
 
-export function chunksToString(chunks: SimilaritySearchResult[]): string {
-  return chunks
-    .map((chunk) => {
-      return `Page: ${chunk.page_title}${
-        chunk.section_title && chunk.section_title !== chunk.page_title
-          ? "\nSection: " + chunk.section_title
-          : ""
-      }\n\n${chunk.text_chunks.join("").trim()}`;
-    })
-    .join("\n\n---\n");
+export function combineChunks(chunks: SimilaritySearchResult[]): {
+  text: string;
+  urls: { name: string; url: string }[];
+} {
+  const chunkCombArr = chunks.map((chunk) => {
+    const includeSectionTitle =
+      chunk.section_title && chunk.section_title !== chunk.page_title;
+    return {
+      text: `Page: ${chunk.page_title}${
+        includeSectionTitle ? "\nSection: " + chunk.section_title : ""
+      }\n\n${chunk.text_chunks.join("").trim()}`,
+      url: chunk.page_url
+        ? {
+            name: `${chunk.page_title}${
+              includeSectionTitle ? ` - ${chunk.section_title}` : ""
+            }`,
+            url:
+              chunk.page_url +
+              // This usually doesn't work. Sometimes it might. Working would mean that it redirects you to the
+              // part of the text where the query was found.
+              "#:~:" +
+              new URLSearchParams({
+                text: RemoveMarkdown(
+                  chunk.text_chunks[0].split(" ").slice(0, 10).join(" ") +
+                    "," +
+                    chunk.text_chunks[chunk.text_chunks.length - 1]
+                      .split(" ")
+                      .slice(-10)
+                      .join(" "),
+                ),
+              }),
+          }
+        : undefined,
+    };
+  });
+  return {
+    text: chunkCombArr.map((ch) => ch.text).join("\n\n---\n"),
+    urls: chunkCombArr.map((ch) => ch.url).filter(Boolean) as {
+      name: string;
+      url: string;
+    }[],
+  };
 }
 
 export function parseErrorHtml(str: string): string {
@@ -234,4 +267,15 @@ export function parseErrorHtml(str: string): string {
   ];
   const result = elements.filter((element) => element !== "").join("\n");
   return result.length > 0 ? result : str;
+}
+
+export function replaceVariables(
+  input: string,
+  variables: { [key: string]: any },
+): string {
+  return input.replace(/\{(\w+)}/g, function (_match, variable) {
+    return variables.hasOwnProperty(variable)
+      ? variables[variable]
+      : `${variable}`;
+  });
 }

@@ -11,9 +11,13 @@ import {
 } from "../../../lib/edge-runtime/requests";
 import { Database } from "../../../lib/database.types";
 import { Ratelimit } from "@upstash/ratelimit";
-import { ChatGPTMessage, ToConfirm } from "../../../lib/models";
+import {
+  ChatGPTMessage,
+  GPTMessageInclSummary,
+  ToConfirm,
+} from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
-import { getHost } from "../../../lib/edge-runtime/utils";
+import { getHost, replaceVariables } from "../../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
@@ -327,7 +331,7 @@ export default async function handler(req: NextRequest) {
             null,
             2,
           ),
-        } as ChatGPTMessage;
+        } as Extract<GPTMessageInclSummary, { role: "function" }>;
 
         console.log("out:", JSON.stringify(out));
 
@@ -339,6 +343,14 @@ export default async function handler(req: NextRequest) {
           conversation_index: numPastMessages + idx,
         });
         if (funcRes.error) throw new Error(funcRes.error.message);
+        if (execute.action.link_url) {
+          out.urls = [
+            {
+              name: replaceVariables(execute.action.link_name, execute.params),
+              url: replaceVariables(execute.action.link_url, execute.params),
+            },
+          ];
+        }
         return out;
       }),
     );
