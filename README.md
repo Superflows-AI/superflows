@@ -89,7 +89,11 @@ We haven't written a self-hosting guide for Superflows yet. If you're interested
 
 [Available here.](https://docs.superflows.ai/blog/roadmap)
 
-## Development
+
+
+## Setting up locally
+
+- ### Local setup
 
 You need to be running a local version of [Supabase](https://supabase.io) to develop this project locally.
 
@@ -117,4 +121,37 @@ make run
 ```
 
 (Alternatively, if you don't have `make`, use `npm run dev`)
+
+- ### Docker Setup
+
+Locate the init.sh file in the docker/development directory after cloning the project.
+
+#### Prerequisites
+ - Ensure that git is installed on your system. If it's not installed, the script will notify you.
+ - Install docker and docker compose using the relevant installation guide for your operating system
+
+#### Usage
+If you are running on windows, preferably use the git bash cli or WSL, you might need sudo permissions 
+
+Make the Script Executable
+Before using the script for the first time, ensure it is executable then run it:
+
+
+    chmod +x init.sh
+	./init.sh
+
+
+This script is designed to facilitate the process of setting up and managing the Superflows development environment with Supabase and also to setup the base environment configuration in your project. It ensures that the Supabase repository is either cloned or updated, and it also checks and manages the .env file, merging the existing .env.example files if necessary.
+
+By default the script runs docker compose to run start the containers and build (where required)
+
+#### Verify contents and set custom env
+The script should have created the supabase folder and also a .env file.
+- Review the env variables and correct or change to suit your environment - the env should already contain sensible defaults (however)
+    - Set in your OPENAI key  [OPENAI_API_KEY] 
+    - [optional] set in your SMTP credentials to enable email
+
+- Run the compose file (depending on what version of compose you have installed)
+    docker compose up -d build 
+    or docker-compose up -d build 
 

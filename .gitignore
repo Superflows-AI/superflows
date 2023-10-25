@@ -138,3 +138,4 @@ local/
 .idea/
 install-sidebar.sh
 .vercel
+docker/development/supabase/
