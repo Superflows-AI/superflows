@@ -23,6 +23,7 @@ export type GPTMessageInclSummary =
       content: string;
       name: string;
       summary?: string;
+      urls?: { name: string; url: string }[];
     };
 
 interface MessageChoice {

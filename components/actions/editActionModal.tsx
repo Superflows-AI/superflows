@@ -342,6 +342,7 @@ export default function EditActionModal(props: {
                 </div>
               </div>
             </div>
+            <div className={"h-px w-full bg-gray-500 my-2"} />
             {/* INCLUDE IN RESPONSES */}
             <div className="w-full px-6 flex flex-row justify-center place-items-center">
               <div className="font-bold text-lg text-gray-100 w-32">
@@ -386,6 +387,7 @@ export default function EditActionModal(props: {
               setLocalAction={setLocalAction}
               disabled={includeAllInResposes}
             />
+            <div className={"h-px w-full bg-gray-500 my-2"} />
             <div className="w-full px-6 flex flex-row justify-center place-items-center">
               <div className="w-32 inline">
                 <p className="font-bold text-lg text-gray-100 shrink">

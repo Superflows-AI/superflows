@@ -4,6 +4,7 @@ import {
   getParam,
   MessageInclSummaryToGPT,
   parseErrorHtml,
+  replaceVariables,
 } from "../../../lib/edge-runtime/utils";
 
 describe("MessageInclSummaryToGPT", () => {
@@ -332,5 +333,23 @@ A h2 A second h2`);
     const str = "h1 France < england && southampton > portsmouth /h1";
     const res = parseErrorHtml(str);
     expect(res).toEqual(str);
+  });
+});
+
+describe("replaceVariables", () => {
+  it("No replacement", () => {
+    const out = replaceVariables("This is a test", {});
+    expect(out).toEqual("This is a test");
+  });
+  it("1 simple replacement", () => {
+    const out = replaceVariables("This is a test of {a}", { a: "b" });
+    expect(out).toEqual("This is a test of b");
+  });
+  it("Including unused replacement", () => {
+    const out = replaceVariables("This is a test of {a}", {
+      a: "b",
+      b: "turnips",
+    });
+    expect(out).toEqual("This is a test of b");
   });
 });

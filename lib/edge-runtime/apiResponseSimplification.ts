@@ -136,7 +136,6 @@ export function removeUrlsFromMarkdown(
   let cleanedMarkdown = markdown;
 
   while ((match = regex.exec(markdown)) !== null) {
-    console.log(markdown, match);
     const url = match[1];
     if (url.startsWith("URL")) {
       // If the URL is already a placeholder, skip it

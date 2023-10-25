@@ -14,7 +14,11 @@ import {
   repopulateVariables,
   sanitizeMessages,
 } from "./apiResponseSimplification";
-import { MessageInclSummaryToGPT, removeOldestFunctionCalls } from "./utils";
+import {
+  MessageInclSummaryToGPT,
+  removeOldestFunctionCalls,
+  replaceVariables,
+} from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
 import { getLLMResponse, streamLLMResponse } from "../queryLLM";
 import { MAX_TOKENS_OUT } from "../consts";
@@ -116,14 +120,19 @@ export async function Dottie( // Dottie talks to docs
       supabase,
     );
 
-    const docMessage = {
+    let docMessage = {
       role: "function",
-      content: relevantDocs,
+      content: relevantDocs.text,
       name: "search_docs",
-    } as ChatGPTMessage;
+    } as Extract<GPTMessageInclSummary, { role: "function" }>;
 
     recentMessages.push(docMessage);
     nonSystemMessages.push(docMessage);
+    // Copy to not mutate the original
+    docMessage = { ...docMessage };
+    // Add doc links
+    docMessage.urls = relevantDocs.urls;
+    console.log("Doc links added:", docMessage.urls);
     streamInfo(docMessage);
 
     const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
@@ -473,13 +482,26 @@ export async function Angela( // Good ol' Angela
                 outMessage.summary = await summarizeText(out, org);
               }
               nonSystemMessages.push(outMessage);
-              // We can have issues in the frontend if the content is
+              // We can have issues in the frontend if the content is too long
               if (outMessage.summary && outMessage.content.length > 2000) {
                 outMessage = { ...outMessage };
                 outMessage.content =
-                  outMessage.content.slice(0, 2000) +
-                  "... output has been concatenated";
+                  outMessage.content.slice(0, 2000) + "...(concatenated)";
               }
+              if (chosenAction.link_url) {
+                outMessage = { ...outMessage };
+                outMessage.urls = [
+                  {
+                    name: replaceVariables(
+                      chosenAction.link_name,
+                      command.args,
+                    ),
+                    url: replaceVariables(chosenAction.link_url, command.args),
+                  },
+                ];
+                console.log("Link URLs added:", outMessage.urls);
+              }
+
               streamInfo(outMessage);
             } else {
               // This adds to the toConfirm array
