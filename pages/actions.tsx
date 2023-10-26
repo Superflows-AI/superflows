@@ -101,7 +101,7 @@ export function ActionsPage() {
             Please reach out to Henry at{" "}
             <a
               className="inline underline text-cyan-500 hover:text-cyan-600"
-              href="mailto:henry@superflows.ai?cc=matthew@superflows.ai,james@superflows.ai"
+              href="mailto:henry@superflows.ai?cc=matthew@superflows.ai"
             >
               henry@superflows.ai
             </a>{" "}
