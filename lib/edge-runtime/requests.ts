@@ -288,15 +288,20 @@ export async function makeHttpRequest(
       return responseText;
     }
   } else if (accept === "application/pdf") {
+    if (!process.env.PDF_TO_TEXT_URL) {
+      console.warn(
+        "PDF to text service is not configured - set PDF_TO_TEXT_URL environment variable to enable",
+      );
+      return "PDF to text service is not configured";
+    }
     console.log("Accept is pdf - calling /parse-pdf");
     // This gets the pdf and then parses it into text. We aren't
     // calling this function here because it requires nodejs runtime
-    const res = await fetch(`${localHostname}/api/parse-pdf`, {
+    const res = await fetch(`${process.env.PDF_TO_TEXT_URL}/parse-pdf`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      // TODO: Fix this dirty hack - we're making the request on this side and on parse-pdf
       body: JSON.stringify({ url, requestOptions }),
     });
     if (res.status === 200) return res.text();
