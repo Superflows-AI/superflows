@@ -39,7 +39,6 @@
     "langchain": "^0.0.165",
     "luxon": "^3.4.3",
     "next": "^13.5.4",
-    "pdfjs-dist": "^3.9.179",
     "playwright": "^1.38.1",
     "posthog-js": "^1.78.6",
     "react": "18.2.0",
