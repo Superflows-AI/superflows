@@ -1,5 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import {
+  combineChunks,
   deduplicateChunks,
   getParam,
   MessageInclSummaryToGPT,
@@ -333,6 +334,23 @@ A h2 A second h2`);
     const str = "h1 France < england && southampton > portsmouth /h1";
     const res = parseErrorHtml(str);
     expect(res).toEqual(str);
+  });
+});
+
+describe("combineChunks", () => {
+  it("Doesn't error trailing null value in text_chunks", () => {
+    const out = combineChunks([
+      {
+        page_url: "a",
+        page_title: "b",
+        section_title: "c",
+        // @ts-ignore
+        text_chunks: ["Chunk 1\n", "Chunk 2", null],
+        chunk_idx: 1,
+        similarity: 1,
+      },
+    ]);
+    expect(out.text).toEqual("Page: b\nSection: c\n\nChunk 1\nChunk 2");
   });
 });
 

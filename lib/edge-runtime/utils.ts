@@ -7,8 +7,7 @@ import { Database } from "../database.types";
 import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
 import RemoveMarkdown from "remove-markdown";
-import {z} from "zod/lib";
-
+import { z } from "zod/lib";
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
@@ -17,7 +16,7 @@ export function isValidBody<T extends Record<string, unknown>>(
   const safeParseOut = bodySchema.safeParse(body);
   if ("error" in safeParseOut) {
     console.error(
-      "Error parsing request body: " + safeParseOut.error.toString()
+      "Error parsing request body: " + safeParseOut.error.toString(),
     );
   }
   return safeParseOut.success;
@@ -213,6 +212,7 @@ export function deduplicateChunks(
           }
         });
       } else {
+        // This happens if there are 2 doc_chunks in 1 page which are relevant with a big gap between them
         deduped.push(chunk);
       }
     } else {
@@ -251,12 +251,15 @@ export function combineChunks(chunks: SimilaritySearchResult[]): {
               "#:~:" +
               new URLSearchParams({
                 text: RemoveMarkdown(
-                  chunk.text_chunks[0].split(" ").slice(0, 10).join(" ") +
-                    "," +
-                    chunk.text_chunks[chunk.text_chunks.length - 1]
-                      .split(" ")
-                      .slice(-10)
-                      .join(" "),
+                  // Below if-else is because of trailing null values in text_chunks
+                  chunk.text_chunks[chunk.text_chunks.length - 1]
+                    ? chunk.text_chunks[0].split(" ").slice(0, 10).join(" ") +
+                        "," +
+                        chunk.text_chunks[chunk.text_chunks.length - 1]
+                          .split(" ")
+                          .slice(-10)
+                          .join(" ")
+                    : chunk.text_chunks[0],
                 ),
               }),
           }
