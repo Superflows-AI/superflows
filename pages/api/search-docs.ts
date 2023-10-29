@@ -27,73 +27,89 @@ const supabase = createClient<Database>(
 const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest): Promise<Response> {
-  // Handle non-POST requests
-  if (req.method !== "GET") {
-    return new Response(
-      JSON.stringify({
-        error: "Only GET requests allowed",
-      }),
-      { status: 405, headers },
-    );
-  }
+  try {
+    // Handle non-POST requests
+    if (req.method !== "GET") {
+      return new Response(
+        JSON.stringify({
+          error: "Only GET requests allowed",
+        }),
+        { status: 405, headers },
+      );
+    }
 
-  // Authenticate that the user is allowed to use this API
-  const orgApiKey = req.headers
-    .get("Authorization")
-    ?.replace("Bearer ", "")
-    .replace("bearer ", "");
+    // Authenticate that the user is allowed to use this API
+    const orgApiKey = req.headers
+      .get("Authorization")
+      ?.replace("Bearer ", "")
+      .replace("bearer ", "");
 
-  if (!orgApiKey) {
-    return new Response(JSON.stringify({ error: "Authentication failed" }), {
-      status: 401,
-      headers,
-    });
-  }
-
-  let org: OrgJoinIsPaidFinetunedModels | null = null;
-  if (orgApiKey) {
-    const authRes = await supabase
-      .from("organizations")
-      .select("*, is_paid(*), finetuned_models(*)")
-      .eq("api_key", orgApiKey);
-    if (authRes.error) throw new Error(authRes.error.message);
-    org = authRes.data?.[0] ?? null;
-  }
-  if (!org) {
-    return new Response(JSON.stringify({ error: "Authentication failed" }), {
-      status: 401,
-      headers,
-    });
-  }
-  if (!org.chat_to_docs_enabled) {
-    return new Response(
-      JSON.stringify({
-        error: "Chat to docs is not enabled for this organization",
-      }),
-      {
+    if (!orgApiKey) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
         status: 401,
         headers,
-      },
-    );
-  }
+      });
+    }
 
-  // Validate that the request body is of the correct format
-  const requestData = new URLSearchParams(req.url.split("?")[1]);
-  if (!requestData.has("query")) {
-    return new Response(JSON.stringify({ message: "Invalid request body" }), {
-      status: 400,
+    let org: OrgJoinIsPaidFinetunedModels | null = null;
+    if (orgApiKey) {
+      const authRes = await supabase
+        .from("organizations")
+        .select("*, is_paid(*), finetuned_models(*)")
+        .eq("api_key", orgApiKey);
+      if (authRes.error) throw new Error(authRes.error.message);
+      org = authRes.data?.[0] ?? null;
+    }
+    if (!org) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        status: 401,
+        headers,
+      });
+    }
+    if (!org.chat_to_docs_enabled) {
+      return new Response(
+        JSON.stringify({
+          error: "Chat to docs is not enabled for this organization",
+        }),
+        {
+          status: 401,
+          headers,
+        },
+      );
+    }
+
+    // Validate that the request body is of the correct format
+    const requestData = new URLSearchParams(req.url.split("?")[1]);
+    if (!requestData.has("query")) {
+      return new Response(JSON.stringify({ message: "Invalid request body" }), {
+        status: 400,
+        headers,
+      });
+    }
+
+    const relevantDocs = await getRelevantDocChunks(
+      requestData.get("query")!,
+      org.id,
+      3,
+      supabase,
+    );
+    return new Response(relevantDocs.text, {
+      status: 200,
       headers,
     });
+  } catch (e) {
+    let message: string;
+    if (typeof e === "string") {
+      message = e;
+    } else if (e instanceof Error) {
+      message = e.message;
+    } else message = "Internal Server Error";
+    console.error(e);
+    return new Response(
+      JSON.stringify({
+        error: message,
+      }),
+      { status: 500, headers },
+    );
   }
-
-  const relevantDocs = await getRelevantDocChunks(
-    requestData.get("query")!,
-    org.id,
-    3,
-    supabase,
-  );
-  return new Response(relevantDocs.text, {
-    status: 200,
-    headers,
-  });
 }
