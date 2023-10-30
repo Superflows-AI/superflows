@@ -82,38 +82,71 @@ data: {"id": 123`;
 
 describe("parseFollowUpSuggestions", () => {
   it("Simple", () => {
-    const out = parseFollowUpSuggestions(`- Suggestion 1
-- Suggestion 2
-- Suggestion 3`);
-    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+    const out = parseFollowUpSuggestions(`- How are you feeling?
+- What's up with you?
+- What time is it right now .com?`);
+    expect(out).toStrictEqual([
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
+    ]);
   });
   it("Empty lines", () => {
-    const out = parseFollowUpSuggestions(`- Suggestion 1
+    const out = parseFollowUpSuggestions(`- How are you feeling?
 
 
-- Suggestion 2
-- Suggestion 3`);
-    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+- What's up with you?
+- What time is it right now .com?`);
+    expect(out).toStrictEqual([
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
+    ]);
   });
   it("Extra text", () => {
     const out =
       parseFollowUpSuggestions(`Absolutely! Let me handle that for you right away.
 
-- Suggestion 1
-- Suggestion 2
-- Suggestion 3`);
-    expect(out).toStrictEqual(["Suggestion 1", "Suggestion 2", "Suggestion 3"]);
+- How are you feeling?
+- What's up with you?
+- What time is it right now .com?`);
+    expect(out).toStrictEqual([
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
+    ]);
   });
   it("4 suggestions", () => {
-    const out = parseFollowUpSuggestions(`- Suggestion 1
-- Suggestion 2
-- Suggestion 3
-- Suggestion 4`);
+    const out = parseFollowUpSuggestions(`- How are you feeling?
+- What's up with you?
+- What time is it right now .com?
+- Who are you really?`);
     expect(out).toStrictEqual([
-      "Suggestion 1",
-      "Suggestion 2",
-      "Suggestion 3",
-      "Suggestion 4",
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
+      "Who are you really?",
+    ]);
+  });
+  it("Start with 'suggested question 1:'", () => {
+    const out =
+      parseFollowUpSuggestions(`- Suggested question 1: How are you feeling?
+- Suggested question 2: What's up with you?
+- Suggested question 3: What time is it right now .com?`);
+    expect(out).toStrictEqual([
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
+    ]);
+  });
+  it("Starts with 'suggestion 1:'", () => {
+    const out = parseFollowUpSuggestions(`- Suggestion 2: How are you feeling?
+- Suggestion 2: What's up with you?
+- Suggestion 3: What time is it right now .com?`);
+    expect(out).toStrictEqual([
+      "How are you feeling?",
+      "What's up with you?",
+      "What time is it right now .com?",
     ]);
   });
 });
