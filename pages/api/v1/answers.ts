@@ -9,7 +9,8 @@ import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
 import {
   DBChatMessageToGPT,
   getFreeTierUsage,
-  getHost, isValidBody,
+  getHost,
+  isValidBody,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
 import {
@@ -266,25 +267,29 @@ export default async function handler(req: NextRequest) {
     } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
       language = await getLanguage(requestData.user_input);
     }
-    const newUserMessage: ChatGPTMessage = {
-      role: "user",
-      content: requestData.user_input,
-    };
-    previousMessages.push(newUserMessage as GPTMessageInclSummary);
-    console.log(
-      "Number of previous messages in conversation: " + previousMessages.length,
-    );
-    const insertedChatMessagesRes = await supabase
-      .from("chat_messages")
-      .insert({
-        ...newUserMessage,
-        conversation_id: conversationId,
-        org_id: org.id,
-        conversation_index: previousMessages.length - 1,
-        language,
-      });
-    if (insertedChatMessagesRes.error) {
-      throw new Error(insertedChatMessagesRes.error.message);
+
+    if (requestData.user_input) {
+      const newUserMessage: ChatGPTMessage = {
+        role: "user",
+        content: requestData.user_input,
+      };
+      previousMessages.push(newUserMessage as GPTMessageInclSummary);
+      console.log(
+        "Number of previous messages in conversation: " +
+          previousMessages.length,
+      );
+      const insertedChatMessagesRes = await supabase
+        .from("chat_messages")
+        .insert({
+          ...newUserMessage,
+          conversation_id: conversationId,
+          org_id: org.id,
+          conversation_index: previousMessages.length - 1,
+          language,
+        });
+      if (insertedChatMessagesRes.error) {
+        throw new Error(insertedChatMessagesRes.error.message);
+      }
     }
 
     // Get the active actions from the DB which we can choose between
