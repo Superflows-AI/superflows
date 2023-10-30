@@ -412,6 +412,7 @@ export async function Angela( // Good ol' Angela
             if (Object.keys(corrections).length > 0) {
               for (const [param, response] of Object.entries(corrections)) {
                 if (
+                  typeof response === "string" &&
                   !response
                     .toLowerCase()
                     .replace(/[^A-Z]+/gi, "")
