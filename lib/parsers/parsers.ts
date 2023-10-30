@@ -34,8 +34,18 @@ export function parseGPTStreamedData(gptOutString: string): ParsedStreamedData {
 }
 
 export function parseFollowUpSuggestions(text: string): string[] {
+  const suggestedQuestionRegex =
+    /^([Ss]uggested [Qq]uestion|Suggestion) (\d: |\d\?)/;
   return text
     .split("\n")
     .filter((line) => line.trim().length > 0 && line.startsWith("-"))
-    .map((line) => line.slice(1).trim());
+    .map((line) => {
+      let out = line.slice(1).trim();
+      // If the suggestion starts with "Suggested Question 1:" or similar, remove it
+      let match;
+      if ((match = suggestedQuestionRegex.exec(out))) {
+        out = out.replace(match[0], "");
+      }
+      return out;
+    });
 }

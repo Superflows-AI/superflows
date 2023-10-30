@@ -1,4 +1,4 @@
-import { ActionPlusApiInfo, SimilaritySearchResult } from "../types";
+import { ActionPlusApiInfo } from "../types";
 import { exponentialRetryWrapper } from "../utils";
 import { queryEmbedding } from "../queryLLM";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
