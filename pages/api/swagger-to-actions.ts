@@ -91,9 +91,10 @@ export default async function handler(
       OpenAPIV3_1.SecuritySchemeObject
     >,
   );
-  const api_host = dereferencedSwagger.servers
-    ?.reverse()
-    .find((server) => server.url.startsWith("https://"))?.url;
+  const api_host =
+    dereferencedSwagger.servers
+      ?.reverse()
+      .find((server) => server.url.startsWith("https://"))?.url ?? "";
   if (!api_id) {
     const apiResp = await supabase
       .from("apis")
@@ -101,18 +102,21 @@ export default async function handler(
         org_id: orgId,
         name: dereferencedSwagger.info.title,
         api_host,
-        auth_header: authInfo?.auth_header,
-        auth_scheme: authInfo?.auth_scheme,
+        auth_header: authInfo?.auth_header ?? "Authorization",
+        auth_scheme: authInfo?.auth_scheme ?? null,
       })
       .select();
     if (apiResp.error) throw apiResp.error;
     api_id = apiResp.data[0].id;
   } else {
-    const apiResp = await supabase.from("apis").update({
-      api_host,
-      auth_header: authInfo?.auth_header,
-      auth_scheme: authInfo?.auth_scheme,
-    });
+    const apiResp = await supabase
+      .from("apis")
+      .update({
+        api_host,
+        auth_header: authInfo?.auth_header ?? "Authorization",
+        auth_scheme: authInfo?.auth_scheme ?? null,
+      })
+      .eq("id", api_id);
     if (apiResp.error) throw apiResp.error;
   }
 
