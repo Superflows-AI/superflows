@@ -225,8 +225,7 @@ function DocumentList(props: {
         if (sectionChunks?.length) {
           newSections.push({
             docs: sectionChunks,
-            // todo: fix
-            pageName: sectionChunks[0].page_title,
+            pageName: section.result_page_title,
             sectionName: section.result_section_title,
             url: section.result_page_url,
           });
