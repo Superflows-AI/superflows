@@ -14,6 +14,9 @@ import FloatingLabelInput, {
 import { classNames } from "../lib/utils";
 import { embedText } from "../lib/embed-docs/embedText";
 import { LoadingSpinner } from "../components/loadingspinner";
+import { DocChunk } from "../lib/types";
+import PaginationPageSelector from "../components/paginationPageSelector";
+import { set } from "zod";
 
 export default function App() {
   return (
@@ -67,15 +70,85 @@ function ChatToDocsPage() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [addDocsModal, setAddDocsModal] = useState<boolean>(false);
 
+  const [docPage, setDocPage] = useState<number>(1);
+
+  const [docs, setDocs] = useState<
+    Record<
+      string,
+      {
+        docs: DocChunk[];
+        pageName: string | null;
+        sectionName: string | null;
+        url: string;
+      }
+    >
+  >({});
+
+  // todo: remove
+  const isLastPage = false;
+
+  const fetchPage = async (page: number) => {
+    async function getSectionCounts() {
+      let { data, error } = await supabase
+        .from("doc_chunks")
+        .select("section_title, count(section_title)", { count: "exact" });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      return data;
+    }
+    getSectionCounts();
+
+    const pageSize = 100;
+
+    const { data: docChunks } = await supabase
+      .from("doc_chunks")
+      .select("*")
+      .eq("org_id", profile?.organizations?.id!)
+      .range(page * pageSize, page * pageSize + pageSize);
+
+    if (!docChunks || docChunks.length === 0) return;
+    setOrgHasDocs(true);
+
+    const docs: Record<
+      string,
+      {
+        docs: DocChunk[];
+        pageName: string | null;
+        url: string;
+        sectionName: string | null;
+      }
+    > = {};
+    for (const docChunk of docChunks) {
+      // todo: what to do here?
+      if (!docChunk.page_url) continue;
+
+      const id = docChunk.page_url + docChunk.section_title || "";
+
+      if (!docs[id]) {
+        docs[id] = {
+          pageName: docChunk.page_title,
+          sectionName: docChunk.section_title,
+          url: docChunk.page_url,
+          docs: [docChunk],
+        };
+      } else {
+        docs[id].docs = [...docs[id].docs, docChunk];
+      }
+    }
+    setDocs(docs);
+  };
+
+  useEffect(() => {
+    fetchPage(docPage);
+  }, [docPage]);
+
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("doc_chunks")
-        .select("*")
-        .eq("org_id", profile?.organizations?.id!)
-        .limit(1);
-      if (data && data.length === 1) setOrgHasDocs(true);
-
+      await fetchPage(1);
       const { data: data2 } = await supabase
         .from("organizations")
         .select("chat_to_docs_enabled")
@@ -138,6 +211,51 @@ function ChatToDocsPage() {
                     <PlusIcon className="w-5 h-5" /> Add
                   </button>
                 </div>
+              </div>
+              <div className="w-full h-px my-6 bg-gray-700" />
+
+              <div className="flex flex-col gap-y-3">
+                <div className="flex w-full gap-x-10">
+                  <h3 className="text-lg text-gray-200 w-1/5">Page Name</h3>
+                  <h3 className="text-lg text-gray-200 w-1/5">Section Name </h3>
+                  <h3 className="text-lg text-gray-200 w-1/5">URL</h3>
+                  <h3 className="text-lg text-gray-200 w-1/5">Edit</h3>
+                  <h3 className="text-lg text-gray-200 w-1/5">Delete</h3>
+                </div>
+                <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
+                {Object.values(docs).map((doc) => {
+                  return (
+                    <div
+                      key={doc.docs?.[0].id}
+                      className="flex w-full gap-x-10"
+                    >
+                      <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                        {doc.pageName}
+                      </h3>
+                      <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                        {doc.sectionName}
+                      </h3>
+                      <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                        {doc.url}
+                      </h3>
+                      <h3 className="text-base text-gray-400 w-1/5">Edit</h3>
+                      <h3 className="text-base text-gray-400 w-1/5">Delete</h3>
+                    </div>
+                  );
+                })}
+                <PaginationPageSelector
+                  page={docPage}
+                  clickedPrevious={() => {
+                    setDocPage((currentPage) =>
+                      currentPage === 1 ? currentPage : currentPage - 1,
+                    );
+                  }}
+                  clickedNext={() => {
+                    console.log(">>>>>>>>>>>>>>>", isLastPage);
+                    if (isLastPage) return;
+                    setDocPage((currentPage) => currentPage + 1);
+                  }}
+                ></PaginationPageSelector>
               </div>
             </div>
           ) : (
