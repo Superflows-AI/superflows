@@ -142,7 +142,12 @@ function ChatToDocsPage() {
     setDocs(docs);
   };
 
+  const fetchDocCount = async () => {
+    const { data, error } = await supabase.rpc("get_all_page_section_counts");
+  };
+
   useEffect(() => {
+    fetchDocCount();
     fetchPage(docPage);
   }, [docPage]);
 
