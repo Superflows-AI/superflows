@@ -277,7 +277,7 @@ export interface Database {
         Row: {
           chunk_idx: number;
           created_at: string | null;
-          embedding: string | null;
+          embedding: number[];
           id: number;
           org_id: number;
           page_title: string | null;
@@ -288,7 +288,7 @@ export interface Database {
         Insert: {
           chunk_idx: number;
           created_at?: string | null;
-          embedding?: string | null;
+          embedding?: number[];
           id?: number;
           org_id: number;
           page_title?: string | null;
@@ -299,7 +299,7 @@ export interface Database {
         Update: {
           chunk_idx?: number;
           created_at?: string | null;
-          embedding?: string | null;
+          embedding?: number[];
           id?: number;
           org_id?: number;
           page_title?: string | null;
@@ -566,14 +566,14 @@ export interface Database {
         };
         Returns: {
           result_page_url: string;
+          result_page_title: string;
           result_section_title: string;
-          count: number;
           ids: string;
         }[];
       };
       match_embeddings: {
         Args: {
-          query_embedding: string;
+          query_embedding: number[];
           similarity_threshold: number;
           match_count: number;
           _org_id: number;
