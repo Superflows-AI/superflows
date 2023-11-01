@@ -559,6 +559,18 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      get_page_section_counts: {
+        Args: {
+          _limit: number;
+          _offset: number;
+        };
+        Returns: {
+          result_page_url: string;
+          result_section_title: string;
+          count: number;
+          ids: string;
+        }[];
+      };
       match_embeddings: {
         Args: {
           query_embedding: string;
