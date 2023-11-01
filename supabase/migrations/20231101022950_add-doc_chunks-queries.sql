@@ -27,3 +27,15 @@ begin
     order by page_url, section_title) as sections);
 end;
 $$;
+
+create policy "Enable all operations for users based on organization id"
+on "public"."doc_chunks"
+as permissive
+for all
+to public
+using ((auth.uid() IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.org_id = doc_chunks.org_id))))
+with check ((auth.uid() IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.org_id = doc_chunks.org_id))));
