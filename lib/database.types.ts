@@ -277,7 +277,7 @@ export interface Database {
         Row: {
           chunk_idx: number;
           created_at: string | null;
-          embedding: number[];
+          embedding: string | null;
           id: number;
           org_id: number;
           page_title: string | null;
@@ -288,7 +288,7 @@ export interface Database {
         Insert: {
           chunk_idx: number;
           created_at?: string | null;
-          embedding?: number[];
+          embedding?: string | null;
           id?: number;
           org_id: number;
           page_title?: string | null;
@@ -299,7 +299,7 @@ export interface Database {
         Update: {
           chunk_idx?: number;
           created_at?: string | null;
-          embedding?: number[];
+          embedding?: string | null;
           id?: number;
           org_id?: number;
           page_title?: string | null;
@@ -555,9 +555,13 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      get_all_page_section_counts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       match_embeddings: {
         Args: {
-          query_embedding: number[];
+          query_embedding: string;
           similarity_threshold: number;
           match_count: number;
           _org_id: number;
