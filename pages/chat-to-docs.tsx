@@ -286,35 +286,35 @@ function DocumentList(props: {
 
       <div className="flex flex-col gap-y-3">
         <div className="flex w-full gap-x-10">
-          <h3 className="text-lg text-gray-200 w-1/5">Page Name</h3>
-          <h3 className="text-lg text-gray-200 w-1/5">Section Name </h3>
-          <h3 className="text-lg text-gray-200 w-1/5">URL</h3>
-          <h3 className="text-lg text-gray-200 w-1/5">Edit</h3>
-          <h3 className="text-lg text-gray-200 w-1/5">Delete</h3>
+          <h3 className="text-lg text-gray-200 flex-1">Page Name</h3>
+          <h3 className="text-lg text-gray-200 w-32">Section Name </h3>
+          <h3 className="text-lg text-gray-200 flex-1">URL</h3>
+          <h3 className="text-lg text-gray-200 w-16">Edit</h3>
+          <h3 className="text-lg text-gray-200 w-16">Delete</h3>
         </div>
         <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
         {docs.map((doc) => {
           return (
             <div key={doc.docs?.[0].id} className="flex w-full gap-x-10">
-              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+              <h3 className="text-base text-gray-400 flex-1 truncate">
                 {doc.pageName}
               </h3>
-              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+              <h3 className="text-base text-gray-400 w-32 truncate">
                 {doc.sectionName}
               </h3>
-              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+              <h3 className="text-base text-gray-400 flex-1 truncate">
                 {doc.url}
               </h3>
               <button
                 onClick={() => console.log("edit document")}
-                className="font-mono rounded font-bold bg-blue-700 text-gray-100 text-sm px-1.5 py-1 h-fit"
+                className="font-mono rounded font-bold bg-blue-700 text-gray-100 text-sm px-1.5 py-1 h-fit w-16"
               >
                 Edit
               </button>
 
               <button
                 onClick={setDocumentToDelete.bind(null, doc)}
-                className="font-mono rounded font-bold bg-red-700 text-gray-100 text-sm px-1.5 py-1 h-fit"
+                className="font-mono rounded font-bold bg-red-700 text-gray-100 text-sm px-1.5 py-1 h-fit w-16"
               >
                 Delete
               </button>
