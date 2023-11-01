@@ -566,7 +566,6 @@ export interface Database {
         };
         Returns: {
           result_page_url: string;
-          result_page_title: string;
           result_section_title: string;
           ids: string;
         }[];
