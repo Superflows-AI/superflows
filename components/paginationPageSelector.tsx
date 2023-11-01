@@ -1,26 +1,35 @@
 export default function PaginationPageSelector(props: {
+  showPrevious: boolean;
+  showNext: boolean;
   page: number;
   clickedPrevious: () => void;
   clickedNext: () => void;
 }) {
   return (
     <div className="inline-flex justify-center gap-3">
-      <button className="text-gray-200" onClick={props.clickedPrevious}>
-        Previous
-      </button>
+      {props.showPrevious ? (
+        <button
+          className="text-gray-200 w-20 text-right"
+          onClick={props.clickedPrevious}
+        >
+          Previous
+        </button>
+      ) : (
+        <div className="w-20"></div>
+      )}
 
-      <p className="text-gray-200">{props.page}</p>
+      <p className="text-gray-200 text-center">{props.page}</p>
 
-      <div>
-        <label htmlFor="PaginationPage" className="sr-only">
-          Page
-        </label>
-      </div>
-
-      <button className="text-gray-200" onClick={props.clickedNext}>
-        Next
-      </button>
+      {props.showNext ? (
+        <button
+          className="text-gray-200 w-20 text-left"
+          onClick={props.clickedNext}
+        >
+          Next
+        </button>
+      ) : (
+        <div className="w-20"></div>
+      )}
     </div>
   );
-  //
 }

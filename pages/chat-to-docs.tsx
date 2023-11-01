@@ -20,6 +20,7 @@ import { LoadingSpinner } from "../components/loadingspinner";
 import { DocChunk } from "../lib/types";
 import PaginationPageSelector from "../components/paginationPageSelector";
 import { set } from "zod";
+import WarningModal from "../components/warningModal";
 
 export default function App() {
   return (
@@ -189,6 +190,9 @@ function DocumentList(props: {
 
   const [docPage, setDocPage] = useState<number>(1);
   const [docs, setDocs] = useState<Section[]>([]);
+  const [documentToDelete, setDocumentToDelete] = useState<Section | null>(
+    null,
+  );
 
   const isLastPage = PAGE_SIZE * docPage >= props.allSectionCount;
 
@@ -204,8 +208,6 @@ function DocumentList(props: {
         _offset: (page - 1) * PAGE_SIZE,
       },
     );
-
-    console.log(sections?.length, error, "lsadasdsa");
 
     if (!sections?.length) return;
 
@@ -240,49 +242,101 @@ function DocumentList(props: {
     setDocs(newSections);
   };
 
-  return (
-    <div className="flex flex-col gap-y-3">
-      <div className="flex w-full gap-x-10">
-        <h3 className="text-lg text-gray-200 w-1/5">Page Name</h3>
-        <h3 className="text-lg text-gray-200 w-1/5">Section Name </h3>
-        <h3 className="text-lg text-gray-200 w-1/5">URL</h3>
-        <h3 className="text-lg text-gray-200 w-1/5">Edit</h3>
-        <h3 className="text-lg text-gray-200 w-1/5">Delete</h3>
-      </div>
-      <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
-      {docs.map((doc) => {
-        return (
-          <div key={doc.docs?.[0].id} className="flex w-full gap-x-10">
-            <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
-              {doc.pageName}
-            </h3>
-            <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
-              {doc.sectionName}
-            </h3>
-            <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
-              {doc.url}
-            </h3>
-            <h3 className="text-base text-gray-400 w-1/5">Edit</h3>
+  const deleteDocument = async (section: Section) => {
+    const sectionRowIds = section.docs.map((doc) => doc.id.toString());
 
-            <button className="font-mono rounded font-bold bg-red-700 text-gray-100 text-sm px-1.5 py-1 h-fit">
-              Delete
-            </button>
-          </div>
+    const { error } = await props.supabase
+      .from("doc_chunks")
+      .delete()
+      .in("id", sectionRowIds);
+
+    if (error) {
+      console.error(error);
+    } else {
+      setDocs((currentDocs) => {
+        return currentDocs.filter(
+          (doc) => doc.docs[0].id !== section.docs[0].id,
         );
-      })}
-      <PaginationPageSelector
-        page={docPage}
-        clickedPrevious={() => {
-          setDocPage((currentPage) =>
-            currentPage === 1 ? currentPage : currentPage - 1,
+      });
+    }
+    setDocumentToDelete(null);
+  };
+
+  const setDeleteDocumentModalOpen = (isOpen: boolean) => {
+    if (!isOpen) {
+      setDocumentToDelete(null);
+    }
+  };
+
+  return (
+    <>
+      <WarningModal
+        title={"Delete document?"}
+        description={"Are you sure you want to delete this document?"}
+        action={async () => {
+          if (documentToDelete) {
+            await deleteDocument(documentToDelete);
+          }
+        }}
+        actionColour={"red"}
+        actionName={"Delete"}
+        open={documentToDelete !== null}
+        setOpen={setDeleteDocumentModalOpen}
+      />
+
+      <div className="flex flex-col gap-y-3">
+        <div className="flex w-full gap-x-10">
+          <h3 className="text-lg text-gray-200 w-1/5">Page Name</h3>
+          <h3 className="text-lg text-gray-200 w-1/5">Section Name </h3>
+          <h3 className="text-lg text-gray-200 w-1/5">URL</h3>
+          <h3 className="text-lg text-gray-200 w-1/5">Edit</h3>
+          <h3 className="text-lg text-gray-200 w-1/5">Delete</h3>
+        </div>
+        <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
+        {docs.map((doc) => {
+          return (
+            <div key={doc.docs?.[0].id} className="flex w-full gap-x-10">
+              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                {doc.pageName}
+              </h3>
+              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                {doc.sectionName}
+              </h3>
+              <h3 className="text-base text-gray-400 w-1/5 line-clamp-1">
+                {doc.url}
+              </h3>
+              <button
+                onClick={() => console.log("edit document")}
+                className="font-mono rounded font-bold bg-blue-700 text-gray-100 text-sm px-1.5 py-1 h-fit"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={setDocumentToDelete.bind(null, doc)}
+                className="font-mono rounded font-bold bg-red-700 text-gray-100 text-sm px-1.5 py-1 h-fit"
+              >
+                Delete
+              </button>
+            </div>
           );
-        }}
-        clickedNext={() => {
-          if (isLastPage) return;
-          setDocPage((currentPage) => currentPage + 1);
-        }}
-      ></PaginationPageSelector>
-    </div>
+        })}
+        <PaginationPageSelector
+          showPrevious={docPage > 1}
+          showNext={!isLastPage}
+          page={docPage}
+          clickedPrevious={() => {
+            setDocPage((currentPage) =>
+              currentPage === 1 ? currentPage : currentPage - 1,
+            );
+          }}
+          clickedNext={() => {
+            if (isLastPage) return;
+            setDocPage((currentPage) => currentPage + 1);
+          }}
+        ></PaginationPageSelector>
+      </div>
+    </>
   );
 }
 
