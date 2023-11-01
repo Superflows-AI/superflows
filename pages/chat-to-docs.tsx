@@ -197,13 +197,15 @@ function DocumentList(props: {
   }, [docPage]);
 
   const fetchPage = async (page: number) => {
-    const { data: sections } = await props.supabase.rpc(
+    const { data: sections, error } = await props.supabase.rpc(
       "get_page_section_counts",
       {
         _limit: PAGE_SIZE,
         _offset: (page - 1) * PAGE_SIZE,
       },
     );
+
+    console.log(sections?.length, error, "lsadasdsa");
 
     if (!sections?.length) return;
 
@@ -225,7 +227,7 @@ function DocumentList(props: {
         if (sectionChunks?.length) {
           newSections.push({
             docs: sectionChunks,
-            pageName: section.result_page_title,
+            pageName: sectionChunks[0].page_title,
             sectionName: section.result_section_title,
             url: section.result_page_url,
           });
@@ -261,7 +263,10 @@ function DocumentList(props: {
               {doc.url}
             </h3>
             <h3 className="text-base text-gray-400 w-1/5">Edit</h3>
-            <h3 className="text-base text-gray-400 w-1/5">Delete</h3>
+
+            <button className="font-mono rounded font-bold bg-red-700 text-gray-100 text-sm px-1.5 py-1 h-fit">
+              Delete
+            </button>
           </div>
         );
       })}
@@ -273,7 +278,6 @@ function DocumentList(props: {
           );
         }}
         clickedNext={() => {
-          console.log(">>>>>>>>>>>>>>>", isLastPage);
           if (isLastPage) return;
           setDocPage((currentPage) => currentPage + 1);
         }}
