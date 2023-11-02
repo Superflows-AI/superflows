@@ -428,8 +428,7 @@ function AddDocsModal(props: {
                 body.sectionName = sectionName;
                 body.url = props.editMode.editedDocument.url || undefined;
                 body.createdAt =
-                  props.editMode.editedDocument.docChunks[0].created_at ||
-                  undefined;
+                  props.editMode.editedDocument.createdAt || undefined;
                 await props.editMode.deleteDocument(
                   props.editMode.editedDocument,
                 );
