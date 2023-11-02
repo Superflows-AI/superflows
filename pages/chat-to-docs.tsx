@@ -22,6 +22,7 @@ import PaginationPageSelector from "../components/paginationPageSelector";
 import { set } from "zod";
 import WarningModal from "../components/warningModal";
 import { PostgrestError } from "@supabase/supabase-js";
+import useDocumentsLoader from "../lib/hooks/useDocumentsLoader";
 
 export default function App() {
   return (
@@ -76,24 +77,19 @@ function ChatToDocsPage() {
     isOpen: boolean;
     documentToEdit?: Document;
   }>({ isOpen: false });
-  const [allDocumentCount, setAllDocumentCount] = useState(0);
-  const [docPage, setDocPage] = useState<number>(1);
-  const [docs, setDocs] = useState<Document[]>([]);
+
+  const {
+    PAGE_SIZE,
+    allDocumentCount,
+    docPage,
+    setDocPage,
+    docs,
+    setDocs,
+    fetchAllSectionCount,
+    deleteDocument,
+  } = useDocumentsLoader(supabase);
 
   const orgHasDocs = allDocumentCount > 0;
-
-  const PAGE_SIZE = 10;
-
-  const fetchAllSectionCount = async () => {
-    const { data } = await supabase.rpc("get_all_page_section_counts");
-    if (data) {
-      setAllDocumentCount(data);
-    }
-  };
-
-  useEffect(() => {
-    fetchPage(docPage);
-  }, [docPage]);
 
   useEffect(() => {
     (async () => {
@@ -118,62 +114,6 @@ function ChatToDocsPage() {
       if (error) throw new Error(error.message);
     })();
   }, [enabled, profile, supabase]);
-
-  const deleteDocument = async (document: Document) => {
-    const documentChunkIds = document.docChunks.map((docChunk) =>
-      docChunk.id.toString(),
-    );
-
-    const { error } = await supabase
-      .from("doc_chunks")
-      .delete()
-      .in("id", documentChunkIds);
-
-    return error;
-  };
-
-  const fetchPage = async (page: number) => {
-    const { data: documents, error } = await supabase.rpc(
-      // todo: rename this to get_sections
-      "get_page_section_counts",
-      {
-        _limit: PAGE_SIZE,
-        _offset: (page - 1) * PAGE_SIZE,
-      },
-    );
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    if (!documents?.length) return;
-
-    const newDocuments: Document[] = [];
-
-    for (const document of documents) {
-      try {
-        const documentRowIds = document.ids.split(",");
-        const { data: documentChunks } = await supabase
-          .from("doc_chunks")
-          .select("*")
-          .in("id", documentRowIds);
-
-        if (documentChunks?.length) {
-          newDocuments.push({
-            docChunks: documentChunks,
-            pageName: documentChunks[0].page_title,
-            sectionName: document.result_section_title,
-            url: document.result_page_url,
-          });
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    setDocs(newDocuments);
-  };
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -243,6 +183,7 @@ function ChatToDocsPage() {
                     isLastPage={PAGE_SIZE * docPage >= allDocumentCount}
                     allDocumentCount={allDocumentCount}
                     docs={docs}
+                    setDocs={setDocs}
                     supabase={supabase}
                     orgId={profile?.organizations?.id!}
                     editDocument={(document) => {
@@ -283,6 +224,7 @@ function DocumentList(props: {
   isLastPage: boolean;
   allDocumentCount: number;
   docs: Document[];
+  setDocs: React.Dispatch<React.SetStateAction<Document[]>>;
   supabase: SupabaseClient<Database>;
   orgId: number;
   editDocument: (document: Document) => void;
@@ -298,6 +240,21 @@ function DocumentList(props: {
     }
   };
 
+  const deleteDocument = async (document: Document) => {
+    const error = await props.deleteDocument(document);
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(">>>>>>>>>>>>>>>");
+      props.setDocs((currentDocs) => {
+        return currentDocs.filter(
+          (doc) => doc.docChunks[0].id !== document.docChunks[0].id,
+        );
+      });
+    }
+    setDocumentToDelete(null);
+  };
+
   return (
     <>
       <WarningModal
@@ -305,7 +262,7 @@ function DocumentList(props: {
         description={"Are you sure you want to delete this document?"}
         action={async () => {
           if (documentToDelete) {
-            await props.deleteDocument(documentToDelete);
+            await deleteDocument(documentToDelete);
           }
         }}
         actionColour={"red"}
