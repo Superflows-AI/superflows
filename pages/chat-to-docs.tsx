@@ -21,6 +21,7 @@ import { DocChunk } from "../lib/types";
 import PaginationPageSelector from "../components/paginationPageSelector";
 import { set } from "zod";
 import WarningModal from "../components/warningModal";
+import { PostgrestError } from "@supabase/supabase-js";
 
 export default function App() {
   return (
@@ -76,8 +77,12 @@ function ChatToDocsPage() {
     documentToEdit?: Document;
   }>({ isOpen: false });
   const [allDocumentCount, setAllDocumentCount] = useState(0);
+  const [docPage, setDocPage] = useState<number>(1);
+  const [docs, setDocs] = useState<Document[]>([]);
 
   const orgHasDocs = allDocumentCount > 0;
+
+  const PAGE_SIZE = 10;
 
   const fetchAllSectionCount = async () => {
     const { data } = await supabase.rpc("get_all_page_section_counts");
@@ -85,6 +90,10 @@ function ChatToDocsPage() {
       setAllDocumentCount(data);
     }
   };
+
+  useEffect(() => {
+    fetchPage(docPage);
+  }, [docPage]);
 
   useEffect(() => {
     (async () => {
@@ -110,6 +119,62 @@ function ChatToDocsPage() {
     })();
   }, [enabled, profile, supabase]);
 
+  const deleteDocument = async (document: Document) => {
+    const documentChunkIds = document.docChunks.map((docChunk) =>
+      docChunk.id.toString(),
+    );
+
+    const { error } = await supabase
+      .from("doc_chunks")
+      .delete()
+      .in("id", documentChunkIds);
+
+    return error;
+  };
+
+  const fetchPage = async (page: number) => {
+    const { data: documents, error } = await supabase.rpc(
+      // todo: rename this to get_sections
+      "get_page_section_counts",
+      {
+        _limit: PAGE_SIZE,
+        _offset: (page - 1) * PAGE_SIZE,
+      },
+    );
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    if (!documents?.length) return;
+
+    const newDocuments: Document[] = [];
+
+    for (const document of documents) {
+      try {
+        const documentRowIds = document.ids.split(",");
+        const { data: documentChunks } = await supabase
+          .from("doc_chunks")
+          .select("*")
+          .in("id", documentRowIds);
+
+        if (documentChunks?.length) {
+          newDocuments.push({
+            docChunks: documentChunks,
+            pageName: documentChunks[0].page_title,
+            sectionName: document.result_section_title,
+            url: document.result_page_url,
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    setDocs(newDocuments);
+  };
+
   return (
     <div className="min-h-screen bg-gray-800">
       <AddDocsModal
@@ -121,7 +186,14 @@ function ChatToDocsPage() {
             });
           }
         }}
-        editedDocument={addDocsModal.documentToEdit}
+        editMode={
+          addDocsModal.documentToEdit
+            ? {
+                editedDocument: addDocsModal.documentToEdit,
+                deleteDocument: deleteDocument,
+              }
+            : undefined
+        }
       />
       <Navbar current={"Chat to Docs"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -166,7 +238,11 @@ function ChatToDocsPage() {
                 <>
                   <div className="w-full h-px my-6 bg-gray-700" />
                   <DocumentList
+                    docPage={docPage}
+                    setDocPage={setDocPage}
+                    isLastPage={PAGE_SIZE * docPage >= allDocumentCount}
                     allDocumentCount={allDocumentCount}
+                    docs={docs}
                     supabase={supabase}
                     orgId={profile?.organizations?.id!}
                     editDocument={(document) => {
@@ -175,6 +251,7 @@ function ChatToDocsPage() {
                         documentToEdit: document,
                       });
                     }}
+                    deleteDocument={deleteDocument}
                   ></DocumentList>
                 </>
               )}
@@ -201,89 +278,19 @@ type Document = {
 };
 
 function DocumentList(props: {
+  docPage: number;
+  setDocPage: React.Dispatch<React.SetStateAction<number>>;
+  isLastPage: boolean;
   allDocumentCount: number;
+  docs: Document[];
   supabase: SupabaseClient<Database>;
   orgId: number;
   editDocument: (document: Document) => void;
+  deleteDocument: (document: Document) => Promise<PostgrestError | null>;
 }) {
-  const PAGE_SIZE = 10;
-
-  const [docPage, setDocPage] = useState<number>(1);
-  const [docs, setDocs] = useState<Document[]>([]);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
     null,
   );
-
-  const isLastPage = PAGE_SIZE * docPage >= props.allDocumentCount;
-
-  useEffect(() => {
-    fetchPage(docPage);
-  }, [docPage]);
-
-  const fetchPage = async (page: number) => {
-    const { data: documents, error } = await props.supabase.rpc(
-      // todo: rename this to get_sections
-      "get_page_section_counts",
-      {
-        _limit: PAGE_SIZE,
-        _offset: (page - 1) * PAGE_SIZE,
-      },
-    );
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    if (!documents?.length) return;
-
-    const newDocuments: Document[] = [];
-
-    for (const document of documents) {
-      try {
-        const documentRowIds = document.ids.split(",");
-        const { data: documentChunks } = await props.supabase
-          .from("doc_chunks")
-          .select("*")
-          .in("id", documentRowIds);
-
-        if (documentChunks?.length) {
-          newDocuments.push({
-            docChunks: documentChunks,
-            pageName: documentChunks[0].page_title,
-            sectionName: document.result_section_title,
-            url: document.result_page_url,
-          });
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    setDocs(newDocuments);
-  };
-
-  const deleteDocument = async (document: Document) => {
-    const documentChunkIds = document.docChunks.map((docChunk) =>
-      docChunk.id.toString(),
-    );
-
-    const { error } = await props.supabase
-      .from("doc_chunks")
-      .delete()
-      .in("id", documentChunkIds);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setDocs((currentDocs) => {
-        return currentDocs.filter(
-          (doc) => doc.docChunks[0].id !== document.docChunks[0].id,
-        );
-      });
-    }
-    setDocumentToDelete(null);
-  };
 
   const setDeleteDocumentModalOpen = (isOpen: boolean) => {
     if (!isOpen) {
@@ -298,7 +305,7 @@ function DocumentList(props: {
         description={"Are you sure you want to delete this document?"}
         action={async () => {
           if (documentToDelete) {
-            await deleteDocument(documentToDelete);
+            await props.deleteDocument(documentToDelete);
           }
         }}
         actionColour={"red"}
@@ -316,7 +323,7 @@ function DocumentList(props: {
           <h3 className="text-lg text-gray-200 w-16">Delete</h3>
         </div>
         <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
-        {docs.map((doc) => {
+        {props.docs.map((doc) => {
           return (
             <div key={doc.docChunks?.[0].id} className="flex w-full gap-x-10">
               <h3 className="text-base text-gray-400 flex-1 truncate">
@@ -345,17 +352,17 @@ function DocumentList(props: {
           );
         })}
         <PaginationPageSelector
-          showPrevious={docPage > 1}
-          showNext={!isLastPage}
-          page={docPage}
+          showPrevious={props.docPage > 1}
+          showNext={!props.isLastPage}
+          page={props.docPage}
           clickedPrevious={() => {
-            setDocPage((currentPage) =>
+            props.setDocPage((currentPage) =>
               currentPage === 1 ? currentPage : currentPage - 1,
             );
           }}
           clickedNext={() => {
-            if (isLastPage) return;
-            setDocPage((currentPage) => currentPage + 1);
+            if (props.isLastPage) return;
+            props.setDocPage((currentPage) => currentPage + 1);
           }}
         ></PaginationPageSelector>
       </div>
@@ -366,7 +373,10 @@ function DocumentList(props: {
 function AddDocsModal(props: {
   open: boolean;
   setOpen: (open: boolean) => void;
-  editedDocument?: Document;
+  editMode?: {
+    editedDocument: Document;
+    deleteDocument: (document: Document) => Promise<PostgrestError | null>;
+  };
 }) {
   const ref = useRef(null);
   const { profile } = useProfile();
@@ -377,17 +387,17 @@ function AddDocsModal(props: {
 
   useEffect(() => {
     if (!props.open) return;
-    const docText = props.editedDocument?.docChunks
+    const docText = props.editMode?.editedDocument.docChunks
       .flatMap((docChunk) => docChunk.text_chunks)
       ?.join("");
 
-    setTitle(props.editedDocument?.pageName || "");
-    setSectionName(props.editedDocument?.sectionName || "");
+    setTitle(props.editMode?.editedDocument.pageName || "");
+    setSectionName(props.editMode?.editedDocument.sectionName || "");
     setDocsText(docText || "");
     setLoading(false);
-  }, [props.open, props.editedDocument]);
+  }, [props.open, props.editMode]);
 
-  const isEditingScrapedDocument = !!props.editedDocument?.url;
+  const isEditingScrapedDocument = !!props.editMode?.editedDocument.url;
   let titlePlaceholder = isEditingScrapedDocument
     ? "Page Name"
     : "Title (optional)";
@@ -400,9 +410,9 @@ function AddDocsModal(props: {
       initialFocus={ref}
     >
       <h1 className="text-2xl text-gray-100">
-        {props.editedDocument ? "Edit Document" : "Add Documentation"}
+        {props.editMode ? "Edit Document" : "Add Documentation"}
       </h1>
-      {!props.editedDocument && (
+      {!props.editMode && (
         <p className="text-gray-400 mt-2">
           Upload your documentation so that the AI can refer to it when
           answering user questions
@@ -450,28 +460,42 @@ function AddDocsModal(props: {
                 : "bg-gray-400 cursor-not-allowed",
             )}
             onClick={async (event) => {
-              if (props.editedDocument) {
-                // todo: delete all document chunks
-                // todo: embed text
-                // todo: create new document chunks
-              } else {
-                if (!docsText) return;
-                setLoading(true);
-                props.setOpen(false);
-                const res = await fetch("/api/embed-text", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    org_id: profile?.org_id,
-                    docsText,
-                    title,
-                  }),
-                });
-                const { error } = await res.json();
-                if (error) console.error(error.message);
+              const body: {
+                org_id: number | null | undefined;
+                docsText: string;
+                title: string;
+                sectionName?: string;
+                url?: string;
+                createdAt?: string;
+              } = {
+                org_id: profile?.org_id,
+                docsText,
+                title,
+              };
+              if (props.editMode) {
+                body.sectionName = sectionName;
+                body.url = props.editMode.editedDocument.url || undefined;
+                body.createdAt =
+                  props.editMode.editedDocument.docChunks[0].created_at ||
+                  undefined;
+                await props.editMode.deleteDocument(
+                  props.editMode.editedDocument,
+                );
+                // todo: after creating new docs, refresh the page
               }
+
+              if (!docsText) return;
+              setLoading(true);
+              props.setOpen(false);
+              const res = await fetch("/api/embed-text", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(body),
+              });
+              const { error } = await res.json();
+              if (error) console.error(error.message);
             }}
           >
             {loading ? <LoadingSpinner classes={"h-5 w-5"} /> : "Save"}
