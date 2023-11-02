@@ -40,6 +40,7 @@ export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
   const fetchPage = async (page: number) => {
     const { data: documents, error } = await supabase.rpc(
       // todo: rename this to get_sections
+      // todo: add sort by created At date
       "get_page_section_counts",
       {
         _limit: PAGE_SIZE,
@@ -80,6 +81,10 @@ export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
     setDocs(newDocuments);
   };
 
+  const refreshPage = async () => {
+    await fetchPage(docPage);
+  };
+
   useEffect(() => {
     fetchPage(docPage);
   }, [docPage]);
@@ -93,5 +98,6 @@ export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
     setDocs,
     fetchAllSectionCount,
     deleteDocument,
+    refreshPage,
   };
 }
