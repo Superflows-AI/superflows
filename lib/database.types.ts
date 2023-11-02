@@ -559,14 +559,16 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
-      get_page_section_counts: {
+      get_sections: {
         Args: {
           _limit: number;
           _offset: number;
         };
         Returns: {
           result_page_url: string;
+          result_page_title: string;
           result_section_title: string;
+          latest_created_at: string;
           ids: string;
         }[];
       };
