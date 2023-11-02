@@ -87,6 +87,7 @@ function ChatToDocsPage() {
     setDocs,
     fetchAllSectionCount,
     deleteDocument,
+    refreshPage,
   } = useDocumentsLoader(supabase);
 
   const orgHasDocs = allDocumentCount > 0;
@@ -134,6 +135,7 @@ function ChatToDocsPage() {
               }
             : undefined
         }
+        refreshPage={refreshPage}
       />
       <Navbar current={"Chat to Docs"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -245,7 +247,6 @@ function DocumentList(props: {
     if (error) {
       console.error(error);
     } else {
-      console.log(">>>>>>>>>>>>>>>");
       props.setDocs((currentDocs) => {
         return currentDocs.filter(
           (doc) => doc.docChunks[0].id !== document.docChunks[0].id,
@@ -334,6 +335,7 @@ function AddDocsModal(props: {
     editedDocument: Document;
     deleteDocument: (document: Document) => Promise<PostgrestError | null>;
   };
+  refreshPage: () => Promise<void>;
 }) {
   const ref = useRef(null);
   const { profile } = useProfile();
@@ -438,7 +440,6 @@ function AddDocsModal(props: {
                 await props.editMode.deleteDocument(
                   props.editMode.editedDocument,
                 );
-                // todo: after creating new docs, refresh the page
               }
 
               if (!docsText) return;
@@ -452,7 +453,11 @@ function AddDocsModal(props: {
                 body: JSON.stringify(body),
               });
               const { error } = await res.json();
-              if (error) console.error(error.message);
+              if (error) {
+                console.error(error.message);
+              } else {
+                await props.refreshPage();
+              }
             }}
           >
             {loading ? <LoadingSpinner classes={"h-5 w-5"} /> : "Save"}
