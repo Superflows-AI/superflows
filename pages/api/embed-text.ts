@@ -26,6 +26,9 @@ const EmbedTextZod = z.object({
   org_id: z.number(),
   title: z.string(),
   docsText: z.string(),
+  sectionName: z.string().optional(),
+  url: z.string().optional(),
+  createdAt: z.string().optional(),
 });
 type EmbedTextType = z.infer<typeof EmbedTextZod>;
 
@@ -44,7 +47,14 @@ export default async function handler(req: NextRequest) {
       status: 400,
     });
   }
-  const embedInserts = await embedText(requestData.docsText, requestData.title);
+  //   console.log(requestData);
+  const embedInserts = await embedText(
+    requestData.docsText,
+    requestData.title,
+    requestData.sectionName,
+    requestData.url,
+    requestData.createdAt,
+  );
   await supabase.from("doc_chunks").insert(
     embedInserts.map((insert) => ({
       ...insert,

@@ -7,6 +7,9 @@ import { DocChunkInsert } from "../types";
 export async function embedText(
   text: string,
   title: string,
+  sectionName?: string,
+  url?: string,
+  createdAt?: string,
 ): Promise<Omit<DocChunkInsert, "org_id">[]> {
   const lines = splitIntoTextChunks(text, [title]);
 
@@ -33,11 +36,12 @@ export async function embedText(
   );
 
   return chunkGroups.map((chunkGroup, idx) => ({
-    page_url: "",
+    page_url: url || "",
     page_title: title,
-    section_title: "",
+    section_title: sectionName || "",
     text_chunks: chunkGroup,
     embedding: embeddings[idx],
     chunk_idx: idx,
+    created_at: createdAt,
   }));
 }
