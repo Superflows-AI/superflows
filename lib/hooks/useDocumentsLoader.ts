@@ -5,9 +5,10 @@ import { DocChunk } from "../types";
 
 export type Document = {
   docChunks: DocChunk[];
-  pageName: string | null;
-  sectionName: string | null;
-  url: string | null;
+  pageName: string;
+  sectionName: string;
+  createdAt: string;
+  url: string;
 };
 
 export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
@@ -38,15 +39,10 @@ export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
   };
 
   const fetchPage = async (page: number) => {
-    const { data: documents, error } = await supabase.rpc(
-      // todo: rename this to get_sections
-      // todo: add sort by created At date
-      "get_page_section_counts",
-      {
-        _limit: PAGE_SIZE,
-        _offset: (page - 1) * PAGE_SIZE,
-      },
-    );
+    const { data: documents, error } = await supabase.rpc("get_sections", {
+      _limit: PAGE_SIZE,
+      _offset: (page - 1) * PAGE_SIZE,
+    });
 
     if (error) {
       console.error(error);
@@ -68,8 +64,9 @@ export default function useDocumentsLoader(supabase: SupabaseClient<Database>) {
         if (documentChunks?.length) {
           newDocuments.push({
             docChunks: documentChunks,
-            pageName: documentChunks[0].page_title,
+            pageName: document.result_page_title,
             sectionName: document.result_section_title,
+            createdAt: document.latest_created_at,
             url: document.result_page_url,
           });
         }
