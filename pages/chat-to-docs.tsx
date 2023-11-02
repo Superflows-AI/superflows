@@ -72,14 +72,14 @@ function ChatToDocsPage() {
 
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [addDocsModal, setAddDocsModal] = useState<boolean>(false);
-  const [allSectionCount, setAllSectionCount] = useState(0);
+  const [allDocumentCount, setAllDocumentCount] = useState(0);
 
-  const orgHasDocs = allSectionCount > 0;
+  const orgHasDocs = allDocumentCount > 0;
 
   const fetchAllSectionCount = async () => {
     const { data } = await supabase.rpc("get_all_page_section_counts");
     if (data) {
-      setAllSectionCount(data);
+      setAllDocumentCount(data);
     }
   };
 
@@ -149,11 +149,11 @@ function ChatToDocsPage() {
                   </button>
                 </div>
               </div>
-              {allSectionCount > 0 && (
+              {allDocumentCount > 0 && (
                 <>
                   <div className="w-full h-px my-6 bg-gray-700" />
                   <DocumentList
-                    allSectionCount={allSectionCount}
+                    allDocumentCount={allDocumentCount}
                     supabase={supabase}
                     orgId={profile?.organizations?.id!}
                   ></DocumentList>
@@ -174,34 +174,35 @@ function ChatToDocsPage() {
 
 export const getServerSideProps = pageGetServerSideProps;
 
+type Document = {
+  docChunks: DocChunk[];
+  pageName: string | null;
+  sectionName: string | null;
+  url: string | null;
+};
+
 function DocumentList(props: {
-  allSectionCount: number;
+  allDocumentCount: number;
   supabase: SupabaseClient<Database>;
   orgId: number;
 }) {
-  type Section = {
-    docs: DocChunk[];
-    pageName: string | null;
-    sectionName: string | null;
-    url: string;
-  };
-
   const PAGE_SIZE = 10;
 
   const [docPage, setDocPage] = useState<number>(1);
-  const [docs, setDocs] = useState<Section[]>([]);
-  const [documentToDelete, setDocumentToDelete] = useState<Section | null>(
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
     null,
   );
 
-  const isLastPage = PAGE_SIZE * docPage >= props.allSectionCount;
+  const isLastPage = PAGE_SIZE * docPage >= props.allDocumentCount;
 
   useEffect(() => {
     fetchPage(docPage);
   }, [docPage]);
 
   const fetchPage = async (page: number) => {
-    const { data: sections, error } = await props.supabase.rpc(
+    const { data: documents, error } = await props.supabase.rpc(
+      // todo: rename this to get_sections
       "get_page_section_counts",
       {
         _limit: PAGE_SIZE,
@@ -209,29 +210,29 @@ function DocumentList(props: {
       },
     );
 
-    if (!sections?.length) return;
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-    const newSections: {
-      docs: DocChunk[];
-      pageName: string | null;
-      sectionName: string | null;
-      url: string;
-    }[] = [];
+    if (!documents?.length) return;
 
-    for (const section of sections) {
+    const newDocuments: Document[] = [];
+
+    for (const document of documents) {
       try {
-        const sectionRowIds = section.ids.split(",");
-        const { data: sectionChunks } = await props.supabase
+        const documentRowIds = document.ids.split(",");
+        const { data: documentChunks } = await props.supabase
           .from("doc_chunks")
           .select("*")
-          .in("id", sectionRowIds);
+          .in("id", documentRowIds);
 
-        if (sectionChunks?.length) {
-          newSections.push({
-            docs: sectionChunks,
-            pageName: sectionChunks[0].page_title,
-            sectionName: section.result_section_title,
-            url: section.result_page_url,
+        if (documentChunks?.length) {
+          newDocuments.push({
+            docChunks: documentChunks,
+            pageName: documentChunks[0].page_title,
+            sectionName: document.result_section_title,
+            url: document.result_page_url,
           });
         }
       } catch (error) {
@@ -239,23 +240,25 @@ function DocumentList(props: {
       }
     }
 
-    setDocs(newSections);
+    setDocs(newDocuments);
   };
 
-  const deleteDocument = async (section: Section) => {
-    const sectionRowIds = section.docs.map((doc) => doc.id.toString());
+  const deleteDocument = async (document: Document) => {
+    const documentChunkIds = document.docChunks.map((docChunk) =>
+      docChunk.id.toString(),
+    );
 
     const { error } = await props.supabase
       .from("doc_chunks")
       .delete()
-      .in("id", sectionRowIds);
+      .in("id", documentChunkIds);
 
     if (error) {
       console.error(error);
     } else {
       setDocs((currentDocs) => {
         return currentDocs.filter(
-          (doc) => doc.docs[0].id !== section.docs[0].id,
+          (doc) => doc.docChunks[0].id !== document.docChunks[0].id,
         );
       });
     }
@@ -295,7 +298,7 @@ function DocumentList(props: {
         <div className="w-full h-px my-6 bg-gray-400 -mt-2 -mb-1" />
         {docs.map((doc) => {
           return (
-            <div key={doc.docs?.[0].id} className="flex w-full gap-x-10">
+            <div key={doc.docChunks?.[0].id} className="flex w-full gap-x-10">
               <h3 className="text-base text-gray-400 flex-1 truncate">
                 {doc.pageName}
               </h3>
