@@ -71,7 +71,10 @@ function ChatToDocsPage() {
   const { profile } = useProfile();
 
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [addDocsModal, setAddDocsModal] = useState<boolean>(false);
+  const [addDocsModal, setAddDocsModal] = useState<{
+    isOpen: boolean;
+    documentToEdit?: Document;
+  }>({ isOpen: false });
   const [allDocumentCount, setAllDocumentCount] = useState(0);
 
   const orgHasDocs = allDocumentCount > 0;
@@ -109,7 +112,15 @@ function ChatToDocsPage() {
 
   return (
     <div className="min-h-screen bg-gray-800">
-      <AddDocsModal open={addDocsModal} setOpen={setAddDocsModal} />
+      <AddDocsModal
+        open={addDocsModal.isOpen}
+        setOpen={(open) => {
+          if (!open) {
+            setAddDocsModal({ isOpen: false });
+          }
+        }}
+        editedDocument={addDocsModal.documentToEdit}
+      />
       <Navbar current={"Chat to Docs"} />
       <div className="min-h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mt-8 bg-gray-850 rounded-md px-6 py-4">
@@ -142,7 +153,7 @@ function ChatToDocsPage() {
                     )}
                     onClick={() => {
                       if (!enabled) return;
-                      setAddDocsModal(true);
+                      setAddDocsModal({ isOpen: true });
                     }}
                   >
                     <PlusIcon className="w-5 h-5" /> Add
@@ -156,6 +167,12 @@ function ChatToDocsPage() {
                     allDocumentCount={allDocumentCount}
                     supabase={supabase}
                     orgId={profile?.organizations?.id!}
+                    editDocument={(document) => {
+                      setAddDocsModal({
+                        isOpen: true,
+                        documentToEdit: document,
+                      });
+                    }}
                   ></DocumentList>
                 </>
               )}
@@ -185,6 +202,7 @@ function DocumentList(props: {
   allDocumentCount: number;
   supabase: SupabaseClient<Database>;
   orgId: number;
+  editDocument: (document: Document) => void;
 }) {
   const PAGE_SIZE = 10;
 
@@ -309,7 +327,7 @@ function DocumentList(props: {
                 {doc.url}
               </h3>
               <button
-                onClick={() => console.log("edit document")}
+                onClick={props.editDocument.bind(null, doc)}
                 className="font-mono rounded font-bold bg-blue-700 text-gray-100 text-sm px-1.5 py-1 h-fit w-16"
               >
                 Edit
@@ -346,6 +364,7 @@ function DocumentList(props: {
 function AddDocsModal(props: {
   open: boolean;
   setOpen: (open: boolean) => void;
+  editedDocument?: Document;
 }) {
   const ref = useRef(null);
   const { profile } = useProfile();
