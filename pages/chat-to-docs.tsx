@@ -116,7 +116,9 @@ function ChatToDocsPage() {
         open={addDocsModal.isOpen}
         setOpen={(open) => {
           if (!open) {
-            setAddDocsModal({ isOpen: false });
+            setAddDocsModal((currentValue) => {
+              return { ...currentValue, isOpen: false };
+            });
           }
         }}
         editedDocument={addDocsModal.documentToEdit}
@@ -369,14 +371,26 @@ function AddDocsModal(props: {
   const ref = useRef(null);
   const { profile } = useProfile();
   const [title, setTitle] = useState<string>("");
+  const [sectionName, setSectionName] = useState<string>("");
   const [docsText, setDocsText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+
   useEffect(() => {
     if (!props.open) return;
-    setTitle("");
-    setDocsText("");
+    const docText = props.editedDocument?.docChunks
+      .flatMap((docChunk) => docChunk.text_chunks)
+      ?.join("");
+
+    setTitle(props.editedDocument?.pageName || "");
+    setSectionName(props.editedDocument?.sectionName || "");
+    setDocsText(docText || "");
     setLoading(false);
-  }, [props.open]);
+  }, [props.open, props.editedDocument]);
+
+  const isEditingScrapedDocument = !!props.editedDocument?.url;
+  let titlePlaceholder = isEditingScrapedDocument
+    ? "Page Name"
+    : "Title (optional)";
 
   return (
     <Modal
@@ -385,21 +399,38 @@ function AddDocsModal(props: {
       classNames="max-w-5xl"
       initialFocus={ref}
     >
-      <h1 className="text-2xl text-gray-100">Add Documentation</h1>
-      <p className="text-gray-400 mt-2">
-        Upload your documentation so that the AI can refer to it when answering
-        user questions
-      </p>
+      <h1 className="text-2xl text-gray-100">
+        {props.editedDocument ? "Edit Document" : "Add Documentation"}
+      </h1>
+      {!props.editedDocument && (
+        <p className="text-gray-400 mt-2">
+          Upload your documentation so that the AI can refer to it when
+          answering user questions
+        </p>
+      )}
       <div className="w-full h-px my-4 bg-gray-700" />
       <div className="flex flex-col">
-        <div className="w-1/2 mb-3">
-          <FloatingLabelInput
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-            }}
-            label={"Title (optional)"}
-          />
+        <div className="flex mb-3 gap-x-3">
+          <div className="flex-1">
+            <FloatingLabelInput
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+              }}
+              label={titlePlaceholder}
+            />
+          </div>
+          <div className="flex-1">
+            {isEditingScrapedDocument && (
+              <FloatingLabelInput
+                value={sectionName}
+                onChange={(e) => {
+                  setSectionName(e.target.value);
+                }}
+                label={"Section Name"}
+              />
+            )}
+          </div>
         </div>
         <FloatingLabelTextArea
           ref={ref}
@@ -419,22 +450,28 @@ function AddDocsModal(props: {
                 : "bg-gray-400 cursor-not-allowed",
             )}
             onClick={async (event) => {
-              if (!docsText) return;
-              setLoading(true);
-              props.setOpen(false);
-              const res = await fetch("/api/embed-text", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  org_id: profile?.org_id,
-                  docsText,
-                  title,
-                }),
-              });
-              const { error } = await res.json();
-              if (error) console.error(error.message);
+              if (props.editedDocument) {
+                // todo: delete all document chunks
+                // todo: embed text
+                // todo: create new document chunks
+              } else {
+                if (!docsText) return;
+                setLoading(true);
+                props.setOpen(false);
+                const res = await fetch("/api/embed-text", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    org_id: profile?.org_id,
+                    docsText,
+                    title,
+                  }),
+                });
+                const { error } = await res.json();
+                if (error) console.error(error.message);
+              }
             }}
           >
             {loading ? <LoadingSpinner classes={"h-5 w-5"} /> : "Save"}
