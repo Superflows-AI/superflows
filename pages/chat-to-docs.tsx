@@ -22,7 +22,7 @@ import PaginationPageSelector from "../components/paginationPageSelector";
 import { set } from "zod";
 import WarningModal from "../components/warningModal";
 import { PostgrestError } from "@supabase/supabase-js";
-import useDocumentsLoader from "../lib/hooks/useDocumentsLoader";
+import useDocumentsLoader, { Document } from "../lib/hooks/useDocumentsLoader";
 
 export default function App() {
   return (
@@ -212,13 +212,6 @@ function ChatToDocsPage() {
 }
 
 export const getServerSideProps = pageGetServerSideProps;
-
-type Document = {
-  docChunks: DocChunk[];
-  pageName: string | null;
-  sectionName: string | null;
-  url: string | null;
-};
 
 function DocumentList(props: {
   docPage: number;
