@@ -10,7 +10,7 @@ describe("filterConversationForFollowUps", () => {
     ]);
     expect(out).toEqual([
       {
-        role: "user",
+        role: "assistant",
         content: "Hello",
       },
     ]);
@@ -28,11 +28,11 @@ describe("filterConversationForFollowUps", () => {
     ]);
     expect(out).toEqual([
       {
-        role: "user",
+        role: "assistant",
         content: "Hello",
       },
       {
-        role: "assistant",
+        role: "user",
         content: "Hi",
       },
     ]);
@@ -59,11 +59,11 @@ describe("filterConversationForFollowUps", () => {
     ]);
     expect(out).toEqual([
       {
-        role: "user",
+        role: "assistant",
         content: "Hello",
       },
       {
-        role: "assistant",
+        role: "user",
         content: "I returned a summary",
       },
     ]);
@@ -107,19 +107,19 @@ describe("filterConversationForFollowUps", () => {
     ]);
     expect(out).toEqual([
       {
-        role: "user",
+        role: "assistant",
         content: "Hello",
       },
       {
-        role: "assistant",
+        role: "user",
         content: "I returned a summary",
       },
       {
-        role: "user",
+        role: "assistant",
         content: "Thanks for that",
       },
       {
-        role: "assistant",
+        role: "user",
         content: "You're welcome",
       },
     ]);

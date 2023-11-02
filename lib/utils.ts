@@ -2,7 +2,6 @@ import tokenizer from "gpt-tokenizer";
 import { DateTime } from "luxon";
 import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { validate } from "uuid";
-import { z } from "zod";
 import { ChatGPTMessage, Chunk, Properties } from "./models";
 
 export function classNames(
