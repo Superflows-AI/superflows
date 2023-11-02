@@ -14,12 +14,17 @@ import { USAGE_LIMIT } from "../../../lib/consts";
 import { exponentialRetryWrapper } from "../../../lib/utils";
 import {
   filterConversationForFollowUps,
-  getFollowUpSuggestionSystemPrompt,
+  getFollowUpSuggestionPrompt,
 } from "../../../lib/prompts/suggestFollowUps";
 import { getLLMResponse } from "../../../lib/queryLLM";
 import { parseFollowUpSuggestions } from "../../../lib/parsers/parsers";
 
-export const config = { runtime: "edge" };
+export const config = {
+  runtime: "edge",
+  // Edge gets upset with our use of recharts in chat-ui-react.
+  // TODO: Make it possible to import chat-ui-react without recharts
+  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
+};
 
 const FollowUpZod = z.object({
   conversation_id: z.number(),
@@ -185,14 +190,12 @@ export default async function handler(req: NextRequest) {
     // If the language is set for any message in the conversation, use that
     const language = convResp.data.find((m) => !!m.language)?.language ?? null;
 
-    const fullPrompt = [
-      getFollowUpSuggestionSystemPrompt(
-        requestData.user_description,
-        org,
-        language,
-      ),
-      ...filterConversationForFollowUps(conversation),
-    ];
+    const fullPrompt = getFollowUpSuggestionPrompt(
+      requestData.user_description,
+      org,
+      language,
+      conversation,
+    );
     console.log("Follow up prompt: ", fullPrompt);
 
     const gptOut = await exponentialRetryWrapper(
