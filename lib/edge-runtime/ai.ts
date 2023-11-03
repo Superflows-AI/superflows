@@ -208,6 +208,7 @@ export async function Dottie( // Dottie talks to docs
 
 const completionOptions: ChatGPTParams = {
   max_tokens: MAX_TOKENS_OUT,
+  temperature: 0.2,
 };
 
 // Angela takes actions
