@@ -129,9 +129,9 @@ function Dashboard() {
       profile?.organizations?.finetuned_models &&
       profile.organizations.finetuned_models.length > 0
     ) {
-      setAllLLMs([
-        ...profile.organizations?.finetuned_models
-          .sort(
+      setAllLLMs((llms) => [
+        ...profile
+          .organizations!.finetuned_models.sort(
             (a, b) =>
               Number(new Date(b.created_at)) - Number(new Date(a.created_at)),
           )
@@ -142,7 +142,7 @@ function Dashboard() {
             }`,
             description: "Speed: 3/3 | Accuracy: 2.5/3",
           })),
-        ...allLLMsBase,
+        ...llms,
       ]);
     }
   }, [profile?.organizations?.finetuned_models]);
