@@ -13,7 +13,7 @@
 
 **Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)!**
 
-https://github.com/Superflows-AI/superflows/assets/33871096/77c463c1-5e06-45a8-a32a-9f1fd8af0dac
+https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b6cf-2b46e12bf703
 
 # Superflows
 
