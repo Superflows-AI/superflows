@@ -109,7 +109,16 @@ function Dashboard() {
     const openRouterModels = process.env.NEXT_PUBLIC_OPENROUTER_ENABLED
       ? openRouterBaseModels
       : [];
-    return [...finetunedGPTDefault, ...allLLMsBase, ...openRouterModels];
+    const openSourceModels = process.env.NEXT_PUBLIC_OS_MODEL
+      ? [JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL!)]
+      : [];
+
+    return [
+      ...openSourceModels,
+      ...finetunedGPTDefault,
+      ...allLLMsBase,
+      ...openRouterModels,
+    ];
   });
   const [llm, setLlm] = React.useState<null | string>(
     profile?.organizations?.model ?? null,
@@ -169,23 +178,44 @@ function Dashboard() {
               </p>
             </div>
             <div className="mt-4 col-start-3 col-span-2">
-              <SelectBox
-                options={allLLMs}
-                theme={"dark"}
-                selected={llm}
-                setSelected={async (requestMethod) => {
-                  setLlm(requestMethod);
-                  const { error } = await supabase
-                    .from("organizations")
-                    .update({
-                      model: requestMethod,
-                    })
-                    .eq("id", profile?.organizations?.id!);
-                  if (error) throw error;
-                  await refreshProfile();
-                }}
-                size={"base"}
-              />
+              <div className="flex flex-col">
+                <SelectBox
+                  options={allLLMs}
+                  theme={"dark"}
+                  selected={llm}
+                  setSelected={async (requestMethod) => {
+                    setLlm(requestMethod);
+                    const { error } = await supabase
+                      .from("organizations")
+                      .update({
+                        model: requestMethod,
+                      })
+                      .eq("id", profile?.organizations?.id!);
+                    if (error) throw error;
+                    await refreshProfile();
+                  }}
+                  size={"base"}
+                />
+                <p className="mt-3 text-sm w-full text-center text-gray-500">
+                  To self-host the{" "}
+                  <a
+                    href="https://huggingface.co/Superflows/Superflows-1"
+                    className="text-blue-500 hover:underline visited:text-pink-500"
+                  >
+                    our open source fine-tuned model
+                  </a>{" "}
+                  (based on Mistral 7B),{" "}
+                  <a
+                    href={
+                      "mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29"
+                    }
+                    className="text-blue-500 hover:underline visited:text-pink-500"
+                  >
+                    reach out to us
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
             <div className="col-start-1 flex flex-col place-items-start pr-4">
               <h2 className="text-lg text-gray-200">Language Used</h2>
