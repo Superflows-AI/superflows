@@ -13,8 +13,6 @@
 
 **Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)! [Reach out](mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29) if interested.**
 
-https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b6cf-2b46e12bf703
-
 # Superflows
 
 Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes calls to the software's API to answer them.
@@ -31,6 +29,8 @@ A user could ask their analytics assistant:
 **Check out a demo of Superflows in a CRM [here](https://superflows.ai/crm-demo).**
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
+
+https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b6cf-2b46e12bf703
 
 ## Features
 
