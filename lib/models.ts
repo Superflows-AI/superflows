@@ -52,6 +52,14 @@ export interface ChatGPTResponse {
   choices: MessageChoice[] | TextChoice[];
 }
 
+export interface RunPodResponse {
+  delayTime: number;
+  executionTime: number;
+  id: string;
+  output: string;
+  status: string;
+}
+
 export interface OpenAIError {
   message: string;
   type: string;

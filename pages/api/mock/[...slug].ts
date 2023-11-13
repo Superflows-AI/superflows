@@ -7,7 +7,7 @@ import { ChatMessage } from "gpt-tokenizer/src/GptEncoding";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Chunk, Properties, RequestMethod } from "../../../lib/models";
 import apiMockPrompt from "../../../lib/prompts/apiMock";
-import { getLLMResponse } from "../../../lib/queryLLM";
+import { getLLMResponse, getSecondaryModel } from "../../../lib/queryLLM";
 import { Action } from "../../../lib/types";
 import {
   addGPTdataToProperties,
@@ -268,6 +268,7 @@ export async function getMockedProperties(
   orgInfo?: {
     name: string;
     description: string;
+    model: string;
   },
   isArray: boolean = false,
 ): Promise<Record<string, any>> {
@@ -316,7 +317,11 @@ export async function getMockedProperties(
     [
       messages,
       { max_tokens: 600 },
-      nTokens < 4096 - 600 ? "gpt-3.5-turbo-0613" : "gpt-3.5-turbo-16k-0613",
+      getSecondaryModel(
+        orgInfo?.model ?? nTokens < 4096 - 600
+          ? "gpt-3.5-turbo-0613"
+          : "gpt-3.5-turbo-16k-0613",
+      ),
     ],
     3,
   );

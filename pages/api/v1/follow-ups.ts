@@ -16,7 +16,7 @@ import {
   filterConversationForFollowUps,
   getFollowUpSuggestionPrompt,
 } from "../../../lib/prompts/suggestFollowUps";
-import { getLLMResponse } from "../../../lib/queryLLM";
+import { getLLMResponse, getSecondaryModel } from "../../../lib/queryLLM";
 import { parseFollowUpSuggestions } from "../../../lib/parsers/parsers";
 
 export const config = {
@@ -203,7 +203,7 @@ export default async function handler(req: NextRequest) {
       [
         fullPrompt,
         { max_tokens: 100, temperature: 0.8, frequency_penalty: 0.5 },
-        "gpt-3.5-turbo",
+        getSecondaryModel(org.model),
       ],
       3,
     );
