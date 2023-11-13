@@ -16,6 +16,14 @@ export const defaultParams: ChatGPTParams = {
   presence_penalty: 0,
 };
 
+type LLMChatMessage =
+  | ChatGPTMessage
+  | {
+      role: "assistant";
+      content: string;
+      name: string;
+    };
+
 export async function getLLMResponse(
   prompt: string | ChatGPTMessage[],
   params: ChatGPTParams = {},
@@ -128,12 +136,28 @@ function getLLMRequestChat(
   url: string;
   options: { method: string; headers: HeadersInit; body: string };
 } {
-  const key = model.includes("gpt")
-    ? process.env.OPENAI_API_KEY
-    : process.env.OPENROUTER_API_KEY;
-  const host = model.includes("gpt") ? "api.openai.com" : "openrouter.ai/api";
+  const isOpenAIModel = model.includes("gpt");
+  const isOSModel = !!(
+    process.env.NEXT_PUBLIC_OS_MODEL &&
+    model === JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL).id
+  );
+  let key: string, url: string;
+  if (isOpenAIModel) {
+    key = process.env.OPENAI_API_KEY!;
+    url = "https://api.openai.com/v1/chat/completions";
+  } else if (isOSModel) {
+    if (!process.env.OS_LLM_API_KEY || !process.env.OS_LLM_URL)
+      throw new Error(
+        "OS_LLM_API_KEY and OS_LLM_URL must be set in .env file to use open source LLMs",
+      );
+    key = process.env.OS_LLM_API_KEY!;
+    url = process.env.OS_LLM_URL!;
+  } else {
+    key = process.env.OPENROUTER_API_KEY!;
+    url = "https://openrouter.ai/api/v1/chat/completions";
+  }
 
-  let processedMessages =
+  let processedMessages: LLMChatMessage[] =
     // Google palm 2 chat bison doesn't like function messages
     model !== "google/palm-2-chat-bison"
       ? messages
@@ -148,14 +172,22 @@ function getLLMRequestChat(
       Authorization: `Bearer ${key}`,
     },
     // Use our default params, rather than OpenAI's when these aren't specified
-    body: JSON.stringify({
-      model,
-      messages: processedMessages,
-      ...defaultParams,
-      ...params,
-    }),
+    body: JSON.stringify(
+      !isOSModel
+        ? // Not OS, so use OpenAI input
+          {
+            model,
+            messages: processedMessages,
+            ...defaultParams,
+            ...params,
+          }
+        : // HF or equivalent endpoints
+          {
+            inputs: combineMessagesForHFEndpoints(processedMessages),
+          },
+    ),
   };
-  if (!model.includes("gpt")) {
+  if (!isOpenAIModel && !isOSModel) {
     // @ts-ignore
     options.headers["HTTP-Referer"] =
       process.env.NODE_ENV === "development"
@@ -165,7 +197,7 @@ function getLLMRequestChat(
     options.headers["X-Title"] =
       process.env.NODE_ENV === "development" ? "Superflows Dev" : "Superflows";
   }
-  return { url: `https://${host}/v1/chat/completions`, options };
+  return { url, options };
 }
 
 const baseSecondaryModelMapping = {
@@ -219,4 +251,14 @@ export async function queryEmbedding(
   }
 
   return responseJson.data.map((item) => item.embedding);
+}
+
+function combineMessagesForHFEndpoints(messages: LLMChatMessage[]): string {
+  return messages
+    .map((m) =>
+      m.role !== "function"
+        ? `<|${m.role}|>\n${m.content}</s>`
+        : `function ${m.name} called\n${m.content}</s>`,
+    )
+    .join("\n");
 }

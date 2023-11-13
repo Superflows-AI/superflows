@@ -5,11 +5,13 @@
   </a>
 </p>
 
-<h2 align="center" >A chat interface that controls your product via API calls</h3>
+<h2 align="center" >Open Source alternative to OpenAI Assistants API</h3>
 <p align="center"></p>
 
-<p align="center"><a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> · <a href="https://superflows.ai/crm-demo">🎮 Demo</a> · <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
+<p align="center"><a href="https://superflows.ai/crm-demo">🎮 Demo</a> · <a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> · <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
 <br />
+
+**Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)!**
 
 https://github.com/Superflows-AI/superflows/assets/33871096/77c463c1-5e06-45a8-a32a-9f1fd8af0dac
 
@@ -17,42 +19,43 @@ https://github.com/Superflows-AI/superflows/assets/33871096/77c463c1-5e06-45a8-a
 
 Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes calls to the software's API to answer them.
 
-E.g. a CRM user could ask simply:
-> What's the status of the B Corp deal?
+E.g. a CRM user could ask:
+> Have we closed any deals with publishing companies? If so, who was involved in those deals?
 
-or more complex questions like:
-> Which of my deals are at risk of slipping this quarter? What next steps would you recommend to get them back on track?
+or:
+> Eve is ill today. Move her calls to the rest of the team - prioritise those who have had contact with the prospect before.
 
-A user of feedback software could ask:
-> Which bugs reported by users are the most pressing?
+A user could ask their analytics assistant:
+> Did the Google Ads campaign we ran last month have a positive ROI? How many conversions did it generate?
 
 **Check out a demo of Superflows in a CRM [here](https://superflows.ai/crm-demo).**
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
 
-
-## Setup
-
-1. Upload API specification
-2. Test in the playground
-3. Integrate into your product in 1 line of code
-
 ## Features
 
-- [x] Developer dashboard to configure and test your product assistant 🎛️
-- [x] Public streaming API 🏞️
-- [x] Answers in the same language the question is asked in 🇬🇧 🇪🇸 🇫🇷 🇩🇪
-- [x] Pre-built UI components (find React components [here](https://github.com/Superflows-AI/chat-ui)) 🖥️
+- [x] Calls API endpoints to complete tasks and answer questions for users
+- [x] Uses RAG (retrieval) to answer questions on static knowledge 📚
+- [x] Developer dashboard to configure and test your AI assistant 🎛️
+- [x] Stateful streaming API 🏞️
+- [x] UI components (React components [here](https://github.com/Superflows-AI/chat-ui)) 🖥️
 - [x] Upload API specifications for fast set up 💨
-- [x] Connect to multiple APIs with different hosts ✌️
-- [x] Asks for user confirmation before taking actions that add, remove or update data ✅ 
+- [x] Asks for user confirmation before taking potentially damaging actions ✅ 
 - [x] Track usage in dashboard 📊
 - [x] Multi-LLM support (Llama 2, GPT4, Claude 2, PaLM 2...) 🌍
 - [x] Collects user feedback on AI replies for fine-tuning 👍
+- [x] Self-hosting (including [OS fine-tuned model based on Mistral](https://huggingface.co/Superflows/Superflows-1/tree/main)) 🏠
+
+## Setup
+Setting up an AI Assistant in [Superflows Cloud](https://dashboard.superflows.ai) is simple: 
+
+1. Upload your API specification
+2. Test in the playground
+3. Integrate into your product in 1 line of code
 
 ### Dashboard
 
-Superflows has a testing dashboard where you can configure, evaluate and debug your AI assistant before putting it into production. 
+Superflows has a developer dashboard where you can configure, evaluate and debug your AI assistant before putting it into production. 
 
 You can interact with your assistant on the <b>'Playground'</b>. <b>'Developer mode'</b> shows you under the hood of what the assistant is thinking and planning. <b>'Mock API responses'</b> enables you to check the behaviour of the assistant without connecting it to an API. 
 
@@ -124,7 +127,7 @@ make run
 
 - ### Docker Setup
 
-Locate the init.sh file in the docker/development directory after cloning the project.
+Locate the `init.sh` file in the `docker/development` directory after cloning the project.
 
 #### Prerequisites
  - Ensure that git is installed on your system. If it's not installed, the script will notify you.
@@ -148,10 +151,14 @@ By default the script runs docker compose to run start the containers and build 
 #### Verify contents and set custom env
 The script should have created the supabase folder and also a .env file.
 - Review the env variables and correct or change to suit your environment - the env should already contain sensible defaults (however)
-    - Set in your OPENAI key  [OPENAI_API_KEY] 
+    - Set in your OPENAI key  [`OPENAI_API_KEY`] 
     - [optional] set in your SMTP credentials to enable email
 
 - Run the compose file (depending on what version of compose you have installed)
-    docker compose up -d build 
-    or docker-compose up -d build 
-
+```
+docker compose up -d build 
+```
+or
+```
+docker-compose up -d build
+```
