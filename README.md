@@ -11,7 +11,7 @@
 <p align="center"><a href="https://superflows.ai/crm-demo">🎮 Demo</a> · <a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> · <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
 <br />
 
-**Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)!**
+**Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)! [Reach out](mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29) if interested.**
 
 https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b6cf-2b46e12bf703
 
@@ -151,7 +151,7 @@ By default the script runs docker compose to run start the containers and build 
 #### Verify contents and set custom env
 The script should have created the supabase folder and also a .env file.
 - Review the env variables and correct or change to suit your environment - the env should already contain sensible defaults (however)
-    - Set in your OPENAI key  [`OPENAI_API_KEY`] 
+    - [optional] Set your OPENAI key  [`OPENAI_API_KEY`] ([reach out to self-host our fine-tuned LLM](mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29)) 
     - [optional] set in your SMTP credentials to enable email
 
 - Run the compose file (depending on what version of compose you have installed)
