@@ -40,12 +40,7 @@ export async function getMissingArgCorrections(
       missingParams.map(async (param) => {
         return {
           [param]:
-            (await getMissingParam(
-              param,
-              action,
-              previousConversation,
-              model,
-            )) ?? "",
+            (await getMissingParam(param, action, previousConversation)) ?? "",
         };
       }),
     );
@@ -57,7 +52,6 @@ async function getMissingParam(
   missingParam: string,
   action: Action,
   previousConversation: ChatGPTMessage[],
-  model: string,
 ): Promise<string | null> {
   console.log(`Parameter ${missingParam} is missing. Attempt to get it`);
   const correctionPrompt = requestCorrectionPrompt(missingParam, action);
@@ -74,7 +68,7 @@ async function getMissingParam(
       frequency_penalty: 0,
       max_tokens: 200,
     },
-    model,
+    "gpt-4-0613",
   );
   response = response.trim().replace(/\n/g, "");
   console.log("Response from gpt:\n", response);

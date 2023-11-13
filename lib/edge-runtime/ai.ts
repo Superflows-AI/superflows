@@ -165,7 +165,7 @@ export async function Dottie( // Dottie talks to docs
       [chatGptPrompt, { ...completionOptions, temperature: 0.4 }, model],
       3,
     );
-    if (res === null || "message" in res) {
+    if (res === null || (typeof res !== "string" && "message" in res)) {
       console.error(
         `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
           res,
@@ -178,12 +178,19 @@ export async function Dottie( // Dottie talks to docs
       return { nonSystemMessages, cost, numUserQueries: 0 };
     }
 
-    // Stream response from OpenAI
-    let rawOutput = await streamResponseToUser(
-      res,
-      streamInfo,
-      originalToPlaceholderMap,
-    );
+    let rawOutput: string;
+    if (typeof res === "string") {
+      // If non-streaming response, just return the full output
+      rawOutput = res;
+      streamInfo({ role: "assistant", content: res });
+    } else {
+      // Stream response chunk by chunk
+      rawOutput = await streamResponseToUser(
+        res,
+        streamInfo,
+        originalToPlaceholderMap,
+      );
+    }
 
     const newMessage = {
       role: "assistant",
@@ -328,7 +335,7 @@ export async function Angela( // Good ol' Angela
         [chatGptPrompt, completionOptions, model],
         3,
       );
-      if (res === null || "message" in res) {
+      if (res === null || (typeof res !== "string" && "message" in res)) {
         console.error(
           `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
             res,
@@ -341,12 +348,19 @@ export async function Angela( // Good ol' Angela
         return { nonSystemMessages, cost: totalCost, numUserQueries };
       }
 
-      // Stream response from OpenAI
-      let rawOutput = await streamResponseToUser(
-        res,
-        streamInfo,
-        originalToPlaceholderMap,
-      );
+      let rawOutput: string;
+      if (typeof res === "string") {
+        // If non-streaming response, just return the full output
+        rawOutput = res;
+        streamInfo({ role: "assistant", content: res });
+      } else {
+        // Stream response chunk by chunk
+        rawOutput = await streamResponseToUser(
+          res,
+          streamInfo,
+          originalToPlaceholderMap,
+        );
+      }
 
       const newMessage = {
         role: "assistant",

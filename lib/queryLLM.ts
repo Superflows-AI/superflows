@@ -71,7 +71,9 @@ export async function streamLLMResponse(
   prompt: ChatGPTMessage[] | string,
   params: ChatGPTParams = {},
   model: string,
-): Promise<ReadableStream | { message: string; status: number } | null> {
+): Promise<
+  ReadableStream | string | { message: string; status: number } | null
+> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
     throw new Error(
@@ -97,6 +99,11 @@ export async function streamLLMResponse(
     const error = await response.json();
     console.error(`Error from ${model} LLM: ${JSON.stringify(error.error)}`);
     return { message: error.error, status: response.status };
+  }
+  if (response.headers.get("content-type")?.includes("application/json")) {
+    // Non-streaming
+    const out = await response.json();
+    return out.output;
   }
 
   return response.body;
@@ -137,9 +144,9 @@ function getLLMRequestChat(
   options: { method: string; headers: HeadersInit; body: string };
 } {
   const isOpenAIModel = model.includes("gpt");
-  const isOSModel = !!(
+  const isOSModel = Boolean(
     process.env.NEXT_PUBLIC_OS_MODEL &&
-    model === JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL).id
+      model === JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL).id,
   );
   let key: string, url: string;
   if (isOpenAIModel) {
@@ -181,9 +188,13 @@ function getLLMRequestChat(
             ...defaultParams,
             ...params,
           }
-        : // HF or equivalent endpoints
+        : // Self-hosted endpoints
           {
-            inputs: combineMessagesForHFEndpoints(processedMessages),
+            input: {
+              messages: processedMessages,
+              ...defaultParams,
+              ...params,
+            },
           },
     ),
   };
