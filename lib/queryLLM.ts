@@ -4,6 +4,7 @@ import {
   ChatGPTResponse,
   EmbeddingResponse,
   OpenAIError,
+  RunPodResponse,
 } from "./models";
 import { removeEmptyCharacters } from "./utils";
 
@@ -57,10 +58,13 @@ export async function getLLMResponse(
     return "";
   }
 
-  return removeEmptyCharacters(chatGPTtextFromResponse(responseJson)).trim();
+  return removeEmptyCharacters(textFromResponse(responseJson)).trim();
 }
 
-export function chatGPTtextFromResponse(response: ChatGPTResponse): string {
+export function textFromResponse(
+  response: ChatGPTResponse | RunPodResponse,
+): string {
+  if ("output" in response) return response.output;
   /* Assumes that you have set n = 1 in the params */
   if ("message" in response.choices[0])
     return response.choices[0].message.content;
@@ -135,6 +139,13 @@ function getLLMRequestCompletion(
   return { url: `https://api.openai.com/v1/completions`, options };
 }
 
+function isOSModel(model: string): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_OS_MODEL &&
+      model === JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL).id,
+  );
+}
+
 function getLLMRequestChat(
   messages: ChatGPTMessage[],
   params: ChatGPTParams = {},
@@ -144,15 +155,12 @@ function getLLMRequestChat(
   options: { method: string; headers: HeadersInit; body: string };
 } {
   const isOpenAIModel = model.includes("gpt");
-  const isOSModel = Boolean(
-    process.env.NEXT_PUBLIC_OS_MODEL &&
-      model === JSON.parse(process.env.NEXT_PUBLIC_OS_MODEL).id,
-  );
+  const isOS = isOSModel(model);
   let key: string, url: string;
   if (isOpenAIModel) {
     key = process.env.OPENAI_API_KEY!;
     url = "https://api.openai.com/v1/chat/completions";
-  } else if (isOSModel) {
+  } else if (isOS) {
     if (!process.env.OS_LLM_API_KEY || !process.env.OS_LLM_URL)
       throw new Error(
         "OS_LLM_API_KEY and OS_LLM_URL must be set in .env file to use open source LLMs",
@@ -180,7 +188,7 @@ function getLLMRequestChat(
     },
     // Use our default params, rather than OpenAI's when these aren't specified
     body: JSON.stringify(
-      !isOSModel
+      !isOS
         ? // Not OS, so use OpenAI input
           {
             model,
@@ -198,7 +206,7 @@ function getLLMRequestChat(
           },
     ),
   };
-  if (!isOpenAIModel && !isOSModel) {
+  if (!isOpenAIModel && !isOS) {
     // @ts-ignore
     options.headers["HTTP-Referer"] =
       process.env.NODE_ENV === "development"
@@ -222,6 +230,9 @@ export function getSecondaryModel(mainModel: string): string {
   if (mainModel in baseSecondaryModelMapping) {
     // @ts-ignore
     return baseSecondaryModelMapping[mainModel];
+  } else if (isOSModel(mainModel)) {
+    // Use OS model as secondary if primary model is OS
+    return mainModel;
   } else {
     // Default for fine-tuned models
     return "gpt-3.5-turbo-0613";
