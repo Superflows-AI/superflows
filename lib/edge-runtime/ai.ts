@@ -26,7 +26,6 @@ import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
 import { filterActions } from "./filterActions";
 import {
   streamResponseToUser,
-  stripExampleFunctions,
   updatePastAssistantMessage,
 } from "./angelaUtils";
 import { getMissingArgCorrections } from "./missingParamCorrection";
