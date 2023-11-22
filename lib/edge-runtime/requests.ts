@@ -4,7 +4,7 @@ import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action, ActionPlusApiInfo } from "../types";
 import { deduplicateArray, filterKeys } from "../utils";
-import { getHeader, getJsonMIMEType, getParam, parseErrorHtml } from "./utils";
+import { getJsonMIMEType, getParam, parseErrorHtml } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
 export function processAPIoutput(
@@ -251,6 +251,7 @@ export async function makeHttpRequest(
   }
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
+  console.log("Response status:", responseStatus);
   const responseText = await response.text();
   // If there's no response body, return a status message
   if (!responseText) {
@@ -325,6 +326,7 @@ export async function makeHttpRequest(
     });
     return res.text();
   }
+  console.log("RESPONSE TEXT", responseText);
   return responseText;
 }
 
