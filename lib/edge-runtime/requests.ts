@@ -249,6 +249,7 @@ export async function makeHttpRequest(
     requestOptionsCopy.headers = headers;
     response = await fetch(redirectUrl, { ...requestOptionsCopy });
   }
+
   // Deal with response with potentially empty body (stackoverflow.com/a/51320025)
   const responseStatus = response.status ?? 0;
   console.log("Response status:", responseStatus);
@@ -274,28 +275,31 @@ export async function makeHttpRequest(
     return responseText;
   }
 
-  const accept =
+  const responseType =
+    response.headers.get("Content-Type") ||
+    response.headers.get("Content-type") ||
+    response.headers.get("content-type") ||
     reqHeaders.accept ||
     reqHeaders.Accept ||
     (typeof reqHeaders.get === "function" && reqHeaders.get("accept")) ||
     (typeof reqHeaders.get === "function" && reqHeaders.get("Accept")) ||
     "application/json";
-  console.log("Accept", accept);
+  console.log("ResponseType", responseType);
 
-  if (accept === "application/json") {
+  if (responseType === "application/json") {
     try {
       return JSON.parse(responseText);
     } catch {
       return responseText;
     }
-  } else if (accept === "application/pdf") {
+  } else if (responseType === "application/pdf") {
     if (!process.env.PDF_TO_TEXT_URL) {
       console.warn(
         "PDF to text service is not configured - set PDF_TO_TEXT_URL environment variable to enable",
       );
       return "PDF to text service is not configured";
     }
-    console.log("Accept is pdf - calling /parse-pdf");
+    console.log("Response type is pdf - calling /parse-pdf");
     // This gets the pdf and then parses it into text. We aren't
     // calling this function here because it requires nodejs runtime
     const res = await fetch(`${process.env.PDF_TO_TEXT_URL}/parse-pdf`, {
@@ -314,7 +318,7 @@ export async function makeHttpRequest(
       "application/xml",
       "application/xhtml",
       "application/xhtml+xml",
-    ].includes(accept)
+    ].includes(responseType)
   ) {
     // This parses the html into text
     const res = await fetch(`${localHostname}/api/parse-html`, {
@@ -326,7 +330,6 @@ export async function makeHttpRequest(
     });
     return res.text();
   }
-  console.log("RESPONSE TEXT", responseText);
   return responseText;
 }
 
