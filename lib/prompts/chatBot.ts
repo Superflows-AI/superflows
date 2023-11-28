@@ -32,7 +32,10 @@ export function getType(
     //  E.g. in posthog's api, there are location enums with >500 values
     //  Possible solution: offline, ask GPT to describe/summarize the enum values
     //  and put it as the description
-    return enums.map((e) => JSON.stringify(e)).join(" | ");
+    return enums
+      .filter((e, idx, obj) => obj.findIndex((other) => other === e) === idx)
+      .map((e) => JSON.stringify(e))
+      .join(" | ");
   }
   if (!type) return "any";
   return type;
@@ -55,11 +58,8 @@ export function formatReqBodySchema(
    * Only works for requestBody right now since readOnly parameters are ignored. **/
   if (!schema) return "";
   let paramString = "";
-  if (schema.type === "object" && schema.properties) {
+  if (schema.type === "object") {
     // Objects
-    const properties = schema.properties as {
-      [name: string]: OpenAPIV3_1.SchemaObject;
-    };
     const required = schema?.required ?? [];
     if (nestingLevel !== 0) {
       paramString += "(object)";
@@ -68,22 +68,27 @@ export function formatReqBodySchema(
       }
       if (isRequired) paramString += " REQUIRED";
     }
+    if (schema.properties) {
+      const properties = schema.properties as {
+        [name: string]: OpenAPIV3_1.SchemaObject;
+      };
 
-    Object.entries(properties).forEach(([key, value]) => {
-      // Throw out readonly attributes
-      if (value.readOnly) return;
+      Object.entries(properties).forEach(([key, value]) => {
+        // Throw out readonly attributes
+        if (value.readOnly) return;
 
-      // Below case is when no choice is required for a parameter - it's when
-      // a required parameter is an enum with only one value
-      // We skip it since there's no decision to be made and it costs tokens
-      if (!isChoiceRequired(value, required.includes(key))) {
-        return;
-      }
+        // Below case is when no choice is required for a parameter - it's when
+        // a required parameter is an enum with only one value
+        // We skip it since there's no decision to be made and it costs tokens
+        if (!isChoiceRequired(value, required.includes(key))) {
+          return;
+        }
 
-      paramString +=
-        `\n${"\t".repeat(nestingLevel)}- ${key} ` +
-        formatReqBodySchema(value, nestingLevel + 1, required.includes(key));
-    });
+        paramString +=
+          `\n${"\t".repeat(nestingLevel)}- ${key} ` +
+          formatReqBodySchema(value, nestingLevel + 1, required.includes(key));
+      });
+    }
   } else if (schema.type === "array") {
     // Arrays
     const items = schema.items as OpenAPIV3_1.SchemaObject;
@@ -91,11 +96,10 @@ export function formatReqBodySchema(
       // Arrays of objects require special handling
       paramString += `(object[])${formatDescription(schema.description)}${
         isRequired ? " REQUIRED" : ""
-      }${
-        formatReqBodySchema(items, nestingLevel, false, true).split(
-          "(object)",
-        )[1]
-      }`;
+      }${formatReqBodySchema(items, nestingLevel, false, true)
+        .split("(object)")
+        .slice(1)
+        .join("(object)")}`;
     } else {
       // Arrays of non-objects (incl. other arrays)
       const des = formatDescription(
