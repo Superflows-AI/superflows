@@ -442,22 +442,7 @@ export function isUrlRelative(url: string): boolean {
 }
 
 export function makeUrlAbsolute(url: string, href: string): string {
-  if (href.startsWith("http://") || href.startsWith("https://")) {
-    return href;
-  }
-
-  // Capture the protocol and host from the href (until the first '/')
-  const baseRegex = /^(https?:\/\/[^\/]*)/;
-  let match = url.match(baseRegex);
-  if (match) url = match[0];
-  // Ensure there isn't double slashes when concatenating
-  if (url.endsWith("/") && href.startsWith("/")) {
-    return url.slice(0, -1) + href;
-  } else if (!url.endsWith("/") && !href.startsWith("/")) {
-    return `${url}/${href}`;
-  } else {
-    return url + href;
-  }
+  return new URL(href, url).href;
 }
 
 export function isUUID(str: string): boolean {
