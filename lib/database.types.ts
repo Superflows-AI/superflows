@@ -156,6 +156,49 @@ export interface Database {
           },
         ];
       };
+      analytics_code_snippets: {
+        Row: {
+          conversation_id: number;
+          conversation_index: number;
+          created_at: string;
+          id: string;
+          instruction_message: string;
+          org_id: number;
+          output: string;
+        };
+        Insert: {
+          conversation_id: number;
+          conversation_index: number;
+          created_at?: string;
+          id?: string;
+          instruction_message?: string;
+          org_id: number;
+          output: string;
+        };
+        Update: {
+          conversation_id?: number;
+          conversation_index?: number;
+          created_at?: string;
+          id?: string;
+          instruction_message?: string;
+          org_id?: number;
+          output?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_code_snippets_conversation_id_fkey";
+            columns: ["conversation_id"];
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "analytics_code_snippets_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       apis: {
         Row: {
           api_host: string;
@@ -439,6 +482,7 @@ export interface Database {
       };
       organizations: {
         Row: {
+          analytics_enabled: boolean;
           api_key: string;
           chat_to_docs_enabled: boolean;
           chatbot_instructions: string;
@@ -452,6 +496,7 @@ export interface Database {
           sanitize_urls_first: boolean;
         };
         Insert: {
+          analytics_enabled?: boolean;
           api_key?: string;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
@@ -465,6 +510,7 @@ export interface Database {
           sanitize_urls_first?: boolean;
         };
         Update: {
+          analytics_enabled?: boolean;
           api_key?: string;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;

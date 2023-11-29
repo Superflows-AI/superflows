@@ -7,6 +7,7 @@ import SelectBox, { SelectBoxOption } from "../components/selectBox";
 import { Database } from "../lib/database.types";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
 import { AutoGrowingTextArea } from "../components/autoGrowingTextarea";
+import Toggle from "../components/toggle";
 
 export default function App() {
   return (
@@ -130,6 +131,7 @@ function Dashboard() {
       setLlm(profile!.organizations!.model);
       setLlmLanguage(profile!.organizations!.language);
       setChatInstructions(profile!.organizations!.chatbot_instructions);
+      setAnalyticsEnabled(profile!.organizations!.analytics_enabled);
     }
   }, [profile]);
 
@@ -161,6 +163,8 @@ function Dashboard() {
   const [chatInstructions, setChatInstructions] = React.useState<string>(
     profile?.organizations?.chatbot_instructions ?? "",
   );
+  const [analyticsEnabled, setAnalyticsEnabled] =
+    React.useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -271,6 +275,25 @@ function Dashboard() {
               }}
               minHeight={80}
             />
+            <div className="rounded-lg border ring-2 ring-offset-2 ring-purple-600/25 ring-offset-transparent border-gray-400 p-6 w-full bg-gray-900 col-span-4">
+              <div className="flex flex-row gap-x-6 place-items-center">
+                <h2 className="text-xl text-gray-100">Enable Analytics Mode</h2>
+                <Toggle
+                  enabled={analyticsEnabled}
+                  setEnabled={async (enabled) => {
+                    setAnalyticsEnabled(enabled);
+                    const res = await supabase
+                      .from("organizations")
+                      .update({ analytics_enabled: enabled })
+                      .eq("id", profile?.organizations?.id!);
+                    if (res.error) throw res.error;
+                    await refreshProfile();
+                  }}
+                  size={"md"}
+                  sr={"Enable Analytics"}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

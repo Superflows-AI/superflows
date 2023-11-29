@@ -13,3 +13,4 @@ sentry.*
 styles/globals.css
 supabase/.temp/
 __tests__/testData/
+docker/development/
