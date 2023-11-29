@@ -41,7 +41,7 @@ export function getType(
   return type;
 }
 
-function removeMarkdownLinks(text: string): string {
+export function removeMarkdownLinks(text: string): string {
   // This regular expression looks for markdown links and captures the link text separately
   const regex = /\[([^\]]+)]\([^)]*\)/g;
   // Replace the Markdown links with just the link text

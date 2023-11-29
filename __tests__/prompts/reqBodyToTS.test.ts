@@ -1,9 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import {
-  formatReqBodySchema,
-  getActionDescriptions,
-} from "../../lib/prompts/chatBot";
-import { Action } from "../../lib/types";
+import { OpenAPIV3_1 } from "openapi-types";
 import {
   exampleRequestBody1,
   exampleRequestBody2,
@@ -11,73 +7,82 @@ import {
   realWorldExampleSchema1,
   realWorldExampleSchema2,
 } from "./testData";
-import { OpenAPIV3_1 } from "openapi-types";
+import {
+  formatBodySchemaToTS,
+  getTSActionDescriptions,
+} from "../../lib/prompts/tsConversion";
+import { Action } from "../../lib/types";
 
-describe("formatReqBodySchema", () => {
+describe("formatBodySchemaToTS", () => {
   it("real-world example 1", () => {
-    const out = formatReqBodySchema(
+    const out = formatBodySchemaToTS(
       realWorldExampleSchema1.schema as OpenAPIV3_1.SchemaObject,
     );
     // We probably want to simplify the data.exchange object so it's less
     // nested and complex. It should probably be a top-level object instead,
     // but this requires changing how parameters are parsed from the GPT response.
-    expect(out).toEqual(`
-- data (object) REQUIRED
-\t- exchange (object): exchange data model. REQUIRED
-\t\t- serviceProviderConfiguration (object)
-\t\t\t- sellSideProvider (string)
-\t\t\t- buySideProvider (string)
-\t\t\t- sellSideVirtualization ("enabled" | "disabled" | "not-applicable")
-\t\t\t- buySideVirtualization ("enabled" | "disabled" | "not-applicable")
-\t\t\t- sellSideSourceOfTruth ("if-core" | "baas-provider" | "card-processor")
-\t\t\t- buySideSourceOfTruth ("if-core" | "baas-provider" | "card-processor")
-\t\t- type ("spot" | "spot-debit-in-advance")
-\t\t- id (string): ID of exchange.
-\t\t- clientId (string): ID of client. REQUIRED
-\t\t- quoteId (string): ID of quote. REQUIRED
-\t\t- transactionNumber (string): Transaction number of exchange. REQUIRED
-\t\t- fixedSide ("buy" | "sell"): which side is fixed as amount. REQUIRED
-\t\t- rate (number): Rate. REQUIRED
-\t\t- serviceProviderRate (number): Service provider rate. REQUIRED
-\t\t- buyAccountId (string): ID of buy account. REQUIRED
-\t\t- buyCurrency (string): ISO 4217 currency code. REQUIRED
-\t\t- buyAmount (number): Buy amount of exchange. REQUIRED
-\t\t- serviceProviderBuyAmount (number): Buy amount of service provider. REQUIRED
-\t\t- sellAccountId (string): ID of sell account. REQUIRED
-\t\t- sellCurrency (string): ISO 4217 currency code. REQUIRED
-\t\t- sellAmount (number): Sell amount of exchange. REQUIRED
-\t\t- serviceProviderSellAmount (number): Sell amount of service provider. REQUIRED
-\t\t- feeAmount (number): Fee amount.
-\t\t- feeCurrency (string): Fee currency.
-\t\t- rollCount (integer): Roll count of exchange. REQUIRED
-\t\t- originalExchangeDate (string): Original exchange date. REQUIRED
-\t\t- exchangeDate (string): Calculated exchange date. REQUIRED
-\t\t- cutOffDateTime (string): Exchange cut-off date time. REQUIRED
-\t\t- settlementDate (string): Calculated exchange settlement date. REQUIRED
-\t\t- status ("pending" | "on-hold" | "completed" | "cancelled" | "failed"): Status of Exchange. REQUIRED
-\t\t- cancellationFee (number): Cancellation fee.`);
+    expect(out).toEqual(`data: {
+exchange: { // exchange data model
+serviceProviderConfiguration?: {
+sellSideProvider?: string
+buySideProvider?: string
+sellSideVirtualization?: "enabled" | "disabled" | "not-applicable"
+buySideVirtualization?: "enabled" | "disabled" | "not-applicable"
+sellSideSourceOfTruth?: "if-core" | "baas-provider" | "card-processor"
+buySideSourceOfTruth?: "if-core" | "baas-provider" | "card-processor"
+}
+type?: "spot" | "spot-debit-in-advance"
+id?: string // ID of exchange
+clientId: string // ID of client
+quoteId: string // ID of quote
+transactionNumber: string // Transaction number of exchange
+fixedSide: "buy" | "sell" // which side is fixed as amount
+rate: number // Rate
+serviceProviderRate: number // Service provider rate
+buyAccountId: string // ID of buy account
+buyCurrency: string // ISO 4217 currency code
+buyAmount: number // Buy amount of exchange
+serviceProviderBuyAmount: number // Buy amount of service provider
+sellAccountId: string // ID of sell account
+sellCurrency: string // ISO 4217 currency code
+sellAmount: number // Sell amount of exchange
+serviceProviderSellAmount: number // Sell amount of service provider
+feeAmount?: number // Fee amount
+feeCurrency?: string // Fee currency
+rollCount: integer // Roll count of exchange
+originalExchangeDate: string // Original exchange date
+exchangeDate: string // Calculated exchange date
+cutOffDateTime: string // Exchange cut-off date time
+settlementDate: string // Calculated exchange settlement date
+status: "pending" | "on-hold" | "completed" | "cancelled" | "failed" // Status of Exchange
+cancellationFee?: number // Cancellation fee
+}
+}`);
   });
   it("real-world example 2", () => {
-    const out = formatReqBodySchema(
+    const out = formatBodySchemaToTS(
       realWorldExampleSchema2.schema as OpenAPIV3_1.SchemaObject,
     );
-    expect(out).toEqual(`
-- workflow (object) REQUIRED
-\t- code ("client.issuing" | "client.sub-account" | "client.migration"): workflow code. REQUIRED
-- data (object) REQUIRED
-\t- account (object) REQUIRED
-\t\t- clientId (string): id of client. REQUIRED
-\t\t- currency (string): ISO 4217 currency code. REQUIRED
-\t\t- alias (string): alias of account, refer to Accounts section in Guides for details.
-\t- sourceId (string): id of the account to be migrated, required if workflow is migration.
-- connect (object) REQUIRED
-\t- serviceProvider (string): account is connected to this service provider.`);
+    expect(out).toEqual(`workflow: {
+code: "client.issuing" | "client.sub-account" | "client.migration" // workflow code
+}
+data: {
+account: {
+clientId: string // id of client
+currency: string // ISO 4217 currency code
+alias?: string // alias of account, refer to Accounts section in Guides for details
+}
+sourceId?: string // id of the account to be migrated, required if workflow is migration
+}
+connect: {
+serviceProvider?: string // account is connected to this service provider
+}`);
   });
 });
 
-describe("getActionDescriptions", () => {
+describe("getTSActionDescriptions", () => {
   it("no parameters", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         active: true,
@@ -88,10 +93,10 @@ describe("getActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual("action1 PARAMETERS: None.\n");
+    expect(out).toEqual("function action1()\n");
   });
   it("no parameters multiple actions", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         active: true,
@@ -111,13 +116,11 @@ describe("getActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual(
-      `1. action1 PARAMETERS: None.\n2. action2 PARAMETERS: None.\n`,
-    );
+    expect(out).toEqual(`function action1()\nfunction action2()\n`);
   });
   // Setting parameters
   it("1 parameter, required", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -135,11 +138,11 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1: string // a description\n})\n",
     );
   });
   it("1 parameter, not required", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -156,11 +159,11 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description.\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1?: string // a description\n})\n",
     );
   });
   it("1 parameter with string enums", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -178,11 +181,11 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      'action1: description1. PARAMETERS:\n- param1 ("alpha" | "beta" | "gamma"): a description.\n',
+      '\n/** description1 **/\nfunction action1(args: {\nparam1?: "alpha" | "beta" | "gamma" // a description\n})\n',
     );
   });
   it("1 parameter with number enums", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -200,11 +203,11 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (1 | 2 | 3): a description.\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1?: 1 | 2 | 3 // a description\n})\n",
     );
   });
   it("2 parameters 1 action", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -230,14 +233,17 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- param1 (string): a description.
-- param2 (number): this isn't a description. REQUIRED
+      `
+/** description1 **/
+function action1(args: {
+param1?: string // a description
+param2: number // this isn't a description
+})
 `,
     );
   });
   it("2 parameters 2 actions", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -287,17 +293,23 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `1. action1: description1. PARAMETERS:
-- param1 (string): a description.
-- param2 (number): this isn't a description. REQUIRED
-2. action2: description1. PARAMETERS:
-- param3 (string): a description.
-- param4 (number): this isn't a description. REQUIRED
+      `
+/** description1 **/
+function action1(args: {
+param1?: string // a description
+param2: number // this isn't a description
+})
+
+/** description1 **/
+function action2(args: {
+param3?: string // a description
+param4: number // this isn't a description
+})
 `,
     );
   });
   it("param with enum with 1 option", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -324,15 +336,18 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- param2 (number): this isn't a description.
+      `
+/** description1 **/
+function action1(args: {
+param2?: number // this isn't a description
+})
 `,
     );
   });
 
   // Setting request_body_contents
   it("1 request body item", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -354,11 +369,16 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "action1: description1. PARAMETERS:\n- param1 (string): a description. REQUIRED\n",
+      `
+/** description1 **/
+function action1(args: {
+param1: string // a description
+})
+`,
     );
   });
   it("2 request body items", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -384,14 +404,17 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- param1 (string): a description. REQUIRED
-- param2 (number): this is a number.
+      `
+/** description1 **/
+function action1(args: {
+param1: string // a description
+param2?: number // this is a number
+})
 `,
     );
   });
   it("request body simple array", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description #1",
@@ -416,12 +439,15 @@ describe("getActionDescriptions", () => {
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`action1: description #1. PARAMETERS:
-- updates (string[]): description of the array. REQUIRED
+    expect(out).toEqual(`
+/** description #1 **/
+function action1(args: {
+updates: string[] // description of the array
+})
 `);
   });
   it("request body simple array, no array description", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description #1",
@@ -445,12 +471,15 @@ describe("getActionDescriptions", () => {
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`action1: description #1. PARAMETERS:
-- updates (string[]): array of item description. REQUIRED
+    expect(out).toEqual(`
+/** description #1 **/
+function action1(args: {
+updates: string[] // array of item description
+})
 `);
   });
   it("exampleRequestBody1", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -459,17 +488,21 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- updates (object[]): List of updates for a custom fields.
-\t- customField (string): The ID or key of the custom field. For example, \`customfield_10010\`. REQUIRED
-\t- issueIds (integer[]): The list of issue IDs. REQUIRED
-\t- value (any): The value for the custom field. The value must be compatible with the custom field type. REQUIRED
+      `
+/** description1 **/
+function action1(args: {
+updates?: { // List of updates for a custom fields.
+customField: string // The ID or key of the custom field. For example, \`customfield_10010\`.
+issueIds: integer[] // The list of issue IDs.
+value: any // The value for the custom field. The value must be compatible with the custom field type.
+}[]
+})
 `,
     );
   });
 
   it("exampleRequestBody2", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -478,18 +511,23 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- accountId (string): The account ID of a user.
-- globalPermissions (string[]): Global permissions to look up.
-- projectPermissions (object[]): Project permissions with associated projects and issues to look up.
-\t- issues (integer[]): List of issue IDs.
-\t- permissions (string[]): List of project permissions. REQUIRED
-\t- projects (integer[]): List of project IDs.
+      `
+/** description1 **/
+function action1(args: {
+accountId?: string // The account ID of a user.
+globalPermissions?: string[] // Global permissions to look up.
+projectPermissions?: { // Project permissions with associated projects and issues to look up.
+issues?: integer[] // List of issue IDs.
+permissions: string[] // List of project permissions.
+projects?: integer[] // List of project IDs.
+}[]
+})
 `,
     );
   });
+
   it("exampleRequestBody3", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -498,18 +536,23 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- description (string): The description of the dashboard.
-- editPermissions (object[]): The edit permissions for the dashboard. REQUIRED
-\t- type ("user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown"): user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to. REQUIRED
-- name (string): The name of the dashboard. REQUIRED
-- sharePermissions (object[]): The share permissions for the dashboard. REQUIRED
-\t- type ("user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown"): user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to. REQUIRED
+      `
+/** description1 **/
+function action1(args: {
+description?: string // The description of the dashboard.
+editPermissions: { // The edit permissions for the dashboard.
+type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
+}[]
+name: string // The name of the dashboard.
+sharePermissions: { // The share permissions for the dashboard.
+type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
+}[]
+})
 `,
     );
   });
   it("exampleRequestBody with enum with 1 option", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -522,7 +565,7 @@ describe("getActionDescriptions", () => {
               properties: {
                 description: {
                   type: "string",
-                  description: "The description of the dashboard.",
+                  description: "The description of the dashboard",
                 },
                 enumProp: {
                   type: "string",
@@ -538,13 +581,16 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- description (string): The description of the dashboard.
+      `
+/** description1 **/
+function action1(args: {
+description?: string // The description of the dashboard
+})
 `,
     );
   });
   it("exampleRequestBody with examples", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -575,14 +621,17 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- created (string): When it was created. Example: 2021-01-01.
-- enumProp ("option1" | "option2"): enum description. REQUIRED
+      `
+/** description1 **/
+function action1(args: {
+created?: string // When it was created. Example: 2021-01-01
+enumProp: "option1" | "option2" // enum description
+})
 `,
     );
   });
   it("params with examples", () => {
-    const out = getActionDescriptions([
+    const out = getTSActionDescriptions([
       {
         name: "action1",
         description: "description1",
@@ -611,9 +660,12 @@ describe("getActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `action1: description1. PARAMETERS:
-- param1 (string): a description. Example: example1.
-- updated (integer) Example: 1663734553.
+      `
+/** description1 **/
+function action1(args: {
+param1?: string // a description. Example: example1
+updated?: integer // Example: 1663734553
+})
 `,
     );
   });
