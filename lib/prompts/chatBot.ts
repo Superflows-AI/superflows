@@ -123,10 +123,7 @@ export function formatReqBodySchema(
   return paramString;
 }
 
-export function getActionDescriptions(
-  actions: Action[],
-  includeParams: boolean = true,
-): string {
+export function getActionDescriptions(actions: Action[]): string {
   /** Gets the GPT-readable numbered list of actions, their parameters
    *  and their descriptions. **/
   if (actions.length === 0) {
@@ -174,11 +171,7 @@ export function getActionDescriptions(
     numberedActions += `${actions.length > 1 ? `${i}. ` : ""}${
       action.name
     }${formatDescription(action.description)} ${
-      !includeParams
-        ? ""
-        : paramString
-        ? "PARAMETERS:" + paramString
-        : "PARAMETERS: None."
+      paramString ? "PARAMETERS:" + paramString : "PARAMETERS: None."
     }\n`;
     i++;
   });
