@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   parseFollowUpSuggestions,
   parseGPTStreamedData,
-} from "../lib/parsers/parsers";
+} from "../../../lib/parsers/parsers";
 
 describe("Parse GPT Streaming output", () => {
   it("First streamed response", () => {
