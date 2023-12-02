@@ -336,3 +336,18 @@ export function sortObjectToArray<ValueType>(
       return obj[key];
     });
 }
+
+export function hideMostRecentFunctionOutputs(
+  chatHistory: GPTMessageInclSummary[],
+): GPTMessageInclSummary[] {
+  for (let i = chatHistory.length - 1; i >= 0; i--) {
+    const message = chatHistory[i];
+    if (message.role === "function") {
+      message.summary = "Output used by analytics mode";
+    }
+    if (message.role !== "function") {
+      return chatHistory;
+    }
+  }
+  return chatHistory;
+}

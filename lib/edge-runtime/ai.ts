@@ -15,6 +15,7 @@ import {
   sanitizeMessages,
 } from "./apiResponseSimplification";
 import {
+  hideMostRecentFunctionOutputs,
   MessageInclSummaryToGPT,
   preStreamProcessOutMessage,
   removeOldestFunctionCalls,
@@ -594,6 +595,9 @@ export async function Angela( // Good ol' Angela
           functionMessages,
           org,
         );
+        nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
+
+        // Return graph data to the user & add message to chat history
         const fnMsg: FunctionMessage = {
           role: "function",
           name: dataAnalysisActionName,

@@ -3,6 +3,7 @@ import {
   combineChunks,
   deduplicateChunks,
   getParam,
+  hideMostRecentFunctionOutputs,
   MessageInclSummaryToGPT,
   parseErrorHtml,
   replaceVariables,
@@ -369,5 +370,62 @@ describe("replaceVariables", () => {
       b: "turnips",
     });
     expect(out).toEqual("This is a test of b");
+  });
+});
+
+describe("hideMostRecentFunctionOutputs", () => {
+  it("No function outputs", () => {
+    const out = hideMostRecentFunctionOutputs([
+      { role: "user", content: "This is a test" },
+    ]);
+    expect(out).toStrictEqual([{ role: "user", content: "This is a test" }]);
+  });
+  it("Function output summaries added at the end", () => {
+    const out = hideMostRecentFunctionOutputs([
+      { role: "user", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+    ]);
+    expect(out).toStrictEqual([
+      { role: "user", content: "This is a test" },
+      {
+        role: "function",
+        name: "function",
+        content: "This is a test",
+        summary: "Output used by analytics mode",
+      },
+      {
+        role: "function",
+        name: "function",
+        content: "This is a test",
+        summary: "Output used by analytics mode",
+      },
+    ]);
+  });
+  it("Function output summaries added at the end, but not earlier", () => {
+    const out = hideMostRecentFunctionOutputs([
+      { role: "user", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+      { role: "assistant", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+    ]);
+    expect(out).toStrictEqual([
+      { role: "user", content: "This is a test" },
+      { role: "function", name: "function", content: "This is a test" },
+      { role: "assistant", content: "This is a test" },
+      {
+        role: "function",
+        name: "function",
+        content: "This is a test",
+        summary: "Output used by analytics mode",
+      },
+      {
+        role: "function",
+        name: "function",
+        content: "This is a test",
+        summary: "Output used by analytics mode",
+      },
+    ]);
   });
 });
