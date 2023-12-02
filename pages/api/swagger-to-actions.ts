@@ -250,12 +250,6 @@ export function operationIdToFunctionName(
   );
 }
 
-export function snakeToCamel(str: string) {
-  return str.replace(/(_\w)/g, function (m: string): string {
-    return m[1].toUpperCase();
-  });
-}
-
 export function requestToFunctionName(
   method: string,
   methodObj: OpenAPIV3_1.OperationObject,

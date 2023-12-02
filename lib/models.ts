@@ -1,30 +1,32 @@
 import { z } from "zod";
 import { ActionPlusApiInfo } from "./types";
 import { FunctionCall } from "@superflows/chat-ui-react";
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 export type ChatGPTMessage =
   | {
       role: "system" | "user" | "assistant";
       content: string;
     }
-  | {
-      role: "function";
-      content: string;
-      name: string;
-    };
+  | FunctionMessage;
+
+export interface FunctionMessage {
+  role: "function";
+  content: string;
+  name: string;
+}
 
 export type GPTMessageInclSummary =
   | {
       role: "system" | "user" | "assistant";
       content: string;
     }
-  | {
-      role: "function";
-      content: string;
-      name: string;
-      summary?: string;
-      urls?: { name: string; url: string }[];
-    };
+  | FunctionMessageInclSummary;
+
+export interface FunctionMessageInclSummary extends FunctionMessage {
+  summary?: string;
+  urls?: { name: string; url: string }[];
+}
 
 interface MessageChoice {
   message: ChatGPTMessage;
@@ -88,16 +90,6 @@ export type RequestMethod =
   | "PATCH"
   | "OPTIONS";
 
-type NonSystemGPTMessage = Exclude<GPTMessageInclSummary, { role: "system" }>;
-
-export type StreamingStepInput =
-  | NonSystemGPTMessage
-  | {
-      role: "error" | "debug" | "confirmation";
-      content: string;
-    };
-
-export type StreamingStep = StreamingStepInput & { id: number };
 export interface ActionToHttpRequest {
   action: ActionPlusApiInfo;
   parameters: Record<string, unknown>;

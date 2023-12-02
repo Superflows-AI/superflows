@@ -1,6 +1,10 @@
 import { getTokenCount } from "../utils";
-import { ChatGPTMessage, GPTMessageInclSummary } from "../models";
-import { DBChatMessage, SimilaritySearchResult } from "../types";
+import {
+  ChatGPTMessage,
+  FunctionMessageInclSummary,
+  GPTMessageInclSummary,
+} from "../models";
+import { Action, DBChatMessage, SimilaritySearchResult } from "../types";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
@@ -8,6 +12,7 @@ import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
 import RemoveMarkdown from "remove-markdown";
 import { z } from "zod/lib";
+import { FunctionCall } from "@superflows/chat-ui-react";
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
@@ -296,4 +301,38 @@ export function replaceVariables(
       ? variables[variable]
       : `${variable}`;
   });
+}
+
+export function preStreamProcessOutMessage(
+  outMessage: FunctionMessageInclSummary,
+  command: FunctionCall,
+  chosenAction: Action,
+): FunctionMessageInclSummary {
+  // We can have issues in the frontend if the content is too long
+  if (outMessage.summary && outMessage.content.length > 2000) {
+    outMessage = { ...outMessage };
+    outMessage.content =
+      outMessage.content.slice(0, 2000) + "...(concatenated)";
+  }
+  if (chosenAction.link_url) {
+    outMessage = { ...outMessage };
+    outMessage.urls = [
+      {
+        name: replaceVariables(chosenAction.link_name, command.args),
+        url: replaceVariables(chosenAction.link_url, command.args),
+      },
+    ];
+    console.log("Link URLs added:", outMessage.urls);
+  }
+  return outMessage;
+}
+
+export function sortObjectToArray<ValueType>(
+  obj: Record<string, ValueType>,
+): ValueType[] {
+  return Object.keys(obj)
+    .sort()
+    .map(function (key) {
+      return obj[key];
+    });
 }

@@ -1,4 +1,7 @@
-import { dataAnalysisPrompt } from "../../lib/prompts/dataAnalysis";
+import {
+  getDataAnalysisPrompt,
+  getVarNames,
+} from "../../lib/prompts/dataAnalysis";
 import { exampleRequestBody2 } from "./testData";
 import { Action } from "../../lib/types";
 import { getIntroText } from "../../lib/prompts/chatBot";
@@ -7,35 +10,38 @@ describe("dataAnalysisPrompt", () => {
   it("basic", () => {
     const command = "If you can keep your head";
     const orgInfo = { name: "orgName", description: "orgDescription" };
-    const prompt = dataAnalysisPrompt(
-      command,
-      [
-        {
-          action: {
-            name: "action1",
-            description: "description1",
-            parameters: [],
-            request_body_contents: null,
-            responses: {
-              "200": {
-                content: exampleRequestBody2,
-              },
+    const calledActions = [
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
             },
-          } as unknown as Action,
-          args: [],
-          output: {
-            accountId: "accountId",
-            globalPermissions: ["1", "2", "3"],
-            projectPermissions: [
-              {
-                issues: [5, 4, 3, 2],
-                permissions: ["1", "2", "3"],
-                projects: [1, 2, 3, 4],
-              },
-            ],
           },
+        } as unknown as Action,
+        args: [],
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
         },
-      ],
+      },
+    ];
+    const varNames = getVarNames(calledActions);
+    const prompt = getDataAnalysisPrompt(
+      command,
+      calledActions,
+      varNames,
       orgInfo,
     );
     expect(prompt[0]).toEqual({

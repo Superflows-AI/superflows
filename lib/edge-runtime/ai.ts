@@ -1,11 +1,11 @@
 import { Redis } from "@upstash/redis/nodejs";
 import {
-  ActionToHttpRequest,
   AnswersType,
   ChatGPTMessage,
   ChatGPTParams,
+  FunctionMessage,
+  FunctionMessageInclSummary,
   GPTMessageInclSummary,
-  StreamingStepInput,
   ToConfirm,
 } from "../models";
 import { ActionPlusApiInfo, OrgJoinIsPaidFinetunedModels } from "../types";
@@ -16,8 +16,9 @@ import {
 } from "./apiResponseSimplification";
 import {
   MessageInclSummaryToGPT,
+  preStreamProcessOutMessage,
   removeOldestFunctionCalls,
-  replaceVariables,
+  sortObjectToArray,
 } from "./utils";
 import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
 import { getLLMResponse, streamLLMResponse } from "../queryLLM";
@@ -39,11 +40,16 @@ import {
 import summarizeText from "./summarize";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../database.types";
-import {
-  getRelevantDocChunks,
-  getSearchDocsAction,
-} from "../embed-docs/docsSearch";
+import { getRelevantDocChunks } from "../embed-docs/docsSearch";
 import { hallucinateDocsSystemPrompt } from "../prompts/hallucinateDocs";
+import { runDataAnalysis } from "./dataAnalysis";
+import {
+  dataAnalysisActionName,
+  enableDataAnalysisAction,
+  getSearchDocsAction,
+  searchDocsActionName,
+} from "../builtinActions";
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -242,7 +248,7 @@ export async function Angela( // Good ol' Angela
     language,
   );
 
-  const nonSystemMessages = [...previousMessages];
+  let nonSystemMessages = [...previousMessages];
   const model = org.model;
   // GPT4 can deal with longer context window better
   const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
@@ -260,7 +266,11 @@ export async function Angela( // Good ol' Angela
 
   // This allows us to add the 'Search docs' action if it's enabled
   if (org.chat_to_docs_enabled) {
-    actions.push(getSearchDocsAction(org, currentHost));
+    actions.unshift(getSearchDocsAction(org, currentHost));
+  }
+  // Add analytics action if enabled
+  if (org.analytics_enabled) {
+    actions.unshift(enableDataAnalysisAction(org));
   }
 
   if (actions.length > 5 && model.includes("3.5")) {
@@ -383,12 +393,14 @@ export async function Angela( // Good ol' Angela
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
 
+      const functionMessages: Record<string, FunctionMessageInclSummary> = {};
       const toUserCorrect: { functionName: string; param: string }[] = [];
       // Call endpoints here
       const commandMapOutput = (
         await Promise.all(
-          mostRecentParsedOutput.commands.map(async (command) => {
+          mostRecentParsedOutput.commands.map(async (command, idx) => {
             console.log("Processing command: ", command);
+            // Check if the action name called by the LLM exists
             const chosenAction = actions.find((a) => a.name === command.name);
             if (!chosenAction) {
               // There are 2 main failure cases:
@@ -398,21 +410,24 @@ export async function Angela( // Good ol' Angela
               // In both cases we continue Angela, skip the command and send a function
               //  message with an error in it
               console.warn(`Action ${command.name} not found!`);
-              streamInfo({
+              const outMessage = {
                 role: "function",
                 name: command.name,
-                content: `Function ${command.name} is invalid! Do not output this again`,
-              });
+                content: `Function ${command.name} not found!`,
+              } as FunctionMessage;
+              functionMessages[idx] = outMessage;
+              streamInfo(outMessage);
               return;
             }
 
-            // Re-add long IDs before making calls to the API
+            // Re-add long IDs and URLs before making calls to the API
             const repopulatedArgs = repopulateVariables(
               command.args,
               originalToPlaceholderMap,
             );
             command.args = repopulatedArgs as FunctionCall["args"];
 
+            // Check and fill in any missing required parameters in the function call
             const corrections = await getMissingArgCorrections(
               chosenAction,
               command,
@@ -421,9 +436,7 @@ export async function Angela( // Good ol' Angela
               ].concat(chatGptPrompt.concat(newMessage).slice(1)), // New message may contain useful information for the correction
               "gpt-4-0613",
             );
-
             let needsUserCorrection = false;
-
             if (Object.keys(corrections).length > 0) {
               for (const [param, response] of Object.entries(corrections)) {
                 if (
@@ -454,27 +467,30 @@ export async function Angela( // Good ol' Angela
               return null;
             }
 
-            const actionToHttpRequest: ActionToHttpRequest = {
-              action: chosenAction,
-              parameters: command.args,
-              organization: org,
-              stream: streamInfo,
-              userApiKey: reqData.user_api_key ?? "",
-            };
+            if (command.name === dataAnalysisActionName) {
+              // Data analysis action is handled separately
+              return;
+            }
 
             if (!chosenAction.requires_confirmation) {
               const { url, requestOptions } =
-                chosenAction.name === "get_info_from_docs"
+                chosenAction.name === searchDocsActionName
                   ? getDocsChatRequest(
                       chosenAction,
                       reqData.user_input,
                       org.id,
                       tokenCount,
                     )
-                  : constructHttpRequest(actionToHttpRequest);
+                  : constructHttpRequest({
+                      action: chosenAction,
+                      parameters: command.args,
+                      organization: org,
+                      stream: streamInfo,
+                      userApiKey: reqData.user_api_key ?? "",
+                    });
 
+              // Call user's API here
               let out;
-
               try {
                 out = await makeHttpRequest(url, requestOptions, currentHost);
                 out = processAPIoutput(out, chosenAction);
@@ -484,7 +500,7 @@ export async function Angela( // Good ol' Angela
                 out = `Failed to call ${url}\n\n${e.toString()}`;
               }
               console.log("Output from API call:", out);
-              let outMessage: GPTMessageInclSummary = {
+              let outMessage: FunctionMessageInclSummary = {
                 role: "function",
                 name: command.name,
                 content: typeof out === "string" ? out : JSON.stringify(out),
@@ -497,26 +513,12 @@ export async function Angela( // Good ol' Angela
               ) {
                 outMessage.summary = await summarizeText(out, org);
               }
-              nonSystemMessages.push(outMessage);
-              // We can have issues in the frontend if the content is too long
-              if (outMessage.summary && outMessage.content.length > 2000) {
-                outMessage = { ...outMessage };
-                outMessage.content =
-                  outMessage.content.slice(0, 2000) + "...(concatenated)";
-              }
-              if (chosenAction.link_url) {
-                outMessage = { ...outMessage };
-                outMessage.urls = [
-                  {
-                    name: replaceVariables(
-                      chosenAction.link_name,
-                      command.args,
-                    ),
-                    url: replaceVariables(chosenAction.link_url, command.args),
-                  },
-                ];
-                console.log("Link URLs added:", outMessage.urls);
-              }
+              functionMessages[idx] = outMessage;
+              outMessage = preStreamProcessOutMessage(
+                outMessage,
+                command,
+                chosenAction,
+              );
 
               streamInfo(outMessage);
             } else {
@@ -531,8 +533,16 @@ export async function Angela( // Good ol' Angela
         )
       ).filter((x) => x !== undefined);
 
+      // This adds function outputs in the order they were called by the LLM
+      nonSystemMessages = nonSystemMessages.concat(
+        sortObjectToArray(functionMessages),
+      );
+
       // Below checks for if there are any 'needs correction' messages
-      if (commandMapOutput.some((output) => output === null)) {
+      const anyNeedCorrection = commandMapOutput.some(
+        (output) => output === null,
+      );
+      if (anyNeedCorrection) {
         // funcToArrToCorrect maps from function name to array of parameters that need user correction
         const funcToArrToCorrect: { [param: string]: string[] } = {};
         toUserCorrect.map((toCorrect) => {
@@ -550,9 +560,9 @@ export async function Angela( // Good ol' Angela
             content: `Error: function "${functionName}" is missing the following parameters: "${params.join(
               ", ",
             )}\n\nIf you want to call the function again, ask the user for the missing parameters"`,
-          } as ChatGPTMessage;
-          nonSystemMessages.push(missingParamsMessage as GPTMessageInclSummary);
-          streamInfo(missingParamsMessage as GPTMessageInclSummary);
+          } as FunctionMessage;
+          nonSystemMessages.push(missingParamsMessage);
+          streamInfo(missingParamsMessage);
         });
       }
 
@@ -568,6 +578,42 @@ export async function Angela( // Good ol' Angela
         });
         if (redis)
           await storeActionsAwaitingConfirmation(toConfirm, conversationId);
+      }
+
+      // Data analysis
+      const dataAnalysisAction = mostRecentParsedOutput.commands.find(
+        (c) => c.name === dataAnalysisActionName,
+      );
+      console.log("Data analysis action:", dataAnalysisAction);
+      if (dataAnalysisAction && !anyNeedCorrection && toConfirm.length === 0) {
+        console.log("Running data analysis!");
+        const graphData = await runDataAnalysis(
+          dataAnalysisAction.args["instruction"],
+          mostRecentParsedOutput.commands,
+          actions,
+          functionMessages,
+          org,
+        );
+        const fnMsg: FunctionMessage = {
+          role: "function",
+          name: dataAnalysisActionName,
+          content: "",
+        };
+        if (graphData === null) {
+          fnMsg.content = "Failed to run data analysis";
+          streamInfo(fnMsg);
+        } else if ("error" in graphData) {
+          // Handle error - add function message
+          fnMsg.content = graphData.error;
+          streamInfo(fnMsg);
+        } else {
+          streamInfo({
+            role: "graph",
+            content: graphData,
+          });
+          fnMsg.content = JSON.stringify(graphData);
+        }
+        nonSystemMessages.push(fnMsg);
       }
 
       if (mostRecentParsedOutput.completed) {
