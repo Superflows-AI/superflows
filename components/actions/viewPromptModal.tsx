@@ -1,12 +1,14 @@
-import Modal from "../modal";
-import { Action } from "../../lib/types";
-import { Dialog, Switch } from "@headlessui/react";
-import { Dashboard as UppyDashboard } from "@uppy/react";
-import { LoadingSpinner } from "../loadingspinner";
 import React, { useState } from "react";
+import Modal from "../modal";
+import Toggle from "../toggle";
+import { Dialog } from "@headlessui/react";
 import getMessages, { getActionDescriptions } from "../../lib/prompts/chatBot";
 import { useProfile } from "../contextManagers/profile";
-import Toggle from "../toggle";
+import { Action } from "../../lib/types";
+import {
+  enableDataAnalysisAction,
+  getSearchDocsAction,
+} from "../../lib/builtinActions";
 
 const items = [
   {
@@ -49,6 +51,19 @@ export default function ViewSystemPromptModal(props: {
   const { profile } = useProfile();
   const [viewSystemPrompt, setViewSystemPrompt] = useState<boolean>(false);
 
+  const additionalActions: Action[] = [];
+  if (profile?.organizations?.analytics_enabled) {
+    additionalActions.unshift(enableDataAnalysisAction(profile.organizations));
+  }
+  if (
+    profile?.organizations?.chat_to_docs_enabled &&
+    // Only show the search docs action if there are other actions
+    (profile?.organizations?.analytics_enabled || props.actions.length > 0)
+  ) {
+    additionalActions.unshift(getSearchDocsAction(profile.organizations, ""));
+  }
+  const actions = additionalActions.concat(props.actions);
+
   return (
     <Modal open={props.open} setOpen={props.setOpen} classNames="max-w-7xl">
       <div className="relative mt-3 text-center sm:mt-5">
@@ -79,7 +94,7 @@ export default function ViewSystemPromptModal(props: {
             ? addTabsToVariables(
                 getMessages(
                   [],
-                  props.actions,
+                  actions,
                   "<USER DESCRIPTION GOES HERE>",
                   {
                     name: profile?.organizations?.name ?? "<ORG NAME>",
@@ -93,7 +108,7 @@ export default function ViewSystemPromptModal(props: {
                   false,
                 )[0].content,
               )
-            : addTabsToVariables(getActionDescriptions(props.actions))}
+            : addTabsToVariables(getActionDescriptions(actions))}
         </p>
       </div>
       <div className="px-6 py-4 flex place-items-center justify-center"></div>
