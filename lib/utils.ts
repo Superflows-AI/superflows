@@ -571,3 +571,9 @@ export function joinArraysNoDuplicates<T extends Record<string, any>>(
   const ids = new Set(arr1.map((d) => d[uniqueKey]));
   return [...arr1, ...arr2.filter((d) => !ids.has(d[uniqueKey]))];
 }
+
+export function snakeToCamel(str: string): string {
+  return str.replace(/(_\w)/g, function (m: string): string {
+    return m[1].toUpperCase();
+  });
+}

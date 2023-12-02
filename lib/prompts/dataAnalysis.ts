@@ -2,15 +2,17 @@ import { ChatGPTMessage } from "../models";
 import { Action, Organization } from "../types";
 import { getIntroText } from "./chatBot";
 import { getActionTSSignature } from "./tsConversion";
-import { snakeToCamel } from "../../pages/api/swagger-to-actions";
+import { snakeToCamel } from "../utils";
+import { Json } from "../database.types";
 
-export function dataAnalysisPrompt(
+export function getDataAnalysisPrompt(
   command: string,
   calledActions: {
     action: Action;
     args: { [key: string]: any };
     output: any;
   }[],
+  varNames: string[],
   orgInfo: Pick<Organization, "name" | "description">,
 ): ChatGPTMessage[] {
   const actionTS = calledActions
@@ -49,7 +51,7 @@ graphTitle: string
 type: "line"|"bar"|"value"
 data: {x:number|string;y:number}[] // If type is "value", then have a length 1 array and set y to the value
 xLabel?: string
-yLabel?: string
+yLabel?: string // Include unit in brackets. Example: Conversion rate (%)
 }
 \`\`\`
 6. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:
@@ -65,7 +67,7 @@ Code:
       role: "user",
       content: `${command}
 \`\`\`
-${getFunctionCallCode(calledActions)}
+${getFunctionCallCode(calledActions, varNames)}
 \`\`\``,
     },
   ];
@@ -77,35 +79,9 @@ export function getFunctionCallCode(
     args: { [key: string]: any };
     output: string;
   }[],
+  varNames: string[],
 ): string {
   // Write code to include in prior assistant message
-  const varNames: string[] = [];
-  for (const action of calledActions) {
-    const funcName = snakeToCamel(action.action.name);
-    // If function name unique, add that and move on
-    if (!(funcName + "Output" in varNames)) {
-      varNames.push(funcName + "Output");
-      continue;
-    }
-    // Replace 'Output' with something that refers to the parameters used to call it
-    const idxOf = varNames.indexOf(funcName + "Output");
-    // Compare args
-    let newName = "";
-    const otherArgs = calledActions[idxOf].args;
-    for (const [key, value] of Object.entries(action.args)) {
-      if (!(key in otherArgs) || otherArgs[key] !== value) {
-        newName = funcName + formatValueForVarName(key, value);
-        // Add a number at the end if not unique
-        if (newName in varNames) {
-          let i = 1;
-          while (varNames.includes(newName + i)) i++;
-          newName = newName + i;
-        }
-        break;
-      }
-    }
-    varNames.push(newName);
-  }
 
   return calledActions
     .map((a, idx) => {
@@ -139,4 +115,41 @@ function formatValueForVarName(key: string, value: any): string {
   } else {
     return key.replace(/[^a-zA-Z0-9]/g, "") + value.toString();
   }
+}
+
+export function getVarNames(
+  calledActions: {
+    action: Action;
+    args: { [key: string]: any };
+    output: Json;
+  }[],
+): string[] {
+  const varNames: string[] = [];
+  for (const action of calledActions) {
+    const funcName = snakeToCamel(action.action.name);
+    // If function name unique, add that and move on
+    if (!(funcName + "Output" in varNames)) {
+      varNames.push(funcName + "Output");
+      continue;
+    }
+    // Replace 'Output' with something that refers to the parameters used to call it
+    const idxOf = varNames.indexOf(funcName + "Output");
+    // Compare args
+    let newName = "";
+    const otherArgs = calledActions[idxOf].args;
+    for (const [key, value] of Object.entries(action.args)) {
+      if (!(key in otherArgs) || otherArgs[key] !== value) {
+        newName = funcName + formatValueForVarName(key, value);
+        // Add a number at the end if not unique
+        if (newName in varNames) {
+          let i = 1;
+          while (varNames.includes(newName + i)) i++;
+          newName = newName + i;
+        }
+        break;
+      }
+    }
+    varNames.push(newName);
+  }
+  return varNames;
 }

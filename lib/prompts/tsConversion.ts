@@ -3,7 +3,7 @@ import { isChoiceRequired } from "../actionUtils";
 import { getType, removeMarkdownLinks } from "./chatBot";
 import { Action } from "../types";
 import { getJsonMIMEType } from "../edge-runtime/utils";
-import { snakeToCamel } from "../../pages/api/swagger-to-actions";
+import { snakeToCamel } from "../utils";
 
 function formatDescriptionTS(description: string | undefined | null): string {
   /** Formats a parameter description for GPT. **/

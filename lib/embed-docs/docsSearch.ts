@@ -1,8 +1,7 @@
-import { ActionPlusApiInfo } from "../types";
 import { exponentialRetryWrapper } from "../utils";
 import { queryEmbedding } from "../queryLLM";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
-import { Database, Json } from "../database.types";
+import { Database } from "../database.types";
 import { combineChunks, deduplicateChunks } from "../edge-runtime/utils";
 
 export async function getRelevantDocChunks(
@@ -43,45 +42,4 @@ export async function getRelevantDocChunks(
   return combineChunks(
     deduplicateChunks(data, nChunksInclude * data[0].text_chunks.length),
   );
-}
-
-export function getSearchDocsAction(
-  org: { id: number; api_key: string },
-  currentHost: string,
-): ActionPlusApiInfo {
-  return {
-    action_type: "http",
-    active: true,
-    description: "Performs a semantic search over the documentation",
-    name: "search_docs",
-    org_id: org.id,
-    parameters: [
-      {
-        in: "query",
-        name: "query",
-        description: "The search query",
-        required: true,
-        schema: {
-          type: "string",
-        },
-      },
-    ] as Json,
-    path: "/search-docs",
-    requires_confirmation: false,
-    request_method: "get",
-    api: {
-      api_host: currentHost + "/api",
-      // This stops Authorization header below being overwritten
-      auth_header: `x-api-key`,
-      auth_query_param_name: "",
-      auth_scheme: null,
-      org_id: org.id,
-    },
-    headers: [
-      {
-        name: "Authorization",
-        value: `Bearer ${org.api_key}`,
-      },
-    ],
-  } as ActionPlusApiInfo;
 }

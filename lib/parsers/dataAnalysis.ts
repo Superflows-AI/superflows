@@ -1,7 +1,7 @@
 export function parseDataAnalysisResponse(
   response: string,
   userDefinedVariables: string[] = [],
-): string | null {
+): { code: string } | null {
   const codeRegex =
     /\n```(javascript|typescript|js|ts)?\n([\w\W]+?)\n```/g.exec(response);
   if (!codeRegex) {
@@ -57,5 +57,5 @@ export function parseDataAnalysisResponse(
     return null;
   }
 
-  return code;
+  return { code };
 }
