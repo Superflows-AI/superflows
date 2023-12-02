@@ -1,7 +1,7 @@
 .PHONY: all build clean
 
 p:
-	npx prettier --write .
+	npx prettier --write . --check '!./docker/development/supabase/docker/volumes'
 
 pc: p
 	npm run lint
