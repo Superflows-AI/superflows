@@ -16,7 +16,11 @@ import {
   ToConfirm,
 } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
-import {getHost, isValidBody, replaceVariables} from "../../../lib/edge-runtime/utils";
+import {
+  getHost,
+  isValidBody,
+  replaceVariables,
+} from "../../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",

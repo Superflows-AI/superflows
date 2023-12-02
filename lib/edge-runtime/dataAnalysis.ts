@@ -29,19 +29,12 @@ export async function runDataAnalysis(
   commands: FunctionCall[],
   actions: ActionPlusApiInfo[],
   functionMessages: Record<string, FunctionMessageInclSummary>,
-  org: Pick<Organization, "name" | "description">,
+  org: Pick<Organization, "id" | "name" | "description">,
+  dbData: { conversationId: number; index: number },
 ): Promise<GraphData | { error: string } | null> {
-  console.log({
-    instruction,
-    commands,
-    actions,
-    functionMessages,
-    org,
-  });
   // Make data analysis call
   const actionData = commands
     .map((command, idx) => {
-      console.log(idx, command.name);
       let output: Json = functionMessages[idx]?.content;
       try {
         output = JSON.parse(functionMessages[idx]?.content);
@@ -55,8 +48,6 @@ export async function runDataAnalysis(
     // Remove the data analysis action
     .filter((a) => a.action.name !== dataAnalysisActionName);
 
-  console.log("actionData", actionData);
-
   const varNames = getVarNames(actionData);
   console.log("varNames", varNames);
   const dataAnalysisPrompt = getDataAnalysisPrompt(
@@ -65,13 +56,13 @@ export async function runDataAnalysis(
     varNames,
     org,
   );
-  console.log("dataAnalysisPrompt", dataAnalysisPrompt);
+  console.info("dataAnalysisPrompt", dataAnalysisPrompt);
   let llmResponse = await exponentialRetryWrapper(
     getLLMResponse,
     [dataAnalysisPrompt, defaultDataAnalysisParams, "gpt-4-0613"],
     3,
   );
-  console.log("LLM response:", llmResponse);
+  console.info("LLM response:", llmResponse);
 
   // Parse the result
   let parsedCode = parseDataAnalysisResponse(llmResponse);
@@ -89,6 +80,19 @@ export async function runDataAnalysis(
       return { error: "Data analysis mode failed to output valid code" };
     }
   }
+  // Save to DB for debugging
+  const insertRes = await supabase.from("analytics_code_snippets").insert({
+    output: llmResponse,
+    org_id: org.id,
+    conversation_id: dbData.conversationId,
+    conversation_index: dbData.index,
+  });
+  if (insertRes.error) {
+    console.error(
+      "Failed to insert analytics code snippet to DB:",
+      insertRes.error,
+    );
+  }
 
   // Send code to supabase edge function to execute
   const data = Object.assign(
@@ -99,7 +103,6 @@ export async function runDataAnalysis(
       };
     }),
   );
-  console.log("Data", data);
   const res = await supabase.functions.invoke("execute-code", {
     body: JSON.stringify({
       code: parsedCode.code,

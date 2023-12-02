@@ -594,6 +594,7 @@ export async function Angela( // Good ol' Angela
           actions,
           functionMessages,
           org,
+          { conversationId, index: nonSystemMessages.length },
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
 
