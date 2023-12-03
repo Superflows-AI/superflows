@@ -396,6 +396,7 @@ export async function Angela( // Good ol' Angela
 
       const functionMessages: Record<string, FunctionMessageInclSummary> = {};
       const toUserCorrect: { functionName: string; param: string }[] = [];
+      let errorMakingAPICall = false;
       // Call endpoints here
       const commandMapOutput = (
         await Promise.all(
@@ -499,6 +500,7 @@ export async function Angela( // Good ol' Angela
                 console.error(e);
                 // @ts-ignore
                 out = `Failed to call ${url}\n\n${e.toString()}`;
+                errorMakingAPICall = true;
               }
               console.log("Output from API call:", out);
               let outMessage: FunctionMessageInclSummary = {
@@ -586,7 +588,12 @@ export async function Angela( // Good ol' Angela
         (c) => c.name === dataAnalysisActionName,
       );
       console.log("Data analysis action:", dataAnalysisAction);
-      if (dataAnalysisAction && !anyNeedCorrection && toConfirm.length === 0) {
+      if (
+        dataAnalysisAction &&
+        !anyNeedCorrection &&
+        toConfirm.length === 0 &&
+        !errorMakingAPICall
+      ) {
         console.log("Running data analysis!");
         const graphData = await runDataAnalysis(
           dataAnalysisAction.args["instruction"],
