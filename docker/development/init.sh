@@ -28,6 +28,7 @@ manage_supabase_repo() {
         rm -rf supabase
         git clone -n --depth=1 --filter=tree:0 https://github.com/supabase/supabase && cd supabase && git sparse-checkout set --no-cone docker && git checkout && cd ..
     fi
+    cp -r ../../supabase/functions/* supabase/docker/volumes/functions/
 }
 
 # Function to manage the .env file
