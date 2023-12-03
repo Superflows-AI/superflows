@@ -3,7 +3,11 @@ import { fillNoChoiceRequiredParams } from "../actionUtils";
 import { Json } from "../database.types";
 import { ActionToHttpRequest } from "../models";
 import { Action, ActionPlusApiInfo } from "../types";
-import { deduplicateArray, filterKeys } from "../utils";
+import {
+  deduplicateArray,
+  exponentialRetryWrapper,
+  filterKeys,
+} from "../utils";
 import { getJsonMIMEType, getParam, parseErrorHtml } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
 
@@ -219,7 +223,11 @@ export async function makeHttpRequest(
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,
   //  but it throws an error if you have the headers from the first request set
   //  (specifically the Authorization header)
-  let response = await fetch(url, { ...requestOptions, redirect: "manual" });
+  let response = await exponentialRetryWrapper(
+    fetch,
+    [url, { ...requestOptions, redirect: "manual" }],
+    3,
+  );
   if (response.status >= 300 && response.status < 400) {
     // Try requesting from here without auth headers
     console.log("Attempting manual redirect");
