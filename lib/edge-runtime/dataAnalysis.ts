@@ -1,14 +1,23 @@
-import { ActionPlusApiInfo, Organization } from "../types";
+import { Action, ActionPlusApiInfo, Organization } from "../types";
 import { Database, Json } from "../database.types";
-import { getDataAnalysisPrompt, getVarNames } from "../prompts/dataAnalysis";
+import {
+  CalledAction,
+  getDataAnalysisPrompt,
+  getVarNames,
+} from "../prompts/dataAnalysis";
 import { exponentialRetryWrapper } from "../utils";
 import { getLLMResponse } from "../queryLLM";
-import { ChatGPTParams, FunctionMessageInclSummary } from "../models";
+import { ChatGPTParams, FunctionMessage } from "../models";
 import { parseDataAnalysisResponse } from "../parsers/dataAnalysis";
-import { FunctionCall } from "@superflows/chat-ui-react";
-import { GraphData } from "@superflows/chat-ui-react/dist/src/lib/types";
+import { parseOutput } from "@superflows/chat-ui-react";
+import {
+  AssistantMessage,
+  GraphData,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
 import { createClient } from "@supabase/supabase-js";
 import { dataAnalysisActionName } from "../builtinActions";
+import { getAssistantFnMessagePairs } from "./angelaUtils";
+import _ from "lodash";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -26,33 +35,23 @@ const defaultDataAnalysisParams: ChatGPTParams = {
 
 export async function runDataAnalysis(
   instruction: string,
-  commands: FunctionCall[],
   actions: ActionPlusApiInfo[],
-  functionMessages: Record<string, FunctionMessageInclSummary>,
+  responseMessages: (FunctionMessage | AssistantMessage)[],
   org: Pick<Organization, "id" | "name" | "description">,
   dbData: { conversationId: number; index: number },
 ): Promise<GraphData | { error: string } | null> {
-  // Make data analysis call
-  const actionData = commands
-    .map((command, idx) => {
-      let output: Json = functionMessages[idx]?.content;
-      try {
-        output = JSON.parse(functionMessages[idx]?.content);
-      } catch {}
-      return {
-        action: actions.find((a) => a.name === command.name)!,
-        args: command.args,
-        output,
-      };
-    })
-    // Remove the data analysis action
-    .filter((a) => a.action.name !== dataAnalysisActionName);
+  // We want to get the output of all API calls since last user message from responseMessages:
+  // First, split responseMessages into an array of pairs of assistant message & sequence of
+  // function messages that follow it
+  const assistantFnMessagePairs = getAssistantFnMessagePairs(responseMessages);
+  // Then convert to 'CalledAction' format
+  const calledActions = getCalledActions(assistantFnMessagePairs, actions);
 
-  const varNames = getVarNames(actionData);
+  const varNames = getVarNames(calledActions);
   console.log("varNames", varNames);
   const dataAnalysisPrompt = getDataAnalysisPrompt(
     instruction,
-    actionData,
+    calledActions,
     varNames,
     org,
   );
@@ -97,7 +96,7 @@ export async function runDataAnalysis(
   // Send code to supabase edge function to execute
   const data = Object.assign(
     {},
-    ...actionData.map((a, idx) => {
+    ...calledActions.map((a, idx) => {
       return {
         [varNames[idx]]: a.output,
       };
@@ -128,4 +127,50 @@ export async function runDataAnalysis(
     }
   }
   return res.data;
+}
+
+function getCalledActions(
+  assistantFnMessagePairs: (AssistantMessage & {
+    functionMessages: FunctionMessage[];
+  })[],
+  actions: Action[],
+): CalledAction[] {
+  const calledActions = assistantFnMessagePairs
+    .map((pair) => {
+      const parsedOutput = parseOutput(pair.content);
+
+      // TODO: Remove API calls since last successful data analysis call
+      return (
+        parsedOutput.commands
+          .map((command, idx) => {
+            let output: Json = pair.functionMessages[idx]?.content;
+            try {
+              output = JSON.parse(pair.functionMessages[idx]?.content);
+            } catch {}
+            return {
+              action: actions.find((a) => a.name === command.name)!,
+              args: command.args,
+              output,
+            };
+          })
+          // Remove the data analysis action
+          .filter((a) => a.action.name !== dataAnalysisActionName)
+      );
+    })
+    .flat();
+
+  return calledActions
+    .reverse()
+    .filter((a, idx) => {
+      // Keep most recent call if identical calls are made >once
+      const earliestCall =
+        calledActions.findIndex(
+          (otherAction) =>
+            otherAction.action.name === a.action.name &&
+            _.isEqual(otherAction.args, a.args),
+        ) ?? idx;
+      return idx === earliestCall;
+      // Reversed it earlier, so need to re-reverse
+    })
+    .reverse();
 }

@@ -3,15 +3,16 @@ import { Action, Organization } from "../types";
 import { getIntroText } from "./chatBot";
 import { getActionTSSignature } from "./tsConversion";
 import { snakeToCamel } from "../utils";
-import { Json } from "../database.types";
+
+export interface CalledAction {
+  action: Action;
+  args: { [key: string]: any };
+  output: any;
+}
 
 export function getDataAnalysisPrompt(
   command: string,
-  calledActions: {
-    action: Action;
-    args: { [key: string]: any };
-    output: any;
-  }[],
+  calledActions: CalledAction[],
   varNames: string[],
   orgInfo: Pick<Organization, "name" | "description">,
 ): ChatGPTMessage[] {
@@ -74,11 +75,7 @@ ${getFunctionCallCode(calledActions, varNames)}
 }
 
 export function getFunctionCallCode(
-  calledActions: {
-    action: Action;
-    args: { [key: string]: any };
-    output: string;
-  }[],
+  calledActions: CalledAction[],
   varNames: string[],
 ): string {
   // Write code to include in prior assistant message
@@ -117,19 +114,14 @@ function formatValueForVarName(key: string, value: any): string {
   }
 }
 
-export function getVarNames(
-  calledActions: {
-    action: Action;
-    args: { [key: string]: any };
-    output: Json;
-  }[],
-): string[] {
+export function getVarNames(calledActions: CalledAction[]): string[] {
   const varNames: string[] = [];
   for (const action of calledActions) {
     const funcName = snakeToCamel(action.action.name);
     // If function name unique, add that and move on
-    if (!(funcName + "Output" in varNames)) {
-      varNames.push(funcName + "Output");
+    const baseAttempt = funcName + "Output";
+    if (!varNames.includes(baseAttempt)) {
+      varNames.push(baseAttempt);
       continue;
     }
     // Replace 'Output' with something that refers to the parameters used to call it

@@ -10,6 +10,7 @@ import {
 } from "../utils";
 import { getJsonMIMEType, getParam, parseErrorHtml } from "./utils";
 import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -51,7 +52,7 @@ export function constructHttpRequest({
     throw new Error("API host has not been provided");
   }
 
-  console.log("Constructing http request for action:", JSON.stringify(action));
+  console.log("Constructing http request for action:", action.name);
   console.log("parameters:", parameters);
 
   const headers: Record<string, string> = {};

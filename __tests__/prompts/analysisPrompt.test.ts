@@ -6,6 +6,237 @@ import { exampleRequestBody2 } from "./testData";
 import { Action } from "../../lib/types";
 import { getIntroText } from "../../lib/prompts/chatBot";
 
+describe("getVarNames", () => {
+  it("1 varName", () => {
+    const calledActions = [
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: {},
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+    ];
+    const varNames = getVarNames(calledActions);
+    expect(varNames).toEqual(["action1Output"]);
+  });
+  it("2 varNames - no clash", () => {
+    const calledActions = [
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: {},
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+      {
+        action: {
+          name: "action2",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: { arg: 0 },
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+    ];
+    const varNames = getVarNames(calledActions);
+    expect(varNames).toEqual(["action1Output", "action2Output"]);
+  });
+  it("2 varNames - clash", () => {
+    const calledActions = [
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: {},
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: { arg: 0 },
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+    ];
+    const varNames = getVarNames(calledActions);
+    expect(varNames).toEqual(["action1Output", "action1Arg0"]);
+  });
+  it("3 varName - clash", () => {
+    const calledActions = [
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: {},
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: { arg: 0 },
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+      {
+        action: {
+          name: "action1",
+          description: "description1",
+          parameters: [],
+          request_body_contents: null,
+          responses: {
+            "200": {
+              content: exampleRequestBody2,
+            },
+          },
+        } as unknown as Action,
+        args: { another: 77 },
+        output: {
+          accountId: "accountId",
+          globalPermissions: ["1", "2", "3"],
+          projectPermissions: [
+            {
+              issues: [5, 4, 3, 2],
+              permissions: ["1", "2", "3"],
+              projects: [1, 2, 3, 4],
+            },
+          ],
+        },
+      },
+    ];
+    const varNames = getVarNames(calledActions);
+    expect(varNames).toEqual([
+      "action1Output",
+      "action1Arg0",
+      "action1Another77",
+    ]);
+  });
+});
+
 describe("dataAnalysisPrompt", () => {
   it("basic", () => {
     const command = "If you can keep your head";
@@ -82,7 +313,7 @@ graphTitle: string
 type: "line"|"bar"|"value"
 data: {x:number|string;y:number}[] // If type is "value", then have a length 1 array and set y to the value
 xLabel?: string
-yLabel?: string
+yLabel?: string // Include unit in brackets. Example: Conversion rate (%)
 }
 \`\`\`
 6. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:

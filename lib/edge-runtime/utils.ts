@@ -16,7 +16,7 @@ import { FunctionCall } from "@superflows/chat-ui-react";
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
-  bodySchema: z.ZodType<any>,
+  bodySchema: z.ZodType<T>,
 ): body is T {
   const safeParseOut = bodySchema.safeParse(body);
   if ("error" in safeParseOut) {
@@ -350,4 +350,19 @@ export function hideMostRecentFunctionOutputs(
     }
   }
   return chatHistory;
+}
+
+export function findLastIndex<Item>(
+  array: Item[],
+  predicate: (item: Item) => boolean,
+): number {
+  /** Returns the index of the last item in the array that matches the predicate **/
+  let index = -1;
+  array.reduceRight((_: null, value: Item, i: number) => {
+    if (predicate(value) && index === -1) {
+      index = i;
+    }
+    return null;
+  }, null);
+  return index;
 }
