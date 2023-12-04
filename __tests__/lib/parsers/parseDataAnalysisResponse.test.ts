@@ -66,4 +66,35 @@ var graphData = {
     const code = parseDataAnalysisResponse(`Thoughts: I am. I think. I will.`);
     expect(code).toEqual(null);
   });
+  it("includes fetch()", () => {
+    const code = parseDataAnalysisResponse(`Thoughts: I am. I think. I will.
+
+Code:
+\`\`\`
+fetch("https://some-url.com")
+\`\`\``);
+    expect(code).toEqual(null);
+  });
+  it("graphData not defined", () => {
+    const code = parseDataAnalysisResponse(`Thoughts: I am. I think. I will.
+
+Code:
+\`\`\`
+let nonIllegalCode = "123";
+\`\`\``);
+    expect(code).toEqual(null);
+  });
+  it("functionOutput redefined", () => {
+    const code = parseDataAnalysisResponse(
+      `Thoughts: I am. I think. I will.
+
+Code:
+\`\`\`
+let graphData = "123";
+let functionOutput = "456";
+\`\`\``,
+      ["functionOutput"],
+    );
+    expect(code).toEqual(null);
+  });
 });
