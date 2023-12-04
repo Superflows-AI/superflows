@@ -81,6 +81,8 @@ export async function runDataAnalysis(
   }
   // Save to DB for debugging
   const insertRes = await supabase.from("analytics_code_snippets").insert({
+    // The user message contents
+    instruction_message: dataAnalysisPrompt[1].content,
     output: llmResponse,
     org_id: org.id,
     conversation_id: dbData.conversationId,
@@ -129,7 +131,7 @@ export async function runDataAnalysis(
   return res.data;
 }
 
-function getCalledActions(
+export function getCalledActions(
   assistantFnMessagePairs: (AssistantMessage & {
     functionMessages: FunctionMessage[];
   })[],
