@@ -50,7 +50,10 @@ import {
   getSearchDocsAction,
   searchDocsActionName,
 } from "../builtinActions";
-import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
+import {
+  AssistantMessage,
+  StreamingStepInput,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -286,6 +289,11 @@ export async function Angela( // Good ol' Angela
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
+      // Send 'thinking' message on all requests except the first one
+      if (numOpenAIRequests > 0) {
+        streamInfo({ role: "loading", content: "Thinking" });
+      }
+
       // To stop going over the context limit: only remember the last 'maxConvLength' messages
       const recentMessages = nonSystemMessages
         .slice(Math.max(0, nonSystemMessages.length - maxConvLength))
@@ -493,6 +501,7 @@ export async function Angela( // Good ol' Angela
 
               // Call user's API here
               let out;
+              streamInfo({ role: "loading", content: "Calling API" });
               try {
                 out = await makeHttpRequest(url, requestOptions, currentHost);
                 out = processAPIoutput(out, chosenAction);
@@ -502,11 +511,13 @@ export async function Angela( // Good ol' Angela
                 out = `Failed to call ${url}\n\n${e.toString()}`;
                 errorMakingAPICall = true;
               }
-              console.log("Output from API call:", out);
+              const outString =
+                typeof out === "string" ? out : JSON.stringify(out);
+              console.log("Output from API call:", outString.slice(0, 100));
               let outMessage: FunctionMessageInclSummary = {
                 role: "function",
                 name: command.name,
-                content: typeof out === "string" ? out : JSON.stringify(out),
+                content: outString,
               };
 
               // If >500 tokens, summarise the message
@@ -514,6 +525,10 @@ export async function Angela( // Good ol' Angela
                 typeof out === "string" &&
                 getTokenCount([outMessage]) > 500
               ) {
+                streamInfo({
+                  role: "loading",
+                  content: "Summarising text from API",
+                });
                 outMessage.summary = await summarizeText(out, org);
               }
               functionMessages[idx] = outMessage;
@@ -571,7 +586,7 @@ export async function Angela( // Good ol' Angela
 
       // This is for typing purposes
       const toConfirm: ToConfirm[] = commandMapOutput.filter(
-        (x): x is ToConfirm => x !== null,
+        (x): x is ToConfirm => Boolean(x),
       );
       awaitingConfirmation = toConfirm.length > 0;
       if (awaitingConfirmation) {
@@ -592,14 +607,21 @@ export async function Angela( // Good ol' Angela
         dataAnalysisAction &&
         !anyNeedCorrection &&
         toConfirm.length === 0 &&
-        !errorMakingAPICall
+        !errorMakingAPICall &&
+        // Must have been a function call previously
+        nonSystemMessages
+          .slice(previousMessages.length)
+          .filter((m) => m.role === "function").length > 0
       ) {
         console.log("Running data analysis!");
+        streamInfo({ role: "loading", content: "Analysing data" });
         const graphData = await runDataAnalysis(
           dataAnalysisAction.args["instruction"],
-          mostRecentParsedOutput.commands,
           actions,
-          functionMessages,
+          nonSystemMessages.slice(previousMessages.length) as (
+            | FunctionMessage
+            | AssistantMessage
+          )[],
           org,
           { conversationId, index: nonSystemMessages.length },
         );

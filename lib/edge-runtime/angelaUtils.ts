@@ -1,7 +1,12 @@
 import { FunctionCall } from "@superflows/chat-ui-react";
-import { GPTMessageInclSummary, StreamingStepInput } from "../models";
+import { FunctionMessage, GPTMessageInclSummary } from "../models";
 import { swapKeysValues } from "../utils";
 import { parseGPTStreamedData } from "../parsers/parsers";
+import {
+  AssistantMessage,
+  StreamingStepInput,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
+import _ from "lodash";
 
 export function updatePastAssistantMessage(
   command: FunctionCall,
@@ -148,6 +153,34 @@ export function stripExampleFunctions(rawOutput: string): string {
    * manually strip this out of the response.
    */
 
-  const functionPattern = /(FUNCTION_1\([^\)]*\)|FUNCTION_2\([^\)]*\))/g;
+  const functionPattern = /(FUNCTION_1\([^)]*\)|FUNCTION_2\([^)]*\))/g;
   return rawOutput.replace(functionPattern, "");
+}
+
+export function getAssistantFnMessagePairs(
+  responseMessages: (FunctionMessage | AssistantMessage)[],
+): (AssistantMessage & {
+  functionMessages: FunctionMessage[];
+})[] {
+  /** Split responseMessages into an array of objects, each with an assistant
+   *  message and sequence of function messages that follow it
+   **/
+  // Get the assistant messages
+  const assistantMessages = responseMessages.filter(
+    (m) => m.role === "assistant",
+  ) as AssistantMessage[];
+
+  return assistantMessages.map((assistMsg: AssistantMessage, idx: number) => {
+    const nextAssistantMessage = assistantMessages[idx + 1];
+    const nextAssistantMessageIdx = nextAssistantMessage
+      ? responseMessages.findIndex((m) => _.isEqual(m, nextAssistantMessage))
+      : assistantMessages.length + 1;
+    const functionMessages = responseMessages.filter(
+      (m, mi) => m.role === "function" && mi < nextAssistantMessageIdx,
+    ) as FunctionMessage[];
+    return {
+      ...assistMsg,
+      functionMessages,
+    };
+  });
 }

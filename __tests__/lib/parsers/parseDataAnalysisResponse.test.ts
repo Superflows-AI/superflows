@@ -17,8 +17,8 @@ var graphData = {
     yLabel: "y",
 };
 \`\`\``);
-    expect(code).toEqual(
-      `var graphData = {
+    expect(code).toEqual({
+      code: `var graphData = {
     graphTitle: "title",
     type: "line",
     data: [
@@ -28,7 +28,7 @@ var graphData = {
     xLabel: "x",
     yLabel: "y",
 };`,
-    );
+    });
   });
   it("all options for end of ``` line", () => {
     const options = ["js", "javascript", "ts", "typescript"];
@@ -48,8 +48,8 @@ var graphData = {
     yLabel: "y",
 };
 \`\`\``);
-      expect(code).toEqual(
-        `var graphData = {
+      expect(code).toEqual({
+        code: `var graphData = {
     graphTitle: "title",
     type: "line",
     data: [
@@ -59,7 +59,7 @@ var graphData = {
     xLabel: "x",
     yLabel: "y",
 };`,
-      );
+      });
     }
   });
   it("no code", () => {
