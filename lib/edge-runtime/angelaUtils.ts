@@ -165,18 +165,27 @@ export function getAssistantFnMessagePairs(
   /** Split responseMessages into an array of objects, each with an assistant
    *  message and sequence of function messages that follow it
    **/
+  // TODO: known bug that if the LLM outputs identical assistant messages then this will include
+  //  too many function messages in the functionMessages arrays of later repetitions of the repeated
+  //  assistant message
   // Get the assistant messages
   const assistantMessages = responseMessages.filter(
     (m) => m.role === "assistant",
   ) as AssistantMessage[];
 
   return assistantMessages.map((assistMsg: AssistantMessage, idx: number) => {
+    const currentAssistantMessageIdx = responseMessages.findIndex((m) =>
+      _.isEqual(m, assistMsg),
+    );
     const nextAssistantMessage = assistantMessages[idx + 1];
     const nextAssistantMessageIdx = nextAssistantMessage
       ? responseMessages.findIndex((m) => _.isEqual(m, nextAssistantMessage))
-      : assistantMessages.length + 1;
+      : responseMessages.length + 1;
     const functionMessages = responseMessages.filter(
-      (m, mi) => m.role === "function" && mi < nextAssistantMessageIdx,
+      (m, mi) =>
+        m.role === "function" &&
+        currentAssistantMessageIdx < mi &&
+        mi < nextAssistantMessageIdx,
     ) as FunctionMessage[];
     return {
       ...assistMsg,

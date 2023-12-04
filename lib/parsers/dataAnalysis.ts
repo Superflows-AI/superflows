@@ -2,6 +2,7 @@ export function parseDataAnalysisResponse(
   response: string,
   userDefinedVariables: string[] = [],
 ): { code: string } | null {
+  /** Parses the response from the LLM in data analysis mode. Returns the code **/
   const codeRegex =
     /\n```(javascript|typescript|js|ts)?\n([\w\W]+?)\n```/g.exec(response);
   if (!codeRegex) {

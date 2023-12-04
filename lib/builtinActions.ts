@@ -55,7 +55,7 @@ export function enableDataAnalysisAction(org: {
     active: true,
     description:
       "This passes responses to API calls you are making to another AI who " +
-      "writes code to perform data analysis (visualize data or make calculations) for the user. You MUST call this in the SAME output (list of Commands) " +
+      "writes code to perform data analysis (visualize data or make calculations) for the user. Call this in the SAME list of Commands " +
       " as the API calls you want it to do data analysis on. THIS IS VERY IMPORTANT. DO NOT FORGET THIS",
     name: dataAnalysisActionName,
     org_id: org.id,

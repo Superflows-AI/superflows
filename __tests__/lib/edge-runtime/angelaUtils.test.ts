@@ -1,10 +1,12 @@
 import { parseOutput } from "@superflows/chat-ui-react";
 import {
+  getAssistantFnMessagePairs,
   stripExampleFunctions,
   updatePastAssistantMessage,
 } from "../../../lib/edge-runtime/angelaUtils";
-import { GPTMessageInclSummary } from "../../../lib/models";
+import { FunctionMessage, GPTMessageInclSummary } from "../../../lib/models";
 import pokemon from "../../testData/pokemon.json";
+import { AssistantMessage } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 describe("updatePastAssistantMessage", () => {
   it("simple", () => {
@@ -255,5 +257,108 @@ Commands:
     `;
     const res = stripExampleFunctions(s);
     expect(res.trim()).toEqual("Commands:");
+  });
+});
+
+describe("getAssistantFnMessagePairs", () => {
+  const name = "name";
+  const content = "content";
+  const assistant1: AssistantMessage = { role: "assistant", content };
+  const assistant2: AssistantMessage = {
+    role: "assistant",
+    content: content + "2",
+  };
+  const function1: FunctionMessage = { role: "function", name, content };
+  const function2: FunctionMessage = {
+    role: "function",
+    name: "name2",
+    content,
+  };
+  it("basic", () => {
+    const out = getAssistantFnMessagePairs([assistant1, function1]);
+    expect(out).toEqual([
+      {
+        role: "assistant",
+        content,
+        functionMessages: [function1],
+      },
+    ]);
+  });
+  it("2 function messages, 1 assistant message", () => {
+    const out = getAssistantFnMessagePairs([assistant1, function1, function1]);
+    expect(out).toEqual([
+      {
+        role: "assistant",
+        content,
+        functionMessages: [function1, function1],
+      },
+    ]);
+  });
+  it("3 function messages, 1 assistant message, order maintained", () => {
+    const out = getAssistantFnMessagePairs([
+      assistant1,
+      function1,
+      function2,
+      function1,
+    ]);
+    expect(out).toEqual([
+      {
+        role: "assistant",
+        content,
+        functionMessages: [function1, function2, function1],
+      },
+    ]);
+  });
+  it("3 function messages, 2 assistant messages", () => {
+    const out = getAssistantFnMessagePairs([
+      assistant1,
+      function1,
+      assistant2,
+      function2,
+      function1,
+    ]);
+    expect(out).toEqual([
+      {
+        ...assistant1,
+        functionMessages: [function1],
+      },
+      {
+        ...assistant2,
+        functionMessages: [function2, function1],
+      },
+    ]);
+  });
+  it("5 function messages, 4 assistant messages", () => {
+    const out = getAssistantFnMessagePairs([
+      assistant1,
+      function1,
+      assistant2,
+      function2,
+      function1,
+      { role: "assistant", content: "content3" },
+      function2,
+      { role: "assistant", content: "content4" },
+      function1,
+    ]);
+    expect(out).toEqual([
+      {
+        ...assistant1,
+        functionMessages: [function1],
+      },
+      {
+        ...assistant2,
+        functionMessages: [function2, function1],
+      },
+      {
+        role: "assistant",
+        content: "content3",
+        functionMessages: [function2],
+      },
+      {
+        role: "assistant",
+        content: "content4",
+        functionMessages: [function1],
+      },
+    ]);
   });
 });
