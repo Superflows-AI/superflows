@@ -19,6 +19,7 @@
   "exclude": ["node_modules",
     "local",
     "pages/api/local",
-    "docker/development/supabase"
+    "docker/development/supabase",
+    "supabase/functions"
   ]
 }
