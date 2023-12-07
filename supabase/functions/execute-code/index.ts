@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 ${requestData.code}
 graphData`;
   console.log("Code\n" + code);
-  console.log("Data\n", data);
+  console.log("Data keys:\n", Object.keys(data));
 
   // Last line must be graphData since this is what's output and we ask the LLM to include it
   let result;

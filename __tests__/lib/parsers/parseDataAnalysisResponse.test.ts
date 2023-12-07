@@ -97,4 +97,13 @@ let functionOutput = "456";
     );
     expect(code).toEqual(null);
   });
+  it("Code throws error", () => {
+    const code = parseDataAnalysisResponse(`Thoughts: I am. I think. I will.
+
+Code:
+\`\`\`
+throw new Error("This is an error");
+\`\`\``);
+    expect(code).toEqual({ error: "This is an error" });
+  });
 });

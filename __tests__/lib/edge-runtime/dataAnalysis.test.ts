@@ -1,7 +1,14 @@
-import { getCalledActions } from "../../../lib/edge-runtime/dataAnalysis";
+import {
+  getCalledActions,
+  getRelevantMessages,
+} from "../../../lib/edge-runtime/dataAnalysis";
 import { testActions } from "../../testActions";
 import { FunctionMessage } from "../../../lib/models";
-import { AssistantMessage } from "@superflows/chat-ui-react/dist/src/lib/types";
+import {
+  AssistantMessage,
+  UserMessage,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
+import { dataAnalysisActionName } from "../../../lib/builtinActions";
 
 describe("getCalledActions", () => {
   const assistant: AssistantMessage = {
@@ -161,5 +168,105 @@ describe("getCalledActions", () => {
         output: {},
       },
     ]);
+  });
+});
+
+describe("getRelevantMessages", () => {
+  const userMessage: UserMessage = { role: "user", content: "Hello" };
+  const assMsgOtherFnCalls: AssistantMessage = {
+    role: "assistant",
+    content: "Reasoning:\n\nCommands:\naction_a()",
+  };
+  const assMsgDataAnalysisCall: AssistantMessage = {
+    role: "assistant",
+    content: `Reasoning:
+
+Commands:
+${dataAnalysisActionName}()`,
+  };
+  const fnMsgNotAnalysis: FunctionMessage = {
+    role: "function",
+    name: "action_a",
+    content: "{}",
+  };
+  const fnMsgDataAnalysis: FunctionMessage = {
+    role: "function",
+    name: dataAnalysisActionName,
+    content: "{}",
+  };
+  it("basic", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+    ]);
+    expect(out).toEqual([assMsgOtherFnCalls, fnMsgNotAnalysis]);
+  });
+  it("basic, 2 query-response pairs", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+    ]);
+    expect(out).toEqual([assMsgOtherFnCalls, fnMsgNotAnalysis]);
+  });
+  it("basic, 3 query-response pairs", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+    ]);
+    expect(out).toEqual([assMsgOtherFnCalls, fnMsgNotAnalysis]);
+  });
+  it("only data analysis called most recently, go to previous query-response pair", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      userMessage,
+      assMsgDataAnalysisCall,
+    ]);
+    expect(out).toEqual([
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      assMsgDataAnalysisCall,
+    ]);
+  });
+  it("only data analysis called in most recent 2 query-response pairs, go back 3", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      userMessage,
+      assMsgDataAnalysisCall,
+      fnMsgDataAnalysis,
+      userMessage,
+      assMsgDataAnalysisCall,
+    ]);
+    expect(out).toEqual([
+      assMsgOtherFnCalls,
+      fnMsgNotAnalysis,
+      assMsgDataAnalysisCall,
+      assMsgDataAnalysisCall,
+    ]);
+  });
+  it("no non data analysis function messages", () => {
+    const out = getRelevantMessages([
+      userMessage,
+      assMsgDataAnalysisCall,
+      fnMsgDataAnalysis,
+      userMessage,
+      assMsgDataAnalysisCall,
+    ]);
+    expect(out).toBe(null);
   });
 });

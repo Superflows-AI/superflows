@@ -55,8 +55,9 @@ export function enableDataAnalysisAction(org: {
     active: true,
     description:
       "This passes responses to API calls you are making to another AI who " +
-      "writes code to perform data analysis (visualize data or make calculations) for the user. Call this in the SAME list of Commands " +
-      " as the API calls you want it to do data analysis on. THIS IS VERY IMPORTANT. DO NOT FORGET THIS",
+      "writes code to perform data analysis (visualize data or make calculations) for the user. " +
+      "You may only call this ONCE in a list of Commands. Call it in the same list of Commands " +
+      "as the API calls you want it to perform data analysis on. THIS IS VERY IMPORTANT. DO NOT FORGET THIS",
     name: dataAnalysisActionName,
     org_id: org.id,
     parameters: [
@@ -68,6 +69,17 @@ export function enableDataAnalysisAction(org: {
         required: true,
         schema: {
           type: "string",
+        },
+      },
+      {
+        in: "query",
+        name: "type",
+        description:
+          "Expected output type (graph type or value - value is 1 number output) requested from the data analysis",
+        required: true,
+        schema: {
+          type: "string",
+          enum: ["line", "bar", "value"],
         },
       },
     ] as Json,

@@ -1776,3 +1776,72 @@ export const realWorldExampleAction2 = {
   ],
   api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
 } as unknown as Action;
+
+export const realWorldExampleAction3 = {
+  id: 7967,
+  name: "filter_demand",
+  description: "List demand",
+  active: true,
+  org_id: 192,
+  tag: 4540,
+  action_type: "http",
+  path: "/filter_demand",
+  request_body_contents: null,
+  parameters: [],
+  responses: {
+    "200": {
+      content: {
+        "application/json": {
+          schema: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["id", "timeline"],
+              properties: {
+                id: {
+                  type: "integer",
+                  description: "Item id",
+                },
+                timeline: {
+                  type: "array",
+                  items: {
+                    required: ["demand", "period", "picks", "forecast"],
+                    type: "object",
+                    properties: {
+                      demand: {
+                        type: "integer",
+                        format: "int64",
+                        description:
+                          "The number of items sold (not their value)",
+                      },
+                      forecast: {
+                        type: "number",
+                        description:
+                          "The forecast demand for a future period, or previously-forecast demand for a past period",
+                      },
+                      period: {
+                        type: "string",
+                        description: "The period the figures are reported for",
+                      },
+                      picks: {
+                        type: "integer",
+                        format: "int64",
+                        description:
+                          "The number of times a customer buys any number of this item type (1 pick often corresponds to many items sold)",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      description: "OK",
+    },
+  },
+  created_at: "2023-08-10T14:33:49.152403+00:00",
+  request_method: "get",
+  keys_to_keep: null,
+  api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
+} as unknown as Action;

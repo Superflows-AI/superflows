@@ -16,11 +16,11 @@ export function processAPIoutput(
   out: Json | Json[],
   chosenAction: Action,
 ): Json | Json[] {
-  if (Array.isArray(out)) {
-    out = deduplicateArray(out) as Json[];
-  }
   const keys = chosenAction.keys_to_keep;
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
+    if (Array.isArray(out)) {
+      out = deduplicateArray(out) as Json[];
+    }
     out = filterKeys(out, keys as string[]);
   }
 
@@ -219,7 +219,7 @@ export async function makeHttpRequest(
   url: string,
   requestOptions: RequestInit,
   localHostname: string,
-): Promise<Json> {
+): Promise<{ output: Json; isError: boolean }> {
   // TODO: Don't handle redirects manually
   // Why handle 3XX's manually? Because Companies House likes 302 redirects,
   //  but it throws an error if you have the headers from the first request set
@@ -235,7 +235,10 @@ export async function makeHttpRequest(
 
     if (!response.headers.has("location")) {
       return {
-        status: "Redirect failed as original request did not return location",
+        output: {
+          status: "Redirect failed as original request did not return location",
+        },
+        isError: true,
       };
     }
     const requestOptionsCopy = {
@@ -266,22 +269,35 @@ export async function makeHttpRequest(
   // If there's no response body, return a status message
   if (!responseText) {
     return responseStatus >= 200 && responseStatus < 300
-      ? { status: responseStatus, message: "Action completed successfully" }
-      : { status: responseStatus, message: "Action failed" };
+      ? {
+          output: {
+            status: responseStatus,
+            message: "Action completed successfully",
+          },
+          isError: false,
+        }
+      : {
+          output: { status: responseStatus, message: "Action failed" },
+          isError: true,
+        };
   }
 
   if (responseStatus >= 300)
     // the responseText may be html in which case extract useful info
     return {
-      status: responseStatus,
-      message: parseErrorHtml(responseText),
+      output: {
+        status: responseStatus,
+        message: parseErrorHtml(responseText),
+      },
+      isError: true,
     };
 
   const reqHeaders: Record<string, any> | null =
     requestOptions?.headers ?? null;
 
   if (!reqHeaders) {
-    return responseText;
+    console.log("No request headers - returning response text");
+    return { output: responseText, isError: false };
   }
 
   const responseType =
@@ -295,18 +311,18 @@ export async function makeHttpRequest(
     "application/json";
   console.log("ResponseType", responseType);
 
-  if (responseType === "application/json") {
+  if (responseType.includes("application/json")) {
     try {
-      return JSON.parse(responseText);
+      return { output: JSON.parse(responseText), isError: false };
     } catch {
-      return responseText;
+      return { output: responseText, isError: false };
     }
   } else if (responseType === "application/pdf") {
     if (!process.env.PDF_TO_TEXT_URL) {
       console.warn(
         "PDF to text service is not configured - set PDF_TO_TEXT_URL environment variable to enable",
       );
-      return "PDF to text service is not configured";
+      return { output: "PDF to text service is not configured", isError: true };
     }
     console.log("Response type is pdf - calling /parse-pdf");
     // This gets the pdf and then parses it into text. We aren't
@@ -318,8 +334,9 @@ export async function makeHttpRequest(
       },
       body: JSON.stringify({ url, requestOptions }),
     });
-    if (res.status === 200) return res.text();
-    else return res.statusText;
+    if (res.status === 200) {
+      return { output: await res.text(), isError: true };
+    } else return { output: res.statusText, isError: false };
   } else if (
     [
       "application/html",
@@ -337,9 +354,9 @@ export async function makeHttpRequest(
       },
       body: JSON.stringify({ html: responseText }),
     });
-    return res.text();
+    return { output: await res.text(), isError: false };
   }
-  return responseText;
+  return { output: responseText, isError: false };
 }
 
 export function getDocsChatRequest(

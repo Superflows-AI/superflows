@@ -9,13 +9,11 @@ describe("deduplicateArray", () => {
       { name: "John", age: 18 },
     ];
     const result1 = deduplicateArray(arr1);
-    expect(result1).toStrictEqual({
-      items: [
-        { name: "Bob", age: 30 },
-        { name: "Alice", age: 25 },
-        { name: "John", age: 18 },
-      ],
-    });
+    expect(result1).toStrictEqual([
+      { name: "Bob", age: 30 },
+      { name: "Alice", age: 25 },
+      { name: "John", age: 18 },
+    ]);
   });
 
   it("With duplicate properties:", () => {

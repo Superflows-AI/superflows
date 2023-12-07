@@ -324,13 +324,13 @@ export default async function handler(req: NextRequest) {
         const currentHost = getHost(req);
         let output = await makeHttpRequest(url, requestOptions, currentHost);
 
-        console.log("http request:", JSON.stringify(output));
+        console.log("http response:", JSON.stringify(output.output));
 
         const out = {
           role: "function",
           name: execute.action.name,
           content: JSON.stringify(
-            processAPIoutput(output, execute.action),
+            processAPIoutput(output.output, execute.action),
             null,
             2,
           ),

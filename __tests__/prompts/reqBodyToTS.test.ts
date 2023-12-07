@@ -8,6 +8,7 @@ import {
   exampleRequestBodyArray2,
   realWorldExampleAction1,
   realWorldExampleAction2,
+  realWorldExampleAction3,
   realWorldExampleSchema1,
   realWorldExampleSchema2,
 } from "./testData";
@@ -1273,15 +1274,19 @@ status: "pending" | "active" | "inactive" | "suspended" | "closed" | "declined" 
 country: string // ISO 3166-1 alpha-2 country code
 currency: string // ISO 4217 currency code
 alias?: string // alias of account, refer to Accounts section in Guides for details
+iban?: string // iban assigned to account
+accountNumber?: string // account number assigned to account
 ledgerNumber: string // unique ledger number of account generated internally
 availableBalance?: number // available balance of account
 accountHolderIdentityType: "corporate" | "individual" // type of account holder client's identity
 serviceProvider: string // service provider which this account connected to
+mainAccountId: string // the main account id which the given account is linked to
 }[]
 }
 metadata: {
 page: {
 size: integer // number of elements in this page
+number: integer // index of page starting from 0
 totalElements: integer // total number of elements in all of the pages
 totalPages: integer // number of total pages
 }
@@ -1396,7 +1401,9 @@ currency?: string // ISO 4217 currency code of outgoing transfer
 amount?: number // transfer amount
 feeCurrency?: string // ISO 4217 currency code of fee
 feeAmount?: number // transfer fee amount
+description?: string // free text to send along with transfer
 transferReasonId?: string // id of transfer reason
+transferCustomReason?: string // free text reason if transfer reason selected as other
 originalTransferDate?: string // requested transfer date. this field won't be updated even if the transfer is rolled to next date
 cutOffDateTime?: string // cutoff time in current transfer date
 rollCount?: integer // how many times a transfer is rolled since account is unfunded until cutoff time
@@ -1417,10 +1424,13 @@ postalCode?: string
 houseNumber?: string
 }
 account?: {
+accountHolderName?: string
 country?: string
 currency?: string
 routingCodes?: object
+accountNumber?: string
 iban?: string
+ledgerNumber?: string
 alias?: string
 }
 }
@@ -1435,11 +1445,44 @@ scope?: "internal" | "external" // transfer scope
 metadata: { // metadata container
 page: {
 size: integer // number of elements in this page
+number: integer // index of page starting from 0
 totalElements: integer // total number of elements in all of the pages
 totalPages: integer // number of total pages
 }
 }
 }
+`);
+  });
+  it("Real world example 3", () => {
+    const out = getActionTSSignature(realWorldExampleAction3, true, [
+      {
+        id: 1561318381790,
+        timeline: [
+          { period: "2022-05", demand: 0, picks: 0, forecast: 26.6567 },
+          { period: "2022-06", demand: 192, picks: 3, forecast: 20.094 },
+          { period: "2022-07", demand: 176, picks: 1, forecast: 129 },
+        ],
+      },
+      {
+        id: 1561318384997,
+        timeline: [
+          { period: "2022-05", demand: 0, picks: 0, forecast: 0.8333 },
+          { period: "2022-06", demand: 0, picks: 0, forecast: 0.7143 },
+          { period: "2022-07", demand: 0, picks: 0, forecast: 0.625 },
+        ],
+      },
+    ]);
+    expect(out).toEqual(`
+/** List demand **/
+function filterDemand(): {
+id: integer // Item id
+timeline: {
+demand: integer // The number of items sold (not their value)
+forecast: number // The forecast demand for a future period, or previously-forecast demand for a past period
+period: string // The period the figures are reported for
+picks: integer // The number of times a customer buys any number of this item type (1 pick often corresponds to many items sold)
+}[]
+}[]
 `);
   });
 });

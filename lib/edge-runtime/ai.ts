@@ -504,7 +504,8 @@ export async function Angela( // Good ol' Angela
               streamInfo({ role: "loading", content: "Calling API" });
               try {
                 out = await makeHttpRequest(url, requestOptions, currentHost);
-                out = processAPIoutput(out, chosenAction);
+                errorMakingAPICall == errorMakingAPICall || out.isError;
+                out = processAPIoutput(out.output, chosenAction);
               } catch (e) {
                 console.error(e);
                 // @ts-ignore
@@ -525,9 +526,10 @@ export async function Angela( // Good ol' Angela
                 typeof out === "string" &&
                 getTokenCount([outMessage]) > 500
               ) {
+                console.log("Summarising text from API response", typeof out);
                 streamInfo({
                   role: "loading",
-                  content: "Summarising text from API",
+                  content: "Summarising text",
                 });
                 outMessage.summary = await summarizeText(out, org);
               }
@@ -603,36 +605,35 @@ export async function Angela( // Good ol' Angela
         (c) => c.name === dataAnalysisActionName,
       );
       console.log("Data analysis action:", dataAnalysisAction);
+      const pastFunctionCalls = nonSystemMessages.filter(
+        (m) => m.role === "function",
+      );
+      // Used in if statements further down
+      const fnMsg: FunctionMessage = {
+        role: "function",
+        name: dataAnalysisActionName,
+        content: "",
+      };
       if (
         dataAnalysisAction &&
         !anyNeedCorrection &&
         toConfirm.length === 0 &&
         !errorMakingAPICall &&
         // Must have been a function call previously
-        nonSystemMessages
-          .slice(previousMessages.length)
-          .filter((m) => m.role === "function").length > 0
+        pastFunctionCalls.length > 0
       ) {
         console.log("Running data analysis!");
         streamInfo({ role: "loading", content: "Analysing data" });
         const graphData = await runDataAnalysis(
           dataAnalysisAction.args["instruction"],
           actions,
-          nonSystemMessages.slice(previousMessages.length) as (
-            | FunctionMessage
-            | AssistantMessage
-          )[],
+          nonSystemMessages,
           org,
           { conversationId, index: nonSystemMessages.length },
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
 
         // Return graph data to the user & add message to chat history
-        const fnMsg: FunctionMessage = {
-          role: "function",
-          name: dataAnalysisActionName,
-          content: "",
-        };
         if (graphData === null) {
           fnMsg.content = "Failed to run data analysis";
           streamInfo(fnMsg);
@@ -648,6 +649,17 @@ export async function Angela( // Good ol' Angela
           fnMsg.content = JSON.stringify(graphData);
         }
         nonSystemMessages.push(fnMsg);
+        // No need to stream data analysis errors to the user
+      } else if (anyNeedCorrection) {
+        fnMsg.content = "Error: other function calls need user correction";
+        nonSystemMessages.push(fnMsg);
+      } else if (toConfirm.length === 0) {
+        fnMsg.content =
+          "Error: another function call requires user confirmation";
+        nonSystemMessages.push(fnMsg);
+      } else if (pastFunctionCalls.length === 0) {
+        fnMsg.content = `Error: no functions have been called in the chat history yet`;
+        nonSystemMessages.push(fnMsg);
       }
 
       if (mostRecentParsedOutput.completed) {
@@ -655,6 +667,7 @@ export async function Angela( // Good ol' Angela
       }
 
       numOpenAIRequests++;
+      // Maximum number of chatbot calls per user query
       if (numOpenAIRequests >= 6) {
         console.error(
           `OpenAI API call limit reached for conversation with id: ${conversationId}`,
