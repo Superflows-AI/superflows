@@ -19,8 +19,10 @@ export function processAPIoutput(
   const keys = chosenAction.keys_to_keep;
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
     if (Array.isArray(out)) {
+      console.log("De-duplicating array");
       out = deduplicateArray(out) as Json[];
     }
+    console.log("Filtering to keep keys:", keys);
     out = filterKeys(out, keys as string[]);
   }
 

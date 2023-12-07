@@ -65,10 +65,12 @@ Deno.serve(async (req) => {
 
   // Prompt-injection defence code is on the NextJS side
   // Format the code based on LLM output
-  const data = requestData.data;
+  // Issue - we are adding the variable name to the code, so we need to ensure
+  // the AI doesn't use the same variable name
+  const veryLongAndUnlikelyToReuseDataVariableName = requestData.data;
   const initialiseDataString = Object.keys(requestData.data)
     .map((key) => {
-      return `const ${key} = data.${key};`;
+      return `const ${key} = veryLongAndUnlikelyToReuseDataVariableName.${key};`;
     })
     .join("\n");
 
@@ -76,7 +78,10 @@ Deno.serve(async (req) => {
 ${requestData.code}
 graphData`;
   console.log("Code\n" + code);
-  console.log("Data keys:\n", Object.keys(data));
+  console.log(
+    "Data keys:\n",
+    Object.keys(veryLongAndUnlikelyToReuseDataVariableName),
+  );
 
   // Last line must be graphData since this is what's output and we ask the LLM to include it
   let result;
@@ -84,7 +89,7 @@ graphData`;
     result = eval(code);
     console.log("Result\n", result);
 
-    // TODO: Ensure the output is of the correct format (after it has been returned)
+    // Ensure the output is of the correct format (after it has been returned)
     return new Response(JSON.stringify(result), {
       headers,
     });
