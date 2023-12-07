@@ -17,6 +17,14 @@ export function getDataAnalysisPrompt(
   orgInfo: Pick<Organization, "name" | "description">,
 ): ChatGPTMessage[] {
   const actionTS = calledActions
+    // Filter out duplicate actions from TS
+    .filter(
+      (a, idx) =>
+        idx ===
+        calledActions.findIndex(
+          (called) => called.action.name === a.action.name,
+        ),
+    )
     .map((action) => {
       return getActionTSSignature(action.action, true, action.output);
     })
