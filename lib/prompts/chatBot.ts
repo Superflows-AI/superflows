@@ -139,21 +139,21 @@ export function getActionDescriptions(actions: Action[]): string {
     if (action.parameters && Array.isArray(action.parameters)) {
       action.parameters.forEach((param) => {
         const p = param as unknown as OpenAPIV3_1.ParameterObject;
-        const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+        const schema = (p?.schema ?? null) as OpenAPIV3_1.SchemaObject | null;
         // Below case is cursed: required param with 1 enum. Skip it.
-        if (schema.enum && schema.enum.length === 1 && p.required) return;
+        if (schema && schema.enum && schema.enum.length === 1 && p.required)
+          return;
 
         // Only show examples if there are no enums
         // Note: using "Example:" rather than "E.g." because it's 1 fewer token
         const example =
-          (schema.example || p.example) && !schema.enum
+          schema && (schema.example || p.example) && !schema.enum
             ? ` Example: ${schema.example || p.example}.`
             : "";
 
-        paramString += `\n- ${p.name} (${getType(
-          schema.type,
-          schema.enum,
-        )})${formatDescription(p.description)}${example}${
+        paramString += `\n- ${p.name} (${
+          schema ? getType(schema.type, schema.enum) : "any"
+        })${formatDescription(p.description)}${example}${
           p.required ? " REQUIRED" : ""
         }`;
       });
