@@ -6,7 +6,7 @@ export function actionFilteringPrompt(
   actions: Action[],
   userQuery: string,
 ): ChatGPTMessage[] {
-  const numberedActions = getActionDescriptions(actions, true);
+  const numberedActions = getActionDescriptions(actions);
 
   return [
     {

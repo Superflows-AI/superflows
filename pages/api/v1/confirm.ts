@@ -26,7 +26,10 @@ export const config = {
   runtime: "edge",
   // Edge gets upset with our use of recharts in chat-ui-react.
   // TODO: Make it possible to import chat-ui-react without recharts
-  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
+  unstable_allowDynamic: [
+    "**/node_modules/@superflows/chat-ui-react/**",
+    "**/node_modules/lodash/**",
+  ],
 };
 
 const OptionalStringZod = z.optional(z.string());
