@@ -650,16 +650,18 @@ export async function Angela( // Good ol' Angela
         }
         nonSystemMessages.push(fnMsg);
         // No need to stream data analysis errors to the user
-      } else if (anyNeedCorrection) {
-        fnMsg.content = "Error: other function calls need user correction";
-        nonSystemMessages.push(fnMsg);
-      } else if (toConfirm.length === 0) {
-        fnMsg.content =
-          "Error: another function call requires user confirmation";
-        nonSystemMessages.push(fnMsg);
-      } else if (pastFunctionCalls.length === 0) {
-        fnMsg.content = `Error: no functions have been called in the chat history yet`;
-        nonSystemMessages.push(fnMsg);
+      } else if (dataAnalysisAction) {
+        if (anyNeedCorrection) {
+          fnMsg.content = "Error: other function calls need user correction";
+          nonSystemMessages.push(fnMsg);
+        } else if (toConfirm.length !== 0) {
+          fnMsg.content =
+            "Error: another function call requires user confirmation";
+          nonSystemMessages.push(fnMsg);
+        } else if (pastFunctionCalls.length === 0) {
+          fnMsg.content = `Error: no functions have been called in the chat history yet`;
+          nonSystemMessages.push(fnMsg);
+        }
       }
 
       if (mostRecentParsedOutput.completed) {
