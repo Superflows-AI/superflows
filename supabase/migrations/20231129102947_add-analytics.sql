@@ -1,6 +1,6 @@
 create table "public"."analytics_code_snippets" (
     "id" uuid not null default gen_random_uuid(),
-    "instruction_message" text not null default ''::test,
+    "instruction_message" text not null default ''::text,
     "output" text not null,
     "org_id" bigint not null,
     "conversation_id" bigint not null,
@@ -13,8 +13,6 @@ alter table "public"."organizations" add column "analytics_enabled" boolean not 
 CREATE UNIQUE INDEX analytics_code_snippets_pkey ON public.analytics_code_snippets USING btree (id);
 
 alter table "public"."analytics_code_snippets" add constraint "analytics_code_snippets_pkey" PRIMARY KEY using index "analytics_code_snippets_pkey";
-alter table "public"."analytics_code_snippets" add constraint "analytics_code_snippets_chat_message_id_fkey" FOREIGN KEY (chat_message_id) REFERENCES chat_messages(id) ON DELETE CASCADE not valid;
-alter table "public"."analytics_code_snippets" validate constraint "analytics_code_snippets_chat_message_id_fkey";
 alter table "public"."analytics_code_snippets" add constraint "analytics_code_snippets_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE not valid;
 alter table "public"."analytics_code_snippets" validate constraint "analytics_code_snippets_org_id_fkey";
 

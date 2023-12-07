@@ -215,6 +215,11 @@ export function deduplicateArray<ArrType extends any[]>(
     });
   }
 
+  // If there's no duplication (everything in 'items') then keep it as an array
+  if (Object.keys(output).length === 1 && "items" in output) {
+    return output.items;
+  }
+
   return output;
 }
 
@@ -576,4 +581,32 @@ export function snakeToCamel(str: string): string {
   return str.replace(/(_\w)/g, function (m: string): string {
     return m[1].toUpperCase();
   });
+}
+
+export function roughSizeOfObject(object: object): number {
+  /** Gets the rough memory size of the object in bytes. **/
+  let objectList: object[] = [];
+
+  function recurse(value: any): number {
+    let bytes = 0;
+
+    if (typeof value === "boolean") {
+      return 4;
+    } else if (typeof value === "string") {
+      return value.length * 2;
+    } else if (typeof value === "number") {
+      return 8;
+    } else if (typeof value === "object" && objectList.indexOf(value) === -1) {
+      objectList[objectList.length] = value;
+
+      for (const i in value) {
+        bytes += 8; // an assumed existence overhead
+        bytes += recurse(value[i]);
+      }
+    }
+
+    return bytes;
+  }
+
+  return recurse(object);
 }

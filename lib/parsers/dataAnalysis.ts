@@ -1,7 +1,7 @@
 export function parseDataAnalysisResponse(
   response: string,
   userDefinedVariables: string[] = [],
-): { code: string } | null {
+): { code: string } | { error: string } | null {
   /** Parses the response from the LLM in data analysis mode. Returns the code **/
   const codeRegex =
     /\n```(javascript|typescript|js|ts)?\n([\w\W]+?)\n```/g.exec(response);
@@ -13,8 +13,15 @@ export function parseDataAnalysisResponse(
 
   // Automated output checks below
 
-  // Remove comments (stops false positives from comments containing illegal stuff)
-  const code = rawCode.replace(/\/\/.*/g, "");
+  // Check if it's just an error
+  const errorMatch = /^\n?throw new Error\((.*)\);?$/.exec(rawCode);
+  if (errorMatch) {
+    console.error(`Error message from generated code: ${errorMatch[1]}`);
+    // slice(1, -1) removes the quotes from the error message
+    return { error: errorMatch[1].slice(1, -1) };
+  }
+  // Remove comments (stops false positives from comments containing illegal stuff) & convert from TS to JS
+  const code = stripBasicTypescriptTypes(rawCode.replace(/\/\/.*/g, ""));
 
   // Check that fetch(), eval(), new Function() and WebAssembly aren't used
   const illegalRegexes = [
@@ -59,4 +66,17 @@ export function parseDataAnalysisResponse(
   }
 
   return { code };
+}
+
+function stripBasicTypescriptTypes(jsCodeString: string): string {
+  // Remove type definitions like `: string`, `: number`, `: any` etc.
+  jsCodeString = jsCodeString.replace(/:\s*\w*(?=\s*=\s*)/g, "");
+
+  // Remove interface definitions
+  jsCodeString = jsCodeString.replace(
+    /(export )?interface\s+\w+\s*\{[^}]+\}/g,
+    "",
+  );
+
+  return jsCodeString;
 }

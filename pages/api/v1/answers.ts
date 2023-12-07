@@ -7,6 +7,7 @@ import { USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
 import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
 import {
+  ApiResponseCutText,
   DBChatMessageToGPT,
   getFreeTierUsage,
   getHost,
@@ -381,13 +382,18 @@ export default async function handler(req: NextRequest) {
         const insertedChatMessagesRes = await supabase
           .from("chat_messages")
           .insert(
-            allMessages.slice(previousMessages.length).map((m, idx) => ({
-              ...m,
-              org_id: org!.id,
-              conversation_id: conversationId,
-              conversation_index: previousMessages.length + idx,
-              language,
-            })),
+            allMessages.slice(previousMessages.length).map((m, idx) => {
+              if (m.role === "function" && m.content.length > 10000) {
+                m.content = ApiResponseCutText;
+              }
+              return {
+                ...m,
+                org_id: org!.id,
+                conversation_id: conversationId,
+                conversation_index: previousMessages.length + idx,
+                language,
+              };
+            }),
           );
         if (insertedChatMessagesRes.error)
           throw new Error(insertedChatMessagesRes.error.message);

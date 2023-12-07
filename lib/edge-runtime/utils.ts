@@ -303,11 +303,18 @@ export function replaceVariables(
   });
 }
 
+export const ApiResponseCutText =
+  "API response cut as it is too large (>20kb).";
+
 export function preStreamProcessOutMessage(
   outMessage: FunctionMessageInclSummary,
   command: FunctionCall,
   chosenAction: Action,
 ): FunctionMessageInclSummary {
+  if (outMessage.content.length > 10000) {
+    outMessage = { ...outMessage };
+    outMessage.content = ApiResponseCutText;
+  }
   // We can have issues in the frontend if the content is too long
   if (outMessage.summary && outMessage.content.length > 2000) {
     outMessage = { ...outMessage };
@@ -350,19 +357,4 @@ export function hideMostRecentFunctionOutputs(
     }
   }
   return chatHistory;
-}
-
-export function findLastIndex<Item>(
-  array: Item[],
-  predicate: (item: Item) => boolean,
-): number {
-  /** Returns the index of the last item in the array that matches the predicate **/
-  let index = -1;
-  array.reduceRight((_: null, value: Item, i: number) => {
-    if (predicate(value) && index === -1) {
-      index = i;
-    }
-    return null;
-  }, null);
-  return index;
 }

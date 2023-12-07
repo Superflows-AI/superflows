@@ -134,34 +134,42 @@ export function getActionTSSignature(
    * **/
   // TODO: Doesn't work well for non-object schemas
   let paramString = "";
+  // Below is a deepcopy
+  returnedObject = returnedObject
+    ? JSON.parse(JSON.stringify(returnedObject))
+    : null;
   // For parameters
   if (action.parameters && Array.isArray(action.parameters)) {
     action.parameters.forEach((param) => {
       const p = param as unknown as OpenAPIV3_1.ParameterObject;
-      const schema = (p?.schema as OpenAPIV3_1.SchemaObject) ?? null;
+      const schema = (p?.schema ?? null) as OpenAPIV3_1.SchemaObject | null;
       // Below case is cursed: required param with 1 enum. Skip it.
-      if (schema.enum && schema.enum.length === 1 && p.required) return;
+      if (schema && schema.enum && schema.enum.length === 1 && p.required)
+        return;
 
-      // Only show examples if there are no enums
-      // Note: using "Example:" rather than "E.g." because it's 1 fewer token
-      const example =
-        (schema.example || p.example) && !schema.enum
-          ? ` Example: ${schema.example || p.example}`
-          : "";
       let desc = formatDescriptionTS(p.description);
-      if (example) {
-        if (desc && !desc.endsWith(".")) {
-          desc += ".";
-        } else if (!desc.startsWith(" // ")) {
-          desc = " //" + desc;
+      let type;
+      if (schema) {
+        // Only show examples if there are no enums
+        // Note: using "Example:" rather than "E.g." because it's 1 fewer token
+        const example =
+          (schema.example || p.example) && !schema.enum
+            ? ` Example: ${schema.example || p.example}`
+            : "";
+        if (example) {
+          if (desc && !desc.endsWith(".")) {
+            desc += ".";
+          } else if (!desc.startsWith(" // ")) {
+            desc = " //" + desc;
+          }
+          desc += example;
         }
-        desc += example;
+        type = getType(schema.type, schema.enum);
       }
 
-      paramString += `\n${p.name}${p.required ? "" : "?"}: ${getType(
-        schema.type,
-        schema.enum,
-      )}${desc}`;
+      paramString += `\n${p.name}${p.required ? "" : "?"}: ${
+        type ?? "any"
+      }${desc}`;
     });
   }
   const reqBody = action.request_body_contents as unknown as {
@@ -193,20 +201,23 @@ export function getActionTSSignature(
   const responses = action.responses as Record<
     string,
     OpenAPIV3_1.ResponseObject
-  >;
+  > | null;
   let returnType = "";
   // If it's there, start off with the schema from the API spec
-  for (let n = 200; n < 300; n++) {
-    const nString = n.toString();
-    if (responses[nString].content?.["application/json"]) {
-      returnType = formatBodySchemaToTS(
-        responses[nString].content!["application/json"].schema,
-        0,
-        false,
-        false,
-        "response",
-      );
-      break;
+  if (responses !== null) {
+    for (let n = 200; n < 300; n++) {
+      const nString = n.toString();
+      if (responses[nString].content?.["application/json"]) {
+        returnType = formatBodySchemaToTS(
+          responses[nString].content!["application/json"].schema,
+          0,
+          false,
+          false,
+          "response",
+        );
+        console.log("returnType", returnType);
+        break;
+      }
     }
   }
   // If we have a returned object
@@ -279,7 +290,7 @@ export function removeUnnecessaryTSTypeArgs(
     } else if (lineNoComment.includes("{")) {
       const fieldName = line.split(/\??:/)[0];
       let field = currentObject ? currentObject[fieldName] : undefined;
-      if (field) {
+      if (field !== undefined) {
         if (Array.isArray(field)) {
           field = field[0];
         }
@@ -297,7 +308,7 @@ export function removeUnnecessaryTSTypeArgs(
       // Otherwise, we're in the middle of an object
       const fieldName = line.split(/\??:/)[0];
       let field = currentObject ? currentObject[fieldName] : undefined;
-      if (field) {
+      if (field !== undefined) {
         if (Array.isArray(field)) {
           field = field[0];
         }
