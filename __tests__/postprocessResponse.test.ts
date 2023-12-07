@@ -814,4 +814,180 @@ describe("cutUnecessaryKeys", () => {
       ],
     });
   });
+  it("real world example 2", () => {
+    const out = filterKeys(
+      {
+        status: "success",
+        message: "Supplier retrieved successfully",
+        data: {
+          count: 14,
+          currentPage: 1,
+          totalPages: 1,
+          dataHistory: [
+            {
+              id: "f9211360-32fe-4a69-b7f1-33956242303e",
+              username: "TheChefSupplyInc.",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "10565.68",
+            },
+            {
+              id: "3d98755f-eb3b-441c-9908-3757551e78ee",
+              username: "AndrewTestVendor",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "2.00",
+            },
+            {
+              id: "df7411c1-8d21-43e2-b8e1-4f02ced07f55",
+              username: "CueSuppliesInc",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "7584.42",
+            },
+            {
+              id: "c9de3e16-9696-4879-87c8-8b11c474c72b",
+              username: "RoselandProduce",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "64384.86",
+            },
+            {
+              id: "5739de7d-4c05-4092-8429-52dff2c1cf14",
+              username: "TripleBogey",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "0.00",
+            },
+            {
+              id: "a58231d1-4da0-41e5-a7ab-82bf9ae29353",
+              username: "Sysco",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "1176097.38",
+            },
+            {
+              id: "78620543-8fc2-44c0-ac90-8ece849f497d",
+              username: "Stem",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "99559.13",
+            },
+            {
+              id: "72791bc3-1a30-4ae3-a54e-6432b7519d22",
+              username: "Andrew'sTestVendor",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "1.00",
+            },
+            {
+              id: "90adaa5b-1c85-4521-96b3-024d64475d54",
+              username: null,
+              contact_person: null,
+              phone_number: null,
+              total_spend: "759.17",
+            },
+            {
+              id: "d65f28a0-c46a-49bd-818c-f84a2266928a",
+              username: "Triple Bogey",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "10733.11",
+            },
+            {
+              id: "a483ac5f-aaa6-4c25-80ed-527d60305e8b",
+              username: "Middlesex",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "80659.92",
+            },
+            {
+              id: "e4535669-0088-4a06-be25-167a59660909",
+              username: "Woodward Meats",
+              contact_person: null,
+              phone_number: null,
+              total_spend: "155436.84",
+            },
+            {
+              id: "ca4406df-cd67-417d-825a-3ad7a72c89c2",
+              username: "Tab Commerce Services Inc.",
+              contact_person: "Tab Commerce Services Inc",
+              phone_number: "6474680067",
+              total_spend: "0.00",
+            },
+            {
+              id: "822b90ed-bfd4-4b7b-99be-1a33d81a737f",
+              username: "WillowRunFoods",
+              contact_person: "Tab Commerce Services Inc",
+              phone_number: "",
+              total_spend: "239.52",
+            },
+          ],
+        },
+      },
+      ["id", "username"],
+    );
+    expect(out).toEqual({
+      data: {
+        dataHistory: [
+          {
+            id: "f9211360-32fe-4a69-b7f1-33956242303e",
+            username: "TheChefSupplyInc.",
+          },
+          {
+            id: "3d98755f-eb3b-441c-9908-3757551e78ee",
+            username: "AndrewTestVendor",
+          },
+          {
+            id: "df7411c1-8d21-43e2-b8e1-4f02ced07f55",
+            username: "CueSuppliesInc",
+          },
+          {
+            id: "c9de3e16-9696-4879-87c8-8b11c474c72b",
+            username: "RoselandProduce",
+          },
+          {
+            id: "5739de7d-4c05-4092-8429-52dff2c1cf14",
+            username: "TripleBogey",
+          },
+          {
+            id: "a58231d1-4da0-41e5-a7ab-82bf9ae29353",
+            username: "Sysco",
+          },
+          {
+            id: "78620543-8fc2-44c0-ac90-8ece849f497d",
+            username: "Stem",
+          },
+          {
+            id: "72791bc3-1a30-4ae3-a54e-6432b7519d22",
+            username: "Andrew'sTestVendor",
+          },
+          {
+            id: "90adaa5b-1c85-4521-96b3-024d64475d54",
+            username: null,
+          },
+          {
+            id: "d65f28a0-c46a-49bd-818c-f84a2266928a",
+            username: "Triple Bogey",
+          },
+          {
+            id: "a483ac5f-aaa6-4c25-80ed-527d60305e8b",
+            username: "Middlesex",
+          },
+          {
+            id: "e4535669-0088-4a06-be25-167a59660909",
+            username: "Woodward Meats",
+          },
+          {
+            id: "ca4406df-cd67-417d-825a-3ad7a72c89c2",
+            username: "Tab Commerce Services Inc.",
+          },
+          {
+            id: "822b90ed-bfd4-4b7b-99be-1a33d81a737f",
+            username: "WillowRunFoods",
+          },
+        ],
+      },
+    });
+  });
 });
