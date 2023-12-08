@@ -135,7 +135,7 @@ export default function APITabs(props: {
 
 export function AuthenticationSection(props: {
   api: Api;
-  setApis: (callback: (api: Api[]) => Api[]) => void;
+  setApis: (callback: (api: Api[] | undefined) => Api[]) => void;
 }) {
   const authHeaderOptions = [
     {
@@ -180,11 +180,13 @@ export function AuthenticationSection(props: {
         .eq("id", props.api!.id);
       if (res.error) throw res.error;
       props.setApis((prev) =>
-        prev?.map((api) =>
-          api.id === props.api!.id
-            ? { ...api, auth_header: authHeader.id ?? "" }
-            : api,
-        ),
+        prev
+          ? prev?.map((api) =>
+              api.id === props.api!.id
+                ? { ...api, auth_header: authHeader.id ?? "" }
+                : api,
+            )
+          : [],
       );
     })();
   }, [authHeader]);
@@ -252,11 +254,13 @@ export function AuthenticationSection(props: {
               .eq("id", props.api.id);
             if (res.error) throw res.error;
             props.setApis((prev) =>
-              prev?.map((api) =>
-                api.id === props.api!.id
-                  ? { ...api, auth_scheme: selected }
-                  : api,
-              ),
+              prev
+                ? prev?.map((api) =>
+                    api.id === props.api!.id
+                      ? { ...api, auth_scheme: selected }
+                      : api,
+                  )
+                : [],
             );
           }}
           theme={"dark"}
@@ -277,11 +281,13 @@ export function AuthenticationSection(props: {
                 .eq("id", props.api.id);
               if (res.error) throw res.error;
               props.setApis((prev) =>
-                prev?.map((api) =>
-                  api.id === props.api!.id
-                    ? { ...api, auth_query_param_name: queryParamName }
-                    : api,
-                ),
+                prev
+                  ? prev?.map((api) =>
+                      api.id === props.api!.id
+                        ? { ...api, auth_query_param_name: queryParamName }
+                        : api,
+                    )
+                  : [],
               );
             }}
           />
