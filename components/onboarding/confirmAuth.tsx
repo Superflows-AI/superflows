@@ -8,8 +8,7 @@ import classNames from "classnames";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Database } from "../../lib/database.types";
 import { Api, HeadersInsert } from "../../lib/types";
-import { Header } from "../actions/APITabs";
-import SelectBox from "../selectBox";
+import { Header, AuthenticationSection } from "../actions/APITabs";
 
 export default function ConfirmAuth(props: {
   api: Api;
@@ -23,7 +22,6 @@ export default function ConfirmAuth(props: {
   >(null);
   const [headers, setHeaders] = useState<HeadersInsert[]>([]);
   const alreadyAddedHeader = React.useRef(false);
-  const [queryParamName, setQueryParamName] = useState<string>("");
 
   useEffect(() => {
     if (!props.api || alreadyAddedHeader.current) return;
@@ -49,7 +47,6 @@ export default function ConfirmAuth(props: {
       }
       setHeaders(headers);
     })();
-    if (props.api) setQueryParamName(props.api.auth_query_param_name ?? "");
   }, [props.api]);
 
   return (
@@ -120,130 +117,20 @@ export default function ConfirmAuth(props: {
               API.
             </p>
           </div>
-          <div className="relative mb-4 col-span-2 flex flex-row place-items-center gap-x-3 mt-6 justify-end text-gray-200 text-xl">
-            <SelectBox
-              options={[
-                {
-                  id: "Authorization",
-                  name: "Authorization",
-                },
-                {
-                  id: "Proxy-Authorization",
-                  name: "Proxy-Authorization",
-                },
-                {
-                  id: "x-api-key",
-                  name: "x-api-key",
-                },
-                {
-                  id: "apiKey",
-                  name: "apiKey",
-                },
-                {
-                  id: "Query parameter",
-                  name: "Query parameter",
-                },
-              ]}
-              selected={props.api?.auth_header ?? null}
-              setSelected={async (selected: string) => {
-                if (!props.api) return;
-                props.setApi({ ...props.api, auth_header: selected });
-                const res = await supabase
-                  .from("apis")
-                  .update({ auth_header: selected })
-                  .eq("id", props.api!.id);
-                if (res.error) throw res.error;
-              }}
-              theme="dark"
-            />
-            :
-            {props.api?.auth_header !== "Query parameter" ? (
-              <SelectBox
-                options={[
-                  {
-                    id: null,
-                    name: "None",
-                  },
-                  {
-                    id: "Bearer",
-                    name: "Bearer",
-                  },
-                  {
-                    id: "Basic",
-                    name: "Basic",
-                  },
-                  {
-                    id: "app-token",
-                    name: "app-token",
-                  },
-                  {
-                    id: "Digest",
-                    name: "Digest",
-                  },
-                  {
-                    id: "HOBA",
-                    name: "HOBA",
-                  },
-                  {
-                    id: "Mutual",
-                    name: "Mutual",
-                  },
-                  {
-                    id: "VAPID",
-                    name: "VAPID",
-                  },
-                  {
-                    id: "SCRAM",
-                    name: "SCRAM",
-                  },
-                ]}
-                selected={props.api?.auth_scheme ?? null}
-                setSelected={async (selected: string) => {
-                  if (!props.api) return;
-                  props.setApi({ ...props.api, auth_scheme: selected });
-                  const res = await supabase
-                    .from("apis")
-                    .update({ auth_scheme: selected })
-                    .eq("id", props.api.id);
-                  if (res.error) throw res.error;
-                }}
-                theme={"dark"}
-                includeNull={true}
-              />
-            ) : (
-              <input
-                className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-[0.4375rem] max-w-[9.5rem] focus:border-purple-600 focus:ring-purple-600"
-                onChange={(e) => setQueryParamName(e.target.value)}
-                value={queryParamName}
-                placeholder={"Parameter name"}
-                onBlur={async () => {
-                  if (!props.api) return;
-                  const res = await supabase
-                    .from("apis")
-                    .update({ auth_query_param_name: queryParamName })
-                    .eq("id", props.api.id);
-                  if (res.error) throw res.error;
-                  props.setApi({
-                    ...props.api,
-                    auth_query_param_name: queryParamName,
-                  });
-                }}
-              />
-            )}
-            <div className="relative h-16 flex place-items-center">
-              <code className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-9 text-gray-500 rounded-md text-base font-normal">
-                {"< AUTH PARAMETERS/API-KEY HERE >"}
-              </code>
-              <p className="absolute -bottom-3 text-sm w-full mt-3 flex text-center justify-center place-items-baseline text-gray-300">
-                These are sent in each request to the Superflows API.
-              </p>
-            </div>
-          </div>
           <div className="col-start-1 flex flex-col place-items-start pr-4">
             <h2 className="text-lg text-gray-200">Headers (optional)</h2>
             <p className="text-gray-400 text-sm">
               Add any other fixed headers that your API always needs.
             </p>
+            {props.api && (
+              <AuthenticationSection
+                api={props.api}
+                setApis={(callback: (api: Api[]) => Api[]) =>
+                  //   Cursed typescript code here
+                  props.setApi((api) => callback([api!])[0])
+                }
+              />
+            )}
           </div>
           <div className="mt-2 col-span-2 flex flex-col gap-y-1.5 w-full px-12">
             {headers.map((h, idx) => (

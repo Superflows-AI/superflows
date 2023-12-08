@@ -133,9 +133,9 @@ export default function APITabs(props: {
   );
 }
 
-function AuthenticationSection(props: {
+export function AuthenticationSection(props: {
   api: Api;
-  setApis: Dispatch<SetStateAction<Api[] | undefined>>;
+  setApis: (callback: (api: Api[]) => Api[]) => void;
 }) {
   const authHeaderOptions = [
     {
