@@ -15,6 +15,7 @@ import classNames from "classnames";
 import { Api, HeadersInsert } from "../../lib/types";
 import Modal from "../modal";
 import WarningModal from "../warningModal";
+import ComboBox, { ComboboxOption } from "../combobox";
 
 export default function APITabs(props: {
   apis: Api[];
@@ -132,6 +133,180 @@ export default function APITabs(props: {
   );
 }
 
+function AuthenticationSection(props: {
+  api: Api;
+  setApis: Dispatch<SetStateAction<Api[] | undefined>>;
+}) {
+  const authHeaderOptions = [
+    {
+      id: "Authorization",
+      name: "Authorization",
+    },
+    {
+      id: "Proxy-Authorization",
+      name: "Proxy-Authorization",
+    },
+    {
+      id: "x-api-key",
+      name: "x-api-key",
+    },
+    {
+      id: "apiKey",
+      name: "apiKey",
+    },
+    {
+      id: "Query parameter",
+      name: "Query parameter",
+    },
+  ];
+  const [authHeader, setAuthHeader] = useState<ComboboxOption>(() => {
+    const authHeaderStr = props.api.auth_header;
+    const existingAuthHeader = authHeaderOptions.find(
+      (option) => authHeaderStr === option.id,
+    );
+    return existingAuthHeader ?? { id: authHeaderStr, name: authHeaderStr };
+  });
+  const [queryParamName, setQueryParamName] = useState<string>(
+    props.api.auth_query_param_name,
+  );
+  const supabase = useSupabaseClient<Database>();
+
+  useEffect(() => {
+    (async () => {
+      if (!props.api) return;
+      const res = await supabase
+        .from("apis")
+        .update({ auth_header: authHeader.id ?? "" })
+        .eq("id", props.api!.id);
+      if (res.error) throw res.error;
+      props.setApis((prev) =>
+        prev?.map((api) =>
+          api.id === props.api!.id
+            ? { ...api, auth_header: authHeader.id ?? "" }
+            : api,
+        ),
+      );
+    })();
+  }, [authHeader]);
+
+  return (
+    <div className="relative mb-4 col-span-2 flex flex-row place-items-center gap-x-3 mt-6 justify-end text-gray-200 text-xl">
+      <div className={"w-60"}>
+        <ComboBox
+          options={authHeaderOptions}
+          selected={authHeader}
+          setSelected={setAuthHeader}
+          theme={"dark"}
+          size={"small"}
+        />
+      </div>
+      :
+      {["Authorization", "Proxy-Authorization", "x-api-key", "apiKey"].includes(
+        authHeader.id ?? "",
+      ) ? (
+        <SelectBox
+          options={[
+            {
+              id: null,
+              name: "None",
+            },
+            {
+              id: "Bearer",
+              name: "Bearer",
+            },
+            {
+              id: "Basic",
+              name: "Basic",
+            },
+            {
+              id: "app-token",
+              name: "app-token",
+            },
+            {
+              id: "Digest",
+              name: "Digest",
+            },
+            {
+              id: "HOBA",
+              name: "HOBA",
+            },
+            {
+              id: "Mutual",
+              name: "Mutual",
+            },
+            {
+              id: "VAPID",
+              name: "VAPID",
+            },
+            {
+              id: "SCRAM",
+              name: "SCRAM",
+            },
+          ]}
+          selected={props.api?.auth_scheme ?? null}
+          setSelected={async (selected: string) => {
+            if (!props.api) return;
+            const res = await supabase
+              .from("apis")
+              .update({ auth_scheme: selected })
+              .eq("id", props.api.id);
+            if (res.error) throw res.error;
+            props.setApis((prev) =>
+              prev?.map((api) =>
+                api.id === props.api!.id
+                  ? { ...api, auth_scheme: selected }
+                  : api,
+              ),
+            );
+          }}
+          theme={"dark"}
+          includeNull={true}
+        />
+      ) : (
+        authHeader.id === "Query parameter" && (
+          <input
+            className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-[0.4375rem] max-w-[9.5rem] focus:border-purple-600 focus:ring-purple-600"
+            onChange={(e) => setQueryParamName(e.target.value)}
+            value={queryParamName}
+            placeholder={"Parameter name"}
+            onBlur={async () => {
+              if (!props.api) return;
+              const res = await supabase
+                .from("apis")
+                .update({ auth_query_param_name: queryParamName })
+                .eq("id", props.api.id);
+              if (res.error) throw res.error;
+              props.setApis((prev) =>
+                prev?.map((api) =>
+                  api.id === props.api!.id
+                    ? { ...api, auth_query_param_name: queryParamName }
+                    : api,
+                ),
+              );
+            }}
+          />
+        )
+      )}
+      <div className="relative h-16 flex place-items-center">
+        <p className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-10 text-gray-500 rounded-md text-sm font-normal whitespace-nowrap">
+          {"< API-KEY >"}
+        </p>
+        <a
+          href={
+            "https://docs.superflows.ai/docs/connecting-your-api/api-host#authentication"
+          }
+          target={"_blank"}
+          rel={"noreferrer noopener"}
+          className="peer px-2 rounded-md text-sm text-blue-500 hover:text-blue-600 hover:underline whitespace-nowrap"
+        >
+          How to set API key{" "}
+          <ArrowTopRightOnSquareIcon className="h-4 w-4 inline" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function APISettingsModal(props: {
   close: () => void;
   api: Api | null;
@@ -152,7 +327,6 @@ function APISettingsModal(props: {
     boolean | null
   >(null);
   const [headers, setHeaders] = useState<HeadersInsert[]>([]);
-  const [queryParamName, setQueryParamName] = useState<string>("");
   useEffect(() => {
     if (!props.api) return;
     setApiHostLocal(props.api.api_host);
@@ -177,9 +351,6 @@ function APISettingsModal(props: {
       }
       setHeaders(headers);
     })();
-    if (props.api) {
-      setQueryParamName(props.api.auth_query_param_name);
-    }
   }, [props.api]);
 
   const [deleteClicked, setDeleteClicked] = React.useState<boolean>(false);
@@ -325,148 +496,9 @@ function APISettingsModal(props: {
               parameter&rsquo; selected).
             </p>
           </div>
-          <div className="relative mb-4 col-span-2 flex flex-row place-items-center gap-x-3 mt-6 justify-end text-gray-200 text-xl">
-            <SelectBox
-              options={[
-                {
-                  id: "Authorization",
-                  name: "Authorization",
-                },
-                {
-                  id: "Proxy-Authorization",
-                  name: "Proxy-Authorization",
-                },
-                {
-                  id: "x-api-key",
-                  name: "x-api-key",
-                },
-                {
-                  id: "apiKey",
-                  name: "apiKey",
-                },
-                {
-                  id: "Query parameter",
-                  name: "Query parameter",
-                },
-              ]}
-              selected={props.api?.auth_header ?? null}
-              setSelected={async (selected: string) => {
-                if (!props.api) return;
-                const res = await supabase
-                  .from("apis")
-                  .update({ auth_header: selected })
-                  .eq("id", props.api!.id);
-                if (res.error) throw res.error;
-                props.setApis((prev) =>
-                  prev?.map((api) =>
-                    api.id === props.api!.id
-                      ? { ...api, auth_header: selected }
-                      : api,
-                  ),
-                );
-              }}
-              theme="dark"
-            />
-            :
-            {props.api?.auth_header !== "Query parameter" ? (
-              <SelectBox
-                options={[
-                  {
-                    id: null,
-                    name: "None",
-                  },
-                  {
-                    id: "Bearer",
-                    name: "Bearer",
-                  },
-                  {
-                    id: "Basic",
-                    name: "Basic",
-                  },
-                  {
-                    id: "app-token",
-                    name: "app-token",
-                  },
-                  {
-                    id: "Digest",
-                    name: "Digest",
-                  },
-                  {
-                    id: "HOBA",
-                    name: "HOBA",
-                  },
-                  {
-                    id: "Mutual",
-                    name: "Mutual",
-                  },
-                  {
-                    id: "VAPID",
-                    name: "VAPID",
-                  },
-                  {
-                    id: "SCRAM",
-                    name: "SCRAM",
-                  },
-                ]}
-                selected={props.api?.auth_scheme ?? null}
-                setSelected={async (selected: string) => {
-                  if (!props.api) return;
-                  const res = await supabase
-                    .from("apis")
-                    .update({ auth_scheme: selected })
-                    .eq("id", props.api.id);
-                  if (res.error) throw res.error;
-                  props.setApis((prev) =>
-                    prev?.map((api) =>
-                      api.id === props.api!.id
-                        ? { ...api, auth_scheme: selected }
-                        : api,
-                    ),
-                  );
-                }}
-                theme={"dark"}
-                includeNull={true}
-              />
-            ) : (
-              <input
-                className="border border-gray-300 rounded-md text-sm bg-gray-700 text-gray-200 px-5 py-[0.4375rem] max-w-[9.5rem] focus:border-purple-600 focus:ring-purple-600"
-                onChange={(e) => setQueryParamName(e.target.value)}
-                value={queryParamName}
-                placeholder={"Parameter name"}
-                onBlur={async () => {
-                  if (!props.api) return;
-                  const res = await supabase
-                    .from("apis")
-                    .update({ auth_query_param_name: queryParamName })
-                    .eq("id", props.api.id);
-                  if (res.error) throw res.error;
-                  props.setApis((prev) =>
-                    prev?.map((api) =>
-                      api.id === props.api!.id
-                        ? { ...api, auth_query_param_name: queryParamName }
-                        : api,
-                    ),
-                  );
-                }}
-              />
-            )}
-            <div className="relative h-16 flex place-items-center">
-              <p className="flex justify-center place-items-center h-[2.25rem] font-mono bg-gray-900 px-12 text-gray-500 rounded-md text-base font-normal">
-                {"< API-KEY >"}
-              </p>
-              <a
-                href={
-                  "https://docs.superflows.ai/docs/connecting-your-api/api-host#authentication"
-                }
-                target={"_blank"}
-                rel={"noreferrer noopener"}
-                className="peer px-2 rounded-md text-sm text-blue-500 hover:text-blue-600 hover:underline"
-              >
-                How to set API key{" "}
-                <ArrowTopRightOnSquareIcon className="h-4 w-4 inline" />
-              </a>
-            </div>
-          </div>
+          {props.api && (
+            <AuthenticationSection api={props.api} setApis={props.setApis} />
+          )}
           <div className="col-start-1 flex flex-col place-items-start pr-4">
             <h2 className="text-lg text-gray-200">Headers</h2>
             <p className="text-gray-400 text-sm">
