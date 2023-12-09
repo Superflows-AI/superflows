@@ -1845,3 +1845,60 @@ export const realWorldExampleAction3 = {
   keys_to_keep: null,
   api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
 } as unknown as Action;
+
+export const realWorldExampleAction4 = {
+  id: 7967,
+  name: "get_stock_turnover",
+  description:
+    "Also referred to as stock turn, this gets stock turnover for the past 12 months",
+  active: true,
+  org_id: 192,
+  tag: 4540,
+  action_type: "http",
+  path: "/stock_turnover",
+  request_body_contents: null,
+  parameters: [],
+  responses: {
+    "200": {
+      content: {
+        "application/json": {
+          schema: {
+            type: "array",
+            items: {
+              type: "object",
+              required: [
+                "period",
+                "allItems",
+                "stockedItems",
+                "nonStockedItems",
+              ],
+              properties: {
+                period: {
+                  type: "string",
+                  description: "The period that these figures are for",
+                },
+                allItems: {
+                  type: "number",
+                  description: "The stock turn value over all items",
+                },
+                stockedItems: {
+                  type: "number",
+                  description: "The stock turn value over stocked items",
+                },
+                nonStockedItems: {
+                  type: "number",
+                  description: "The stock turn value over non-stocked items",
+                },
+              },
+            },
+          },
+        },
+      },
+      description: "OK",
+    },
+  },
+  created_at: "2023-08-10T14:33:49.152403+00:00",
+  request_method: "get",
+  keys_to_keep: null,
+  api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
+} as unknown as Action;

@@ -282,7 +282,7 @@ export function removeUnnecessaryTSTypeArgs(
     const lineNoComment = line.split(" //")[0];
 
     if (i === 0 && line.startsWith("{")) {
-      if (Array.isArray(currentObject)) {
+      while (Array.isArray(currentObject)) {
         currentObject = currentObject[0];
       }
       // First line "{"
@@ -309,7 +309,7 @@ export function removeUnnecessaryTSTypeArgs(
       const fieldName = line.split(/\??:/)[0];
       let field = currentObject ? currentObject[fieldName] : undefined;
       if (field !== undefined) {
-        if (Array.isArray(field)) {
+        while (Array.isArray(field)) {
           field = field[0];
         }
         // Add the line to the new schema

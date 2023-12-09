@@ -62,7 +62,15 @@ export function constructHttpRequest({
   headers["Accept"] = "application/json";
   if (userApiKey && action.api.auth_header !== "Query parameter") {
     const scheme = action.api.auth_scheme ? action.api.auth_scheme + " " : "";
-    headers[action.api.auth_header] = `${scheme}${userApiKey}`;
+    const includeScheme = [
+      "Authorization",
+      "Proxy-Authorization",
+      "x-api-key",
+      "apiKey",
+    ].includes(action.api.auth_header);
+    headers[action.api.auth_header] = `${
+      includeScheme ? scheme : ""
+    }${userApiKey}`;
   }
 
   if (action.api.api_host.includes("api/mock"))
