@@ -9,6 +9,7 @@ import {
   realWorldExampleAction1,
   realWorldExampleAction2,
   realWorldExampleAction3,
+  realWorldExampleAction4,
   realWorldExampleSchema1,
   realWorldExampleSchema2,
 } from "./testData";
@@ -1482,6 +1483,37 @@ forecast: number // The forecast demand for a future period, or previously-forec
 period: string // The period the figures are reported for
 picks: integer // The number of times a customer buys any number of this item type (1 pick often corresponds to many items sold)
 }[]
+}[]
+`);
+  });
+  it("Real world example 4", () => {
+    const out = getActionTSSignature(realWorldExampleAction4, true, [
+      {
+        period: "2022-05",
+        allItems: 0,
+        stockedItems: 0,
+        nonStockedItems: 26.6567,
+      },
+      {
+        period: "2022-06",
+        allItems: 192,
+        stockedItems: 3,
+        nonStockedItems: 20.094,
+      },
+      {
+        period: "2022-07",
+        allItems: 176,
+        stockedItems: 1,
+        nonStockedItems: 129,
+      },
+    ]);
+    expect(out).toEqual(`
+/** Also referred to as stock turn, this gets stock turnover for the past 12 months **/
+function getStockTurnover(): {
+period: string // The period that these figures are for
+allItems: number // The stock turn value over all items
+stockedItems: number // The stock turn value over stocked items
+nonStockedItems: number // The stock turn value over non-stocked items
 }[]
 `);
   });
