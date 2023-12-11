@@ -29,6 +29,14 @@ export function processAPIoutput(
   return out;
 }
 
+function forgeLogMessage(url: string, requestOptions: RequestInit) {
+  return `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
+    requestOptions,
+    null,
+    2,
+  )}`;
+}
+
 export function constructHttpRequest({
   action,
   parameters,
@@ -60,18 +68,6 @@ export function constructHttpRequest({
   const headers: Record<string, string> = {};
   // TODO: You can only overwrite this header if it's in the parameters
   headers["Accept"] = "application/json";
-  if (userApiKey && action.api.auth_header !== "Query parameter") {
-    const scheme = action.api.auth_scheme ? action.api.auth_scheme + " " : "";
-    const includeScheme = [
-      "Authorization",
-      "Proxy-Authorization",
-      "x-api-key",
-      "apiKey",
-    ].includes(action.api.auth_header);
-    headers[action.api.auth_header] = `${
-      includeScheme ? scheme : ""
-    }${userApiKey}`;
-  }
 
   if (action.api.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
@@ -156,11 +152,24 @@ export function constructHttpRequest({
   }
 
   requestOptions.headers = headers;
-  const logMessage = `Attempting fetch with url: ${url}\n\nWith options:${JSON.stringify(
-    requestOptions,
-    null,
-    2,
-  )}`;
+  let logMessage = forgeLogMessage(url, requestOptions);
+  if (userApiKey && action.api.auth_header !== "Query parameter") {
+    const includeScheme = [
+      "Authorization",
+      "Proxy-Authorization",
+      "x-api-key",
+      "apiKey",
+    ].includes(action.api.auth_header);
+    const scheme =
+      includeScheme && action.api.auth_scheme
+        ? action.api.auth_scheme + " "
+        : "";
+    // Remove auth header from log message
+    requestOptions.headers[action.api.auth_header] = `${scheme}<REDACTED>`;
+    logMessage = forgeLogMessage(url, requestOptions);
+    // Add it in before it's output
+    requestOptions.headers[action.api.auth_header] = `${scheme}${userApiKey}`;
+  }
   console.log(logMessage);
 
   if (stream)
