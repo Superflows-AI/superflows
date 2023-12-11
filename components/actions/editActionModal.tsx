@@ -25,6 +25,7 @@ import FloatingLabelInput, {
 import Modal from "../modal";
 import SelectBox, { SelectBoxOption } from "../selectBox";
 import Checkbox from "../checkbox";
+import { exampleParameters, exampleRequestBody } from "./consts";
 
 const allActionTypes: SelectBoxOption[] = [
   {
@@ -275,6 +276,18 @@ export default function EditActionModal(props: {
             See examples (in YAML, not JSON) here
           </a>
         </p>
+        <div className="-mb-3 w-full flex flex-row justify-end px-7">
+          <button
+            className={
+              "px-3 py-0.5 text-sm bg-gray-200 hover:bg-gray-100 active:bg-gray-50 rounded border "
+            }
+            onClick={() => {
+              setLocalAction({ ...localAction, parameters: exampleParameters });
+            }}
+          >
+            Example parameters
+          </button>
+        </div>
         <JsonTextBox
           title={"parameters"}
           validJSON={parametersValidJSON}
@@ -283,6 +296,21 @@ export default function EditActionModal(props: {
           setLocalAction={setLocalAction}
         />
 
+        <div className="-mb-3 w-full flex flex-row justify-end px-7">
+          <button
+            className={
+              "px-3 py-0.5 text-sm bg-gray-200 hover:bg-gray-100 active:bg-gray-50 rounded border "
+            }
+            onClick={() => {
+              setLocalAction({
+                ...localAction,
+                request_body_contents: exampleRequestBody,
+              });
+            }}
+          >
+            Example request body
+          </button>
+        </div>
         {/* REQUEST_BODY_CONTENTS */}
         <JsonTextBox
           title={"request_body_contents"}
