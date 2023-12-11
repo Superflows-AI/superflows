@@ -13,60 +13,60 @@
 
 .progress-bar-0\/4 {
   background:
-    radial-gradient(closest-side, #374151 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #374151 9px, transparent 10px 14px),
     conic-gradient(#9333ea 0%, #4b5563 0);
 }
 
 .progress-bar-1\/4 {
   background:
-    radial-gradient(closest-side, #374151 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #374151 9px, transparent 10px 14px),
     conic-gradient(#9333ea 25%, #4b5563 0);
 }
 
 .progress-bar-2\/4 {
   background:
-    radial-gradient(closest-side, #374151 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #374151 9px, transparent 10px 14px),
     conic-gradient(#9333ea 50%, #4b5563 0);
 }
 
 .progress-bar-3\/4 {
   background:
-    radial-gradient(closest-side, #374151 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #374151 9px, transparent 10px 14px),
     conic-gradient(#9333ea 75%, #4b5563 0);
 }
 
 .progress-bar-4\/4 {
   background:
-    radial-gradient(closest-side, #374151 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #374151 9px, transparent 10px 14px),
     conic-gradient(#9333ea 100%, #4b5563 0);
 }
 
 progress-bar-0\/4:hover {
   background:
-    radial-gradient(closest-side, #4b5563 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #4b5563 9px, transparent 10px 14px),
     conic-gradient(#a855f7 0%, #6b7280 0);
 }
 
 .progress-bar-1\/4:hover {
   background:
-    radial-gradient(closest-side, #4b5563 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #4b5563 9px, transparent 10px 14px),
     conic-gradient(#a855f7 25%, #6b7280 0);
 }
 
 .progress-bar-2\/4:hover {
   background:
-    radial-gradient(closest-side, #4b5563 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #4b5563 9px, transparent 10px 14px),
     conic-gradient(#a855f7 50%, #6b7280 0);
 }
 
 .progress-bar-3\/4:hover {
   background:
-    radial-gradient(closest-side, #4b5563 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #4b5563 9px, transparent 10px 14px),
     conic-gradient(#a855f7 75%, #6b7280 0);
 }
 
 .progress-bar-4\/4:hover {
   background:
-    radial-gradient(closest-side, #4b5563 75%, transparent 75% 100%),
+    radial-gradient(closest-side, #4b5563 9px, transparent 10px 14px),
     conic-gradient(#a855f7 100%, #6b7280 0);
 }
