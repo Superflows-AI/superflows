@@ -50,10 +50,7 @@ import {
   getSearchDocsAction,
   searchDocsActionName,
 } from "../builtinActions";
-import {
-  AssistantMessage,
-  StreamingStepInput,
-} from "@superflows/chat-ui-react/dist/src/lib/types";
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -411,7 +408,9 @@ export async function Angela( // Good ol' Angela
           mostRecentParsedOutput.commands.map(async (command, idx) => {
             console.log("Processing command: ", command);
             // Check if the action name called by the LLM exists
-            const chosenAction = actions.find((a) => a.name === command.name);
+            const chosenAction: ActionPlusApiInfo | undefined = actions.find(
+              (a) => a.name === command.name,
+            );
             if (!chosenAction) {
               // There are 2 main failure cases:
               //  1. Totally useless e.g. FUNCTION_1()
@@ -504,7 +503,7 @@ export async function Angela( // Good ol' Angela
               streamInfo({ role: "loading", content: "Calling API" });
               try {
                 out = await makeHttpRequest(url, requestOptions, currentHost);
-                errorMakingAPICall == errorMakingAPICall || out.isError;
+                errorMakingAPICall = errorMakingAPICall || out.isError;
                 out = processAPIoutput(out.output, chosenAction);
               } catch (e) {
                 console.error(e);
@@ -660,6 +659,9 @@ export async function Angela( // Good ol' Angela
           nonSystemMessages.push(fnMsg);
         } else if (pastFunctionCalls.length === 0) {
           fnMsg.content = `Error: no functions have been called in the chat history yet`;
+          nonSystemMessages.push(fnMsg);
+        } else if (errorMakingAPICall) {
+          fnMsg.content = `Error: an API call failed, so data analysis skipped`;
           nonSystemMessages.push(fnMsg);
         }
       }
