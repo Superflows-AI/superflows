@@ -140,6 +140,9 @@ export function getActionDescriptions(actions: Action[]): string {
       action.parameters.forEach((param) => {
         const p = param as unknown as OpenAPIV3_1.ParameterObject;
         const schema = (p?.schema ?? null) as OpenAPIV3_1.SchemaObject | null;
+        // Throw out readonly attributes - note: this is not 'normal' in specs, but it's a way we can hide
+        // parameters from the AI
+        if (schema && schema.readOnly) return;
         // Below case is cursed: required param with 1 enum. Skip it.
         if (schema && schema.enum && schema.enum.length === 1 && p.required)
           return;

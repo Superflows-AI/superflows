@@ -17,9 +17,9 @@ The functions are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAME
 
 ${numberedActions}
 
-You have three options for each function: 
+You have three options for each function:
 
-1. Relevant: The function is relevant to the user's request 
+1. Relevant: The function is relevant to the user's request
 2. Not Sure: You are not 100% sure, or you do not know what the function does
 3. Irrelevant: You are 100% certain the function has 0 relevance to the user's request
 
