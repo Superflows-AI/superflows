@@ -168,7 +168,10 @@ export default async function handler(
           .select("*")
           .eq("name", tagName)
           .eq("org_id", orgId);
-        if (existingActionTagResp.error) throw existingActionTagResp.error;
+        if (existingActionTagResp.error) {
+          res.status(500).send(existingActionTagResp);
+          return;
+        }
         if (
           existingActionTagResp.data === null ||
           existingActionTagResp.data.length === 0
@@ -178,7 +181,10 @@ export default async function handler(
             .from("action_tags")
             .insert({ name: tagName, org_id: orgId, api_id })
             .select();
-          if (actionTagResponse.error) throw actionTagResponse.error;
+          if (actionTagResponse.error) {
+            res.status(500).send(actionTagResponse);
+            return;
+          }
           if (actionTagResponse.data.length === 0) {
             throw new Error("No action tag created");
           }
@@ -217,20 +223,24 @@ export default async function handler(
   // Don't insert if already in database (previously uploaded this swagger file)
   const actionResp = await supabase
     .from("actions")
-    .select("*")
-    .eq("org_id", orgId)
-    .in(
-      "name",
-      actionInserts.map((action) => action.name),
-    );
-  if (actionResp.error) throw actionResp.error;
+    .select("name")
+    .eq("org_id", orgId);
+  if (actionResp.error) {
+    res.status(500).send(actionResp);
+    return;
+  }
   const existingActionNames = actionResp.data.map((action) => action.name);
   actionInserts = actionInserts.filter(
     (action) => !existingActionNames.includes(action.name!),
   );
-  const actionInsertResp = await supabase.from("actions").insert(actionInserts);
-  if (actionInsertResp.error) {
-    throw actionInsertResp.error;
+  for (let i = 0; i < Math.ceil(actionInserts.length / 100); i++) {
+    const actionInsertResp = await supabase
+      .from("actions")
+      .insert(actionInserts.slice(i * 100, (i + 1) * 100));
+    if (actionInsertResp.error) {
+      res.status(500).send(actionInsertResp);
+      return;
+    }
   }
 
   res.status(200).send({ success: true });
