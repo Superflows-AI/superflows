@@ -24,6 +24,11 @@ let allLLMsBase: SelectBoxOption[] = [
     name: "Select an LLM",
   },
   {
+    id: "mistral-small",
+    name: "Mixtral",
+    description: "Speed: 2.5/3 | Accuracy: 2/3",
+  },
+  {
     id: "gpt-4-0613",
     name: "GPT-4",
     description: "Speed: 1/3 | Accuracy: 3/3",
@@ -39,16 +44,6 @@ const openRouterBaseModels = [
   {
     id: "meta-llama/llama-2-70b-chat",
     name: "Llama 2 (Beta)",
-    description: "In Beta, may be unstable",
-  },
-  {
-    id: "anthropic/claude-2",
-    name: "Anthropic - Claude 2 (Beta)",
-    description: "In Beta, may be unstable",
-  },
-  {
-    id: "google/palm-2-chat-bison",
-    name: "Google - PaLM 2 Chat Bison (Beta)",
     description: "In Beta, may be unstable",
   },
 ];
