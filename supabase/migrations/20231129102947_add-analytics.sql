@@ -16,6 +16,10 @@ alter table "public"."analytics_code_snippets" add constraint "analytics_code_sn
 alter table "public"."analytics_code_snippets" add constraint "analytics_code_snippets_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE not valid;
 alter table "public"."analytics_code_snippets" validate constraint "analytics_code_snippets_org_id_fkey";
 
+alter table "public"."analytics_code_snippets" add constraint "analytics_code_snippets_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE not valid;
+alter table "public"."analytics_code_snippets" validate constraint "analytics_code_snippets_conversation_id_fkey";
+
+
 create policy "Enable insert for users based on user_id"
 on "public"."analytics_code_snippets"
 as permissive
