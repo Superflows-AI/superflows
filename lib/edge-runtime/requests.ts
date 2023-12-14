@@ -184,7 +184,7 @@ export function constructHttpRequest({
 export function endpointUrlFromAction(action: {
   api_host: string;
   path: string;
-}) {
+}): string {
   // Ensure the base URL has a trailing slash
   const base = action.api_host.endsWith("/")
     ? action.api_host
@@ -381,9 +381,7 @@ export async function makeHttpRequest(
 export function getDocsChatRequest(
   chosenAction: ActionPlusApiInfo,
   user_input: string,
-  org_id: number,
-  tokenCount: number,
-): { url: any; requestOptions: any } {
+): { url: string; requestOptions: RequestInit } {
   return {
     url: endpointUrlFromAction({
       api_host: chosenAction.api.api_host,
@@ -394,8 +392,6 @@ export function getDocsChatRequest(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         query: user_input,
-        org_id,
-        tokenCount,
       }),
     },
   };

@@ -484,6 +484,7 @@ export interface Database {
         Row: {
           analytics_enabled: boolean;
           api_key: string;
+          caching_enabled: boolean;
           chat_to_docs_enabled: boolean;
           chatbot_instructions: string;
           created_at: string | null;
@@ -498,6 +499,7 @@ export interface Database {
         Insert: {
           analytics_enabled?: boolean;
           api_key?: string;
+          caching_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;
@@ -512,6 +514,7 @@ export interface Database {
         Update: {
           analytics_enabled?: boolean;
           api_key?: string;
+          caching_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;

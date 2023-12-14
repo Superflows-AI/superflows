@@ -224,6 +224,32 @@ const completionOptions: ChatGPTParams = {
   temperature: 0.2,
 };
 
+async function tryCacheForResponse(
+  userMessage: string,
+  orgId: number,
+): Promise<{ rawOutput: string; prevConversationId: number | null }> {
+  const res = await supabase
+    .from("chat_messages")
+    .select("conversation_id")
+    .match({ conversation_index: 0, org_id: orgId, content: userMessage })
+    .order("conversation_id", { ascending: true });
+  if (res.data?.length) {
+    const res2 = await supabase.from("chat_messages").select("content").match({
+      conversation_index: 1,
+      org_id: orgId,
+      conversation_id: res.data[0].conversation_id,
+    });
+    if (res2.data?.length) {
+      console.log("Cache hit with convo id:", res.data[0].conversation_id);
+      return {
+        rawOutput: res2.data[0].content,
+        prevConversationId: res.data[0].conversation_id,
+      };
+    }
+  }
+  return { rawOutput: "", prevConversationId: null };
+}
+
 // Angela takes actions
 export async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
@@ -264,6 +290,7 @@ export async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
+  let prevConversationId = null;
 
   // This allows us to add the 'Search docs' action if it's enabled
   if (org.chat_to_docs_enabled) {
@@ -325,57 +352,72 @@ export async function Angela( // Good ol' Angela
         model === "gpt-4-0613" ? "4" : "3",
       );
 
-      // If still over the context limit tell the user to remove actions
-      const tokenCount = getTokenCount(chatGptPrompt);
-      // TODO - add limits for more models
-      const maxTokens = model.includes("gpt-3.5") ? 4096 : 8192;
-
-      if (tokenCount >= maxTokens - MAX_TOKENS_OUT) {
-        console.error(
-          `Cannot call LLM API for conversation with id: ${conversationId}. Context limit reached`,
-        );
+      let rawOutput: string = "";
+      // Only try cache if this is the first message in the conversation
+      if (org.caching_enabled && nonSystemMessages.length === 1) {
+        ({ rawOutput, prevConversationId } = await tryCacheForResponse(
+          previousMessages[previousMessages.length - 1].content,
+          org.id,
+        ));
+        // Set to null after first message
+      } else prevConversationId = null;
+      if (rawOutput) {
         streamInfo({
-          role: "error",
-          content:
-            "Your organization has too many actions enabled to complete this request. Disable some actions or contact your IT team.",
+          role: "assistant",
+          content: rawOutput,
         });
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
-      }
-
-      const promptInputCost = openAiCost(chatGptPrompt, "in", model);
-      console.log("GPT input cost:", promptInputCost);
-      totalCost += promptInputCost;
-
-      const res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [chatGptPrompt, completionOptions, model],
-        3,
-      );
-      if (res === null || (typeof res !== "string" && "message" in res)) {
-        console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
-            res,
-          )}`,
-        );
-        streamInfo({
-          role: "error",
-          content: "Call to Language Model API failed",
-        });
-        return { nonSystemMessages, cost: totalCost, numUserQueries };
-      }
-
-      let rawOutput: string;
-      if (typeof res === "string") {
-        // If non-streaming response, just return the full output
-        rawOutput = res;
-        streamInfo({ role: "assistant", content: res });
       } else {
-        // Stream response chunk by chunk
-        rawOutput = await streamResponseToUser(
-          res,
-          streamInfo,
-          originalToPlaceholderMap,
+        // If still over the context limit tell the user to remove actions
+        const tokenCount = getTokenCount(chatGptPrompt);
+        // TODO - add limits for more models
+        const maxTokens = model.includes("gpt-3.5") ? 4096 : 8192;
+
+        if (tokenCount >= maxTokens - MAX_TOKENS_OUT) {
+          console.error(
+            `Cannot call LLM API for conversation with id: ${conversationId}. Context limit reached`,
+          );
+          streamInfo({
+            role: "error",
+            content:
+              "Your organization has too many actions enabled to complete this request. Disable some actions or contact your IT team.",
+          });
+          return { nonSystemMessages, cost: totalCost, numUserQueries };
+        }
+
+        const promptInputCost = openAiCost(chatGptPrompt, "in", model);
+        console.log("GPT input cost:", promptInputCost);
+        totalCost += promptInputCost;
+
+        const res = await exponentialRetryWrapper(
+          streamLLMResponse,
+          [chatGptPrompt, completionOptions, model],
+          3,
         );
+        if (res === null || (typeof res !== "string" && "message" in res)) {
+          console.error(
+            `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
+              res,
+            )}`,
+          );
+          streamInfo({
+            role: "error",
+            content: "Call to Language Model API failed",
+          });
+          return { nonSystemMessages, cost: totalCost, numUserQueries };
+        }
+
+        if (typeof res === "string") {
+          // If non-streaming response, just return the full output
+          rawOutput = res;
+          streamInfo({ role: "assistant", content: res });
+        } else {
+          // Stream response chunk by chunk
+          rawOutput = await streamResponseToUser(
+            res,
+            streamInfo,
+            originalToPlaceholderMap,
+          );
+        }
       }
 
       const newMessage = {
@@ -390,11 +432,7 @@ export async function Angela( // Good ol' Angela
 
       // We only count a query against a user's quota if the AI selects an action to take.
       // We don't count it if the AI is just asking for more information, or if the user says 'hi' etc.
-      if (
-        mostRecentParsedOutput.commands &&
-        mostRecentParsedOutput.commands.length > 0
-      )
-        numUserQueries += 1;
+      if (mostRecentParsedOutput.commands?.length > 0) numUserQueries = 1;
 
       // Add assistant message to nonSystemMessages
       nonSystemMessages.push(newMessage);
@@ -484,12 +522,7 @@ export async function Angela( // Good ol' Angela
             if (!chosenAction.requires_confirmation) {
               const { url, requestOptions } =
                 chosenAction.name === searchDocsActionName
-                  ? getDocsChatRequest(
-                      chosenAction,
-                      reqData.user_input,
-                      org.id,
-                      tokenCount,
-                    )
+                  ? getDocsChatRequest(chosenAction, reqData.user_input)
                   : constructHttpRequest({
                       action: chosenAction,
                       parameters: command.args,
@@ -629,6 +662,7 @@ export async function Angela( // Good ol' Angela
           nonSystemMessages,
           org,
           { conversationId, index: nonSystemMessages.length },
+          prevConversationId,
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
 

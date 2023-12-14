@@ -39,12 +39,34 @@ export const defaultDataAnalysisParams: ChatGPTParams = {
 
 type NonUserMessage = FunctionMessage | AssistantMessage;
 
+async function tryDataAnalysisCache(
+  instruction: string,
+  orgId: number,
+  prevConversationId: number | null,
+): Promise<string> {
+  console.log("Trying to find cached data analysis response...");
+  const res = await supabase
+    .from("analytics_code_snippets")
+    .select("output")
+    .match({
+      org_id: orgId,
+      conversation_id: prevConversationId,
+      instruction_message: instruction,
+    });
+  if (res.data?.[0]) {
+    console.log("Found cached data analysis response!");
+    return res.data[0].output;
+  }
+  return "";
+}
+
 export async function runDataAnalysis(
   instruction: string,
   actions: ActionPlusApiInfo[],
   fullChatHistory: GPTMessageInclSummary[],
   org: Pick<Organization, "id" | "name" | "description">,
   dbData: { conversationId: number; index: number },
+  prevConversationId: number | null,
 ): Promise<GraphData | { error: string } | null> {
   // Step by step, go back through user-response sequences until we find the last function
   // message that's not a data analysis call
@@ -76,19 +98,31 @@ export async function runDataAnalysis(
     varNames,
     org,
   );
-  console.info(`dataAnalysisPrompt: SYSTEM
+
+  let llmResponse = "";
+  if (prevConversationId !== null) {
+    llmResponse = await tryDataAnalysisCache(
+      dataAnalysisPrompt[1].content,
+      org.id,
+      prevConversationId,
+    );
+  }
+
+  if (!llmResponse) {
+    console.info(`dataAnalysisPrompt: SYSTEM
 ---
 ${dataAnalysisPrompt[0].content}
 
 USER
 ---
 ${dataAnalysisPrompt[1].content}`);
-  let llmResponse = await exponentialRetryWrapper(
-    getLLMResponse,
-    [dataAnalysisPrompt, defaultDataAnalysisParams, "gpt-4-0613"],
-    3,
-  );
-  console.info("LLM response:", llmResponse);
+    llmResponse = await exponentialRetryWrapper(
+      getLLMResponse,
+      [dataAnalysisPrompt, defaultDataAnalysisParams, "gpt-4-0613"],
+      3,
+    );
+    console.info("LLM response:", llmResponse);
+  }
 
   // Parse the result
   let parsedCode = parseDataAnalysisResponse(llmResponse);
