@@ -155,11 +155,22 @@ function getLLMRequestChat(
   options: { method: string; headers: HeadersInit; body: string };
 } {
   const isOpenAIModel = model.includes("gpt");
+  const isMistralModel = model.includes("mistral");
   const isOS = isOSModel(model);
   let key: string, url: string;
   if (isOpenAIModel) {
     key = process.env.OPENAI_API_KEY!;
     url = "https://api.openai.com/v1/chat/completions";
+  } else if (isMistralModel) {
+    key = process.env.MISTRAL_API_KEY!;
+    url = "https://api.mistral.ai/v1/chat/completions";
+    // Mistral doesn't know about function messages & is fussy about only replying to user messages!
+    // Below stringify-parse is deepcopy
+    messages = JSON.parse(JSON.stringify(messages)).map((m: ChatGPTMessage) =>
+      m.role !== "function"
+        ? { ...m }
+        : { role: "user", content: `${m.name} output: ${m.content}` },
+    );
   } else if (isOS) {
     if (!process.env.OS_LLM_API_KEY || !process.env.OS_LLM_URL)
       throw new Error(
@@ -171,14 +182,6 @@ function getLLMRequestChat(
     key = process.env.OPENROUTER_API_KEY!;
     url = "https://openrouter.ai/api/v1/chat/completions";
   }
-
-  let processedMessages: LLMChatMessage[] =
-    // Google palm 2 chat bison doesn't like function messages
-    model !== "google/palm-2-chat-bison"
-      ? messages
-      : messages.map((m) =>
-          m.role !== "function" ? { ...m } : { ...m, role: "assistant" },
-        );
 
   const options = {
     method: "POST",
@@ -192,14 +195,14 @@ function getLLMRequestChat(
         ? // Not OS, so use OpenAI input
           {
             model,
-            messages: processedMessages,
+            messages,
             ...defaultParams,
             ...params,
           }
         : // Self-hosted endpoints
           {
             input: {
-              messages: processedMessages,
+              messages,
               ...defaultParams,
               ...params,
             },
