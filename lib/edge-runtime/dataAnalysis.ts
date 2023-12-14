@@ -28,7 +28,7 @@ const supabase = createClient<Database>(
   process.env.SERVICE_LEVEL_KEY_SUPABASE!,
 );
 
-const defaultDataAnalysisParams: ChatGPTParams = {
+export const defaultDataAnalysisParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
   max_tokens: 1400,
   temperature: 0.5,
