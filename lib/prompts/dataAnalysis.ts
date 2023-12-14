@@ -92,7 +92,7 @@ export function getFunctionCallCode(
   return calledActions
     .map((a, idx) => {
       const funcName = snakeToCamel(a.action.name);
-      const argsText = Object.entries(a.args)
+      let argsText = Object.entries(a.args)
         .map(([key, value]) => {
           return `${key}:${JSON.stringify(value)}`;
         })
@@ -108,9 +108,8 @@ export function getFunctionCallCode(
       ) {
         lengthStr = `// ${varNames[idx]}.items.length = ${a.output.items.length}`;
       }
-      return `const ${varNames[idx]} = ${funcName}(${
-        argsText ? `{${argsText}` : ""
-      }});${lengthStr}`;
+      argsText = argsText ? `{${argsText}}` : "";
+      return `const ${varNames[idx]} = ${funcName}(${argsText});${lengthStr}`;
     })
     .join("\n");
 }
