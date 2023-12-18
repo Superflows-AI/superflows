@@ -128,12 +128,15 @@ export function constructHttpRequest({
           encodeURIComponent(String(getParam(parameters, param.name))),
         );
       } else if (param.in === "query") {
-        queryParams.set(param.name, String(getParam(parameters, param.name)));
+        queryParams.set(
+          param.name,
+          String(getParam(parameters, param.name, true)),
+        );
       } else if (param.in === "header") {
-        headers[param.name] = String(getParam(parameters, param.name));
+        headers[param.name] = String(getParam(parameters, param.name, true));
       } else if (param.in === "cookie") {
         headers["Cookie"] = `${param}=${String(
-          getParam(parameters, param.name),
+          getParam(parameters, param.name, true),
         )}`;
       } else {
         throw new Error(

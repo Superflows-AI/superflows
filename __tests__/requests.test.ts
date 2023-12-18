@@ -487,9 +487,7 @@ describe("constructHttpRequest", () => {
     expect(requestOptions.body).toBe(undefined);
   });
   it("GET - use query parameter auth", () => {
-    const action = {
-      ...constActionParams,
-    };
+    const action = JSON.parse(JSON.stringify(constActionParams));
     action.api.auth_header = "Query parameter";
     action.api.auth_query_param_name = "token";
     const { url, requestOptions } = constructHttpRequest({
@@ -507,6 +505,85 @@ describe("constructHttpRequest", () => {
       stream: () => {},
     });
     expect(url).toBe("https://api.mock/api/mock/confirm?token=1234");
+    expect(requestOptions.method).toBe("GET");
+    expect(requestOptions.headers).toEqual({ Accept: "application/json" });
+    expect(requestOptions.body).toBe(undefined);
+  });
+  it("GET - object in query", () => {
+    const action = {
+      ...constActionParams,
+    };
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...action,
+        parameters: [
+          {
+            in: "query",
+            name: "obj",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                one: { type: "string" },
+                two: { type: "string" },
+              },
+            },
+          },
+        ],
+        headers: [],
+        path: "/api/mock/confirm",
+        request_method: "GET",
+        request_body_contents: null,
+      },
+      parameters: { obj: { one: "ONE", two: "TWO" } },
+      organization,
+      userApiKey: undefined,
+      stream: () => {},
+    });
+    expect(url).toBe(
+      "https://api.mock/api/mock/confirm?obj=%7B%22one%22%3A%22ONE%22%2C%22two%22%3A%22TWO%22%7D",
+    );
+    expect(requestOptions.method).toBe("GET");
+    expect(requestOptions.headers).toEqual({ Accept: "application/json" });
+    expect(requestOptions.body).toBe(undefined);
+  });
+  it("GET - array in query", () => {
+    const action = {
+      ...constActionParams,
+    };
+    const { url, requestOptions } = constructHttpRequest({
+      action: {
+        ...action,
+        parameters: [
+          {
+            in: "query",
+            name: "obj",
+            required: true,
+            schema: {
+              type: "array",
+              properties: {
+                type: "object",
+                properties: {
+                  one: { type: "string" },
+                  two: { type: "string" },
+                },
+              },
+            },
+          },
+        ],
+        headers: [],
+        path: "/api/mock/confirm",
+        request_method: "GET",
+        request_body_contents: null,
+      },
+      parameters: { obj: [{ one: "ONE", two: "TWO" }] },
+      organization,
+      userApiKey: undefined,
+      stream: () => {},
+    });
+    expect(url).toBe(
+      "https://api.mock/api/mock/confirm?obj=%5B%7B%22one%22%3A%22ONE%22%2C%22two%22%3A%22TWO%22%7D%5D",
+    );
     expect(requestOptions.method).toBe("GET");
     expect(requestOptions.headers).toEqual({ Accept: "application/json" });
     expect(requestOptions.body).toBe(undefined);
