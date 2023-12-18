@@ -617,4 +617,47 @@ describe("getActionDescriptions", () => {
 `,
     );
   });
+  it("array parameter", () => {
+    const out = getActionDescriptions([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [
+          {
+            in: "query",
+            name: "filters",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["path", "operator", "value"],
+                properties: {
+                  path: {
+                    enum: ["listing_active", "country"],
+                    type: "string",
+                  },
+                  operator: {
+                    description: "An enumeration",
+                    enum: ["=="],
+                    type: "string",
+                  },
+                  value: {
+                    type: "string",
+                  },
+                },
+              },
+            },
+          },
+        ],
+        request_body_contents: null,
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `action1: description1. PARAMETERS:
+- filters (object[])
+\t- path ("listing_active" | "country") REQUIRED
+\t- value (string) REQUIRED
+`,
+    );
+  });
 });

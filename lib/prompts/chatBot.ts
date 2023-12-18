@@ -142,7 +142,7 @@ export function getActionDescriptions(actions: Action[]): string {
         const schema = (p?.schema ?? null) as OpenAPIV3_1.SchemaObject | null;
         // Throw out readonly attributes - note: this is not 'normal' in specs, but it's a way we can hide
         // parameters from the AI
-        if (schema && schema.readOnly) return;
+        if (!schema || schema.readOnly) return;
         // Below case is cursed: required param with 1 enum. Skip it.
         if (schema && schema.enum && schema.enum.length === 1 && p.required)
           return;
@@ -151,14 +151,19 @@ export function getActionDescriptions(actions: Action[]): string {
         // Note: using "Example:" rather than "E.g." because it's 1 fewer token
         const example =
           schema && (schema.example || p.example) && !schema.enum
-            ? ` Example: ${schema.example || p.example}.`
+            ? schema.example || p.example
             : "";
 
-        paramString += `\n- ${p.name} (${
-          schema ? getType(schema.type, schema.enum) : "any"
-        })${formatDescription(p.description)}${example}${
-          p.required ? " REQUIRED" : ""
-        }`;
+        if (p.description && !schema.description) {
+          schema.description = p.description;
+        }
+        if (example && !schema.example) schema.example = example;
+
+        paramString += `\n- ${p.name} ${formatReqBodySchema(
+          schema,
+          1,
+          p.required,
+        )}`;
       });
     }
     const reqBody = action.request_body_contents as unknown as {
