@@ -10,6 +10,7 @@ import {
   realWorldExampleAction2,
   realWorldExampleAction3,
   realWorldExampleAction4,
+  realWorldExampleAction5,
   realWorldExampleSchema1,
   realWorldExampleSchema2,
 } from "./testData";
@@ -268,20 +269,20 @@ mainAccountId: string // the main account id which the given account is linked t
     expect(out).toEqual(`{
 data: {
 account?: {
-clientId?: string[] // array of undefined
+clientId?: string[]
 status?: (\"pending\" | \"active\" | \"inactive\" | \"suspended\" | \"closed\" | \"declined\")[] // array of status of account
-currency?: string[] // array of undefined
+currency?: string[]
 alias?: string
 routingCodeKey?: string
 routingCodeValue?: string
-iban?: string[] // array of undefined
-accountNumber?: string[] // array of undefined
-ledgerNumber?: string[] // array of undefined
+iban?: string[]
+accountNumber?: string[]
+ledgerNumber?: string[]
 availableBalanceFrom?: number
 availableBalanceTo?: number
-serviceProvider?: string[] // array of undefined
+serviceProvider?: string[]
 accountHolderName?: string
-accountType?: (\"main-account\" | \"sub-account\" | \"standalone-account\")[] // array of undefined
+accountType?: (\"main-account\" | \"sub-account\" | \"standalone-account\")[]
 mainAccountId?: string
 }
 accounts?: {
@@ -1515,6 +1516,70 @@ allItems: number // The stock turn value over all items
 stockedItems: number // The stock turn value over stocked items
 nonStockedItems: number // The stock turn value over non-stocked items
 }[]
+`);
+  });
+  it("Real world example 5", () => {
+    const out = getActionTSSignature(realWorldExampleAction5, true);
+    expect(out).toEqual(`
+/** Get a list of all listings for a given marketplace **/
+function getListings(args: {
+filters?: {
+path: "listing_active" | "country"
+value: string
+}[]
+}): {
+start_key: boolean
+hits: {
+owner?: null
+address: {
+country: string
+lng: string
+city: string
+apt_number: null
+street: string
+timezone: integer
+formatted: string
+state: string
+timezone_string: string
+zip_code: string
+lat: string
+}
+connected_channels: {
+channels: any[]
+integration_listing_id: string
+integration_host_id: string
+integration_type: string
+}[]
+listing_id: string
+max_guests: {
+persons: integer
+children: integer
+}
+active: boolean
+check_times: {
+check_in_to_time: string
+check_in_time: string
+check_out_time: string
+}
+created_at: integer
+type: null,string
+picture: string
+space?: any
+enso_key: string
+products?: string[]
+tags: string[]
+channels: any[]
+group_id: string
+lead_time?: integer
+name: string
+nickname: string
+currency: string // Three letter acronym for currency. Example: USD
+id: string
+devices?: string[]
+hidden_groups?: string[]
+}[]
+count: integer
+}
 `);
   });
 });
