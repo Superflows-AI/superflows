@@ -1902,3 +1902,291 @@ export const realWorldExampleAction4 = {
   keys_to_keep: null,
   api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
 } as unknown as Action;
+
+export const realWorldExampleAction5 = {
+  id: 7967,
+  name: "get_listings",
+  description: "Get a list of all listings for a given marketplace",
+  active: true,
+  org_id: 192,
+  tag: 4540,
+  action_type: "http",
+  path: "/listings",
+  request_body_contents: null,
+  parameters: [
+    {
+      in: "query",
+      name: "filters",
+      schema: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["path", "operator", "value"],
+          properties: {
+            path: {
+              title: "Path",
+              enum: ["listing_active", "country"],
+              type: "string",
+            },
+            operator: {
+              description: "An enumeration",
+              enum: ["=="],
+              type: "string",
+            },
+            value: {
+              type: "string",
+            },
+          },
+        },
+      },
+    },
+  ],
+  responses: {
+    "200": {
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              start_key: {
+                type: "boolean",
+              },
+              hits: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    owner: {
+                      type: "null",
+                    },
+                    address: {
+                      type: "object",
+                      properties: {
+                        country: {
+                          type: "string",
+                        },
+                        lng: {
+                          type: "string",
+                        },
+                        city: {
+                          type: "string",
+                        },
+                        apt_number: {
+                          type: "null",
+                        },
+                        street: {
+                          type: "string",
+                        },
+                        timezone: {
+                          type: "integer",
+                        },
+                        formatted: {
+                          type: "string",
+                        },
+                        state: {
+                          type: "string",
+                        },
+                        timezone_string: {
+                          type: "string",
+                        },
+                        zip_code: {
+                          type: "string",
+                        },
+                        lat: {
+                          type: "string",
+                        },
+                      },
+                      required: [
+                        "country",
+                        "lng",
+                        "city",
+                        "apt_number",
+                        "street",
+                        "timezone",
+                        "formatted",
+                        "state",
+                        "timezone_string",
+                        "zip_code",
+                        "lat",
+                      ],
+                    },
+                    connected_channels: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          channels: {
+                            type: "array",
+                          },
+                          integration_listing_id: {
+                            type: "string",
+                          },
+                          integration_host_id: {
+                            type: "string",
+                          },
+                          integration_type: {
+                            type: "string",
+                          },
+                        },
+                        required: [
+                          "channels",
+                          "integration_listing_id",
+                          "integration_host_id",
+                          "integration_type",
+                        ],
+                      },
+                    },
+                    listing_id: {
+                      type: "string",
+                    },
+                    max_guests: {
+                      type: "object",
+                      properties: {
+                        persons: {
+                          type: "integer",
+                          descriptions: "Max number of adults allowed",
+                        },
+                        children: {
+                          type: "integer",
+                        },
+                      },
+                      required: ["persons", "children"],
+                    },
+                    active: {
+                      type: "boolean",
+                    },
+                    check_times: {
+                      type: "object",
+                      properties: {
+                        check_in_to_time: {
+                          type: "string",
+                        },
+                        check_in_time: {
+                          type: "string",
+                        },
+                        check_out_time: {
+                          type: "string",
+                        },
+                      },
+                      required: [
+                        "check_in_to_time",
+                        "check_in_time",
+                        "check_out_time",
+                      ],
+                    },
+                    created_at: {
+                      type: "integer",
+                    },
+                    type: {
+                      type: ["null", "string"],
+                    },
+                    picture: {
+                      type: "string",
+                    },
+                    space: {
+                      anyOf: [
+                        {
+                          type: "null",
+                        },
+                        {
+                          type: "object",
+                          properties: {
+                            number: {
+                              type: "integer",
+                            },
+                            units: {
+                              type: "string",
+                            },
+                          },
+                          required: ["number", "units"],
+                        },
+                      ],
+                    },
+                    enso_key: {
+                      type: "string",
+                    },
+                    products: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                    tags: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                    channels: {
+                      type: "array",
+                    },
+                    group_id: {
+                      type: "string",
+                    },
+                    lead_time: {
+                      type: "integer",
+                    },
+                    name: {
+                      type: "string",
+                    },
+                    nickname: {
+                      type: "string",
+                    },
+                    currency: {
+                      type: "string",
+                      description:
+                        "Three letter acronym for currency. Example: USD",
+                    },
+                    id: {
+                      type: "string",
+                    },
+                    devices: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                    hidden_groups: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+                  },
+                  required: [
+                    "address",
+                    "connected_channels",
+                    "listing_id",
+                    "max_guests",
+                    "active",
+                    "check_times",
+                    "created_at",
+                    "type",
+                    "picture",
+                    "enso_key",
+                    "tags",
+                    "channels",
+                    "group_id",
+                    "name",
+                    "nickname",
+                    "currency",
+                    "id",
+                  ],
+                },
+              },
+              count: {
+                type: "integer",
+              },
+            },
+            required: ["start_key", "hits", "count"],
+          },
+        },
+      },
+      description: "",
+    },
+  },
+  created_at: "2023-08-10T14:33:49.152403+00:00",
+  request_method: "get",
+  keys_to_keep: null,
+  api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
+} as unknown as Action;

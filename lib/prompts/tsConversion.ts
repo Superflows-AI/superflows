@@ -67,7 +67,11 @@ export function formatBodySchemaToTS(
   } else if (schema.type === "array") {
     // Arrays
     const items = schema.items as OpenAPIV3_1.SchemaObject;
-    if (items.type === "object") {
+    if (!items) {
+      paramString += `${isRequired ? "" : "?"}: any[]${formatDescriptionTS(
+        schema.description,
+      )}`;
+    } else if (items.type === "object") {
       // Arrays of objects require special handling
       if (nestingLevel !== 0) {
         paramString += `${isRequired ? "" : "?"}: `;
@@ -86,9 +90,12 @@ export function formatBodySchemaToTS(
         .join("\n")}[]`;
     } else {
       // Arrays of non-objects (incl. other arrays)
-      const des = formatDescriptionTS(
-        schema.description || `array of ${items.description}`,
-      );
+      let des = "";
+      if (schema.description || items.description) {
+        des = formatDescriptionTS(
+          schema.description || `array of ${items.description}`,
+        );
+      }
       const type = getType(items.type, items.enum).toString();
       if (nestingLevel !== 0) {
         paramString += `${isRequired ? "" : "?"}: `;
@@ -166,10 +173,15 @@ export function getActionTSSignature(
         }
         type = getType(schema.type, schema.enum);
       }
-
-      paramString += `\n${p.name}${p.required ? "" : "?"}: ${
-        type ?? "any"
-      }${desc}`;
+      if (typeof type === "string" && ["object", "array"].includes(type)) {
+        paramString += `\n${p.name}${p.required ? "" : "?"}: ${
+          schema ? formatBodySchemaToTS(schema, 0, p.required) : ""
+        }`;
+      } else {
+        paramString += `\n${p.name}${p.required ? "" : "?"}: ${
+          type ?? "any"
+        }${desc}`;
+      }
     });
   }
   const reqBody = action.request_body_contents as unknown as {
