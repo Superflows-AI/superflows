@@ -15,6 +15,7 @@ import { exponentialRetryWrapper } from "../../../lib/utils";
 import { getFollowUpSuggestionPrompt } from "../../../lib/prompts/suggestFollowUps";
 import { getLLMResponse, getSecondaryModel } from "../../../lib/queryLLM";
 import { parseFollowUpSuggestions } from "../../../lib/parsers/parsers";
+import { LlmResponseCache } from "../../../lib/edge-runtime/llmResponseCache";
 
 export const config = {
   runtime: "edge",
@@ -176,9 +177,7 @@ export default async function handler(req: NextRequest) {
       .order("conversation_index", { ascending: true });
 
     if (convResp.error) throw new Error(convResp.error.message);
-    const conversation = convResp.data.map(DBChatMessageToGPT);
-
-    if (!conversation) {
+    if (convResp.data.length === 0) {
       return new Response(
         JSON.stringify({
           error: `Conversation with ID=${requestData.conversation_id} not found`,
@@ -187,28 +186,42 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    // If the language is set for any message in the conversation, use that
-    const language = convResp.data.find((m) => !!m.language)?.language ?? null;
+    const conversation = convResp.data.map(DBChatMessageToGPT);
 
-    const fullPrompt = getFollowUpSuggestionPrompt(
-      requestData.user_description,
-      org,
-      language,
-      conversation,
+    const cache = new LlmResponseCache();
+    await cache.initialize(convResp.data[0].content, org.id, supabase);
+    let llmOut = await cache.checkFollowUpCache(org.id, conversation, supabase);
+
+    if (!llmOut) {
+      // If the language is set for any message in the conversation, use that
+      const language =
+        convResp.data.find((m) => !!m.language)?.language ?? null;
+
+      const fullPrompt = getFollowUpSuggestionPrompt(
+        requestData.user_description,
+        org,
+        language,
+        conversation,
+      );
+      console.log("Follow up prompt: ", fullPrompt);
+
+      llmOut = await exponentialRetryWrapper(
+        getLLMResponse,
+        [
+          fullPrompt,
+          { max_tokens: 100, temperature: 0.8, frequency_penalty: 0.5 },
+          getSecondaryModel(org.model),
+        ],
+        3,
+      );
+    }
+    await saveFollowUps(
+      llmOut,
+      org.id,
+      requestData.conversation_id,
+      convResp.data?.length - 1,
     );
-    console.log("Follow up prompt: ", fullPrompt);
-
-    const gptOut = await exponentialRetryWrapper(
-      getLLMResponse,
-      [
-        fullPrompt,
-        { max_tokens: 100, temperature: 0.8, frequency_penalty: 0.5 },
-        getSecondaryModel(org.model),
-      ],
-      3,
-    );
-
-    const suggestions = parseFollowUpSuggestions(gptOut);
+    const suggestions = parseFollowUpSuggestions(llmOut);
     console.log("Suggestions: ", suggestions);
 
     return new Response(JSON.stringify({ suggestions }), {
@@ -231,6 +244,26 @@ export default async function handler(req: NextRequest) {
         status: 500,
         headers,
       },
+    );
+  }
+}
+
+async function saveFollowUps(
+  llmOutput: string,
+  orgId: number,
+  conversationId: number,
+  conversation_index: number,
+): Promise<void> {
+  const insertRes = await supabase.from("follow_ups").insert({
+    follow_up_text: llmOutput,
+    org_id: orgId,
+    conversation_id: conversationId,
+    conversation_index: conversation_index,
+  });
+  if (insertRes.error) {
+    console.error(
+      "Failed to insert follow ups to DB:",
+      insertRes.error.message,
     );
   }
 }
