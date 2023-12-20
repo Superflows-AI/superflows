@@ -51,6 +51,7 @@ import {
   searchDocsActionName,
 } from "../builtinActions";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
+import { LlmResponseCache } from "./llmResponseCache";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -224,37 +225,6 @@ const completionOptions: ChatGPTParams = {
   temperature: 0.2,
 };
 
-async function tryCacheForResponse(
-  userMessage: string,
-  orgId: number,
-): Promise<{ rawOutput: string; prevConversationId: number | null }> {
-  const res = await supabase
-    .from("chat_messages")
-    .select("conversation_id")
-    .match({
-      conversation_index: 0,
-      org_id: orgId,
-      content: userMessage,
-      fresh: true,
-    })
-    .order("conversation_id", { ascending: true });
-  if (res.data?.length) {
-    const res2 = await supabase.from("chat_messages").select("content").match({
-      conversation_index: 1,
-      org_id: orgId,
-      conversation_id: res.data[0].conversation_id,
-    });
-    if (res2.data?.length) {
-      console.log("Cache hit with convo id:", res.data[0].conversation_id);
-      return {
-        rawOutput: res2.data[0].content,
-        prevConversationId: res.data[0].conversation_id,
-      };
-    }
-  }
-  return { rawOutput: "", prevConversationId: null };
-}
-
 // Angela takes actions
 export async function Angela( // Good ol' Angela
   controller: ReadableStreamDefaultController,
@@ -295,7 +265,10 @@ export async function Angela( // Good ol' Angela
   let totalCost = 0;
   let numUserQueries = 0;
   let awaitingConfirmation = false;
-  let prevConversationId = null;
+
+  // The cache is to check for past identical convos and use them instead of calling the LLM
+  let chatMessageCache = new LlmResponseCache();
+  await chatMessageCache.initialize(reqData.user_input, org.id, supabase);
 
   // This allows us to add the 'Search docs' action if it's enabled
   if (org.chat_to_docs_enabled) {
@@ -357,15 +330,7 @@ export async function Angela( // Good ol' Angela
         model === "gpt-4-0613" ? "4" : "3",
       );
 
-      let rawOutput: string = "";
-      // Only try cache if this is the first message in the conversation
-      if (org.caching_enabled && nonSystemMessages.length === 1) {
-        ({ rawOutput, prevConversationId } = await tryCacheForResponse(
-          previousMessages[previousMessages.length - 1].content,
-          org.id,
-        ));
-        // Set to null after first message
-      } else prevConversationId = null;
+      let rawOutput = chatMessageCache.checkChatCache(nonSystemMessages);
       if (rawOutput) {
         streamInfo({
           role: "assistant",
@@ -477,6 +442,7 @@ export async function Angela( // Good ol' Angela
               command.args,
               originalToPlaceholderMap,
             );
+            console.log("Args:", command.args, "\nRepop:", repopulatedArgs);
             command.args = repopulatedArgs as FunctionCall["args"];
 
             // Check and fill in any missing required parameters in the function call
@@ -667,7 +633,7 @@ export async function Angela( // Good ol' Angela
           nonSystemMessages,
           org,
           { conversationId, index: nonSystemMessages.length },
-          prevConversationId,
+          chatMessageCache,
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
 

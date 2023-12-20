@@ -180,6 +180,66 @@ export default async function handler(req: NextRequest) {
       });
     }
 
+    // If negative feedback, make convo & all identical past convos not fresh
+    if (!requestData.feedback_positive) {
+      // Get messages in this convo
+      const { data: messages, error: msgError } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", requestData.conversation_id)
+        .order("conversation_index", { ascending: true });
+      if (msgError) throw new Error(msgError.message);
+
+      // Get potential past messages that form a convo that is identical to this convo
+      const { data: pastChatMessages, error: pastChatMsgError } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .match({ org_id: org!.id, fresh: true })
+        .in(
+          "content",
+          messages.map((m) => m.content),
+        )
+        // Ensure we're only considering messages in the same spots in the convo
+        .in(
+          "conversation_index",
+          messages.map((m) => m.conversation_index),
+        );
+      if (pastChatMsgError) throw new Error(pastChatMsgError.message);
+
+      const convIds = Array.from(
+        new Set(pastChatMessages.map((m) => m.conversation_id)),
+      );
+
+      const staleConvIds = convIds
+        // Filter out conversations that aren't identical to the current one
+        .filter((convId) => {
+          const sameConvoMessages = pastChatMessages
+            .filter((m2) => m2.conversation_id === convId)
+            .sort((a, b) => a.conversation_index - b.conversation_index);
+
+          return sameConvoMessages.every(
+            (m2, idx) =>
+              m2.role === messages[idx].role &&
+              // Function message outputs don't need to match
+              (m2.role === "function" || m2.content === messages[idx].content),
+          );
+        });
+
+      // Update messages to not fresh
+      const { error: updateError } = await supabase
+        .from("chat_messages")
+        .update({ fresh: false })
+        .in("conversation_id", staleConvIds);
+      if (updateError) throw new Error(updateError.message);
+
+      // Do the same for analytics code snippets
+      const { error: analyticsUpdateError } = await supabase
+        .from("analytics_code_snippets")
+        .update({ fresh: false })
+        .in("conversation_id", staleConvIds);
+      if (analyticsUpdateError) throw new Error(analyticsUpdateError.message);
+    }
+
     return new Response(
       JSON.stringify({ message: "Feedback updated successfully" }),
       {

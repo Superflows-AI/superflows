@@ -20,6 +20,7 @@ export function updatePastAssistantMessage(
    * where requiredParam was missing to
    * test(a=b, requiredParam=value)
    * **/
+  console.log("Updating past assistant message with command:", command);
   const newCommandLine = `${command.name}(${Object.entries(command.args)
     .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
     .join(", ")})`;
