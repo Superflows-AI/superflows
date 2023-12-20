@@ -63,6 +63,8 @@ export class LlmResponseCache {
   }
 
   _history_matches(chatHistory: GPTMessageInclSummary[]): boolean {
+    // If cache conversation length less than current convo length, no match
+    if (this.messages.length < chatHistory.length) return false;
     return chatHistory.every((m, idx) => {
       const isDataAnalysisAfter = chatHistory
         .slice(idx + 1)
