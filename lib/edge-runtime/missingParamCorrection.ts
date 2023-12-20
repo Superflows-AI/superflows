@@ -38,15 +38,14 @@ export async function getMissingArgCorrections(
   const correctionsList: { [param: string]: "ask user" | string }[] =
     await Promise.all(
       missingParams.map(async (param) => {
-        return {
-          [param]:
-            (await getMissingParam(
-              param,
-              action,
-              previousConversation,
-              model,
-            )) ?? "",
-        };
+        const missingParam = await getMissingParam(
+          param,
+          action,
+          previousConversation,
+          model,
+        );
+        if (!missingParam) return {};
+        return { [param]: missingParam };
       }),
     );
   if (correctionsList.length === 0) return {};
