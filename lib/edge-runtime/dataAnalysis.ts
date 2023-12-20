@@ -22,6 +22,7 @@ import { createClient } from "@supabase/supabase-js";
 import { dataAnalysisActionName } from "../builtinActions";
 import { getAssistantFnMessagePairs } from "./angelaUtils";
 import _, { findLastIndex } from "lodash";
+import { LlmResponseCache } from "./llmResponseCache";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -39,26 +40,26 @@ export const defaultDataAnalysisParams: ChatGPTParams = {
 
 type NonUserMessage = FunctionMessage | AssistantMessage;
 
-async function tryDataAnalysisCache(
-  instruction: string,
+async function saveAnalyticsToDB(
+  instructionMessage: string,
+  llmResponse: string,
   orgId: number,
-  prevConversationId: number | null,
-): Promise<string> {
-  console.log("Trying to find cached data analysis response...");
-  const res = await supabase
-    .from("analytics_code_snippets")
-    .select("output")
-    .match({
-      org_id: orgId,
-      conversation_id: prevConversationId,
-      instruction_message: instruction,
-      fresh: true,
-    });
-  if (res.data?.[0]) {
-    console.log("Found cached data analysis response!");
-    return res.data[0].output;
+  dbData: { conversationId: number; index: number },
+) {
+  const insertRes = await supabase.from("analytics_code_snippets").insert({
+    // The user message contents
+    instruction_message: instructionMessage,
+    output: llmResponse,
+    org_id: orgId,
+    conversation_id: dbData.conversationId,
+    conversation_index: dbData.index,
+  });
+  if (insertRes.error) {
+    console.error(
+      "Failed to insert analytics code snippet to DB:",
+      insertRes.error,
+    );
   }
-  return "";
 }
 
 export async function runDataAnalysis(
@@ -67,7 +68,7 @@ export async function runDataAnalysis(
   fullChatHistory: GPTMessageInclSummary[],
   org: Pick<Organization, "id" | "name" | "description">,
   dbData: { conversationId: number; index: number },
-  prevConversationId: number | null,
+  cache: LlmResponseCache,
 ): Promise<GraphData | { error: string } | null> {
   // Step by step, go back through user-response sequences until we find the last function
   // message that's not a data analysis call
@@ -100,13 +101,20 @@ export async function runDataAnalysis(
     org,
   );
 
-  let llmResponse = "";
-  if (prevConversationId !== null) {
-    llmResponse = await tryDataAnalysisCache(
+  let { llmResponse, graphData } = await cache.checkAnalyticsCache(
+    dataAnalysisPrompt[1].content,
+    org.id,
+    fullChatHistory,
+    supabase,
+  );
+  if (graphData) {
+    await saveAnalyticsToDB(
       dataAnalysisPrompt[1].content,
+      llmResponse,
       org.id,
-      prevConversationId,
+      dbData,
     );
+    return graphData as GraphData;
   }
 
   if (!llmResponse) {
@@ -143,21 +151,13 @@ ${dataAnalysisPrompt[1].content}`);
   }
   if ("error" in parsedCode) return parsedCode;
 
-  // Save to DB for debugging
-  const insertRes = await supabase.from("analytics_code_snippets").insert({
-    // The user message contents
-    instruction_message: dataAnalysisPrompt[1].content,
-    output: llmResponse,
-    org_id: org.id,
-    conversation_id: dbData.conversationId,
-    conversation_index: dbData.index,
-  });
-  if (insertRes.error) {
-    console.error(
-      "Failed to insert analytics code snippet to DB:",
-      insertRes.error,
-    );
-  }
+  // Save to DB for possible reuse later
+  await saveAnalyticsToDB(
+    dataAnalysisPrompt[1].content,
+    llmResponse,
+    org.id,
+    dbData,
+  );
 
   // Send code to supabase edge function to execute
   const data = Object.assign(
@@ -181,15 +181,16 @@ ${dataAnalysisPrompt[1].content}`);
       data,
     }),
   });
-  console.info("Data analysis response: ", res.data);
+  graphData = res.data;
+  console.info("Data analysis response: ", graphData);
 
   // Check data returned is of the correct format
-  if (res.data && !("error" in res.data)) {
+  if (graphData && !("error" in graphData)) {
     const validGraphData =
-      "type" in res.data &&
-      "data" in res.data &&
-      Array.isArray(res.data.data) &&
-      res.data.data.every(
+      "type" in graphData &&
+      "data" in graphData &&
+      Array.isArray(graphData.data) &&
+      graphData.data.every(
         (d: any) => typeof d === "object" && "x" in d && "y" in d,
       );
     if (!validGraphData) {
@@ -199,7 +200,7 @@ ${dataAnalysisPrompt[1].content}`);
       return { error: "Data analysis mode failed to output valid code" };
     }
   }
-  return res.data;
+  return graphData as GraphData;
 }
 
 export function getCalledActions(
