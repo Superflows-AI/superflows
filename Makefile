@@ -9,9 +9,11 @@ pc: p
 run:
 	npm run dev
 
+types:
+	./update-types.sh
+
 build:
 	npm run build
 
 test:
-# Run in series to stop race condition
 	npm test
