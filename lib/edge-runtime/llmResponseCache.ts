@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { GPTMessageInclSummary } from "../models";
+import { dataAnalysisActionName } from "../builtinActions";
 
 export class LlmResponseCache {
   private matchConvId: number | null;
@@ -60,14 +61,29 @@ export class LlmResponseCache {
   isHit(): boolean {
     return this.messages.length > 0;
   }
-  checkChatCache(chatHistory: GPTMessageInclSummary[]): string {
-    if (!this.isHit()) return "";
-    let isMatch = chatHistory.every((m, idx) => {
+
+  _history_matches(chatHistory: GPTMessageInclSummary[]): boolean {
+    return chatHistory.every((m, idx) => {
+      const isDataAnalysisAfter = chatHistory
+        .slice(idx + 1)
+        .find(
+          (m2) => m2.role === "function" && m2.name === dataAnalysisActionName,
+        );
+      const msg = this.messages[idx];
       return (
-        m.content === this.messages[idx].content &&
-        m.role === this.messages[idx].role
+        m.role === msg.role &&
+        (m.content === msg.content ||
+          (m.role === "function" &&
+            msg.role === "function" && // For TS
+            isDataAnalysisAfter &&
+            m.name === msg.name))
       );
     });
+  }
+
+  checkChatCache(chatHistory: GPTMessageInclSummary[]): string {
+    if (!this.isHit()) return "";
+    let isMatch = this._history_matches(chatHistory);
     if (isMatch) {
       const matchingMessage = this.messages[chatHistory.length];
       return matchingMessage.content;
@@ -127,12 +143,8 @@ export class LlmResponseCache {
     supabase: SupabaseClient<Database>,
   ): Promise<string> {
     if (!this.isHit()) return "";
-    let isMatch = chatHistory.every((m, idx) => {
-      return (
-        m.content === this.messages[idx].content &&
-        m.role === this.messages[idx].role
-      );
-    });
+
+    const isMatch = this._history_matches(chatHistory);
     if (!isMatch) return "";
     const { data: followUpData, error } = await supabase
       .from("follow_ups")
