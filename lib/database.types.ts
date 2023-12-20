@@ -161,6 +161,7 @@ export interface Database {
           conversation_id: number;
           conversation_index: number;
           created_at: string;
+          fresh: boolean;
           id: string;
           instruction_message: string;
           org_id: number;
@@ -170,6 +171,7 @@ export interface Database {
           conversation_id: number;
           conversation_index: number;
           created_at?: string;
+          fresh?: boolean;
           id?: string;
           instruction_message?: string;
           org_id: number;
@@ -179,6 +181,7 @@ export interface Database {
           conversation_id?: number;
           conversation_index?: number;
           created_at?: string;
+          fresh?: boolean;
           id?: string;
           instruction_message?: string;
           org_id?: number;
@@ -245,6 +248,7 @@ export interface Database {
           conversation_id: number;
           conversation_index: number;
           created_at: string;
+          fresh: boolean;
           id: number;
           language: string | null;
           name: string | null;
@@ -257,6 +261,7 @@ export interface Database {
           conversation_id: number;
           conversation_index: number;
           created_at?: string;
+          fresh?: boolean;
           id?: number;
           language?: string | null;
           name?: string | null;
@@ -269,6 +274,7 @@ export interface Database {
           conversation_id?: number;
           conversation_index?: number;
           created_at?: string;
+          fresh?: boolean;
           id?: number;
           language?: string | null;
           name?: string | null;
@@ -455,6 +461,49 @@ export interface Database {
           },
         ];
       };
+      follow_ups: {
+        Row: {
+          conversation_id: number;
+          conversation_index: number;
+          created_at: string;
+          follow_up_text: string;
+          fresh: boolean;
+          id: string;
+          org_id: number;
+        };
+        Insert: {
+          conversation_id: number;
+          conversation_index: number;
+          created_at?: string;
+          follow_up_text: string;
+          fresh?: boolean;
+          id?: string;
+          org_id: number;
+        };
+        Update: {
+          conversation_id?: number;
+          conversation_index?: number;
+          created_at?: string;
+          follow_up_text?: string;
+          fresh?: boolean;
+          id?: string;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_conversation_id_fkey";
+            columns: ["conversation_id"];
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "follow_ups_org_id_fkey";
+            columns: ["org_id"];
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       is_paid: {
         Row: {
           id: number;
@@ -484,7 +533,6 @@ export interface Database {
         Row: {
           analytics_enabled: boolean;
           api_key: string;
-          caching_enabled: boolean;
           chat_to_docs_enabled: boolean;
           chatbot_instructions: string;
           created_at: string | null;
@@ -499,7 +547,6 @@ export interface Database {
         Insert: {
           analytics_enabled?: boolean;
           api_key?: string;
-          caching_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;
@@ -514,7 +561,6 @@ export interface Database {
         Update: {
           analytics_enabled?: boolean;
           api_key?: string;
-          caching_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;

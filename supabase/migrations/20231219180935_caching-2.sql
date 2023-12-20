@@ -2,6 +2,27 @@ alter table "public"."analytics_code_snippets" add column "fresh" boolean not nu
 alter table "public"."analytics_code_snippets" alter column "conversation_index" set data type integer using "conversation_index"::integer;
 alter table "public"."chat_messages" add column "fresh" boolean not null default true;
 alter table "public"."organizations" drop column "caching_enabled";
+
+create table "public"."follow_ups" (
+    "id" uuid not null default gen_random_uuid(),
+    "follow_up_text" text not null,
+    "conversation_index" smallint not null,
+    "conversation_id" bigint not null,
+    "org_id" bigint not null,
+    "created_at" timestamp with time zone not null default now(),
+    "fresh" boolean not null default true
+);
+
+
+alter table "public"."follow_ups" enable row level security;
+CREATE UNIQUE INDEX "follow-ups_pkey" ON public.follow_ups USING btree (id);
+alter table "public"."follow_ups" add constraint "follow-ups_pkey" PRIMARY KEY using index "follow-ups_pkey";
+alter table "public"."follow_ups" add constraint "follow_ups_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+alter table "public"."follow_ups" validate constraint "follow_ups_conversation_id_fkey";
+alter table "public"."follow_ups" add constraint "follow_ups_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+alter table "public"."follow_ups" validate constraint "follow_ups_org_id_fkey";
+
+
 set check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION public.invalidate_cache()
@@ -15,12 +36,18 @@ AS $function$BEGIN
 
        UPDATE public.analytics_code_snippets SET fresh = false
            WHERE ((fresh = true) AND (org_id = new.org_id));
+
+       UPDATE public.follow_ups SET fresh = false
+           WHERE ((fresh = true) AND (org_id = new.org_id));
    ELSE -- Else operation is DELETE
        UPDATE public.chat_messages SET fresh = false
            WHERE org_id = OLD.org_id AND fresh = true;
 
        UPDATE public.analytics_code_snippets SET fresh = false
            WHERE org_id = OLD.org_id AND fresh = true;
+
+       UPDATE public.follow_ups SET fresh = false
+           WHERE ((fresh = true) AND (org_id = new.org_id));
    END IF;
    RETURN null; -- Since it's an AFTER trigger, return value is ignored
 END;$function$
