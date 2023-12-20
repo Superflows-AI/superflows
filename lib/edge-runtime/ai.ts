@@ -231,7 +231,12 @@ async function tryCacheForResponse(
   const res = await supabase
     .from("chat_messages")
     .select("conversation_id")
-    .match({ conversation_index: 0, org_id: orgId, content: userMessage })
+    .match({
+      conversation_index: 0,
+      org_id: orgId,
+      content: userMessage,
+      fresh: true,
+    })
     .order("conversation_id", { ascending: true });
   if (res.data?.length) {
     const res2 = await supabase.from("chat_messages").select("content").match({

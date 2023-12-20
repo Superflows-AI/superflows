@@ -52,6 +52,7 @@ async function tryDataAnalysisCache(
       org_id: orgId,
       conversation_id: prevConversationId,
       instruction_message: instruction,
+      fresh: true,
     });
   if (res.data?.[0]) {
     console.log("Found cached data analysis response!");
