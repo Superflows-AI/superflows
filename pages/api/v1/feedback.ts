@@ -191,13 +191,24 @@ export default async function handler(req: NextRequest) {
       if (msgError) throw new Error(msgError.message);
 
       // Get potential past messages that form a convo that is identical to this convo
+      // Note: split into 2 calls because previously we did 1 call but URI was too long (matching on content)
+      const { data: pastMatchedOpeners, error: pastOpenersError } =
+        await supabase.from("chat_messages").select("*").match({
+          org_id: org!.id,
+          fresh: true,
+          role: "user",
+          conversation_index: 0,
+          content: messages[0].content,
+        });
+      if (pastOpenersError) throw new Error(pastOpenersError.message);
+
       const { data: pastChatMessages, error: pastChatMsgError } = await supabase
         .from("chat_messages")
         .select("*")
         .match({ org_id: org!.id, fresh: true })
         .in(
-          "content",
-          messages.map((m) => m.content),
+          "conversation_id",
+          pastMatchedOpeners.map((m) => m.conversation_id),
         )
         // Ensure we're only considering messages in the same spots in the convo
         .in(
