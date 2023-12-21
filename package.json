@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start",
     "prepare": "husky install",
-    "test": "jest --watch"
+    "test": "jest --watch --runInBand"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
