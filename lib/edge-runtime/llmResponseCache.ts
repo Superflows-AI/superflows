@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { GPTMessageInclSummary } from "../models";
 import { dataAnalysisActionName } from "../builtinActions";
+import _ from "lodash";
 
 export class LlmResponseCache {
   private matchConvId: number | null;
@@ -65,21 +66,34 @@ export class LlmResponseCache {
   _history_matches(chatHistory: GPTMessageInclSummary[]): boolean {
     // If cache conversation length less than current convo length, no match
     if (this.messages.length < chatHistory.length) return false;
+
     return chatHistory.every((m, idx) => {
+      const msg = this.messages[idx];
+      if (m.role !== msg.role) return false;
+
+      // Non-function messages dealt with here
+      if (m.role !== "function") return m.content === msg.content;
+
+      if (m.content === msg.content) return true;
+
+      // Problem: long API responses are cut before being entered into the DB
+      // Solution: if the output of data analysis matches, the API response was the same
       const isDataAnalysisAfter = chatHistory
         .slice(idx + 1)
         .find(
           (m2) => m2.role === "function" && m2.name === dataAnalysisActionName,
         );
-      const msg = this.messages[idx];
-      return (
-        m.role === msg.role &&
-        (m.content === msg.content ||
-          (m.role === "function" &&
-            msg.role === "function" && // For TS
-            isDataAnalysisAfter &&
-            m.name === msg.name))
-      );
+      // @ts-ignore
+      if (isDataAnalysisAfter && m.name === msg.name) {
+        return true;
+      }
+
+      try {
+        // Below is slow (hence only run if all else fails)
+        return _.isEqual(JSON.parse(m.content), JSON.parse(msg.content));
+      } catch (e) {
+        return false;
+      }
     });
   }
 
@@ -87,6 +101,7 @@ export class LlmResponseCache {
     if (!this.isHit()) return "";
     let isMatch = this._history_matches(chatHistory);
     if (isMatch) {
+      console.log("Chat output match found - returning cached message");
       const matchingMessage = this.messages[chatHistory.length];
       return matchingMessage.content;
     }
