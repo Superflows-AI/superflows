@@ -317,7 +317,8 @@ yLabel?: string // Include unit in brackets. Example: Conversion rate (%)
 }
 \`\`\`
 6. Do not include TS types in your code
-7. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:
+7. Unless ABSOLUTELY NECESSARY, do not perform string comparisons with hardcoded strings
+8. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:
 
 Thoughts: Think about whether the user's request is possible and if so, how to achieve it. Be very concise. This is only for your benefit - this is hidden from the user
 
@@ -405,7 +406,8 @@ yLabel?: string // Include unit in brackets. Example: Conversion rate (%)
 }
 \`\`\`
 6. Do not include TS types in your code
-7. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:
+7. Unless ABSOLUTELY NECESSARY, do not perform string comparisons with hardcoded strings
+8. Respond in the format below. THIS IS VERY IMPORTANT. DO NOT FORGET THIS. Both 'Thoughts' and 'Code' are required sections:
 
 Thoughts: Think about whether the user's request is possible and if so, how to achieve it. Be very concise. This is only for your benefit - this is hidden from the user
 

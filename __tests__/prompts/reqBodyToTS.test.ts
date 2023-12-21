@@ -11,6 +11,7 @@ import {
   realWorldExampleAction3,
   realWorldExampleAction4,
   realWorldExampleAction5,
+  realWorldExampleAction6,
   realWorldExampleSchema1,
   realWorldExampleSchema2,
 } from "./testData";
@@ -1579,6 +1580,111 @@ devices?: string[]
 hidden_groups?: string[]
 }[]
 count: integer
+}
+`);
+  });
+  it("Real world example 5", () => {
+    const out = getActionTSSignature(realWorldExampleAction6, true, {
+      data: [
+        {
+          proposalID: "P1710-2023-0192",
+          proposalText: "Test for estimating open issue",
+          proposalType: "PS_consulting",
+          probability: 0,
+          owner: "Richard Minney",
+          company: "S1710",
+          projectStart: "Sun Jan 01 12:00:00 UTC 2023",
+          projectEnd: "Mon Jan 01 12:00:00 UTC 2024",
+          proposalStatus: null,
+          customerCurrency: "USD",
+          opportunityValue: 0,
+          targetPrice: 0,
+          proposalDueDate: "null",
+        },
+        {
+          proposalID: "P1711-2023-0324",
+          proposalText: "CR demo 1",
+          proposalType: "PS_consulting",
+          probability: 0,
+          owner: "Richard Minney",
+          company: "S1710",
+          projectStart: "Mon Jan 01 12:00:00 UTC 2024",
+          projectEnd: "Sun Jun 30 12:00:00 UTC 2024",
+          proposalStatus: null,
+          customerCurrency: "USD",
+          opportunityValue: 0,
+          targetPrice: 0,
+          proposalDueDate: "null",
+        },
+        {
+          proposalID: "P1711-2023-0377",
+          proposalText: "Demo final prep",
+          proposalType: "PS_consulting",
+          probability: 0,
+          owner: "Richard Minney",
+          company: "S1710",
+          projectStart: "Mon Mar 04 12:00:00 UTC 2024",
+          projectEnd: "Fri Aug 30 12:00:00 UTC 2024",
+          proposalStatus: null,
+          customerCurrency: "USD",
+          opportunityValue: 0,
+          targetPrice: 0,
+          proposalDueDate: "null",
+        },
+        {
+          proposalID: "P1711-2023-0393",
+          proposalText: "Demo dry-run 2",
+          proposalType: "PS_consulting",
+          probability: 0,
+          owner: "Richard Minney",
+          company: "S1710",
+          projectStart: "Mon Jan 01 12:00:00 UTC 2024",
+          projectEnd: "Sun Jun 30 12:00:00 UTC 2024",
+          proposalStatus: null,
+          customerCurrency: "USD",
+          opportunityValue: 0,
+          targetPrice: 0,
+          proposalDueDate: "null",
+        },
+        {
+          proposalID: "P1711-2023-0406",
+          proposalText: "Assurance Project xyz",
+          proposalType: "PS_consulting",
+          probability: 0,
+          owner: "Richard Minney",
+          company: "S1710",
+          projectStart: "Mon Jan 01 12:00:00 UTC 2024",
+          projectEnd: "Sun Jun 30 12:00:00 UTC 2024",
+          proposalStatus: null,
+          customerCurrency: "USD",
+          opportunityValue: 0,
+          targetPrice: 0,
+          proposalDueDate: "null",
+        },
+      ],
+    });
+    expect(out).toEqual(`
+/** Search for quotes **/
+function searchQuotes(args: {
+proposalID?: string // Proposal ID
+owner?: string // Team member who owns this proposal
+opportunityID?: string // ID of the opportunity
+}): {
+data: {
+proposalID: string
+proposalText: string
+proposalType: string
+probability: integer
+owner: string
+company: string
+projectStart: string
+projectEnd: string
+proposalStatus: null
+customerCurrency: null,string
+opportunityValue: integer
+targetPrice: integer
+proposalDueDate: string
+}[]
 }
 `);
   });

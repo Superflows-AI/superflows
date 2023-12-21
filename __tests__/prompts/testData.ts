@@ -2190,3 +2190,167 @@ export const realWorldExampleAction5 = {
   keys_to_keep: null,
   api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
 } as unknown as Action;
+
+export const realWorldExampleAction6 = {
+  id: 7967,
+  name: "search_quotes",
+  description: "Search for quotes",
+  active: true,
+  org_id: 192,
+  tag: 4540,
+  action_type: "http",
+  path: "/listings",
+  request_body_contents: {
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: {
+          proposalID: {
+            type: "string",
+            description: "Proposal ID",
+          },
+          owner: {
+            type: "string",
+            description: "Team member who owns this proposal",
+          },
+          opportunityID: {
+            type: "string",
+            description: "ID of the opportunity",
+          },
+        },
+      },
+    },
+  },
+  parameters: null,
+  responses: {
+    "200": {
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              message: {
+                type: "null",
+              },
+              data: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "string",
+                    },
+                    method: {
+                      type: "null",
+                    },
+                    proposalID: {
+                      type: "string",
+                    },
+                    customerID: {
+                      type: "string",
+                    },
+                    proposalText: {
+                      type: "string",
+                    },
+                    proposalType: {
+                      type: "string",
+                    },
+                    probability: {
+                      type: "integer",
+                    },
+                    owner: {
+                      type: "string",
+                    },
+                    company: {
+                      type: "string",
+                    },
+                    projectStart: {
+                      type: "string",
+                    },
+                    projectEnd: {
+                      type: "string",
+                    },
+                    proposalStatus: {
+                      type: "null",
+                    },
+                    remarks: {
+                      type: ["null", "string"],
+                    },
+                    customerCurrency: {
+                      type: ["null", "string"],
+                    },
+                    opportunityValue: {
+                      type: "integer",
+                    },
+                    targetPrice: {
+                      type: "integer",
+                    },
+                    proposalDueDate: {
+                      type: "string",
+                    },
+                    customerText: {
+                      type: "null",
+                    },
+                  },
+                  required: [
+                    "id",
+                    "method",
+                    "proposalID",
+                    "customerID",
+                    "proposalText",
+                    "proposalType",
+                    "probability",
+                    "owner",
+                    "company",
+                    "projectStart",
+                    "projectEnd",
+                    "proposalStatus",
+                    "remarks",
+                    "customerCurrency",
+                    "opportunityValue",
+                    "targetPrice",
+                    "proposalDueDate",
+                    "customerText",
+                  ],
+                },
+              },
+              messages: {
+                type: "array",
+              },
+              debugMessages: {
+                type: "array",
+              },
+              errorMessages: {
+                type: "array",
+              },
+              timeMessages: {
+                type: "array",
+              },
+              success: {
+                type: "boolean",
+              },
+              statusCode: {
+                type: "integer",
+              },
+            },
+            required: [
+              "message",
+              "data",
+              "messages",
+              "debugMessages",
+              "errorMessages",
+              "timeMessages",
+              "success",
+              "statusCode",
+            ],
+          },
+        },
+      },
+      description: "",
+    },
+  },
+  created_at: "2023-08-10T14:33:49.152403+00:00",
+  request_method: "post",
+  keys_to_keep: null,
+  api_id: "91beef5d-bf58-4147-9030-1328ccfdee3e",
+} as unknown as Action;
