@@ -43,7 +43,7 @@ https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b
 - [x] Track usage in dashboard 📊
 - [x] Multi-LLM support (Finetuned GPT-3.5, GPT-4, Mixtral, Llama2...) 🌍
 - [x] Collects user feedback on AI replies for fine-tuning 👍
-- [x] Self-hosting, including with fully open source model Mixtral 🏠
+- [x] Self-hosting, including with fully open source model. **[Reach out](mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29) if interested.** 🏠
 
 ## Setup
 Setting up an AI Assistant in [Superflows Cloud](https://dashboard.superflows.ai) is simple: 
