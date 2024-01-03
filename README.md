@@ -33,7 +33,7 @@ https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b
 ## Features
 
 - [x] Calls API endpoints to complete tasks and answer questions for users
-- [x] Writes code to analyse data and product visualisations 📊
+- [x] Writes code to analyse data and create plots 📊
 - [x] Uses RAG (retrieval) to answer questions on static knowledge 📚
 - [x] Developer dashboard to configure and test your AI assistant 🎛️
 - [x] Stateful streaming API 🏞️
