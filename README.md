@@ -11,8 +11,6 @@
 <p align="center"><a href="https://superflows.ai/crm-demo">🎮 Demo</a> · <a href="https://superflows.ai">🌐 Website</a> · <a href="https://docs.superflows.ai">📚 Docs</a> · <a href="https://join.slack.com/t/superflowsusers/shared_invite/zt-1zf93teqq-0I9H_niiGruVDPFVSzGj9w">💬 Slack</a> ·  <a href="https://github.com/Superflows-AI/chat-ui">🖥 React Components</a></p>
 <br />
 
-**Full self-hosting now available with [fine-tuned open source LLM](https://huggingface.co/Superflows/Superflows-1/tree/main)! [Reach out](mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29) if interested.**
-
 Superflows makes it easy to add an AI assistant to a software product. This lets users ask questions in natural language and the assistant makes calls to the software's API to answer them.
 
 E.g. a CRM user could ask:
@@ -24,6 +22,8 @@ or:
 A user could ask their analytics assistant:
 > Did the Google Ads campaign we ran last month have a positive ROI? How many conversions did it generate?
 
+Superflows will make API calls to answer these questions or complete tasks, and write code to analyse data and produce visualisations.
+
 **Check out a demo of Superflows in a CRM [here](https://superflows.ai/crm-demo).**
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
@@ -33,6 +33,7 @@ https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b
 ## Features
 
 - [x] Calls API endpoints to complete tasks and answer questions for users
+- [x] Writes code to analyse data and product visualisations 📊
 - [x] Uses RAG (retrieval) to answer questions on static knowledge 📚
 - [x] Developer dashboard to configure and test your AI assistant 🎛️
 - [x] Stateful streaming API 🏞️
@@ -40,9 +41,9 @@ https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b
 - [x] Upload API specifications for fast set up 💨
 - [x] Asks for user confirmation before taking potentially damaging actions ✅ 
 - [x] Track usage in dashboard 📊
-- [x] Multi-LLM support (Llama 2, GPT4, Claude 2, PaLM 2...) 🌍
+- [x] Multi-LLM support (Finetuned GPT-3.5, GPT-4, Mixtral, Llama2...) 🌍
 - [x] Collects user feedback on AI replies for fine-tuning 👍
-- [x] Self-hosting (including [OS fine-tuned model based on Mistral](https://huggingface.co/Superflows/Superflows-1/tree/main)) 🏠
+- [x] Self-hosting, including with fully open source model Mixtral 🏠
 
 ## Setup
 Setting up an AI Assistant in [Superflows Cloud](https://dashboard.superflows.ai) is simple: 
