@@ -22,7 +22,7 @@ or:
 A user could ask their analytics assistant:
 > Did the Google Ads campaign we ran last month have a positive ROI? How many conversions did it generate?
 
-Superflows will make API calls to answer these questions or complete tasks, and write code to analyse data and produce visualisations.
+Superflows will make API calls to answer these questions or complete tasks, and write code to analyse and plot data.
 
 **Check out a demo of Superflows in a CRM [here](https://superflows.ai/crm-demo).**
 
