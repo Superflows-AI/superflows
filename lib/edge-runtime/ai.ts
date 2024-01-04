@@ -268,7 +268,12 @@ export async function Angela( // Good ol' Angela
 
   // The cache is to check for past identical convos and use them instead of calling the LLM
   let chatMessageCache = new LlmResponseCache();
-  await chatMessageCache.initialize(reqData.user_input, org.id, supabase);
+  await chatMessageCache.initialize(
+    reqData.user_input,
+    org.id,
+    nonSystemMessages.length - 1,
+    supabase,
+  );
 
   // This allows us to add the 'Search docs' action if it's enabled
   if (org.chat_to_docs_enabled) {

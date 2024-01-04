@@ -20,6 +20,7 @@ export class LlmResponseCache {
   async initialize(
     userMessage: string,
     orgId: number,
+    conversationIndex: number,
     supabase: SupabaseClient<Database>,
   ): Promise<void> {
     const { data: matchingConvData, error: matchConvError } = await supabase
@@ -29,6 +30,7 @@ export class LlmResponseCache {
         role: "user",
         org_id: orgId,
         content: userMessage,
+        conversation_index: conversationIndex,
         fresh: true,
       })
       // Take the most recent matching conversation that isn't the current one

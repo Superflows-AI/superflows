@@ -189,7 +189,7 @@ export default async function handler(req: NextRequest) {
     const conversation = convResp.data.map(DBChatMessageToGPT);
 
     const cache = new LlmResponseCache();
-    await cache.initialize(convResp.data[0].content, org.id, supabase);
+    await cache.initialize(convResp.data[0].content, org.id, 0, supabase);
     let llmOut = await cache.checkFollowUpCache(org.id, conversation, supabase);
 
     if (!llmOut) {
