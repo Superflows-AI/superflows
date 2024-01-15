@@ -2227,133 +2227,97 @@ export const realWorldExampleAction6 = {
       content: {
         "application/json": {
           schema: {
-            type: "object",
-            properties: {
-              message: {
-                type: "null",
-              },
-              data: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    method: {
-                      type: "null",
-                    },
-                    proposalID: {
-                      type: "string",
-                    },
-                    customerID: {
-                      type: "string",
-                    },
-                    proposalText: {
-                      type: "string",
-                    },
-                    proposalType: {
-                      type: "string",
-                    },
-                    probability: {
-                      type: "integer",
-                    },
-                    owner: {
-                      type: "string",
-                    },
-                    company: {
-                      type: "string",
-                    },
-                    projectStart: {
-                      type: "string",
-                    },
-                    projectEnd: {
-                      type: "string",
-                    },
-                    proposalStatus: {
-                      type: "null",
-                    },
-                    remarks: {
-                      type: ["null", "string"],
-                    },
-                    customerCurrency: {
-                      type: ["null", "string"],
-                    },
-                    opportunityValue: {
-                      type: "integer",
-                    },
-                    targetPrice: {
-                      type: "integer",
-                    },
-                    proposalDueDate: {
-                      type: "string",
-                    },
-                    customerText: {
-                      type: "null",
-                    },
-                    labor: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          revenue: { type: "number" },
-                          hours: { type: "number" },
-                          laborPool: { type: "string" },
-                        },
-                      },
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                },
+                method: {
+                  type: "null",
+                },
+                proposalID: {
+                  type: "string",
+                },
+                customerID: {
+                  type: "string",
+                },
+                proposalText: {
+                  type: "string",
+                },
+                proposalType: {
+                  type: "string",
+                },
+                probability: {
+                  type: "integer",
+                },
+                owner: {
+                  type: "string",
+                },
+                company: {
+                  type: "string",
+                },
+                projectStart: {
+                  type: "string",
+                },
+                projectEnd: {
+                  type: "string",
+                },
+                proposalStatus: {
+                  type: "null",
+                },
+                remarks: {
+                  type: ["null", "string"],
+                },
+                customerCurrency: {
+                  type: ["null", "string"],
+                },
+                opportunityValue: {
+                  type: "integer",
+                },
+                targetPrice: {
+                  type: "integer",
+                },
+                proposalDueDate: {
+                  type: "string",
+                },
+                customerText: {
+                  type: "null",
+                },
+                labor: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      revenue: { type: "number" },
+                      hours: { type: "number" },
+                      laborPool: { type: "string" },
                     },
                   },
-                  required: [
-                    "id",
-                    "method",
-                    "proposalID",
-                    "customerID",
-                    "proposalText",
-                    "proposalType",
-                    "probability",
-                    "owner",
-                    "company",
-                    "projectStart",
-                    "projectEnd",
-                    "proposalStatus",
-                    "remarks",
-                    "customerCurrency",
-                    "opportunityValue",
-                    "targetPrice",
-                    "proposalDueDate",
-                    "customerText",
-                  ],
                 },
               },
-              messages: {
-                type: "array",
-              },
-              debugMessages: {
-                type: "array",
-              },
-              errorMessages: {
-                type: "array",
-              },
-              timeMessages: {
-                type: "array",
-              },
-              success: {
-                type: "boolean",
-              },
-              statusCode: {
-                type: "integer",
-              },
+              required: [
+                "id",
+                "method",
+                "proposalID",
+                "customerID",
+                "proposalText",
+                "proposalType",
+                "probability",
+                "owner",
+                "company",
+                "projectStart",
+                "projectEnd",
+                "proposalStatus",
+                "remarks",
+                "customerCurrency",
+                "opportunityValue",
+                "targetPrice",
+                "proposalDueDate",
+                "customerText",
+              ],
             },
-            required: [
-              "message",
-              "data",
-              "messages",
-              "debugMessages",
-              "errorMessages",
-              "timeMessages",
-              "success",
-              "statusCode",
-            ],
           },
         },
       },
