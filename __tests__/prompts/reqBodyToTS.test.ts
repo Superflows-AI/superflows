@@ -1688,4 +1688,38 @@ proposalDueDate: string
 }
 `);
   });
+  it("First array obj empty, find non-empty one", () => {
+    const out = getActionTSSignature(realWorldExampleAction6, true, {
+      data: [
+        {
+          labor: [],
+        },
+        {
+          labor: [
+            {
+              revenue: 100,
+              hours: 11,
+              laborPool: "Turkish Barbers",
+            },
+          ],
+        },
+      ],
+    });
+    expect(out).toEqual(`
+/** Search for quotes **/
+function searchQuotes(args: {
+proposalID?: string // Proposal ID
+owner?: string // Team member who owns this proposal
+opportunityID?: string // ID of the opportunity
+}): {
+data: {
+labor?: {
+revenue?: number
+hours?: number
+laborPool?: string
+}[]
+}[]
+}
+`);
+  });
 });

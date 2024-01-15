@@ -2291,6 +2291,17 @@ export const realWorldExampleAction6 = {
                     customerText: {
                       type: "null",
                     },
+                    labor: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          revenue: { type: "number" },
+                          hours: { type: "number" },
+                          laborPool: { type: "string" },
+                        },
+                      },
+                    },
                   },
                   required: [
                     "id",
