@@ -290,9 +290,6 @@ export function removeUnnecessaryTSTypeArgs(
     const lineNoComment = line.split(" //")[0];
 
     if (i === 0 && line.startsWith("{")) {
-      while (Array.isArray(currentObject)) {
-        currentObject = currentObject[0];
-      }
       // First line "{"
       newLines.push(line);
     } else if (lineNoComment.includes("{")) {
