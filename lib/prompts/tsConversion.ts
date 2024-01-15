@@ -3,7 +3,7 @@ import { isChoiceRequired } from "../actionUtils";
 import { getType, removeMarkdownLinks } from "./chatBot";
 import { Action } from "../types";
 import { getJsonMIMEType } from "../edge-runtime/utils";
-import { snakeToCamel } from "../utils";
+import { objectNotEmpty, snakeToCamel } from "../utils";
 
 function formatDescriptionTS(description: string | undefined | null): string {
   /** Formats a parameter description for GPT. **/
@@ -280,15 +280,11 @@ export function removeUnnecessaryTSTypeArgs(
   tsType: string,
   exampleObj: any,
 ): string {
-  /** Removes unnecessary type arguments from a Typescript type definition
-   *   by comparing it to an example object of that type.
-   */
   const schemaLines = tsType.split("\n");
   const newLines = [];
   const parentObjects: any[] = [];
   let currentObject = exampleObj;
 
-  // Iterate through schema lines
   for (let i = 0; i < schemaLines.length; i++) {
     const line = schemaLines[i];
     const lineNoComment = line.split(" //")[0];
@@ -300,35 +296,39 @@ export function removeUnnecessaryTSTypeArgs(
       // First line "{"
       newLines.push(line);
     } else if (lineNoComment.includes("{")) {
-      const fieldName = line.split(/\??:/)[0];
-      let field = currentObject ? currentObject[fieldName] : undefined;
-      if (field !== undefined) {
-        if (Array.isArray(field)) {
-          field = field[0];
-        }
+      const fieldName = line.split(/\??:/)[0].trim();
+      let fields = Array.isArray(currentObject)
+        ? currentObject.map((obj) => obj[fieldName])
+        : [currentObject ? currentObject[fieldName] : undefined];
+      if (fields.some(itemNotEmpty)) {
         // Add the line to the new schema
         newLines.push(line);
       } // Otherwise, skip this line - it isn't in the output object
       // If we have a field, push it onto the stack
       parentObjects.push(currentObject);
-      currentObject = field;
+      currentObject = fields.find(itemNotEmpty);
     } else if (["}", "}[]"].includes(line)) {
       if (currentObject) newLines.push(line);
       // If we're at the end of an object, pop it off the stack
       currentObject = parentObjects.pop();
     } else {
       // Otherwise, we're in the middle of an object
-      const fieldName = line.split(/\??:/)[0];
-      let field = currentObject ? currentObject[fieldName] : undefined;
-      if (field !== undefined) {
-        while (Array.isArray(field)) {
-          field = field[0];
-        }
-        // Add the line to the new schema
+      const fieldName = line.split(/\??:/)[0].trim();
+      let fields = Array.isArray(currentObject)
+        ? currentObject.map((obj) => obj[fieldName])
+        : [currentObject ? currentObject[fieldName] : undefined];
+      if (fields.some(itemNotEmpty)) {
         newLines.push(line);
-      } // Otherwise, skip this line - it isn't in the output object
+      }
     }
   }
-  // Combine the lines into a string
   return newLines.join("\n");
+}
+
+function itemNotEmpty(item: any): boolean {
+  return Array.isArray(item)
+    ? item.length > 0
+    : typeof item === "object" && item !== null
+    ? objectNotEmpty(item)
+    : item !== undefined;
 }
