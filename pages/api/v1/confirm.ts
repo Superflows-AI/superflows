@@ -2,7 +2,13 @@ import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { ActionPlusApiInfo, OrgJoinIsPaid } from "../../../lib/types";
+import {
+  Action,
+  ActionPlusApiInfo,
+  Api,
+  HeaderRow,
+  OrgJoinIsPaid,
+} from "../../../lib/types";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -39,6 +45,15 @@ const ConfirmZod = z.object({
   user_api_key: OptionalStringZod,
   confirm: z.boolean(),
   mock_api_responses: z.optional(z.boolean()),
+  api_params: z.optional(
+    z.array(
+      z.object({
+        name: z.string(),
+        hostname: z.optional(z.string()),
+        headers: z.optional(z.record(z.string())),
+      }),
+    ),
+  ),
 });
 
 type ConfirmType = z.infer<typeof ConfirmZod>;
@@ -245,19 +260,13 @@ export default async function handler(req: NextRequest) {
               .eq("org_id", org!.id)
               .eq("id", param.actionId)
               .single();
-            return {
-              action: {
-                ...res.data!,
-                api: {
-                  ...res.data!.apis!,
-                  api_host: requestData.mock_api_responses
-                    ? mockUrl
-                    : res.data!.apis!.api_host,
-                },
-                headers: res.data!.apis!.fixed_headers,
-              },
-              params: param.args,
-            };
+            return reformatActionData(
+              // @ts-ignore
+              res.data!,
+              param.args,
+              requestData,
+              mockUrl,
+            );
           }),
         );
         console.log("Got toExecute from redis:", JSON.stringify(toExecute));
@@ -285,19 +294,13 @@ export default async function handler(req: NextRequest) {
             .eq("org_id", org!.id)
             .eq("name", command.name)
             .single();
-          return {
-            action: {
-              ...res.data!,
-              api: {
-                ...res.data!.apis!,
-                api_host: requestData.mock_api_responses
-                  ? mockUrl
-                  : res.data!.apis!.api_host,
-              },
-              headers: res.data!.apis!.fixed_headers,
-            },
-            params: command.args,
-          };
+          return reformatActionData(
+            // @ts-ignore
+            res.data!,
+            command.args,
+            requestData,
+            mockUrl,
+          );
         }),
       );
       console.log("Got toExecute from database:", JSON.stringify(toExecute));
@@ -383,4 +386,50 @@ export default async function handler(req: NextRequest) {
       },
     );
   }
+}
+
+function reformatActionData(
+  data: Action & { apis: Api & { fixed_headers: HeaderRow[] } },
+  params: Record<string, any>,
+  requestData: ConfirmType,
+  mockUrl: string,
+) {
+  const api = data.apis;
+
+  if (requestData.api_params) {
+    // Check if any api_params names matches the api name
+    const matchedApiParams = requestData.api_params.find(
+      (apiParams) => api.name === apiParams.name,
+    );
+
+    // Override values in apis if api_params are set in request body
+    if (matchedApiParams) {
+      api.api_host = matchedApiParams.hostname || api.api_host;
+      if (matchedApiParams.headers) {
+        // Concat api_params headers onto fixed_headers
+        api.fixed_headers = api.fixed_headers.concat(
+          Object.entries(matchedApiParams.headers).map(
+            ([k, v]): HeaderRow => ({
+              name: k,
+              created_at: "",
+              value: v,
+              id: "",
+              api_id: api.id,
+            }),
+          ),
+        );
+      }
+    }
+  }
+  return {
+    action: {
+      ...data,
+      api: {
+        ...api,
+        api_host: requestData.mock_api_responses ? mockUrl : api.api_host,
+      },
+      headers: api.fixed_headers,
+    },
+    params,
+  };
 }

@@ -133,7 +133,16 @@ export const AnswersZod = z.object({
   user_api_key: OptionalStringZod,
   stream: z.optional(z.boolean()),
   mock_api_responses: z.optional(z.boolean()),
-  test_mode: z.optional(z.boolean()),
+  api_params: z.optional(
+    z.array(
+      z.object({
+        name: z.string(),
+        hostname: z.optional(z.string()),
+        headers: z.optional(z.record(z.string())),
+      }),
+    ),
+  ),
+  debug: z.optional(z.boolean()),
 });
 
 export type AnswersType = z.infer<typeof AnswersZod>;
