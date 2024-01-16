@@ -4,8 +4,10 @@ export type Action = Database["public"]["Tables"]["actions"]["Row"];
 
 export type ActionPlusApiInfo = Action & {
   api: Api;
-  headers: Database["public"]["Tables"]["fixed_headers"]["Row"][];
+  headers: HeaderRow[];
 };
+
+export type HeaderRow = Database["public"]["Tables"]["fixed_headers"]["Row"];
 
 export type ActionTag = Database["public"]["Tables"]["action_tags"]["Row"];
 

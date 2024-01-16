@@ -20,7 +20,7 @@ import {
   ChatGPTMessage,
   GPTMessageInclSummary,
 } from "../../../lib/models";
-import { OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
+import { HeaderRow, OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
 
 export const config = {
   runtime: "edge",
@@ -305,10 +305,61 @@ export default async function handler(req: NextRequest) {
       .eq("actions.active", true);
     if (actionTagResp.error) throw new Error(actionTagResp.error.message);
     const actionsWithTags = actionTagResp.data;
+
+    const currentHost = getHost(req);
+
+    // If api_params are set, override the api_host and headers for each action
+    if (requestData.api_params) {
+      // Only throw an error if in debug mode
+      if (requestData.debug) {
+        // Check api_params names match apis in apis table
+        const unmatchedApiParamNames = requestData.api_params
+          .map((api_param) => {
+            const matchedApi = actionsWithTags.find(
+              (a) => a.apis?.name === api_param.name,
+            );
+            return matchedApi ? null : api_param.name;
+          })
+          .filter(Boolean);
+        if (unmatchedApiParamNames.length > 0) {
+          return new Response(
+            JSON.stringify({
+              error: `The following \`api_params\` names were not found: ${unmatchedApiParamNames.join(
+                ", ",
+              )}.\n\nMake sure the \`name\` parameter matches an API in the dashboard: ${currentHost}/actions`,
+            }),
+            { status: 400, headers },
+          );
+        }
+      }
+
+      // Override values in apis if api_params are set in request body
+      actionsWithTags.forEach((tag) => {
+        const apiParams = requestData.api_params?.find(
+          (p) => p.name === tag.apis?.name,
+        );
+        if (apiParams) {
+          tag.apis!.api_host = apiParams.hostname || tag.apis!.api_host;
+          if (apiParams.headers) {
+            // Concat api_params headers onto fixed_headers
+            tag.apis!.fixed_headers = tag.apis!.fixed_headers.concat(
+              Object.entries(apiParams.headers).map(
+                ([k, v]): HeaderRow => ({
+                  name: k,
+                  created_at: "",
+                  value: v,
+                  id: "",
+                  api_id: tag.apis!.id,
+                }),
+              ),
+            );
+          }
+        }
+      });
+    }
+
     const activeActions = actionsWithTags!
       .map((tag) => {
-        const currentHost = getHost(req);
-
         const mockUrl = currentHost + "/api/mock";
         // Store the api_host with each action
         return tag.actions.map((a) => ({
@@ -354,7 +405,6 @@ export default async function handler(req: NextRequest) {
         activeActions.map((a) => a.name),
       )}`,
     );
-    const currentHost = getHost(req);
 
     const readableStream = new ReadableStream({
       async start(controller) {
