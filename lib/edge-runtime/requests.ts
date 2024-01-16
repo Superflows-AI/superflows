@@ -380,22 +380,3 @@ export async function makeHttpRequest(
   }
   return { output: responseText, isError: false };
 }
-
-export function getDocsChatRequest(
-  chosenAction: ActionPlusApiInfo,
-  user_input: string,
-): { url: string; requestOptions: RequestInit } {
-  return {
-    url: endpointUrlFromAction({
-      api_host: chosenAction.api.api_host,
-      path: chosenAction.path!,
-    }),
-    requestOptions: {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: user_input,
-      }),
-    },
-  };
-}

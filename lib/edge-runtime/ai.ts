@@ -34,7 +34,6 @@ import { getMissingArgCorrections } from "./missingParamCorrection";
 import { requestCorrectionSystemPrompt } from "../prompts/requestCorrection";
 import {
   constructHttpRequest,
-  getDocsChatRequest,
   makeHttpRequest,
   processAPIoutput,
 } from "./requests";
@@ -48,7 +47,6 @@ import {
   dataAnalysisActionName,
   enableDataAnalysisAction,
   getSearchDocsAction,
-  searchDocsActionName,
 } from "../builtinActions";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { LlmResponseCache } from "./llmResponseCache";
@@ -496,16 +494,13 @@ export async function Angela( // Good ol' Angela
             }
 
             if (!chosenAction.requires_confirmation) {
-              const { url, requestOptions } =
-                chosenAction.name === searchDocsActionName
-                  ? getDocsChatRequest(chosenAction, reqData.user_input)
-                  : constructHttpRequest({
-                      action: chosenAction,
-                      parameters: command.args,
-                      organization: org,
-                      stream: streamInfo,
-                      userApiKey: reqData.user_api_key ?? "",
-                    });
+              const { url, requestOptions } = constructHttpRequest({
+                action: chosenAction,
+                parameters: command.args,
+                organization: org,
+                stream: streamInfo,
+                userApiKey: reqData.user_api_key ?? "",
+              });
 
               // Call user's API here
               let out;
