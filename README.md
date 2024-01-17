@@ -28,7 +28,7 @@ Superflows will make API calls to answer these questions or complete tasks, and 
 
 You can try out the cloud version for free [**here**](https://dashboard.superflows.ai) or self-host. You can learn more on the [docs pages](https://docs.superflows.ai/).
 
-https://github.com/Superflows-AI/superflows/assets/33871096/3cc09611-a358-4a04-b6cf-2b46e12bf703
+https://github.com/Superflows-AI/superflows/assets/33871096/b1b355d2-a851-4b11-aabb-3fd3ff375f5d
 
 ## Features
 
