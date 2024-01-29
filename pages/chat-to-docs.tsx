@@ -90,8 +90,6 @@ function ChatToDocsPage() {
     refreshPage,
   } = useDocumentsLoader(supabase);
 
-  const orgHasDocs = allDocumentCount > 0;
-
   useEffect(() => {
     (async () => {
       await fetchAllSectionCount();
@@ -145,64 +143,57 @@ function ChatToDocsPage() {
             Upload your documentation so that the AI can refer to it when
             answering user questions
           </p>
-          {orgHasDocs ? (
-            <div className="flex flex-col mt-6">
-              <div className="flex flex-row place-items-center gap-x-6">
-                <h2 className="text-lg text-gray-300">Enabled</h2>
-                <Toggle
-                  enabled={enabled || false}
-                  setEnabled={setEnabled}
-                  size="md"
-                />
-              </div>
-              <div className="w-full h-px my-6 bg-gray-700" />
-              <div className="flex flex-col">
-                <div className="flex flex-row justify-between">
-                  <h2 className="text-lg text-gray-200 ">Documentation</h2>
-                  <button
-                    className={classNames(
-                      "text-gray-100 flex flex-row place-items-center gap-x-1 rounded px-3 py-1.5",
-                      enabled
-                        ? "bg-purple-600 hover:bg-purple-700"
-                        : "bg-gray-700 cursor-not-allowed",
-                    )}
-                    onClick={() => {
-                      if (!enabled) return;
-                      setAddDocsModal({ isOpen: true });
-                    }}
-                  >
-                    <PlusIcon className="w-5 h-5" /> Add
-                  </button>
-                </div>
-              </div>
-              {allDocumentCount > 0 && (
-                <>
-                  <DocumentList
-                    docPage={docPage}
-                    setDocPage={setDocPage}
-                    isLastPage={PAGE_SIZE * docPage >= allDocumentCount}
-                    allDocumentCount={allDocumentCount}
-                    docs={docs}
-                    setDocs={setDocs}
-                    supabase={supabase}
-                    orgId={profile?.organizations?.id!}
-                    editDocument={(document) => {
-                      setAddDocsModal({
-                        isOpen: true,
-                        documentToEdit: document,
-                      });
-                    }}
-                    deleteDocument={deleteDocument}
-                  ></DocumentList>
-                </>
-              )}
+          <div className="flex flex-col mt-6">
+            <div className="flex flex-row place-items-center gap-x-6">
+              <h2 className="text-lg text-gray-300">Enabled</h2>
+              <Toggle
+                enabled={enabled || false}
+                setEnabled={setEnabled}
+                size="md"
+              />
             </div>
-          ) : (
-            <h2 className="text-lg text-gray-500 mt-8">
-              To upload your organization&apos;s docs, please reach out to
-              henry@superflows.ai
-            </h2>
-          )}
+            <div className="w-full h-px my-6 bg-gray-700" />
+            <div className="flex flex-col">
+              <div className="flex flex-row justify-between">
+                <h2 className="text-lg text-gray-200 ">Documentation</h2>
+                <button
+                  className={classNames(
+                    "text-gray-100 flex flex-row place-items-center gap-x-1 rounded px-3 py-1.5",
+                    enabled
+                      ? "bg-purple-600 hover:bg-purple-700"
+                      : "bg-gray-700 cursor-not-allowed",
+                  )}
+                  onClick={() => {
+                    if (!enabled) return;
+                    setAddDocsModal({ isOpen: true });
+                  }}
+                >
+                  <PlusIcon className="w-5 h-5" /> Add
+                </button>
+              </div>
+            </div>
+            {allDocumentCount > 0 && (
+              <>
+                <DocumentList
+                  docPage={docPage}
+                  setDocPage={setDocPage}
+                  isLastPage={PAGE_SIZE * docPage >= allDocumentCount}
+                  allDocumentCount={allDocumentCount}
+                  docs={docs}
+                  setDocs={setDocs}
+                  supabase={supabase}
+                  orgId={profile?.organizations?.id!}
+                  editDocument={(document) => {
+                    setAddDocsModal({
+                      isOpen: true,
+                      documentToEdit: document,
+                    });
+                  }}
+                  deleteDocument={deleteDocument}
+                ></DocumentList>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
