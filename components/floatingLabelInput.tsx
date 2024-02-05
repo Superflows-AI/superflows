@@ -50,7 +50,7 @@ export function FloatingLabelTextArea(props: {
   return (
     <div className="w-full relative">
       <AutoGrowingTextArea
-        className="w-full bg-gray-50 peer resize-none overflow-y-clip text-gray-800 pl-4 pr-10 pt-4 pb-2 rounded border-gray-200 focus:border-purple-600 focus:ring-purple-600 whitespace-pre-line outline-0"
+        className="w-full bg-gray-50 peer resize-none overflow-y-auto text-gray-800 pl-4 pr-10 pt-4 pb-2 rounded border-gray-200 focus:border-purple-600 focus:ring-purple-600 whitespace-pre-line outline-0"
         ref={props.ref}
         placeholder={""}
         value={props.content}

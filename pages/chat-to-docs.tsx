@@ -190,7 +190,7 @@ function ChatToDocsPage() {
                     });
                   }}
                   deleteDocument={deleteDocument}
-                ></DocumentList>
+                />
               </>
             )}
           </div>
@@ -304,7 +304,7 @@ function DocumentList(props: {
             if (props.isLastPage) return;
             props.setDocPage((currentPage) => currentPage + 1);
           }}
-        ></PaginationPageSelector>
+        />
       </div>
     </>
   );
@@ -330,6 +330,7 @@ function AddDocsModal(props: {
     if (!props.open) return;
     const docText = props.editMode?.editedDocument.docChunks
       .flatMap((docChunk) => docChunk.text_chunks)
+      ?.filter((text, idx, list) => idx === list.findIndex((t) => t === text))
       ?.join("");
 
     setTitle(props.editMode?.editedDocument.pageName || "");
