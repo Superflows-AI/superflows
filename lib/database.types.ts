@@ -81,6 +81,7 @@ export interface Database {
           api_id: string;
           created_at: string;
           description: string;
+          filtering_description: string;
           id: number;
           keys_to_keep: Json | null;
           link_name: string;
@@ -101,6 +102,7 @@ export interface Database {
           api_id: string;
           created_at?: string;
           description?: string;
+          filtering_description?: string;
           id?: number;
           keys_to_keep?: Json | null;
           link_name?: string;
@@ -121,6 +123,7 @@ export interface Database {
           api_id?: string;
           created_at?: string;
           description?: string;
+          filtering_description?: string;
           id?: number;
           keys_to_keep?: Json | null;
           link_name?: string;
@@ -531,8 +534,8 @@ export interface Database {
       };
       organizations: {
         Row: {
-          analytics_enabled: boolean;
           api_key: string;
+          bertie_enabled: boolean;
           chat_to_docs_enabled: boolean;
           chatbot_instructions: string;
           created_at: string | null;
@@ -545,8 +548,8 @@ export interface Database {
           sanitize_urls_first: boolean;
         };
         Insert: {
-          analytics_enabled?: boolean;
           api_key?: string;
+          bertie_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;
@@ -559,8 +562,8 @@ export interface Database {
           sanitize_urls_first?: boolean;
         };
         Update: {
-          analytics_enabled?: boolean;
           api_key?: string;
+          bertie_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
           created_at?: string | null;

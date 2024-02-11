@@ -47,7 +47,7 @@ import { Database } from "../../database.types";
 import { convertToGraphData, runDataAnalysis } from "./dataAnalysis";
 import {
   dataAnalysisActionName,
-  enableDataAnalysisAction,
+  dataAnalysisAction,
   getSearchDocsAction,
 } from "../../builtinActions";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
@@ -127,7 +127,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   }
 
   // Add analytics action if enabled
-  actions.unshift(enableDataAnalysisAction(org));
+  actions.unshift(dataAnalysisAction(org));
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
