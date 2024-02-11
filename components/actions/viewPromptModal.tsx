@@ -6,9 +6,10 @@ import getMessages, { getActionDescriptions } from "../../lib/prompts/chatBot";
 import { useProfile } from "../contextManagers/profile";
 import { Action } from "../../lib/types";
 import {
-  enableDataAnalysisAction,
+  dataAnalysisAction,
   getSearchDocsAction,
 } from "../../lib/builtinActions";
+import { getActionTSSignatures } from "../../lib/prompts/tsConversion";
 
 const items = [
   {
@@ -52,14 +53,7 @@ export default function ViewSystemPromptModal(props: {
   const [viewSystemPrompt, setViewSystemPrompt] = useState<boolean>(false);
 
   const additionalActions: Action[] = [];
-  if (profile?.organizations?.analytics_enabled) {
-    additionalActions.unshift(enableDataAnalysisAction(profile.organizations));
-  }
-  if (
-    profile?.organizations?.chat_to_docs_enabled &&
-    // Only show the search docs action if there are other actions
-    (profile?.organizations?.analytics_enabled || props.actions.length > 0)
-  ) {
+  if (profile?.organizations?.chat_to_docs_enabled) {
     additionalActions.unshift(getSearchDocsAction(profile.organizations, ""));
   }
   const actions = additionalActions.concat(props.actions);
@@ -108,7 +102,8 @@ export default function ViewSystemPromptModal(props: {
                   false,
                 )[0].content,
               )
-            : addTabsToVariables(getActionDescriptions(actions))}
+            : // : getActionTSSignatures(actions, false)}
+              addTabsToVariables(getActionDescriptions(actions))}
         </p>
       </div>
       <div className="px-6 py-4 flex place-items-center justify-center"></div>

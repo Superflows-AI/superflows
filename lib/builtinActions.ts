@@ -47,9 +47,7 @@ export function getSearchDocsAction(
 
 export const dataAnalysisActionName = "instruct_coder";
 
-export function enableDataAnalysisAction(org: {
-  id: number;
-}): ActionPlusApiInfo {
+export function dataAnalysisAction(org: { id: number }): ActionPlusApiInfo {
   return {
     action_type: "function",
     active: true,

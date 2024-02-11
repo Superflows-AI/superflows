@@ -5,6 +5,7 @@ import {
   EmbeddingResponse,
   OpenAIError,
   RunPodResponse,
+  TogetherAIResponse,
 } from "./models";
 import { removeEmptyCharacters } from "./utils";
 
@@ -37,7 +38,7 @@ export async function getLLMResponse(
 
   const { url, options } =
     typeof prompt === "string"
-      ? getLLMRequestCompletion(prompt, params, model)
+      ? getOAIRequestCompletion(prompt, params, model)
       : getLLMRequestChat(prompt, params, model);
 
   const response = await fetch(url, options);
@@ -54,17 +55,22 @@ export async function getLLMResponse(
     );
   }
   if ("error" in responseJson) {
-    console.log(`Error from ChatGPT: ${JSON.stringify(responseJson.error)}`);
-    return "";
+    throw Error(
+      `Error from LLM provider: ${JSON.stringify(responseJson.error)}`,
+    );
   }
 
   return removeEmptyCharacters(textFromResponse(responseJson)).trim();
 }
 
 export function textFromResponse(
-  response: ChatGPTResponse | RunPodResponse,
+  response: ChatGPTResponse | RunPodResponse | TogetherAIResponse,
 ): string {
-  if ("output" in response) return response.output;
+  if ("output" in response) {
+    if (typeof response.output === "string") return response.output;
+    // @ts-ignore
+    return response.output.choices[0].text;
+  }
   /* Assumes that you have set n = 1 in the params */
   if ("message" in response.choices[0])
     return response.choices[0].message.content;
@@ -86,7 +92,7 @@ export async function streamLLMResponse(
 
   const { url, options } =
     typeof prompt === "string"
-      ? getLLMRequestCompletion(prompt, { ...params, stream: true }, model)
+      ? getOAIRequestCompletion(prompt, { ...params, stream: true }, model)
       : getLLMRequestChat(prompt, { ...params, stream: true }, model);
 
   const response = await fetch(url, options);
@@ -113,7 +119,8 @@ export async function streamLLMResponse(
   return response.body;
 }
 
-function getLLMRequestCompletion(
+// TODO: Rewrite this function to allow other LLMs, not just OpenAI so we can use Phind normally
+function getOAIRequestCompletion(
   prompt: string,
   params: ChatGPTParams = {},
   model: string,
@@ -156,6 +163,7 @@ function getLLMRequestChat(
 } {
   const isOpenAIModel = model.includes("gpt");
   const isMistralModel = model.includes("mistral");
+  const isPhindModel = model.includes("Phind");
   const isOS = isOSModel(model);
   let key: string, url: string;
   if (isOpenAIModel) {
@@ -171,6 +179,45 @@ function getLLMRequestChat(
         ? { ...m }
         : { role: "user", content: `${m.name} output: ${m.content}` },
     );
+  } else if (isPhindModel) {
+    const phindParams = {
+      ...defaultParams,
+      ...params,
+    };
+    if ("frequency_penalty" in phindParams) {
+      // @ts-ignore
+      phindParams.repetition_penalty = phindParams.frequency_penalty;
+      delete phindParams.frequency_penalty;
+    }
+    if ("stream" in phindParams) {
+      // @ts-ignore
+      phindParams.stream_tokens = phindParams.stream;
+      delete phindParams.stream;
+    }
+    if (!("top_k" in phindParams)) {
+      // @ts-ignore
+      phindParams.top_k = 50;
+    }
+    const promptText = GPTChatFormatToPhind(messages);
+    // console.log("Prompt text: ", promptText);
+    const out = {
+      url: "https://api.together.xyz/inference",
+      options: {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.TOGETHER_AI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...phindParams,
+          model: model,
+          prompt: promptText,
+          request_type: "language-model-inference",
+          stop: ["</s>", "```"],
+        }),
+      },
+    };
+    return out;
   } else if (isOS) {
     if (!process.env.OS_LLM_API_KEY || !process.env.OS_LLM_URL)
       throw new Error(
@@ -286,4 +333,27 @@ function combineMessagesForHFEndpoints(messages: LLMChatMessage[]): string {
         : `function ${m.name} called\n${m.content}</s>`,
     )
     .join("\n");
+}
+function GPTChatFormatToPhind(chatMessages: ChatGPTMessage[]): string {
+  const roleToName = {
+    system: "System Prompt",
+    user: "User Message",
+    assistant: "Assistant",
+    function: "Function: ",
+  };
+  return `${chatMessages
+    .map(
+      (message) => `
+### ${roleToName[message.role]}${
+        message.role === "function" ? message.name : ""
+      }
+${message.content}
+  `,
+    )
+    .join("\n")}
+${
+  chatMessages[chatMessages.length - 1].role !== "assistant"
+    ? "### Assistant\n"
+    : ""
+}`;
 }

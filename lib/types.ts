@@ -44,3 +44,28 @@ export type OrgJoinIsPaidFinetunedModels = OrgJoinIsPaid & {
 
 export type HeadersInsert =
   Database["public"]["Tables"]["fixed_headers"]["Insert"];
+
+export interface BertieGraphData {
+  title: string | number;
+  type: "line" | "bar" | "table";
+  data: {
+    x: number | string;
+    y: number;
+    [key: string]: any; // The wildcard is to add extra information shown in the table and when hovering the data point
+  }[];
+  labels: { x: string; y: string };
+}
+
+export type ExecuteCode2Item =
+  | {
+      type: "log" | "error";
+      args: { message: string };
+    }
+  | {
+      type: "plot";
+      args: BertieGraphData;
+    }
+  | {
+      type: "call";
+      args: { name: string; params: Record<string, unknown> };
+    };

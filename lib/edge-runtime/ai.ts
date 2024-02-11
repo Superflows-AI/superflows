@@ -45,7 +45,7 @@ import { hallucinateDocsSystemPrompt } from "../prompts/hallucinateDocs";
 import { runDataAnalysis } from "./dataAnalysis";
 import {
   dataAnalysisActionName,
-  enableDataAnalysisAction,
+  dataAnalysisAction,
   getSearchDocsAction,
 } from "../builtinActions";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
@@ -278,9 +278,7 @@ export async function Angela( // Good ol' Angela
     actions.unshift(getSearchDocsAction(org, currentHost));
   }
   // Add analytics action if enabled
-  if (org.analytics_enabled) {
-    actions.unshift(enableDataAnalysisAction(org));
-  }
+  actions.unshift(dataAnalysisAction(org));
 
   if (actions.length > 5 && model.includes("3.5")) {
     actions = await filterActions(
