@@ -11,6 +11,7 @@ export function getSearchDocsAction(
     action_type: "http",
     active: true,
     description: `Performs a semantic search over the ${org.name} documentation. Use this when asked how-to questions or any question about ${org.name}. DO NOT make up answers about ${org.name}`,
+    filtering_description: `Searches over the ${org.name} documentation. Use this when asked how-to questions or any question about ${org.name}`,
     name: searchDocsActionName,
     org_id: org.id,
     parameters: [
@@ -44,20 +45,17 @@ export function getSearchDocsAction(
   } as ActionPlusApiInfo;
 }
 
-export const dataAnalysisActionName = "perform_data_analysis";
+export const dataAnalysisActionName = "instruct_coder";
 
 export function enableDataAnalysisAction(org: {
   id: number;
 }): ActionPlusApiInfo {
   return {
-    // This doesn't do anything yet
     action_type: "function",
     active: true,
     description:
-      "This passes responses to API calls you are making to another AI who " +
-      "writes code to perform data analysis (visualize data or make calculations) for the user. " +
-      "You may only call this ONCE in a list of Commands. Call it in the same list of Commands " +
-      "as the API calls you want it to perform data analysis on. THIS IS VERY IMPORTANT. DO NOT FORGET THIS",
+      "This instructs a coder to write code using the same functions as you. Use this when you need to perform calculations, plot data or " +
+      "perform complex batch or multi-step actions. THIS IS VERY IMPORTANT. DO NOT FORGET THIS",
     name: dataAnalysisActionName,
     org_id: org.id,
     parameters: [
@@ -65,21 +63,10 @@ export function enableDataAnalysisAction(org: {
         in: "query",
         name: "instruction",
         description:
-          "The instruction to give to the Data Analysis AI. E.g. 'Plot a bar chart of the conversion rate for each channel over the past 2 weeks'",
+          "The instruction to give to the coder. Make this as detailed as possible. E.g. 'Plot a bar chart of the conversion rate for each channel aggregated over the past 2 weeks'.",
         required: true,
         schema: {
           type: "string",
-        },
-      },
-      {
-        in: "query",
-        name: "type",
-        description:
-          "Expected output type (graph type or value - value is 1 number output) requested from the data analysis",
-        required: true,
-        schema: {
-          type: "string",
-          enum: ["line", "bar", "value"],
         },
       },
     ] as Json,
