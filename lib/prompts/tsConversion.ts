@@ -132,6 +132,7 @@ export function getActionTSSignature(
   action: Action,
   includeReturnType: boolean = false,
   returnedObject: any = null,
+  isAsync: boolean = false,
 ): string {
   /** Gets the Typescript function signature for an action.
    *
@@ -202,7 +203,7 @@ export function getActionTSSignature(
 
   const out = `${
     description ? `\n/** ${description.split("\n").join("\n* ")} **/\n` : ""
-  }function ${snakeToCamel(action.name)}(${
+  }${isAsync ? "async " : ""}function ${snakeToCamel(action.name)}(${
     paramString ? "args: {" + paramString + "\n}" : ""
   })`;
 
@@ -216,10 +217,10 @@ export function getActionTSSignature(
   > | null;
   let returnType = "";
   // If it's there, start off with the schema from the API spec
-  if (responses !== null) {
+  if (responses) {
     for (let n = 200; n < 300; n++) {
       const nString = n.toString();
-      if (responses[nString].content?.["application/json"]) {
+      if (responses[nString]?.content?.["application/json"]) {
         returnType = formatBodySchemaToTS(
           responses[nString].content!["application/json"].schema,
           0,
@@ -227,7 +228,6 @@ export function getActionTSSignature(
           false,
           "response",
         );
-        console.log("returnType", returnType);
         break;
       }
     }
@@ -247,14 +247,19 @@ export function getActionTSSignature(
   return out + ": " + returnType + "\n";
 }
 
-export function getActionTSSignatures(actions: Action[]): string {
+export function getActionTSSignatures(
+  actions: Action[],
+  includeReturnType: boolean = true,
+): string {
   /** Gets the list of actions, their parameters and their descriptions. **/
   if (actions.length === 0) {
     console.error("No actions provided to getTSActionDescriptions!");
     return "";
   }
 
-  return actions.map((action) => getActionTSSignature(action)).join("");
+  return actions
+    .map((action) => getActionTSSignature(action, includeReturnType))
+    .join("");
 }
 
 export function getObjectTSType(object: any): string {

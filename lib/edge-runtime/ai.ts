@@ -743,7 +743,7 @@ async function preamble(
   return streamInfo;
 }
 
-async function storeActionsAwaitingConfirmation(
+export async function storeActionsAwaitingConfirmation(
   toConfirm: ToConfirm[],
   conversationId: number,
 ) {
