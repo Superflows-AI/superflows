@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
 import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
+import { Bertie } from "../../../lib/v2/edge-runtime/ai";
 import {
   ApiResponseCutText,
   DBChatMessageToGPT,
@@ -216,7 +217,7 @@ export default async function handler(req: NextRequest) {
     if (requestData.stream === false) {
       return new Response(
         JSON.stringify({
-          error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://calm-silver-e6f.notion.site/Superflows-Public-API-8f6158cd6d4048d8b2ef0f29881be93d?pvs=4`,
+          error: `Currently only the streaming API (stream=true) has been implemented. See API spec here: https://docs.superflows.ai/docs/api-specification/answers`,
         }),
         { status: 501, headers },
       );
@@ -409,6 +410,7 @@ export default async function handler(req: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         // Ask Angela or Dottie for the answer
+        const aiToUse = org!.bertie_enabled ? Bertie : Angela;
         const {
           nonSystemMessages: allMessages,
           cost,
@@ -422,7 +424,7 @@ export default async function handler(req: NextRequest) {
               previousMessages,
               language,
             )
-          : await Angela(
+          : await aiToUse(
               controller,
               requestData,
               activeActions,

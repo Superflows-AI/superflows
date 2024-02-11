@@ -9,10 +9,10 @@ import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { NextRequest } from "next/server";
-import * as cheerio from "cheerio";
 import RemoveMarkdown from "remove-markdown";
 import { z } from "zod/lib";
 import { FunctionCall } from "@superflows/chat-ui-react";
+import { dataAnalysisActionName } from "../builtinActions";
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
@@ -293,14 +293,20 @@ export function combineChunks(chunks: SimilaritySearchResult[]): {
 }
 
 export function parseErrorHtml(str: string): string {
-  const DOM = cheerio.load(str).root();
-  const elements = [
-    DOM.find("title").text().trim().replace(/\s+/g, " "),
-    DOM.find("h1").text().trim().replace(/\s+/g, " "),
-    DOM.find("h2").text().trim().replace(/\s+/g, " "),
-    DOM.find("h3").text().trim().replace(/\s+/g, " "),
+  const elements = [];
+  const regexes = [
+    /<title.*?>(.*)<\/title>/,
+    /<h1.*?>(.*)<\/h1>/,
+    /<h2.*?>(.*)<\/h2>/,
+    /<h3.*?>(.*)<\/h3>/,
   ];
-  const result = elements.filter((element) => element !== "").join("\n");
+  for (const regex of regexes) {
+    const match = str.match(regex);
+    if (match) {
+      elements.push(match[1].trim().replace(/\s+/g, " "));
+    }
+  }
+  const result = elements.filter(Boolean).join("\n");
   return result.length > 0 ? result : str;
 }
 
@@ -315,8 +321,7 @@ export function replaceVariables(
   });
 }
 
-export const ApiResponseCutText =
-  "API response cut as it is too large (>20kb).";
+export const ApiResponseCutText = `API response cut as it is too large (>20kb).\n\nTo use the full response, call ${dataAnalysisActionName}.`;
 
 export function preStreamProcessOutMessage(
   outMessage: FunctionMessageInclSummary,

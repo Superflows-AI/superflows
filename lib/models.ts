@@ -62,6 +62,35 @@ export interface RunPodResponse {
   status: string;
 }
 
+export interface TogetherAIResponse {
+  id: string;
+  status: string;
+  prompt: string[];
+  model: string;
+  model_owner: string;
+  num_returns: number;
+  args: {
+    max_tokens: number;
+    temperature: number;
+    top_p: number;
+    repetition_penalty: number;
+    model: string;
+    prompt: string[];
+    request_type: string;
+    stop: string[];
+  };
+  subjobs: string[];
+  output: {
+    usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    };
+    result_type: string;
+    choices: {}[];
+  };
+}
+
 export interface OpenAIError {
   message: string;
   type: string;
