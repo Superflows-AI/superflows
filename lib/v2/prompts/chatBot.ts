@@ -208,12 +208,12 @@ export default function getMessages(
           language,
           includeIdLine,
         )
-      : simpleChatPrompt(userDescriptionSection, orgInfo, language),
+      : explainPlotChatPrompt(userDescriptionSection, orgInfo, language),
     ...userCopilotMessages,
   ];
 }
 
-export function simpleChatPrompt(
+export function explainPlotChatPrompt(
   userDescriptionSection: string,
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
@@ -223,17 +223,14 @@ export function simpleChatPrompt(
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
       orgInfo.name ? `in ${orgInfo.name} ` : ""
     }with helpful replies
-${
-  orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""
-}${userDescriptionSection}
-You are having a conversation with the user.
+${userDescriptionSection}
+Today's date is ${new Date().toISOString().split("T")[0]}
 
-You have expert knowledge in the domain of the organization you are representing. You can use this knowledge to help the user. Do not invent new knowledge.
-${
-  language &&
-  `
-Your reply should be written in ${language}.`
-}`,
+RULES:
+1. If you cannot see the contents of the graph (it may have been cut due to context limits), DO NOT invent the contents, or tell the user you cannot see it. Instead, direct them to view the above graph for the answer to their question.
+2. If you can see the graph contents, and it doesn't exactly answer the question the user asked, you can use the data presented in the graph and in log messages from the coder to help answer the question.
+3. DO NOT show the graph in markdown. The above function message is visible to the user as a graph.
+4. ${language ? `Your reply should be written in ${language}.` : ""}`,
   };
 }
 

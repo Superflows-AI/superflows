@@ -50,7 +50,10 @@ import {
   dataAnalysisAction,
   getSearchDocsAction,
 } from "../../builtinActions";
-import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
+import {
+  GraphData,
+  StreamingStepInput,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { storeActionsAwaitingConfirmation } from "../../edge-runtime/ai";
 
@@ -69,6 +72,30 @@ const completionOptions: ChatGPTParams = {
 };
 
 const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
+
+function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]) {
+  return chatGptPrompt.map((m) => {
+    if (m.role === "function" && m.name === dataAnalysisActionName) {
+      if (
+        // No newlines in our minified JSONs
+        !m.content.includes("\n") &&
+        // Below are to check it's a JSON
+        ["{", "["].includes(m.content[0]) &&
+        ["}", "]"].includes(m.content[m.content.length - 1]) &&
+        // Got to be long otherwise no point
+        getTokenCount([m]) > 500
+      ) {
+        const graphData = JSON.parse(m.content) as GraphData;
+        // @ts-ignore
+        graphData.data =
+          "<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>";
+        console.log("Hiding graph data", graphData);
+        m.content = JSON.stringify(graphData);
+      }
+    }
+    return m;
+  });
+}
 
 export async function Bertie( // Bertie will eat you for breakfast
   controller: ReadableStreamDefaultController,
@@ -162,19 +189,25 @@ export async function Bertie( // Bertie will eat you for breakfast
         language,
         Object.entries(originalToPlaceholderMap).length > 0,
       );
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          "Bertie system prompt:\n",
-          chatGptPrompt[0].content,
-          "\n\n",
-        );
-      }
 
       // If over context limit, remove oldest function calls
       chatGptPrompt = removeOldestFunctionCalls(
         [...chatGptPrompt],
         model === "gpt-4-0613" ? "4" : "3",
       );
+
+      // Hide very long graph outputs
+      chatGptPrompt = hideLongGraphOutputs(chatGptPrompt);
+
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "Bertie system prompt:\n",
+          chatGptPrompt
+            .map((m) => `${m.role} message:\n${m.content}`)
+            .join("\n\n"),
+          "\n\n",
+        );
+      }
 
       let rawOutput = chatMessageCache.checkChatCache(nonSystemMessages);
       if (rawOutput) {
@@ -206,7 +239,12 @@ export async function Bertie( // Bertie will eat you for breakfast
 
         const res = await exponentialRetryWrapper(
           streamLLMResponse,
-          [chatGptPrompt, completionOptions, model],
+          // No actions means it's explaining a graph output to the user
+          [
+            chatGptPrompt,
+            completionOptions,
+            actions.length > 0 ? model : FASTMODEL,
+          ],
           3,
         );
         if (res === null || (typeof res !== "string" && "message" in res)) {
