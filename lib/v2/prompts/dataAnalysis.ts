@@ -41,10 +41,11 @@ RULES:
 2. NEVER write TODO comments, placeholder code or ... in place of code
 3. The following cause runtime errors: fetch() (or calling another server), eval(), new Function(), WebAssembly, try-catch, TS types and function definitions
 4. If the user's request is impossible given api.ts, inform them of this or ask a clarifying question with console.log(). DO NOT write any code other than this. You cannot get input from the user in the code
-5. Use await NOT .then()
-6. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
-7. When calculating cumulative values, make sure to order the data by first!
-8. Respond with code in \`\`\` starting with imports and a commented plan like below:
+5. DO NOT answer a question by using return to send data. Use plot() to visualize data
+6. Use await NOT .then()
+7. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
+8. When calculating cumulative values, ORDER THE DATA first!
+9. Respond with code in \`\`\` starting with imports and a commented plan like below:
 \`\`\`
 // imports
 

@@ -468,11 +468,13 @@ export async function Bertie( // Bertie will eat you for breakfast
           org,
           { conversationId, index: nonSystemMessages.length },
           reqData.user_description ?? "",
-          // chatMessageCache,
+          chatMessageCache,
           thoughts,
           conversationId,
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
+        // Make last message an explanation-only message
+        actions = [];
 
         // Return graph data to the user & add message to chat history
         if (graphData === null) {
