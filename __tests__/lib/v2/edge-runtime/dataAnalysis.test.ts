@@ -47,11 +47,19 @@ describe("convertToGraphData", () => {
       },
     ]);
   });
+  const plotMess2: Extract<ExecuteCode2Item, { type: "plot" }> = {
+    type: "plot",
+    args: {
+      title: "plot 2",
+      type: "line",
+      data: [{ x: 3, y: 4 }],
+      labels: { x: "x", y: "y" },
+    },
+  };
   // Combine plots into 1 plot
   it("2x plotMess1, 2x logMess1", () => {
     const out = convertToGraphData(
       JSON.parse(JSON.stringify([logMess1, plotMess1, plotMess1, logMess1])),
-      // [logMess1, plotMess1, plotMess1, logMess1],
     );
     expect(out).toStrictEqual([
       {
@@ -66,6 +74,43 @@ describe("convertToGraphData", () => {
           type: "line",
           data: [
             { x: 1, y: 2 },
+            { x: 1, y: 2 },
+          ],
+          xLabel: "x",
+          yLabel: "y",
+        },
+      },
+    ]);
+  });
+  it("3x plotMess1, 2x plotMess2, 2x logMess1", () => {
+    const out = convertToGraphData(
+      JSON.parse(
+        JSON.stringify([
+          logMess1,
+          plotMess1,
+          plotMess2,
+          plotMess1,
+          plotMess2,
+          plotMess1,
+        ]),
+      ),
+    );
+    expect(out).toStrictEqual([
+      {
+        role: "function",
+        name: dataAnalysisActionName,
+        content: "log message 1",
+      },
+      {
+        role: "graph",
+        content: {
+          graphTitle: "plot 1",
+          type: "line",
+          data: [
+            { x: 1, y: 2 },
+            { x: 3, y: 4 },
+            { x: 1, y: 2 },
+            { x: 3, y: 4 },
             { x: 1, y: 2 },
           ],
           xLabel: "x",
