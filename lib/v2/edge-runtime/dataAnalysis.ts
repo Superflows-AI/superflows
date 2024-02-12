@@ -32,21 +32,22 @@ export var defaultDataAnalysisParams = {
   frequency_penalty: 1,
 };
 
-type NonUserMessage = FunctionMessage | AssistantMessage;
-
 async function saveAnalyticsToDB(
   instructionMessage: string,
   llmResponse: string,
   orgId: number,
   dbData: { conversationId: number; index: number },
-) {
+  bertie?: boolean,
+  chosenActions?: string[],
+): Promise<void> {
   const insertRes = await supabase.from("analytics_code_snippets").insert({
-    // The user message contents
-    instruction_message: instructionMessage,
+    instruction_message: instructionMessage, // The user message contents
     output: llmResponse,
     org_id: orgId,
     conversation_id: dbData.conversationId,
     conversation_index: dbData.index,
+    is_bertie: bertie ?? false,
+    chosen_actions: chosenActions ?? [],
   });
   if (insertRes.error) {
     console.error(
@@ -65,7 +66,7 @@ export async function runDataAnalysis(
   org: Pick<Organization, "id" | "name" | "description">,
   dbData: { conversationId: number; index: number },
   userDescription: string,
-  // cache: LlmResponseCache,
+  cache: LlmResponseCache,
   thoughts: string,
   conversationId: number,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
@@ -78,57 +79,13 @@ export async function runDataAnalysis(
   });
   console.log("Data analysis prompt:", dataAnalysisPrompt);
 
-  // let { llmResponse, graphData } = await cache.checkAnalyticsCache(
-  //   dataAnalysisPrompt[1].content,
-  //   org.id,
-  //   fullChatHistory,
-  //   supabase,
-  // );
-  // if (graphData) {
-  //   await saveAnalyticsToDB(
-  //     dataAnalysisPrompt[1].content,
-  //     llmResponse,
-  //     org.id,
-  //     dbData,
-  //   );
-  //   return graphData as GraphData;
-  // } else if (llmResponse) {
-  //   let parsedCode = parseDataAnalysis(llmResponse);
-  //   if (parsedCode === null || "error" in parsedCode) return parsedCode;
-  //   await saveAnalyticsToDB(
-  //     dataAnalysisPrompt[1].content,
-  //     llmResponse,
-  //     org.id,
-  //     dbData,
-  //   );
-  //   const res = await supabase.functions.invoke("execute-code-2", {
-  //     body: JSON.stringify({
-  //       actionsPlusApi: filteredActions,
-  //       org,
-  //       code: parsedCode.code,
-  //     }),
-  //   });
-  //   graphData = res.data;
-  //   console.info("Data analysis response: ", graphData);
-  //
-  //   // Check data returned is of the correct format
-  //   if (graphData && !("error" in graphData)) {
-  //     const validGraphData =
-  //       "type" in graphData &&
-  //       "data" in graphData &&
-  //       Array.isArray(graphData.data) &&
-  //       graphData.data.every(
-  //         (d: any) => typeof d === "object" && "x" in d && "y" in d,
-  //       );
-  //     if (!validGraphData) {
-  //       console.info(
-  //         "Data analysis response was not of the correct format. Returning null",
-  //       );
-  //       return { error: "Data analysis mode failed to output valid code" };
-  //     }
-  //   }
-  //   return graphData as GraphData;
-  // }
+  let llmResponse = await cache.checkBertieAnalyticsCache(
+    dataAnalysisPrompt[1].content,
+    filteredActions.map((a) => a.name),
+    org.id,
+    supabase,
+  );
+  console.log("LLM response from cache:", llmResponse);
 
   let graphData: ExecuteCode2Item[] | null = null,
     nLoops = 0;
@@ -140,29 +97,23 @@ export async function runDataAnalysis(
     // const graphDatas = (
     // await Promise.all(
     //   [1, 2, 3].map(async (i) => {
-    let llmResponse = await exponentialRetryWrapper(
-      getLLMResponse,
-      [
-        dataAnalysisPrompt,
-        defaultDataAnalysisParams,
-        process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
-      ],
-      3,
-    );
-    console.info("\nRaw LLM response:", llmResponse);
+    if (!llmResponse) {
+      llmResponse = await exponentialRetryWrapper(
+        getLLMResponse,
+        [
+          dataAnalysisPrompt,
+          defaultDataAnalysisParams,
+          process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
+        ],
+        3,
+      );
+      console.info("\nRaw LLM response:", llmResponse);
+    }
 
     // Parse the result
     let parsedCode = parseDataAnalysis(llmResponse);
     if (parsedCode === null || "error" in parsedCode) return parsedCode;
     console.info("Parsed LLM response:", parsedCode.code);
-
-    // TODO: Save to DB for possible reuse later
-    // await saveAnalyticsToDB(
-    //   dataAnalysisPrompt[1].content,
-    //   llmResponse,
-    //   org.id,
-    //   dbData,
-    // );
 
     // Send code to supabase edge function to execute
     const res = await supabase.functions.invoke("execute-code-2", {
@@ -179,6 +130,7 @@ export async function runDataAnalysis(
       console.error(
         `Error executing code for conversation ${conversationId}: ${res.error}`,
       );
+      llmResponse = "";
       continue;
     }
     // If data field is null
@@ -186,6 +138,7 @@ export async function runDataAnalysis(
       console.error(
         `Failed to write valid code for conversation ${conversationId} after 3 attempts`,
       );
+      llmResponse = "";
       continue;
     }
     // If error messages in the data output
@@ -197,6 +150,7 @@ export async function runDataAnalysis(
           .map((m) => m.args.message)
           .join("\n")}`,
       );
+      llmResponse = "";
       continue;
     }
 
@@ -209,6 +163,15 @@ export async function runDataAnalysis(
     );
     return { error: "Failed to execute code" };
   }
+  // Save to DB for possible reuse later
+  await saveAnalyticsToDB(
+    dataAnalysisPrompt[1].content,
+    llmResponse,
+    org.id,
+    dbData,
+    true,
+    filteredActions.map((a) => a.name),
+  );
   return graphData;
 }
 
@@ -250,20 +213,20 @@ export function convertToGraphData(
     (g) => g.type === "plot",
   ) as Extract<ExecuteCode2Item, { type: "plot" }>[];
 
+  const originalDataLengths = plotItems.map((g) => g.args.data.length);
   plotItems = plotItems
-    .map((g1, idx) => {
+    .map((g1, idx, items) => {
       const matchedPlotIdx = plotItems.findIndex((g2, i) => {
         if (i >= idx) return false;
         return (
           g1.args.labels.x === g2.args.labels.x &&
           g1.args.labels.y === g2.args.labels.y &&
           g1.args.data.length === 1 &&
-          g2.args.data.length === 1
+          originalDataLengths[i] === 1
         );
       });
       if (matchedPlotIdx === -1) return g1;
-
-      plotItems[matchedPlotIdx].args.data.push(g1.args.data[0]);
+      items[matchedPlotIdx].args.data.push(g1.args.data[0]);
       return undefined;
     })
     .filter((g) => g !== undefined) as Extract<
@@ -285,6 +248,7 @@ export function convertToGraphData(
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
   if (executeCodeResponse.filter((m) => m.type === "log").length === 0) {
+    functionMessage.content += Boolean(functionMessage.content) ? "\n\n" : "";
     functionMessage.content +=
       plotMessages.length > 0
         ? "Plot generated successfully"
