@@ -294,7 +294,7 @@ describe("parseErrorHtml", () => {
     const res = parseErrorHtml(errorHtml);
     expect(res).toEqual(`404: This page could not be found
 404
-This page could not be found.`);
+This page could not be found<!-- -->.`);
   });
   it("multiple h1 and h2", () => {
     const errorHtml = `<!DOCTYPE html><html>

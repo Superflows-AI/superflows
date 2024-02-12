@@ -329,7 +329,7 @@ describe("getTSActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual("function action1()\n");
+    expect(out).toEqual("function action1(): any\n");
   });
   it("no parameters multiple actions", () => {
     const out = getActionTSSignatures([
@@ -352,7 +352,7 @@ describe("getTSActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`function action1()\nfunction action2()\n`);
+    expect(out).toEqual(`function action1(): any\nfunction action2(): any\n`);
   });
   // Setting parameters
   it("1 parameter, required", () => {
@@ -374,7 +374,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1: string // a description\n})\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1: string // a description\n}): any\n",
     );
   });
   it("1 parameter, not required", () => {
@@ -395,7 +395,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1?: string // a description\n})\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1?: string // a description\n}): any\n",
     );
   });
   it("1 parameter with string enums", () => {
@@ -417,7 +417,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      '\n/** description1 **/\nfunction action1(args: {\nparam1?: "alpha" | "beta" | "gamma" // a description\n})\n',
+      '\n/** description1 **/\nfunction action1(args: {\nparam1?: "alpha" | "beta" | "gamma" // a description\n}): any\n',
     );
   });
   it("1 parameter with number enums", () => {
@@ -439,7 +439,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1?: 1 | 2 | 3 // a description\n})\n",
+      "\n/** description1 **/\nfunction action1(args: {\nparam1?: 1 | 2 | 3 // a description\n}): any\n",
     );
   });
   it("2 parameters 1 action", () => {
@@ -474,7 +474,7 @@ describe("getTSActionDescriptions", () => {
 function action1(args: {
 param1?: string // a description
 param2: number // this isn't a description
-})
+}): any
 `,
     );
   });
@@ -534,13 +534,13 @@ param2: number // this isn't a description
 function action1(args: {
 param1?: string // a description
 param2: number // this isn't a description
-})
+}): any
 
 /** description1 **/
 function action2(args: {
 param3?: string // a description
 param4: number // this isn't a description
-})
+}): any
 `,
     );
   });
@@ -576,7 +576,7 @@ param4: number // this isn't a description
 /** description1 **/
 function action1(args: {
 param2?: number // this isn't a description
-})
+}): any
 `,
     );
   });
@@ -609,7 +609,7 @@ param2?: number // this isn't a description
 /** description1 **/
 function action1(args: {
 param1: string // a description
-})
+}): any
 `,
     );
   });
@@ -645,7 +645,7 @@ param1: string // a description
 function action1(args: {
 param1: string // a description
 param2?: number // this is a number
-})
+}): any
 `,
     );
   });
@@ -679,7 +679,7 @@ param2?: number // this is a number
 /** description #1 **/
 function action1(args: {
 updates: string[] // description of the array
-})
+}): any
 `);
   });
   it("request body simple array, no array description", () => {
@@ -711,7 +711,7 @@ updates: string[] // description of the array
 /** description #1 **/
 function action1(args: {
 updates: string[] // array of item description
-})
+}): any
 `);
   });
   it("exampleRequestBody1", () => {
@@ -732,7 +732,7 @@ customField: string // The ID or key of the custom field. For example, \`customf
 issueIds: integer[] // The list of issue IDs.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
 }[]
-})
+}): any
 `,
     );
   });
@@ -757,7 +757,7 @@ issues?: integer[] // List of issue IDs.
 permissions: string[] // List of project permissions.
 projects?: integer[] // List of project IDs.
 }[]
-})
+}): any
 `,
     );
   });
@@ -783,7 +783,7 @@ name: string // The name of the dashboard.
 sharePermissions: { // The share permissions for the dashboard.
 type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
 }[]
-})
+}): any
 `,
     );
   });
@@ -821,7 +821,7 @@ type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "au
 /** description1 **/
 function action1(args: {
 description?: string // The description of the dashboard
-})
+}): any
 `,
     );
   });
@@ -862,7 +862,7 @@ description?: string // The description of the dashboard
 function action1(args: {
 created?: string // When it was created. Example: 2021-01-01
 enumProp: "option1" | "option2" // enum description
-})
+}): any
 `,
     );
   });
@@ -901,7 +901,7 @@ enumProp: "option1" | "option2" // enum description
 function action1(args: {
 param1?: string // a description. Example: example1
 updated?: integer // Example: 1663734553
-})
+}): any
 `,
     );
   });

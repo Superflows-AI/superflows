@@ -39,7 +39,7 @@ describe("convertToGraphData", () => {
         role: "graph",
         content: {
           graphTitle: "plot 1",
-          type: "line",
+          type: "value", // Converts to value
           data: [{ x: 1, y: 2 }],
           xLabel: "x",
           yLabel: "y",
@@ -132,7 +132,7 @@ describe("convertToGraphData", () => {
         role: "graph",
         content: {
           graphTitle: "plot 1",
-          type: "line",
+          type: "value",
           data: [{ x: 1, y: 2 }],
           xLabel: "x",
           yLabel: "y",

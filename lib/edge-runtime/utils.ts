@@ -295,15 +295,24 @@ export function combineChunks(chunks: SimilaritySearchResult[]): {
 export function parseErrorHtml(str: string): string {
   const elements = [];
   const regexes = [
-    /<title.*?>(.*)<\/title>/,
-    /<h1.*?>(.*)<\/h1>/,
-    /<h2.*?>(.*)<\/h2>/,
-    /<h3.*?>(.*)<\/h3>/,
+    /<title.*?>([\s\S]*?)<\/title>/g,
+    /<h1.*?>([\s\S]*?)<\/h1>/g,
+    /<h2.*?>([\s\S]*?)<\/h2>/g,
+    /<h3.*?>([\s\S]*?)<\/h3>/g,
   ];
   for (const regex of regexes) {
-    const match = str.match(regex);
+    let match = str.match(regex);
     if (match) {
-      elements.push(match[1].trim().replace(/\s+/g, " "));
+      elements.push(
+        match
+          .map((m) =>
+            m
+              .match(/<.*?>([\s\S]*?)<\/.*?>/)![1]
+              .trim()
+              .replace(/\s+/g, " "),
+          )
+          .join(" "),
+      );
     }
   }
   const result = elements.filter(Boolean).join("\n");
