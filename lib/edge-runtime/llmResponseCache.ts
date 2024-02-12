@@ -156,6 +156,34 @@ export class LlmResponseCache {
     return { llmResponse: "" };
   }
 
+  async checkBertieAnalyticsCache(
+    instruction: string,
+    chosen_actions: string[],
+    orgId: number,
+    supabase: SupabaseClient<Database>,
+  ): Promise<string> {
+    console.log("Checking Bertie analytics cache", instruction, chosen_actions);
+    // Check if the instruction message and chosen_actions are the same
+    const { data: matchingAnalytics, error: analyticsError } = await supabase
+      .from("analytics_code_snippets")
+      .select("output")
+      .match({
+        org_id: orgId,
+        instruction_message: instruction,
+        fresh: true,
+        is_bertie: true,
+      })
+      .containedBy("chosen_actions", chosen_actions)
+      .order("created_at", { ascending: false });
+    if (analyticsError) console.error(analyticsError.message);
+
+    if (matchingAnalytics?.length) {
+      console.log("Analytics match found");
+      return matchingAnalytics[0].output;
+    }
+    return "";
+  }
+
   async checkFollowUpCache(
     orgId: number,
     chatHistory: GPTMessageInclSummary[],
