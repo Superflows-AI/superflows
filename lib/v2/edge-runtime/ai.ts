@@ -470,6 +470,7 @@ export async function Bertie( // Bertie will eat you for breakfast
           reqData.user_description ?? "",
           // chatMessageCache,
           thoughts,
+          conversationId,
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
 

@@ -25,7 +25,7 @@ const supabase = createClient<Database>(
   process.env.SERVICE_LEVEL_KEY_SUPABASE!,
 );
 
-export const defaultDataAnalysisParams = {
+export var defaultDataAnalysisParams = {
   max_tokens: 800,
   temperature: 0.1,
   top_k: 50,
@@ -67,6 +67,7 @@ export async function runDataAnalysis(
   userDescription: string,
   // cache: LlmResponseCache,
   thoughts: string,
+  conversationId: number,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
   const dataAnalysisPrompt = getDataAnalysisPrompt({
     question: instruction,
@@ -129,88 +130,94 @@ export async function runDataAnalysis(
   //   return graphData as GraphData;
   // }
 
-  // const graphDatas = (
-  // await Promise.all(
-  //   [1, 2, 3].map(async (i) => {
-  let llmResponse = await exponentialRetryWrapper(
-    getLLMResponse,
-    [
-      dataAnalysisPrompt,
-      defaultDataAnalysisParams,
-      process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
-    ],
-    3,
-  );
-  console.info("\nRaw LLM response:", llmResponse);
+  let graphData: ExecuteCode2Item[] | null = null,
+    nLoops = 0;
+  while (graphData === null && nLoops < 3) {
+    defaultDataAnalysisParams = {
+      ...defaultDataAnalysisParams,
+      temperature: nLoops === 0 ? 0.1 : 0.8,
+    };
+    // const graphDatas = (
+    // await Promise.all(
+    //   [1, 2, 3].map(async (i) => {
+    let llmResponse = await exponentialRetryWrapper(
+      getLLMResponse,
+      [
+        dataAnalysisPrompt,
+        defaultDataAnalysisParams,
+        process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
+      ],
+      3,
+    );
+    console.info("\nRaw LLM response:", llmResponse);
 
-  // Parse the result
-  let parsedCode = parseDataAnalysis(llmResponse);
-  if (parsedCode === null || "error" in parsedCode) return parsedCode;
-  console.info("Parsed LLM response:", parsedCode.code);
+    // Parse the result
+    let parsedCode = parseDataAnalysis(llmResponse);
+    if (parsedCode === null || "error" in parsedCode) return parsedCode;
+    console.info("Parsed LLM response:", parsedCode.code);
 
-  // Save to DB for possible reuse later
-  await saveAnalyticsToDB(
-    dataAnalysisPrompt[1].content,
-    llmResponse,
-    org.id,
-    dbData,
-  );
+    // TODO: Save to DB for possible reuse later
+    // await saveAnalyticsToDB(
+    //   dataAnalysisPrompt[1].content,
+    //   llmResponse,
+    //   org.id,
+    //   dbData,
+    // );
 
-  // Send code to supabase edge function to execute
-  // console.log(
-  //   `Rough object sizes:\n${Object.entries(data).map(
-  //     // @ts-ignore
-  //     ([key, value]) => key + ": ~" + roughSizeOfObject(value) + " bytes",
-  //   )}`,
-  // );
-  const res = await supabase.functions.invoke("execute-code-2", {
-    body: JSON.stringify({
-      actionsPlusApi: filteredActions,
-      org,
-      code: parsedCode.code,
-    }),
-  });
-  const graphData = res.data as ExecuteCode2Item[];
-  console.info("Data analysis response: ", graphData);
+    // Send code to supabase edge function to execute
+    const res = await supabase.functions.invoke("execute-code-2", {
+      body: JSON.stringify({
+        actionsPlusApi: filteredActions,
+        org,
+        code: parsedCode.code,
+      }),
+    });
+    nLoops += 1;
+
+    const returnedData = res.data as ExecuteCode2Item[] | null;
+    if (res.error) {
+      console.error(
+        `Error executing code for conversation ${conversationId}: ${res.error}`,
+      );
+      continue;
+    }
+    // If data field is null
+    if (returnedData === null) {
+      console.error(
+        `Failed to write valid code for conversation ${conversationId} after 3 attempts`,
+      );
+      continue;
+    }
+    // If error messages in the data output
+    const errorMessages = returnedData.filter((m) => m.type === "error");
+    if (errorMessages.length > 0) {
+      console.error(
+        `Error executing code for conversation ${conversationId}:\n${errorMessages
+          // @ts-ignore
+          .map((m) => m.args.message)
+          .join("\n")}`,
+      );
+      continue;
+    }
+
+    graphData = returnedData;
+    console.info("Data analysis response: ", graphData);
+  }
+  if (graphData === null) {
+    console.error(
+      `Failed to execute code for conversation ${conversationId} after 3 attempts`,
+    );
+    return { error: "Failed to execute code" };
+  }
   return graphData;
-
-  // // Check data returned is of the correct format
-  // if (graphData && !("error" in graphData)) {
-  //   const validGraphData =
-  //     "type" in graphData &&
-  //     "data" in graphData &&
-  //     Array.isArray(graphData.data) &&
-  //     graphData.data.every(
-  //       (d: any) => typeof d === "object" && "x" in d && "y" in d,
-  //     );
-  //   if (!validGraphData) {
-  //     console.info(
-  //       "Data analysis response was not of the correct format. Returning null",
-  //     );
-  //     return { error: "Data analysis mode failed to output valid code" };
-  //   }
-  // }
-  // return graphData as GraphData;
-  // }),
-  // )
-  // ).filter(
-  //   (out) =>
-  //     out !== null &&
-  //     out !== undefined &&
-  //     !("error" in out) &&
-  //     Array.isArray(out) &&
-  //     out.length > 0,
-  // );
-  // if (graphDatas.length === 0) {
-  //   return { error: "Data analysis mode failed to output valid code" };
-  // }
-  // return graphDatas[0] as GraphData;
 }
 
 export function convertToGraphData(
   executeCodeResponse: ExecuteCode2Item[],
-): (GraphMessage | ErrorMessage | FunctionMessage)[] {
-  // TODO: Do some more of the features I came up with
+): (GraphMessage | FunctionMessage)[] {
+  if (executeCodeResponse.length === 0) {
+    throw new Error("No logs, errors or API calls from code execution");
+  }
   let functionMessage: FunctionMessage = {
     role: "function",
     name: dataAnalysisActionName,
@@ -227,22 +234,44 @@ export function convertToGraphData(
       .join("\n"),
   };
 
-  const errorMessages: ErrorMessage[] = executeCodeResponse
+  const errorMessages: string[] = executeCodeResponse
     .filter((m) => m.type === "error")
-    .map((e) => {
-      // @ts-ignore
-      return { role: "error", content: e.args.message };
-    });
+    // @ts-ignore
+    .map((e) => e.args.message);
+  if (errorMessages.length > 0) {
+    throw new Error(
+      `Error messages found in code execution:\n${errorMessages.join("\n")}`,
+    );
+  }
 
-  if (!functionMessage.content && errorMessages.length === 0)
-    throw new Error("No logs, errors or API calls from code execution");
+  // Sometimes the AI will write a for loop and put the plot() call in the loop, leading to multiple plots which were
+  // meant to be 1, each with 1 data point. We combine these out here
+  let plotItems = executeCodeResponse.filter(
+    (g) => g.type === "plot",
+  ) as Extract<ExecuteCode2Item, { type: "plot" }>[];
 
-  const plotMessages: GraphMessage[] = (
-    executeCodeResponse.filter((g) => g.type === "plot") as Extract<
-      ExecuteCode2Item,
-      { type: "plot" }
-    >[]
-  ).map((g) => ({
+  plotItems = plotItems
+    .map((g1, idx) => {
+      const matchedPlotIdx = plotItems.findIndex((g2, i) => {
+        if (i >= idx) return false;
+        return (
+          g1.args.labels.x === g2.args.labels.x &&
+          g1.args.labels.y === g2.args.labels.y &&
+          g1.args.data.length === 1 &&
+          g2.args.data.length === 1
+        );
+      });
+      if (matchedPlotIdx === -1) return g1;
+
+      plotItems[matchedPlotIdx].args.data.push(g1.args.data[0]);
+      return undefined;
+    })
+    .filter((g) => g !== undefined) as Extract<
+    ExecuteCode2Item,
+    { type: "plot" }
+  >[];
+
+  const plotMessages: GraphMessage[] = plotItems.map((g) => ({
     role: "graph",
     content: {
       type: g.args.type === "table" ? "bar" : g.args.type,
@@ -255,15 +284,12 @@ export function convertToGraphData(
 
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
-  if (
-    executeCodeResponse.filter((m) => m.type === "log").length === 0 &&
-    errorMessages.length === 0
-  ) {
+  if (executeCodeResponse.filter((m) => m.type === "log").length === 0) {
     functionMessage.content +=
       plotMessages.length > 0
-        ? "\nPlot generated successfully"
-        : "\nCode executed successfully";
+        ? "Plot generated successfully"
+        : "Code executed successfully";
   }
 
-  return [functionMessage, ...plotMessages, ...errorMessages];
+  return [functionMessage, ...plotMessages];
 }
