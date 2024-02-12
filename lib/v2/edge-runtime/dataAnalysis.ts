@@ -15,6 +15,7 @@ import {
   ErrorMessage,
   GraphData,
   GraphMessage,
+  StreamingStepInput,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
@@ -69,6 +70,7 @@ export async function runDataAnalysis(
   cache: LlmResponseCache,
   thoughts: string,
   conversationId: number,
+  streamInfo: (step: StreamingStepInput) => void,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
   const dataAnalysisPrompt = getDataAnalysisPrompt({
     question: instruction,
@@ -90,6 +92,10 @@ export async function runDataAnalysis(
   let graphData: ExecuteCode2Item[] | null = null,
     nLoops = 0;
   while (graphData === null && nLoops < 3) {
+    streamInfo({
+      role: "loading",
+      content: "Performing complex action",
+    });
     defaultDataAnalysisParams = {
       ...defaultDataAnalysisParams,
       temperature: nLoops === 0 ? 0.1 : 0.8,

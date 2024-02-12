@@ -509,6 +509,7 @@ export async function Bertie( // Bertie will eat you for breakfast
           chatMessageCache,
           thoughts,
           conversationId,
+          streamInfo,
         );
         nonSystemMessages = hideMostRecentFunctionOutputs(nonSystemMessages);
         // Make last message an explanation-only message
