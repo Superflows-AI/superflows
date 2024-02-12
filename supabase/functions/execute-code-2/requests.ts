@@ -1,4 +1,8 @@
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types.ts";
+import {
+  MediaTypeObject,
+  SchemaObject,
+  ParameterObject,
+} from "https://deno.land/x/openapi@0.1.0/mod.ts";
 import { fillNoChoiceRequiredParams } from "./actionUtils.ts";
 import {
   deduplicateArray,
@@ -8,8 +12,7 @@ import {
   getParam,
   parseErrorHtml,
 } from "./utils.ts";
-import { Action, ActionPlusApiInfo, Json } from "./types.ts";
-import MediaTypeObject = OpenAPIV3_1.MediaTypeObject;
+import { Action, ActionPlusApiInfo, Header, Json } from "./types.ts";
 
 export function processAPIoutput(
   out: Json | Json[],
@@ -77,12 +80,13 @@ export function constructHttpRequest({
   if (action.api.api_host.includes("api/mock"))
     headers["org_id"] = organization.id.toString();
   // This header is only required for requests with a body
-  if (action.request_body_contents)
+  if (action.request_body_contents) {
     headers["Content-Type"] = "application/json";
+  }
   action.headers
     // Filter out headers without names
-    .filter((header) => header.name)
-    .forEach((header) => {
+    .filter((header: Header) => header.name)
+    .forEach((header: Header) => {
       headers[header.name] = header.value;
     });
 
@@ -110,13 +114,12 @@ export function constructHttpRequest({
   // Set parameters
   const queryParams = new URLSearchParams();
   if (action.parameters && Array.isArray(action.parameters)) {
-    const actionParameters =
-      action.parameters as unknown as OpenAPIV3_1.ParameterObject[];
+    const actionParameters = action.parameters as unknown as ParameterObject[];
 
     for (const param of actionParameters) {
       console.warn(`processing param: ${JSON.stringify(param)}`);
       // Check for case of required parameter that has enum with 1 value
-      const schema = param.schema as OpenAPIV3.SchemaObject;
+      const schema = param.schema as SchemaObject;
       if (param.required && schema.enum && schema.enum.length === 1) {
         // Fill in the required parameter with the enum value
         parameters[param.name] = schema.enum[0];
@@ -198,7 +201,7 @@ export function endpointUrlFromAction(action: {
 
 export function bodyPropertiesFromRequestBodyContents(
   requestBodyContents: Json,
-): OpenAPIV3.SchemaObject {
+): SchemaObject {
   const reqBodyContents = requestBodyContents as unknown as {
     [media: string]: MediaTypeObject;
   };
@@ -213,15 +216,15 @@ export function bodyPropertiesFromRequestBodyContents(
     );
   }
 
-  return applicationJson.schema as OpenAPIV3.SchemaObject;
+  return applicationJson.schema as SchemaObject;
 }
 
 function buildBody(
-  schema: OpenAPIV3.SchemaObject,
+  schema: SchemaObject,
   parameters: Record<string, unknown>,
 ): { [x: string]: any } {
   const properties = schema.properties as {
-    [name: string]: OpenAPIV3_1.SchemaObject;
+    [name: string]: SchemaObject;
   };
   console.warn("properties:" + JSON.stringify(properties));
 

@@ -19,7 +19,7 @@ export interface Action {
   tag: number | null;
 }
 
-interface Header {
+export interface Header {
   api_id: string;
   created_at: string;
   id: string;
