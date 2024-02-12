@@ -61,7 +61,7 @@ export function dataAnalysisAction(org: { id: number }): ActionPlusApiInfo {
         in: "query",
         name: "instruction",
         description:
-          "The instruction to give to the coder. Make this as detailed as possible. E.g. 'Plot a bar chart of the conversion rate for each channel aggregated over the past 2 weeks'.",
+          "The instruction to give to the coder. Make this as detailed as possible. E.g. 'Plot a bar chart of the conversion rate for each channel aggregated over the past 2 weeks'. Include AS MUCH INFORMATION AS POSSIBLE. Plot data that can  used to arrive at the answer or that data has been added/updated.",
         required: true,
         schema: {
           type: "string",
