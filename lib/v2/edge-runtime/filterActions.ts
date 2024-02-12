@@ -63,7 +63,12 @@ export async function filterActions(
       new Set(ensembleSelectedFns.flatMap((a) => a.selectedFunctions)),
     );
   }
+  console.log(
+    "Thoughts:\n",
+    ensembleSelectedFns.map((e) => e.thoughts).join("\n\n"),
+  );
   console.log("Chosen functions:", chosenOut);
+
   // Return the action objects
   return {
     // TODO: Select thoughts more intelligently
