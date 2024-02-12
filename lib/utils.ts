@@ -108,19 +108,19 @@ export function openAiCost(
   switch (put) {
     case "in":
       costPerThousand = model.startsWith("ft:gpt-3.5-turbo-0613")
-        ? 0.012
-        : model === "gpt-3.5-turbo-16k"
         ? 0.003
+        : model === "gpt-3.5-turbo-16k"
+        ? 0.0005
         : model.includes("gpt-3.5")
-        ? 0.0015
+        ? 0.0005
         : 0.03;
     case "out": {
       costPerThousand = model.startsWith("ft:gpt-3.5-turbo-0613")
-        ? 0.016
+        ? 0.006
         : model === "gpt-3.5-turbo-16k"
-        ? 0.004
+        ? 0.0015
         : model.includes("gpt-3.5")
-        ? 0.002
+        ? 0.0015
         : 0.06;
     }
   }
