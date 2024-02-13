@@ -494,7 +494,6 @@ export async function Bertie( // Bertie will eat you for breakfast
       const dataAnalysisAction = mostRecentParsedOutput.commands.find(
         (c) => c.name === dataAnalysisActionName,
       );
-      console.log("Data analysis action:", dataAnalysisAction);
       // Used in if statements further down
       const fnMsg: FunctionMessage = {
         role: "function",
