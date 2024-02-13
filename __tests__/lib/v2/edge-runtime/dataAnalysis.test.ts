@@ -13,7 +13,10 @@ describe("convertToGraphData", () => {
       {
         role: "function",
         name: dataAnalysisActionName,
-        content: "log message 1\nlog message 1\nlog message 1",
+        content: `Logs from code execution and API calls for ${dataAnalysisActionName}:
+log message 1
+log message 1
+log message 1`,
       },
     ]);
   });
@@ -33,7 +36,9 @@ describe("convertToGraphData", () => {
       {
         role: "function",
         name: dataAnalysisActionName,
-        content: "log message 1\nlog message 1",
+        content: `Logs from code execution and API calls for ${dataAnalysisActionName}:
+log message 1
+log message 1`,
       },
       {
         role: "graph",
@@ -65,7 +70,9 @@ describe("convertToGraphData", () => {
       {
         role: "function",
         name: dataAnalysisActionName,
-        content: "log message 1\nlog message 1",
+        content: `Logs from code execution and API calls for ${dataAnalysisActionName}:
+log message 1
+log message 1`,
       },
       {
         role: "graph",
@@ -99,7 +106,8 @@ describe("convertToGraphData", () => {
       {
         role: "function",
         name: dataAnalysisActionName,
-        content: "log message 1",
+        content: `Logs from code execution and API calls for ${dataAnalysisActionName}:
+log message 1`,
       },
       {
         role: "graph",
@@ -126,7 +134,9 @@ describe("convertToGraphData", () => {
       {
         role: "function",
         name: dataAnalysisActionName,
-        content: "Plot generated successfully",
+        content: `Logs from code execution and API calls for ${dataAnalysisActionName}:
+
+Plot generated successfully`,
       },
       {
         role: "graph",
