@@ -194,6 +194,7 @@ export default function getMessages(
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
   includeIdLine: boolean,
+  graphCut: boolean,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
     ? `\nUser description: ${userDescription}\n`
@@ -208,7 +209,12 @@ export default function getMessages(
           language,
           includeIdLine,
         )
-      : explainPlotChatPrompt(userDescriptionSection, orgInfo, language),
+      : explainPlotChatPrompt(
+          userDescriptionSection,
+          orgInfo,
+          language,
+          graphCut,
+        ),
     ...userCopilotMessages,
   ];
 }
@@ -217,7 +223,9 @@ export function explainPlotChatPrompt(
   userDescriptionSection: string,
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
+  graphCut: boolean,
 ): ChatGPTMessage {
+  const lt = "<";
   return {
     role: "system",
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
@@ -227,28 +235,27 @@ ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
 RULES:
-1. If you cannot see the contents of the graph (it may have been cut for brevity), DO NOT invent the contents, or tell the user you cannot see it. Instead, direct them to view the above graph for the answer to their question.
-2. If you can see the graph contents, and it doesn't exactly answer the question the user asked, you can use the data presented in the graph and in log messages from the coder to help answer the question.
-3. DO NOT show the graph in markdown. The above function message is visible to the user as a graph.
-4. ${
-      language
-        ? `Your reply should be written in ${language}.
+1. ${
+      graphCut
+        ? 'DO NOT invent the contents of the graph data cut for brevity. DO NOT tell the user that you cannot see the graph or that you cannot tell them about the data. Instead, tell them to "View the graph above".'
+        : "If the graph doesn't exactly answer the question the user asked, use the graph and log messages from the coder to help answer the question for the user - they user can't see the coder's log messages."
+    }
+2. DO NOT show the graph as a markdown image. The function message is visible to the user as a graph.
+3. ${language ? `Your reply should be written in ${language}.` : ""}
 
-EXAMPLE:
+Example:
 \`\`\`
 User:
 What are the top 10 best performing products by revenue in the past 6 months?
 
 Function:
-{"type":"bar","data":"<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+{"type":"bar","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
 
 Assistant:
 Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
 
 The x-axis shows the product name, while the y-axis is the revenue in $.
-\`\`\``
-        : ""
-    }`,
+\`\`\``,
   };
 }
 

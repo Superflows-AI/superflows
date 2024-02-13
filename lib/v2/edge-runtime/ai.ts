@@ -73,8 +73,12 @@ const completionOptions: ChatGPTParams = {
 
 const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
 
-function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]) {
-  return chatGptPrompt.map((m) => {
+function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]): {
+  chatGptPrompt: ChatGPTMessage[];
+  graphDataHidden: boolean;
+} {
+  let graphDataHidden = false;
+  const out = chatGptPrompt.map((m) => {
     if (m.role === "function" && m.name === dataAnalysisActionName) {
       if (
         // No newlines in our minified JSONs
@@ -89,12 +93,13 @@ function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]) {
         // @ts-ignore
         graphData.data =
           "<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>";
-        console.log("Hiding graph data", graphData);
+        graphDataHidden = true;
         m.content = JSON.stringify(graphData);
       }
     }
     return m;
   });
+  return { chatGptPrompt: out, graphDataHidden };
 }
 
 export async function Bertie( // Bertie will eat you for breakfast
@@ -155,6 +160,7 @@ export async function Bertie( // Bertie will eat you for breakfast
 
   // Add analytics action if enabled
   actions.unshift(dataAnalysisAction(org));
+  let graphDataHidden = false;
 
   try {
     while (!mostRecentParsedOutput.completed && !awaitingConfirmation) {
@@ -177,10 +183,14 @@ export async function Bertie( // Bertie will eat you for breakfast
 
       // Replace messages with `cleanedMessages` which has removed long IDs & URLs.
       // originalToPlaceholderMap is a map from the original string to the placeholder (URLX/IDX)
-      const { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
+      let { cleanedMessages, originalToPlaceholderMap } = sanitizeMessages(
         recentMessages,
         org.sanitize_urls_first,
       );
+      // Hide very long graph outputs
+      ({ chatGptPrompt: cleanedMessages, graphDataHidden } =
+        hideLongGraphOutputs(cleanedMessages));
+
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
         cleanedMessages,
         actions,
@@ -188,6 +198,7 @@ export async function Bertie( // Bertie will eat you for breakfast
         org,
         language,
         Object.entries(originalToPlaceholderMap).length > 0,
+        graphDataHidden,
       );
 
       // If over context limit, remove oldest function calls
@@ -195,9 +206,6 @@ export async function Bertie( // Bertie will eat you for breakfast
         [...chatGptPrompt],
         model === "gpt-4-0613" ? "4" : "3",
       );
-
-      // Hide very long graph outputs
-      chatGptPrompt = hideLongGraphOutputs(chatGptPrompt);
 
       console.log(
         "Bertie prompt:\n",
