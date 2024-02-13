@@ -180,16 +180,12 @@ export async function runDataAnalysis(
     if (plotMessages.length === 1) {
       const plotArgs = plotMessages[0].args as BertieGraphData;
       if (
-        // No data
-        plotArgs.data.length === 0 ||
         // Not x & y in data (exception is if it's a table)
-        (plotArgs.type !== "table" &&
-          !plotArgs.data.every((d) => "x" in d && "y" in d))
+        plotArgs.type !== "table" &&
+        !plotArgs.data.every((d) => "x" in d && "y" in d)
       ) {
         console.error(
-          `${
-            plotArgs.data.length === 0 ? "No" : "Missing columns in"
-          } data output by code for conversation ${conversationId}:\n${plotMessages
+          `Missing columns in data output by code for conversation ${conversationId}:\n${plotMessages
             // @ts-ignore
             .map((m) => m.args.message)
             .join("\n")}`,
@@ -230,17 +226,19 @@ export function convertToGraphData(
   let functionMessage: FunctionMessage = {
     role: "function",
     name: dataAnalysisActionName,
-    content: executeCodeResponse
-      .filter((m) => ["call", "log"].includes(m.type))
-      .map((m) =>
-        m.type === "log"
-          ? m.args.message
-          : // @ts-ignore
-            `${m.args.name}(${Object.entries(m.args.params)
-              .map(([key, value]) => `${key}=${value}`)
-              .join(", ")})`,
-      )
-      .join("\n"),
+    content:
+      `Logs from code execution and API calls for ${dataAnalysisActionName}:\n` +
+      executeCodeResponse
+        .filter((m) => ["call", "log"].includes(m.type))
+        .map((m) =>
+          m.type === "log"
+            ? m.args.message
+            : // @ts-ignore
+              `${m.args.name}(${Object.entries(m.args.params)
+                .map(([key, value]) => `${key}=${value}`)
+                .join(", ")})`,
+        )
+        .join("\n"),
   };
 
   const errorMessages: string[] = executeCodeResponse
@@ -280,22 +278,19 @@ export function convertToGraphData(
     { type: "plot" }
   >[];
 
-  const plotMessages = plotItems
-    .map(
-      (g) =>
-        ({
-          role: "graph",
-          content: {
-            type: g.args.data.length === 1 ? "value" : g.args.type,
-            data: g.args.data,
-            xLabel: g.args.labels?.x ?? "",
-            yLabel: g.args.labels?.y ?? "",
-            graphTitle: g.args.title,
-          },
-        } as GraphMessage),
-    )
-    // Remove empty plots
-    .filter((g) => g.content.data.length > 0);
+  const plotMessages = plotItems.map(
+    (g) =>
+      ({
+        role: "graph",
+        content: {
+          type: g.args.data.length === 1 ? "value" : g.args.type,
+          data: g.args.data,
+          xLabel: g.args.labels?.x ?? "",
+          yLabel: g.args.labels?.y ?? "",
+          graphTitle: g.args.title,
+        },
+      } as GraphMessage),
+  );
 
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
