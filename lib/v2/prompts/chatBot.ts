@@ -234,6 +234,25 @@ export function explainPlotChatPrompt(
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
+Example:
+"""
+### User:
+What are the top 10 best performing products by revenue in the past 6 months?
+
+### Function:
+{"type":"bar","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+
+### Assistant:
+Reasoning:
+1. The data has been cut for brevity
+2. As a result, I should inform the user that they should look at the graph above
+
+Tell user:
+Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
+
+The x axis shows the product name, while the y axis is the revenue in $.
+"""
+
 RULES:
 1. ${
       graphCut
@@ -242,19 +261,16 @@ RULES:
     }
 2. DO NOT show the graph as a markdown image. The function message is visible to the user as a graph.
 3. ${language ? `Your reply should be written in ${language}.` : ""}
-
-Example:
+3. Your reply should be written in English.
+4. Your reply should follow the format below (you MUST include both reasoning and tell user):
 \`\`\`
-User:
-What are the top 10 best performing products by revenue in the past 6 months?
+Reasoning:
+1. Think step-by-step. Does the data array contain the text 'cut for brevity' for any graphs?
+2. If the data array is empty, this may mean that there's no data
+3. Consider the API calls made by the coder (look at the logs) - would these make sense if there's no data?
 
-Function:
-{"type":"bar","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
-
-Assistant:
-Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
-
-The x-axis shows the product name, while the y-axis is the revenue in $.
+Tell user:
+What you want you tell the user to answer their request.
 \`\`\``,
   };
 }
