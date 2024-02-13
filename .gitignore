@@ -139,3 +139,5 @@ local/
 install-sidebar.sh
 .vercel
 docker/development/supabase/
+# Sentry Config File
+.sentryclirc
