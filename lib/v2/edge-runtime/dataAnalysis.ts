@@ -256,12 +256,7 @@ export function convertToGraphData(
         ({
           role: "graph",
           content: {
-            type:
-              g.args.data.length === 1
-                ? "value"
-                : g.args.type === "table"
-                ? "bar"
-                : g.args.type,
+            type: g.args.data.length === 1 ? "value" : g.args.type,
             data: g.args.data,
             xLabel: g.args.labels?.x ?? "",
             yLabel: g.args.labels?.y ?? "",
