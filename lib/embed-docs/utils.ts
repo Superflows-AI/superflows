@@ -83,6 +83,8 @@ export function splitIntoTextChunks(
           .filter((chunk) => isTextWithSubstance(chunk.trim()))
           // Tabs are more token-efficient than 4 spaces
           .map((chunk) => chunk.replaceAll(/ {4}/g, "\t") + "\n")
+          // Remove duplicate lines
+          .filter((line, idx, lines) => idx === 0 || line !== lines[idx - 1])
           .map((chunk) => {
             // Break up large paragraphs into sentences
             const chunkTokenCount = getTokenCount(chunk);
