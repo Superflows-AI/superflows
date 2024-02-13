@@ -225,8 +225,8 @@ export function convertToGraphData(
       const matchedPlotIdx = plotItems.findIndex((g2, i) => {
         if (i >= idx) return false;
         return (
-          g1.args.labels.x === g2.args.labels.x &&
-          g1.args.labels.y === g2.args.labels.y &&
+          g1.args.labels?.x === g2.args.labels?.x &&
+          g1.args.labels?.y === g2.args.labels?.y &&
           g1.args.data.length === 1 &&
           originalDataLengths[i] === 1
         );
@@ -240,21 +240,27 @@ export function convertToGraphData(
     { type: "plot" }
   >[];
 
-  const plotMessages: GraphMessage[] = plotItems.map((g) => ({
-    role: "graph",
-    content: {
-      type:
-        g.args.data.length === 1
-          ? "value"
-          : g.args.type === "table"
-          ? "bar"
-          : g.args.type,
-      data: g.args.data,
-      xLabel: g.args.labels.x,
-      yLabel: g.args.labels.y,
-      graphTitle: g.args.title,
-    },
-  }));
+  const plotMessages = plotItems
+    .map(
+      (g) =>
+        ({
+          role: "graph",
+          content: {
+            type:
+              g.args.data.length === 1
+                ? "value"
+                : g.args.type === "table"
+                ? "bar"
+                : g.args.type,
+            data: g.args.data,
+            xLabel: g.args.labels.x,
+            yLabel: g.args.labels.y,
+            graphTitle: g.args.title,
+          },
+        } as GraphMessage),
+    )
+    // Remove empty plots
+    .filter((g) => g.content.data.length > 0);
 
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
