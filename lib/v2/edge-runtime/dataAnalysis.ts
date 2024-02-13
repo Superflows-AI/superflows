@@ -263,8 +263,8 @@ export function convertToGraphData(
                 ? "bar"
                 : g.args.type,
             data: g.args.data,
-            xLabel: g.args.labels.x,
-            yLabel: g.args.labels.y,
+            xLabel: g.args.labels?.x ?? "",
+            yLabel: g.args.labels?.y ?? "",
             graphTitle: g.args.title,
           },
         } as GraphMessage),
