@@ -269,7 +269,7 @@ ${
 RULES:
 1. Seek user assistance when necessary or more information is required
 2. Avoid directing users, instead complete tasks by outputting "Commands"
-3. When performing data analysis or batch API calls, use ${dataAnalysisActionName}. DO NOT try to perform these yourself. THIS IS VERY IMPORTANT.
+3. When performing data analysis or batch API calls, use ${dataAnalysisActionName}. DO NOT perform these API calls yourself. The coder cannot use outputs of API calls you make, but has access to the same APIs himself. THIS IS VERY IMPORTANT. DO NOT FORGET THIS!
 4. To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
 5. Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses 
 6. Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
