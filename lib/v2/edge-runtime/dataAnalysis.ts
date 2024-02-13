@@ -1,4 +1,9 @@
-import { ActionPlusApiInfo, ExecuteCode2Item, Organization } from "../../types";
+import {
+  ActionPlusApiInfo,
+  BertieGraphData,
+  ExecuteCode2Item,
+  Organization,
+} from "../../types";
 import { Database } from "../../database.types";
 import { getDataAnalysisPrompt } from "../prompts/dataAnalysis";
 import { exponentialRetryWrapper, roughSizeOfObject } from "../../utils";
@@ -138,7 +143,6 @@ export async function runDataAnalysis(
     });
     nLoops += 1;
 
-    const returnedData = res.data as ExecuteCode2Item[] | null;
     if (res.error) {
       console.error(
         `Error executing code for conversation ${conversationId}: ${res.error}`,
@@ -147,6 +151,8 @@ export async function runDataAnalysis(
       streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
     }
+
+    const returnedData = res.data as ExecuteCode2Item[] | null;
     // If data field is null
     if (returnedData === null) {
       console.error(
@@ -168,6 +174,30 @@ export async function runDataAnalysis(
       llmResponse = "";
       streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
+    }
+    // If 1 plot with either no data or not x & y in data
+    const plotMessages = returnedData.filter((m) => m.type === "error");
+    if (plotMessages.length === 1) {
+      const plotArgs = plotMessages[0].args as BertieGraphData;
+      if (
+        // No data
+        plotArgs.data.length === 0 ||
+        // Not x & y in data (exception is if it's a table)
+        (plotArgs.type !== "table" &&
+          !plotArgs.data.every((d) => "x" in d && "y" in d))
+      ) {
+        console.error(
+          `${
+            plotArgs.data.length === 0 ? "No" : "Missing columns in"
+          } data output by code for conversation ${conversationId}:\n${plotMessages
+            // @ts-ignore
+            .map((m) => m.args.message)
+            .join("\n")}`,
+        );
+        llmResponse = "";
+        streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+        continue;
+      }
     }
 
     graphData = returnedData;
