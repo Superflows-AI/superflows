@@ -20,6 +20,8 @@ ${args.nonSystemMessages[0].content}`;
         content:
           m.role === "user" ? m.content : parseOutput(m.content).tellUser,
       }))
+      // Remove empty messages
+      .filter((m) => m.content.trim() !== "")
       .map(
         (m) => `${m.role.slice(0, 1).toUpperCase() + m.role.slice(1)} message:
 ${m.content}`,
