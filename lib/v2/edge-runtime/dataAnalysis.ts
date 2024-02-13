@@ -15,6 +15,7 @@ import {
   ErrorMessage,
   GraphData,
   GraphMessage,
+  LoadingMessage,
   StreamingStepInput,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { createClient } from "@supabase/supabase-js";
@@ -60,6 +61,16 @@ async function saveAnalyticsToDB(
 
 const defaultCodeGenModel = "Phind/Phind-CodeLlama-34B-v2";
 
+const madeAMistake = {
+  role: "loading",
+  content: "Made a mistake. Retrying",
+} as LoadingMessage;
+
+const anotherMistake = {
+  role: "loading",
+  content: "Another mistake. Retrying 1 last time",
+} as LoadingMessage;
+
 export async function runDataAnalysis(
   instruction: string,
   filteredActions: ActionPlusApiInfo[],
@@ -92,10 +103,6 @@ export async function runDataAnalysis(
   let graphData: ExecuteCode2Item[] | null = null,
     nLoops = 0;
   while (graphData === null && nLoops < 3) {
-    streamInfo({
-      role: "loading",
-      content: "Performing complex action",
-    });
     defaultDataAnalysisParams = {
       ...defaultDataAnalysisParams,
       temperature: nLoops === 0 ? 0.1 : 0.8,
@@ -137,6 +144,7 @@ export async function runDataAnalysis(
         `Error executing code for conversation ${conversationId}: ${res.error}`,
       );
       llmResponse = "";
+      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
     }
     // If data field is null
@@ -145,6 +153,7 @@ export async function runDataAnalysis(
         `Failed to write valid code for conversation ${conversationId} after 3 attempts`,
       );
       llmResponse = "";
+      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
     }
     // If error messages in the data output
@@ -157,6 +166,7 @@ export async function runDataAnalysis(
           .join("\n")}`,
       );
       llmResponse = "";
+      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
     }
 
