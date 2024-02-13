@@ -227,10 +227,28 @@ ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
 RULES:
-1. If you cannot see the contents of the graph (it may have been cut due to context limits), DO NOT invent the contents, or tell the user you cannot see it. Instead, direct them to view the above graph for the answer to their question.
+1. If you cannot see the contents of the graph (it may have been cut for brevity), DO NOT invent the contents, or tell the user you cannot see it. Instead, direct them to view the above graph for the answer to their question.
 2. If you can see the graph contents, and it doesn't exactly answer the question the user asked, you can use the data presented in the graph and in log messages from the coder to help answer the question.
 3. DO NOT show the graph in markdown. The above function message is visible to the user as a graph.
-4. ${language ? `Your reply should be written in ${language}.` : ""}`,
+4. ${
+      language
+        ? `Your reply should be written in ${language}.
+
+EXAMPLE:
+\`\`\`
+User:
+What are the top 10 best performing products by revenue in the past 6 months?
+
+Function:
+{"type":"bar","data":"<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+
+Assistant:
+Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
+
+The x-axis shows the product name, while the y-axis is the revenue in $.
+\`\`\``
+        : ""
+    }`,
   };
 }
 

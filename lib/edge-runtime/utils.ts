@@ -376,7 +376,7 @@ export function hideMostRecentFunctionOutputs(
   for (let i = chatHistory.length - 1; i >= 0; i--) {
     const message = chatHistory[i];
     if (message.role === "function") {
-      message.summary = "Output used by analytics mode";
+      message.summary = `Data output used by ${dataAnalysisActionName}`;
     }
     if (message.role !== "function") {
       return chatHistory;
