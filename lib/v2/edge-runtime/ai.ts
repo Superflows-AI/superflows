@@ -199,15 +199,13 @@ export async function Bertie( // Bertie will eat you for breakfast
       // Hide very long graph outputs
       chatGptPrompt = hideLongGraphOutputs(chatGptPrompt);
 
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          "Bertie system prompt:\n",
-          chatGptPrompt
-            .map((m) => `${m.role} message:\n${m.content}`)
-            .join("\n\n"),
-          "\n\n",
-        );
-      }
+      console.log(
+        "Bertie prompt:\n",
+        chatGptPrompt
+          .map((m) => `${m.role} message:\n${m.content}`)
+          .join("\n\n"),
+        "\n\n",
+      );
 
       let rawOutput = chatMessageCache.checkChatCache(nonSystemMessages);
       if (rawOutput) {
