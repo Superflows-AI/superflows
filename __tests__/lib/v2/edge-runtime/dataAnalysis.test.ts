@@ -3,10 +3,10 @@ import { ExecuteCode2Item } from "../../../../lib/types";
 import { dataAnalysisActionName } from "../../../../lib/builtinActions";
 
 describe("convertToGraphData", () => {
-  const logMess1: Extract<ExecuteCode2Item, { type: "log" }> = {
+  const logMess1 = {
     type: "log",
     args: { message: "log message 1" },
-  };
+  } as Extract<ExecuteCode2Item, { type: "log" }>;
   it("3x logMess1", () => {
     const out = convertToGraphData([logMess1, logMess1, logMess1]);
     expect(out).toStrictEqual([
