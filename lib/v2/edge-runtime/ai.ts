@@ -149,7 +149,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   }
 
   let thoughts = "";
-  if (actions.length > 5) {
+  if (actions.length > 2) {
     ({ thoughts, actions } = await filterActions(
       actions,
       nonSystemMessages,
