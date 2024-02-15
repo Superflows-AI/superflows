@@ -131,6 +131,11 @@ const supabase = createClient(
   // Bring me my Spear: O clouds unfold!
   process.env.API_SUPABASE_URL ?? process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
   // Bring me my Chariot of fire!
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
 export default async function handler(

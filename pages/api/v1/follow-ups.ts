@@ -60,6 +60,11 @@ if (
 const supabase = createClient<Database>(
   process.env.API_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
 const headers = { "Content-Type": "application/json" };
