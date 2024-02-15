@@ -58,6 +58,11 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
   process.env.SERVICE_LEVEL_KEY_SUPABASE!,
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
 export async function Dottie( // Dottie talks to docs

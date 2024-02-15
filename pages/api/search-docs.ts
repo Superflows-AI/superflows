@@ -22,6 +22,11 @@ const supabase = createClient<Database>(
   // Bring me my Spear: O clouds unfold!
   process.env.SERVICE_LEVEL_KEY_SUPABASE,
   // Bring me my Chariot of fire!
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
 const headers = { "Content-Type": "application/json" };
