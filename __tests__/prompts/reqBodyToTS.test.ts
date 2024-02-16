@@ -905,6 +905,53 @@ updated?: integer // Example: 1663734553
 `,
     );
   });
+  it("array parameter", () => {
+    const out = getActionTSSignatures([
+      {
+        name: "action1",
+        description: "description1",
+        parameters: [
+          {
+            in: "query",
+            name: "filters",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["path", "operator", "value"],
+                properties: {
+                  path: {
+                    enum: ["listing_active", "country"],
+                    type: "string",
+                  },
+                  operator: {
+                    description: "An enumeration",
+                    enum: ["=="],
+                    type: "string",
+                  },
+                  value: {
+                    type: "string",
+                  },
+                },
+              },
+            },
+          },
+        ],
+        request_body_contents: null,
+      } as unknown as Action,
+    ]);
+    expect(out).toEqual(
+      `
+/** description1 **/
+function action1(args: {
+filters?: {
+path: "listing_active" | "country"
+value: string
+}[]
+}): any
+`,
+    );
+  });
 });
 
 const actionObjectOutput1 = {
