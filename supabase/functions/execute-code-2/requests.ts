@@ -164,6 +164,7 @@ export function constructHttpRequest({
 
   requestOptions.headers = headers;
   let logMessage = forgeLogMessage(url, requestOptions);
+  console.warn("action.api", action.api);
   if (userApiKey && action.api.auth_header !== "Query parameter") {
     const includeScheme = [
       "Authorization",
