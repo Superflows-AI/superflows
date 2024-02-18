@@ -92,6 +92,7 @@ export async function runDataAnalysis(
   thoughts: string,
   conversationId: number,
   streamInfo: (step: StreamingStepInput) => void,
+  userApiKey?: string,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
   const dataAnalysisPrompt = getDataAnalysisPrompt({
     question: instruction,
@@ -144,6 +145,7 @@ export async function runDataAnalysis(
         actionsPlusApi: filteredActions,
         org,
         code: parsedCode.code,
+        userApiKey,
       }),
     });
     nLoops += 1;

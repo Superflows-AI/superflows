@@ -520,6 +520,7 @@ export async function Bertie( // Bertie will eat you for breakfast
           thoughts,
           conversationId,
           streamInfo,
+          reqData.user_api_key,
         );
         // Make last message an explanation-only message
         actions = [];
