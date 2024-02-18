@@ -134,7 +134,7 @@ export async function runDataAnalysis(
     }
 
     // Parse the result
-    let parsedCode = parseDataAnalysis(llmResponse);
+    let parsedCode = parseDataAnalysis(llmResponse, filteredActions);
     if (parsedCode === null || "error" in parsedCode) return parsedCode;
     console.info("Parsed LLM response:", parsedCode.code);
 

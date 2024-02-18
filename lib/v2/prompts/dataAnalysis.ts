@@ -2,6 +2,7 @@ import { ChatGPTMessage } from "../../models";
 import { Action } from "../../types";
 import { getIntroText } from "../../prompts/chatBot";
 import { getActionTSSignature } from "../../prompts/tsConversion";
+import { snakeToCamel } from "../../utils";
 
 export function getDataAnalysisPrompt(args: {
   question: string;
@@ -71,13 +72,10 @@ import { ${actionTS
 }
 
 export function parseDataAnalysis(
-  output: string,
+  rawCode: string,
+  actions: Pick<Action, "name">[],
 ): { code: string } | { error: string } | null {
   // function parseOutput(output) {
-  const rawCode = output;
-
-  // Automated output checks below
-
   // Check if it's just an error
   const errorMatch = /^\n?throw new Error\((.*)\);?$/.exec(rawCode);
   if (errorMatch) {
@@ -88,9 +86,12 @@ export function parseDataAnalysis(
   // Remove comments (stops false positives from comments containing illegal stuff) & convert from TS to JS
   let code = stripBasicTypescriptTypes(
     rawCode
-      .replace(/(\/\/.*|\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/)/g, "")
+      .replace(/^\s*(\/\/.*|\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/)/gm, "")
       .trim(),
   );
+  if (code === "") {
+    return { error: "No code (possibly comments) in code string" };
+  }
 
   // Check that fetch(), eval(), new Function() and WebAssembly aren't used
   const illegalRegexes = [
@@ -101,149 +102,85 @@ export function parseDataAnalysis(
   ];
   for (const regex of illegalRegexes) {
     if (regex.test(code)) {
-      console.error(
-        `Illegal code found by ${String(regex)}:\n---\n${code}\n---`,
-      );
-      return null;
+      const error = `Illegal code found by ${String(
+        regex,
+      )}:\n---\n${code}\n---`;
+      console.error(error);
+      return { error };
     }
   }
 
-  // This variable is used if there's multiple async functions in the code and only 1 is called
-  let otherCode = "";
+  // Check that awaited functions are either defined here or action functions
+  let actionNames = actions.map((a) => snakeToCamel(a.name));
+  const definedFnNames =
+    code
+      .match(/(async function (\w+)\(|(const|let|var) (\w+)\s*=\s*async\s*\()/g)
+      ?.map((fnNameMatch) => {
+        if (fnNameMatch.startsWith("async")) {
+          // async function (\w+)\(
+          return fnNameMatch.slice(15, -1);
+        } else {
+          // (const|let|var) (\w+)\s*=\s*async\s*\(
+          return fnNameMatch.split("=")[0].split(" ")[1].trim();
+        }
+      }) ?? [];
 
-  // Check if there are multiple async functions in the code where >1 is called in root level
-  const multipleAsyncFunctions = code.match(
-    // ^(?:export )? starts with optional export: non-matching group
-    // (?:const ([\w_]+) = async (?:function|\(\) =>)|async function ([\w_]+)) - async function or arrow function
-    // gm - global, multiline
-    /^(?:export )?(?:const ([\w_]+) = async (?:function|\(\) =>)|async function ([\w_]+))/gm,
-  );
-  // Above checks for the following formats (incl export):
-  // async function NAME(<ARGS>)
-  // const NAME = async () => {
-  // const NAME = async function (<ARGS>)
+  // These are all valid await-able function names
+  actionNames = actionNames.concat(definedFnNames);
 
-  if (multipleAsyncFunctions && multipleAsyncFunctions.length > 1) {
-    const fnNames = multipleAsyncFunctions.map((fns) => {
-      const sigMatches = fns.match(
-        /^(?:export )?(?:const ([\w_]+) = async (?:function|\(\) =>)|async function ([\w_]+))/,
-      )!;
-      const fnName = sigMatches[1] || sigMatches[2];
-      if (Boolean(code.match(new RegExp(`^${fnName}\\(\\)\\;?$`, "gm")))) {
-        return fnName;
-      }
-      return null;
-    });
-    if (fnNames.filter((fn) => fn).length > 1) {
-      return { error: "Multiple async functions called in generated code" };
-    } else if (fnNames.filter((fn) => fn).length === 0) {
+  // Now, get the awaited function names
+  const awaitedFns = code.match(/await \S+?\(/g) ?? [];
+  for (let fnMatch of awaitedFns) {
+    const fnName = fnMatch.slice(6, -1);
+    if (!actionNames.includes(fnName)) {
       return {
-        error:
-          "Multiple async functions defined, but none called in generated code",
+        error: `Function with name ${fnName} is awaited, yet is not defined or an action name`,
       };
-    } else {
-      // Empty out the main function that's called and keep other functions as async
-      const fnName = fnNames.filter((fn) => fn)[0];
-      const matches = code.match(
-        new RegExp(
-          `^(?:export )?(?:const ${fnName} = async (?:function|\\(\\) =>)|async function ${fnName}\\(\\))\\s*\\{([\\s\\S]+?)\\n}`,
-          "m",
-        ),
-      );
-      if (matches) {
-        let localCodeVar = code;
-        otherCode = localCodeVar
-          .replace(matches[0], "")
-          .replace(`\n${fnName}()`, "\n");
-
-        // Deindent the code
-        code = matches[1].replace(/ {2}(.*)/gm, "$1");
-      } else {
-        // This should never happen!
-        return {
-          error:
-            "Multiple async functions defined, and couldn't find main function",
-        };
-      }
     }
   }
 
-  // If there are multiple functions in the code (non-async), we want to keep the non-async ones
-  // We have to grab them here since we're about to extract out the single async function if there is one
-  const nonAsyncFunctionMatches = code.match(
-    // Proudest moment: wrote this first time. Probably very wrong.
-    // (export )? optional export
-    // (function|\(\) =>) function or arrow function
-    // \s*\w+ optional whitespace and non-optional function name
-    // \([^)]*\) optional function arguments
-    // \s*\{[\s\S]+?\n} function body
-    // gm global, multiline
-    /^(export )?(function|\([^)]*\) =>)\s*\w+\([^)]*\)\s*\{[\s\S]+?\n}/gm,
-  );
-  // We also want to grab any variables which are declared at the top level
-  const topLevelVariables = code.match(
-    // const|let|var - variable declaration
-    // \s+\w+\s*=\s* - variable name
-    // gm - global, multiline
-    /^(?:const|let|var)\s+\w+\s*=\s*(.+);?/gm,
-  );
+  // Code edits (adding awaits where necessary) below here:
 
-  // Sometimes the code is wrapped in an async function, so remove that
-  const wrappedFnContents = code.match(
-    /\(async\s*(\([^)]*\)\s*=>|function\([^)]*\))\s?\{([\s\S]+)}\n?\s*\)\(\);?/,
+  // Whole thing is an unwrapped unnamed function
+  const unwrappedUnnamedFn = code.match(
+    /^async\s*(\([^)]*\)\s*=>|function\([^)]*\))\s?\{([\s\S]+?)}$/g,
   );
-  if (wrappedFnContents) {
-    code = wrappedFnContents[2].replace(/ {2}(.*)/gm, "$1");
-  }
+  // Wrap & await it
+  if (unwrappedUnnamedFn) code = `await (${code})();`;
+
+  // Sometimes the code is wrapped in an async function which is instantly called, so await this
+  const wrappedFn = code.match(
+    /(?<!await )\(async\s*(\([^)]*\)\s*=>|function\([^)]*\))\s?\{([\s\S]+)}\n?\s*\)\(\);/g,
+  );
+  wrappedFn?.forEach((instantCalledCode) => {
+    code = code.replace(instantCalledCode, `await ${instantCalledCode}`);
+  });
 
   // The code can be wrapped in a named function which is called later (or not)
-  // and the await is missing.
-  const namedFnContents = code.match(
-    /async function (\w+)\([^)]*\)\s*\{([\s\S]+?)\n}\s*(\n\1\(\);?)?/,
+  let namedFnContents = code.match(
+    // await is optional as is variable setting
+    /async function (\w+)\([^)]*\)\s*\{([\s\S]+?)\n}[\S\s]*?(\n\1\([^)]*?\);?)/,
   );
-  if (namedFnContents) {
-    code = namedFnContents[2].replace(/ {2}(.*)/gm, "$1");
+  let i = 0;
+  while (namedFnContents && i < 4) {
+    i++;
+    code = code.replace(
+      namedFnContents[3],
+      `\nawait ${namedFnContents[3].trim()}`,
+    );
+    namedFnContents = code.match(
+      // await is optional as is variable setting
+      /async function (\w+)\([^)]*\)\s*\{([\s\S]+?)\n}[\S\s]*?\n(\1\([^)]*?\);?)/,
+    );
   }
 
-  // 3rd function case: named unnamed function
-  // Could combine with prev regex if I was a genius, but I'm not
-  const namedUnnamedFnContents = code.match(
+  // 3rd function case: named unnamed function called without await
+  const unnamedFnVar = code.match(
     /(const|let|var) (\w+)\s*=\s*async\s*\([^)]*\)\s*=>\s*\{([\s\S]+?)\n};?\s*(\n\2\(\);?)?/,
   );
-  if (namedUnnamedFnContents) {
-    code = namedUnnamedFnContents[3].replace(/ {2}(.*)/gm, "$1");
+  if (unnamedFnVar) {
+    code = code.replace(unnamedFnVar[4], `await ${unnamedFnVar[4]}`);
   }
-
-  if (code.match(/(?<!\([^)]*(\([^)]*\))*[^)]*)return(?![^(]*\))/g)) {
-    console.error(
-      `Return statement found in code. Removing:\n---\n${code}\n---`,
-    );
-    code = code.replace(
-      /(?<!\([^)]*(\([^)]*\))*[^)]*)return(?![^(]*\))/g,
-      "return builtinFunctionCalls;",
-    );
-  }
-
-  // Add back the non-async functions that aren't in the code
-  if (nonAsyncFunctionMatches) {
-    code =
-      nonAsyncFunctionMatches.filter((fn) => !code.includes(fn)).join("\n\n") +
-      "\n\n" +
-      code;
-  }
-
-  // Add back the top level variables that aren't in the code
-  if (topLevelVariables) {
-    code =
-      topLevelVariables
-        .filter((variable) => !code.includes(variable))
-        .join("\n") +
-      "\n\n" +
-      code;
-  }
-
-  // Add back the other code in case of multiple async functions and 1 called
-  code = `${otherCode}\n${code}`.trim();
 
   return { code };
 }
