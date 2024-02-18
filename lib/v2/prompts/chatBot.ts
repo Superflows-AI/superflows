@@ -1,7 +1,11 @@
 import { OpenAPIV3_1 } from "openapi-types";
 import { ChatGPTMessage } from "../../models";
 import { Action, Organization } from "../../types";
-import { getJsonMIMEType } from "../../edge-runtime/utils";
+import {
+  ApiResponseCutText,
+  getJsonMIMEType,
+  isFunctionMessageTooLong,
+} from "../../edge-runtime/utils";
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../../builtinActions";
 
@@ -208,6 +212,7 @@ export default function getMessages(
           getActionDescriptions(actions),
           language,
           includeIdLine,
+          userCopilotMessages,
         )
       : explainPlotChatPrompt(
           userDescriptionSection,
@@ -287,7 +292,16 @@ function systemPromptWithActions(
   numberedActions: string,
   language: string | null,
   includeIdUrlLine: boolean,
+  chatHistory: ChatGPTMessage[],
 ): ChatGPTMessage {
+  const lastAssistantMessageIdx =
+    chatHistory.length -
+    chatHistory.reverse().findIndex((m) => m.role === "assistant");
+  chatHistory.reverse();
+  const pastFunctionOutputCut = chatHistory
+    .slice(lastAssistantMessageIdx)
+    .find((m) => m.role === "function" && isFunctionMessageTooLong(m));
+
   return {
     role: "system",
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
@@ -310,7 +324,11 @@ ${
 RULES:
 1. Seek user assistance when necessary or more information is required
 2. Avoid directing users, instead complete tasks by outputting "Commands"
-3. When performing data analysis or batch API calls, use ${dataAnalysisActionName}. DO NOT perform these API calls yourself. The coder cannot use outputs of API calls you make, but has access to the same APIs himself. THIS IS VERY IMPORTANT. DO NOT FORGET THIS!
+3. ${
+      !pastFunctionOutputCut
+        ? `When performing data analysis or batch API calls, use ${dataAnalysisActionName}. DO NOT perform these API calls yourself. The coder cannot use outputs of API calls you make, but has access to the same APIs himself. THIS IS VERY IMPORTANT. DO NOT FORGET THIS!`
+        : `YOU MUST call ${dataAnalysisActionName}. A function response has been 'cut as it is too large'.`
+    }
 4. To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
 5. Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses 
 6. Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
