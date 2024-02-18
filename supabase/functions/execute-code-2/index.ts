@@ -212,13 +212,6 @@ aVariableNameThatMustNotBeRepeated
       args: { message: util.format(message, ...otherParams) },
     });
   };
-  const originalInfo = console.info;
-  console.info = (message, ...otherParams) => {
-    builtinFunctionCalls.push({
-      type: "log",
-      args: { message: util.format(message, ...otherParams) },
-    });
-  };
   const originalErr = console.error;
   console.error = (message, ...otherParams) => {
     builtinFunctionCalls.push({
@@ -235,7 +228,6 @@ aVariableNameThatMustNotBeRepeated
 
     // Reset console functions
     console.log = originalLog;
-    console.info = originalInfo;
     console.error = originalErr;
     console.log("Result\n", result);
     // console.log("await result", await result);
