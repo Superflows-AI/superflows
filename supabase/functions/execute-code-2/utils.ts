@@ -4,21 +4,21 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
   retries: number,
 ): Promise<Output> {
   const t1 = Date.now();
-  console.warn("Starting exponentialRetryWrapper for function " + func.name);
+  console.info("Starting exponentialRetryWrapper for function " + func.name);
   try {
     const res = await func(...args);
-    console.warn(
+    console.info(
       `Exponential retry wrapper completed in ${Date.now() - t1} ms for func "${
         func.name
       }". There were ${retries - 1} retries remaining.`,
     );
     return res;
   } catch (error) {
-    console.warn(
+    console.info(
       `Error in exponentialRetryWrapper for function ${func.name}. The error is: ${error}}`,
     );
     if (retries > 0) {
-      console.warn(`Retrying ${func.name} in ${2 ** (10 - retries)}ms`);
+      console.info(`Retrying ${func.name} in ${2 ** (10 - retries)}ms`);
       await new Promise((r) => setTimeout(r, 2 ** (10 - retries)));
       return await exponentialRetryWrapper(func, args, retries - 1);
     } else {
