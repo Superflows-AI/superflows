@@ -202,7 +202,17 @@ export async function runDataAnalysis(
     }
 
     graphData = returnedData;
-    console.info("Data analysis response: ", graphData);
+    console.info(
+      "Data analysis response:",
+      graphData.map((item) =>
+        item.type === "plot"
+          ? {
+              type: item.type,
+              args: { ...item.args, data: item.args.data.slice(0, 5) },
+            }
+          : item,
+      ),
+    );
   }
   if (graphData === null) {
     console.error(
