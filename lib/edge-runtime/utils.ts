@@ -330,14 +330,20 @@ export function replaceVariables(
   });
 }
 
-export const ApiResponseCutText = `API response cut as it is too large (>20kb).\n\nTo use the full response, call ${dataAnalysisActionName}.`;
+export const ApiResponseCutText = `API response cut as it is too large (>20kb).`;
+
+export function isFunctionMessageTooLong(
+  message: FunctionMessageInclSummary,
+): boolean {
+  return message.content.length > 10000;
+}
 
 export function preStreamProcessOutMessage(
   outMessage: FunctionMessageInclSummary,
   command: FunctionCall,
   chosenAction: Action,
 ): FunctionMessageInclSummary {
-  if (outMessage.content.length > 10000) {
+  if (isFunctionMessageTooLong(outMessage)) {
     outMessage = { ...outMessage };
     outMessage.content = ApiResponseCutText;
   }
