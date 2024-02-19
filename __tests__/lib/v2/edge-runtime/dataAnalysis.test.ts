@@ -1,4 +1,7 @@
-import { convertToGraphData } from "../../../../lib/v2/edge-runtime/dataAnalysis";
+import {
+  convertToGraphData,
+  ensureDataWellFormatted,
+} from "../../../../lib/v2/edge-runtime/dataAnalysis";
 import { ExecuteCode2Item } from "../../../../lib/types";
 import { dataAnalysisActionName } from "../../../../lib/builtinActions";
 
@@ -148,6 +151,160 @@ Plot generated successfully`,
           yLabel: "y",
         },
       },
+    ]);
+  });
+});
+
+describe("ensureDataWellFormatted", () => {
+  it("x and y present: do nothing", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("x missing, get from labels", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { date: 1, y: 2 },
+        // @ts-ignore
+        { date: 1, y: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("x missing, get from labels (lowercase)", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { date: 1, y: 2 },
+        // @ts-ignore
+        { date: 1, y: 2 },
+      ],
+      labels: { x: "Date", y: "value" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("y missing, get from labels", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { x: 1, value: 2 },
+        // @ts-ignore
+        { x: 1, value: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("y missing, get from labels, remove units", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { x: 1, age: 23, value: 2 },
+        // @ts-ignore
+        { x: 1, age: 23, value: 2 },
+      ],
+      labels: { x: "Date", y: "Value ($)" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2, age: 23 },
+      { x: 1, y: 2, age: 23 },
+    ]);
+  });
+  it("y missing, get from order", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { x: 1, value: 2 },
+        // @ts-ignore
+        { x: 1, value: 2 },
+      ],
+      labels: { x: "Date", y: "Units ($)" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("y missing, get from labels, out of order", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { value: 2, x: 1 },
+        // @ts-ignore
+        { value: 2, x: 1 },
+      ],
+      labels: { x: "Date", y: "Value ($)" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("x & y missing, get from labels", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { value: 2, date: 1 },
+        // @ts-ignore
+        { value: 2, date: 1 },
+      ],
+      labels: { x: "Date", y: "Value ($)" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("x & y missing, get from order", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { date: 1, value: 2 },
+        // @ts-ignore
+        { date: 1, value: 2 },
+      ],
+      labels: { x: "Mornings", y: "Units ($)" },
+    });
+    expect(out).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
     ]);
   });
 });
