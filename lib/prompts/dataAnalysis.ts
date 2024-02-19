@@ -43,7 +43,9 @@ FACTS:
 1. Today's date is ${new Date().toISOString().split("T")[0]}
 2. Below are Typescript input and output types of the functions called:
 
-\`\`\`${actionTS}\`\`\`
+\`\`\`
+${actionTS}
+\`\`\`
 
 RULES:
 1. DO NOT call the functions above and DO NOT redefine them

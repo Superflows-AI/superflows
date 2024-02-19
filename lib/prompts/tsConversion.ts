@@ -54,9 +54,7 @@ export function formatBodySchemaToTS(
         if (!isChoiceRequired(value, required.includes(key))) {
           return;
         }
-        paramString += `\n${"\t".repeat(
-          nestingLevel,
-        )}${key}${formatBodySchemaToTS(
+        paramString += `\n${key}${formatBodySchemaToTS(
           value,
           nestingLevel + 1,
           required.includes(key),
@@ -261,7 +259,7 @@ export function getActionTSSignatures(
 
   return actions
     .map((action) => getActionTSSignature(action, includeReturnType))
-    .join("");
+    .join("\n\n");
 }
 
 export function getObjectTSType(object: any): string {

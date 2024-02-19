@@ -329,7 +329,7 @@ describe("getTSActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual("function action1(): any\n");
+    expect(out).toEqual("function action1(): any");
   });
   it("no parameters multiple actions", () => {
     const out = getActionTSSignatures([
@@ -352,7 +352,7 @@ describe("getTSActionDescriptions", () => {
         http_method: "GET",
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`function action1(): any\nfunction action2(): any\n`);
+    expect(out).toEqual(`function action1(): any\n\nfunction action2(): any`);
   });
   // Setting parameters
   it("1 parameter, required", () => {
@@ -374,7 +374,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1: string // a description\n}): any\n",
+      `/** description1 **/\nfunction action1(args: {\nparam1: string // a description\n}): any`,
     );
   });
   it("1 parameter, not required", () => {
@@ -395,7 +395,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1?: string // a description\n}): any\n",
+      `/** description1 **/\nfunction action1(args: {\nparam1?: string // a description\n}): any`,
     );
   });
   it("1 parameter with string enums", () => {
@@ -417,7 +417,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      '\n/** description1 **/\nfunction action1(args: {\nparam1?: "alpha" | "beta" | "gamma" // a description\n}): any\n',
+      '/** description1 **/\nfunction action1(args: {\nparam1?: "alpha" | "beta" | "gamma" // a description\n}): any',
     );
   });
   it("1 parameter with number enums", () => {
@@ -439,7 +439,7 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      "\n/** description1 **/\nfunction action1(args: {\nparam1?: 1 | 2 | 3 // a description\n}): any\n",
+      `/** description1 **/\nfunction action1(args: {\nparam1?: 1 | 2 | 3 // a description\n}): any`,
     );
   });
   it("2 parameters 1 action", () => {
@@ -469,13 +469,11 @@ describe("getTSActionDescriptions", () => {
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param1?: string // a description
 param2: number // this isn't a description
-}): any
-`,
+}): any`,
     );
   });
   it("2 parameters 2 actions", () => {
@@ -529,8 +527,7 @@ param2: number // this isn't a description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param1?: string // a description
 param2: number // this isn't a description
@@ -540,8 +537,7 @@ param2: number // this isn't a description
 function action2(args: {
 param3?: string // a description
 param4: number // this isn't a description
-}): any
-`,
+}): any`,
     );
   });
   it("param with enum with 1 option", () => {
@@ -572,12 +568,10 @@ param4: number // this isn't a description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param2?: number // this isn't a description
-}): any
-`,
+}): any`,
     );
   });
 
@@ -605,12 +599,10 @@ param2?: number // this isn't a description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param1: string // a description
-}): any
-`,
+}): any`,
     );
   });
   it("2 request body items", () => {
@@ -640,13 +632,11 @@ param1: string // a description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param1: string // a description
 param2?: number // this is a number
-}): any
-`,
+}): any`,
     );
   });
   it("request body simple array", () => {
@@ -675,12 +665,10 @@ param2?: number // this is a number
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`
-/** description #1 **/
+    expect(out).toEqual(`/** description #1 **/
 function action1(args: {
 updates: string[] // description of the array
-}): any
-`);
+}): any`);
   });
   it("request body simple array, no array description", () => {
     const out = getActionTSSignatures([
@@ -707,12 +695,10 @@ updates: string[] // description of the array
         },
       } as unknown as Action,
     ]);
-    expect(out).toEqual(`
-/** description #1 **/
+    expect(out).toEqual(`/** description #1 **/
 function action1(args: {
 updates: string[] // array of item description
-}): any
-`);
+}): any`);
   });
   it("exampleRequestBody1", () => {
     const out = getActionTSSignatures([
@@ -724,16 +710,14 @@ updates: string[] // array of item description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 updates?: { // List of updates for a custom fields.
 customField: string // The ID or key of the custom field. For example, \`customfield_10010\`.
 issueIds: integer[] // The list of issue IDs.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
 }[]
-}): any
-`,
+}): any`,
     );
   });
 
@@ -747,8 +731,7 @@ value: any // The value for the custom field. The value must be compatible with 
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 accountId?: string // The account ID of a user.
 globalPermissions?: string[] // Global permissions to look up.
@@ -757,8 +740,7 @@ issues?: integer[] // List of issue IDs.
 permissions: string[] // List of project permissions.
 projects?: integer[] // List of project IDs.
 }[]
-}): any
-`,
+}): any`,
     );
   });
 
@@ -772,8 +754,7 @@ projects?: integer[] // List of project IDs.
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 description?: string // The description of the dashboard.
 editPermissions: { // The edit permissions for the dashboard.
@@ -783,8 +764,7 @@ name: string // The name of the dashboard.
 sharePermissions: { // The share permissions for the dashboard.
 type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
 }[]
-}): any
-`,
+}): any`,
     );
   });
   it("exampleRequestBody with enum with 1 option", () => {
@@ -817,12 +797,10 @@ type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "au
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 description?: string // The description of the dashboard
-}): any
-`,
+}): any`,
     );
   });
   it("exampleRequestBody with examples", () => {
@@ -857,13 +835,11 @@ description?: string // The description of the dashboard
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 created?: string // When it was created. Example: 2021-01-01
 enumProp: "option1" | "option2" // enum description
-}): any
-`,
+}): any`,
     );
   });
   it("params with examples", () => {
@@ -896,13 +872,11 @@ enumProp: "option1" | "option2" // enum description
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 param1?: string // a description. Example: example1
 updated?: integer // Example: 1663734553
-}): any
-`,
+}): any`,
     );
   });
   it("array parameter", () => {
@@ -941,15 +915,13 @@ updated?: integer // Example: 1663734553
       } as unknown as Action,
     ]);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(args: {
 filters?: {
 path: "listing_active" | "country"
 value: string
 }[]
-}): any
-`,
+}): any`,
     );
   });
 });
@@ -970,14 +942,12 @@ describe("getActionTSSignature including output type", () => {
   it("Object output 1", () => {
     const out = getActionTSSignature(actionObjectOutput1, true);
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 updates?: { // List of updates for a custom fields.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
 }[]
-}
-`,
+}`,
     );
   });
   it("Object output 2", () => {
@@ -996,8 +966,7 @@ value: any // The value for the custom field. The value must be compatible with 
       true,
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 accountId?: string // The account ID of a user.
 globalPermissions?: string[] // Global permissions to look up.
@@ -1006,8 +975,7 @@ issues?: integer[] // List of issue IDs.
 permissions: string[] // List of project permissions.
 projects?: integer[] // List of project IDs.
 }[]
-}
-`,
+}`,
     );
   });
   it("Object output 3", () => {
@@ -1026,8 +994,7 @@ projects?: integer[] // List of project IDs.
       true,
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 description?: string // The description of the dashboard.
 editPermissions: { // The edit permissions for the dashboard.
@@ -1039,8 +1006,7 @@ sharePermissions: { // The share permissions for the dashboard.
 id?: integer // The unique identifier of the share permission.
 type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
 }[]
-}
-`,
+}`,
     );
   });
   it("Array output 1", () => {
@@ -1059,12 +1025,10 @@ type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "au
       true,
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): { // List of updates for a custom fields.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
-}[]
-`,
+}[]`,
     );
   });
   it("Array output 2", () => {
@@ -1083,10 +1047,8 @@ value: any // The value for the custom field. The value must be compatible with 
       true,
     );
     expect(out).toEqual(
-      `
-/** description1 **/
-function action1(): string[] // List of updates for a custom fields.
-`,
+      `/** description1 **/
+function action1(): string[] // List of updates for a custom fields.`,
     );
   });
 });
@@ -1098,14 +1060,12 @@ describe("getActionTSSignature with returned object", () => {
       ],
     });
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 updates?: { // List of updates for a custom fields.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
 }[]
-}
-`,
+}`,
     );
   });
   it("Object output 2 - object 1", () => {
@@ -1125,13 +1085,11 @@ value: any // The value for the custom field. The value must be compatible with 
       { accountId: "1234", globalPermissions: ["perm1", "perm2"] },
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 accountId?: string // The account ID of a user.
 globalPermissions?: string[] // Global permissions to look up.
-}
-`,
+}`,
     );
   });
   it("Object output 2 - object 2", () => {
@@ -1157,16 +1115,14 @@ globalPermissions?: string[] // Global permissions to look up.
       },
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 projectPermissions?: { // Project permissions with associated projects and issues to look up.
 issues?: integer[] // List of issue IDs.
 permissions: string[] // List of project permissions.
 projects?: integer[] // List of project IDs.
 }[]
-}
-`,
+}`,
     );
   });
   it("Object output 2 - object 3", () => {
@@ -1191,15 +1147,13 @@ projects?: integer[] // List of project IDs.
       },
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 projectPermissions?: { // Project permissions with associated projects and issues to look up.
 issues?: integer[] // List of issue IDs.
 permissions: string[] // List of project permissions.
 }[]
-}
-`,
+}`,
     );
   });
   it("Object output 3", () => {
@@ -1222,15 +1176,13 @@ permissions: string[] // List of project permissions.
       },
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): {
 editPermissions: { // The edit permissions for the dashboard.
 type: "user" | "group" | "project" | "projectRole" | "global" | "loggedin" | "authenticated" | "project-unknown" // user: Shared with a user. \`group\`: Shared with a group. \`project\` Shared with a project. \`projectRole\` Share with a project role in a project. \`global\` Shared globally. \`loggedin\` Shared with all logged-in users. \`project-unknown\` Shared with a project that the user does not have access to.
 }[]
 name: string // The name of the dashboard.
-}
-`,
+}`,
     );
   });
   it("Array output 1", () => {
@@ -1255,12 +1207,10 @@ name: string // The name of the dashboard.
       ],
     );
     expect(out).toEqual(
-      `
-/** description1 **/
+      `/** description1 **/
 function action1(): { // List of updates for a custom fields.
 value: any // The value for the custom field. The value must be compatible with the custom field type.
-}[]
-`,
+}[]`,
     );
   });
   it("Real world example 1", () => {
@@ -1298,8 +1248,7 @@ value: any // The value for the custom field. The value must be compatible with 
       },
     });
     expect(out).toEqual(
-      `
-/** List Accounts **/
+      `/** List Accounts **/
 function listAccounts(args: {
 metadata.page.number?: integer // 0-indexed page number
 metadata.page.size?: integer // page size
@@ -1341,8 +1290,7 @@ totalElements: integer // total number of elements in all of the pages
 totalPages: integer // number of total pages
 }
 }
-}
-`,
+}`,
     );
   });
   it("Real world example 2", () => {
@@ -1428,8 +1376,7 @@ totalPages: integer // number of total pages
         },
       },
     });
-    expect(out).toEqual(`
-/** List Outgoing Transfers **/
+    expect(out).toEqual(`/** List Outgoing Transfers **/
 function listOutgoingTransfers(args: {
 data.outgoingTransfer.transactionNumber?: string // Find the data for a specific transaction number (e.g. 20230818-ASG36S6
 data.outgoingTransfer.amountFrom?: string // Minimum amount
@@ -1500,8 +1447,7 @@ totalElements: integer // total number of elements in all of the pages
 totalPages: integer // number of total pages
 }
 }
-}
-`);
+}`);
   });
   it("Real world example 3", () => {
     const out = getActionTSSignature(realWorldExampleAction3, true, [
@@ -1522,8 +1468,7 @@ totalPages: integer // number of total pages
         ],
       },
     ]);
-    expect(out).toEqual(`
-/** List demand **/
+    expect(out).toEqual(`/** List demand **/
 function filterDemand(): {
 id: integer // Item id
 timeline: {
@@ -1532,8 +1477,7 @@ forecast: number // The forecast demand for a future period, or previously-forec
 period: string // The period the figures are reported for
 picks: integer // The number of times a customer buys any number of this item type (1 pick often corresponds to many items sold)
 }[]
-}[]
-`);
+}[]`);
   });
   it("Real world example 4", () => {
     const out = getActionTSSignature(realWorldExampleAction4, true, [
@@ -1556,20 +1500,19 @@ picks: integer // The number of times a customer buys any number of this item ty
         nonStockedItems: 129,
       },
     ]);
-    expect(out).toEqual(`
-/** Also referred to as stock turn, this gets stock turnover for the past 12 months **/
+    expect(out)
+      .toEqual(`/** Also referred to as stock turn, this gets stock turnover for the past 12 months **/
 function getStockTurnover(): {
 period: string // The period that these figures are for
 allItems: number // The stock turn value over all items
 stockedItems: number // The stock turn value over stocked items
 nonStockedItems: number // The stock turn value over non-stocked items
-}[]
-`);
+}[]`);
   });
   it("Real world example 5", () => {
     const out = getActionTSSignature(realWorldExampleAction5, true);
-    expect(out).toEqual(`
-/** Get a list of all listings for a given marketplace **/
+    expect(out)
+      .toEqual(`/** Get a list of all listings for a given marketplace **/
 function getListings(args: {
 filters?: {
 path: "listing_active" | "country"
@@ -1627,8 +1570,7 @@ devices?: string[]
 hidden_groups?: string[]
 }[]
 count: integer
-}
-`);
+}`);
   });
   it("Real world example 5", () => {
     const out = getActionTSSignature(realWorldExampleAction6, true, [
@@ -1708,8 +1650,7 @@ count: integer
         proposalDueDate: "null",
       },
     ]);
-    expect(out).toEqual(`
-/** Search for quotes **/
+    expect(out).toEqual(`/** Search for quotes **/
 function searchQuotes(args: {
 proposalID?: string // Proposal ID
 owner?: string // Team member who owns this proposal
@@ -1728,8 +1669,7 @@ customerCurrency: null,string
 opportunityValue: integer
 targetPrice: integer
 proposalDueDate: string
-}[]
-`);
+}[]`);
   });
   it("First array obj empty, find non-empty one", () => {
     const out = getActionTSSignature(realWorldExampleAction6, true, [
@@ -1746,8 +1686,7 @@ proposalDueDate: string
         ],
       },
     ]);
-    expect(out).toEqual(`
-/** Search for quotes **/
+    expect(out).toEqual(`/** Search for quotes **/
 function searchQuotes(args: {
 proposalID?: string // Proposal ID
 owner?: string // Team member who owns this proposal
@@ -1758,8 +1697,7 @@ revenue?: number
 hours?: number
 laborPool?: string
 }[]
-}[]
-`);
+}[]`);
   });
   const out = getActionTSSignature(realWorldExampleAction6, true, [
     {
@@ -1814,8 +1752,7 @@ laborPool?: string
       ],
     },
   ]);
-  expect(out).toEqual(`
-/** Search for quotes **/
+  expect(out).toEqual(`/** Search for quotes **/
 function searchQuotes(args: {
 proposalID?: string // Proposal ID
 owner?: string // Team member who owns this proposal
@@ -1834,6 +1771,5 @@ revenue?: number
 hours?: number
 laborPool?: string
 }[]
-}[]
-`);
+}[]`);
 });
