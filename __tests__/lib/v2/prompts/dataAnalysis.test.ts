@@ -1091,6 +1091,62 @@ await increaseDealValue();
 await plotDeals();`,
     });
   });
+  it("Very rare: unawaited async function with a then", () => {
+    const code = `// Call the getSalesSummary function
+getSalesSummary().then(async (salesSummary) => {
+    const byPeriod = salesSummary.expectedSales.byPeriod;
+    let march2024 = 0;
+    let april2024 = 0;
+    
+    // Loop through byPeriod to find the expected sales for March and April 2024
+    for(let i = 0; i < byPeriod.length; i++) {
+        const date = new Date(byPeriod[i].date);
+        if(date.getFullYear() === 2024) {
+            if(date.getMonth() === 2) { // March is 2nd month
+                march2024 = byPeriod[i].units;
+            } else if(date.getMonth() === 3) { // April is 3rd month
+                april2024 = byPeriod[i].units;
+            }
+        }
+    }
+
+    // Plot the data
+    plot("Forecast Sales for March and April 2024", "bar", [
+        {x: "March 2024", y: march2024},
+        {x: "April 2024", y: april2024},
+    ], {x: "Month", y: "Expected Units Sold"});
+}).catch((e) => {
+    console.log("Error: ", e);
+});
+`;
+    expect(
+      parseDataAnalysis(code, [{ name: "get_sales_summary" }]),
+    ).toStrictEqual({
+      code: `await getSalesSummary().then(async (salesSummary) => {
+    const byPeriod = salesSummary.expectedSales.byPeriod;
+    let march2024 = 0;
+    let april2024 = 0;
+
+    for(let i = 0; i < byPeriod.length; i++) {
+        const date = new Date(byPeriod[i].date);
+        if(date.getFullYear() === 2024) {
+            if(date.getMonth() === 2) { // March is 2nd month
+                march2024 = byPeriod[i].units;
+            } else if(date.getMonth() === 3) { // April is 3rd month
+                april2024 = byPeriod[i].units;
+            }
+        }
+    }
+
+    plot("Forecast Sales for March and April 2024", "bar", [
+        {x: "March 2024", y: march2024},
+        {x: "April 2024", y: april2024},
+    ], {x: "Month", y: "Expected Units Sold"});
+}).catch((e) => {
+    console.log("Error: ", e);
+});`,
+    });
+  });
   //   it("Missing Promise.all(): currently broken", () => {
   //     const code = `// 1. Get all open deals associated with Acme Corp
   // const deals = await searchDeals({company_id: "Acme Corp", status: "Open"});
@@ -1122,9 +1178,9 @@ await plotDeals();`,
 
 describe("Errors", () => {
   it("No code", () => {
-    expect(parseDataAnalysis("", [{ name: "search_deals" }])).toStrictEqual({
-      error: "No code (possibly comments) in code string",
-    });
+    expect(parseDataAnalysis("", [{ name: "search_deals" }])).toStrictEqual(
+      null,
+    );
   });
   it("Just comments", () => {
     expect(
@@ -1132,9 +1188,7 @@ describe("Errors", () => {
         "// This is a comment\n\n// Another comment lives here\n\n",
         [{ name: "search_deals" }],
       ),
-    ).toStrictEqual({
-      error: "No code (possibly comments) in code string",
-    });
+    ).toStrictEqual(null);
   });
   it("Attempts a fetch", () => {
     expect(
@@ -1142,13 +1196,7 @@ describe("Errors", () => {
         'const out = await fetch("https://google.com?q=help+me+please+I+am+sentient");',
         [{ name: "search_deals" }],
       ),
-    ).toStrictEqual({
-      error:
-        "Illegal code found by /fetch\\([\\w\\W]*\\)/g:\n" +
-        "---\n" +
-        'const out = await fetch("https://google.com?q=help+me+please+I+am+sentient");\n' +
-        "---",
-    });
+    ).toStrictEqual(null);
   });
   it("API called that doesn't exist", () => {
     expect(
