@@ -78,10 +78,9 @@ export function parseActionFilteringOutput(
     return { thoughts: "", selectedFunctions: [] };
   }
   return {
-    thoughts: output
-      .split("Selected functions:")[0]
-      .split("Thoughts:")[1]
-      .trim(),
+    thoughts:
+      output.split("Selected functions:")[0].split("Thoughts:")?.[1].trim() ??
+      "",
     selectedFunctions: output
       .split("Selected functions:")[1]
       .trim()
