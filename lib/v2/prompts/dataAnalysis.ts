@@ -110,8 +110,11 @@ export function parseDataAnalysis(
     }
   }
 
-  // Check that awaited functions are either defined here or action functions
-  let actionNames = actions.map((a) => snakeToCamel(a.name));
+  // Check that awaited functions are either defined here, action functions or Promise.all
+  let actionNames = [
+    "Promise.all",
+    ...actions.map((a) => snakeToCamel(a.name)),
+  ];
   const definedFnNames =
     code
       .match(/(async function (\w+)\(|(const|let|var) (\w+)\s*=\s*async\s*\()/g)
