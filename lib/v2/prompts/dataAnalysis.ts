@@ -65,8 +65,7 @@ import { ${actionTS
         .map((a) => a.match(/async function (\S+)\(/m)?.[1])
         .join(", ")}, plot } from "./api.ts";
 
-// Plan:${args.thoughts.replace(/\n/m, "\n// ")}
-`,
+// Plan:${args.thoughts.split("\n").map((t) => `\n// ${t}`)}`,
     },
   ];
 }
