@@ -26,14 +26,14 @@ ${
 
 Here's the function to describe:
 \`\`\`
-${getActionTSSignature(args.action)}
+${getActionTSSignature(args.action, true)}
 \`\`\`
 
 RULES:
 1. Make it extremely concise. Write in shorthand
 2. With parameters with general names (e.g. "id" or "name") specify what they refer to (Example: "company id")
 3. Mention if input parameters are optional, but DO NOT specify whether values in the return type are optional, THIS IS NOT IMPORTANT
-4. If there are many (>12) returned parameters, summarise them
+4. If there are many (>20) returned parameters, group them into categories and mention the categories
 5. ONLY include the return type if the main purpose of the function is to retrieve data. DO NOT FORGET THIS`,
       role: "system",
     },
