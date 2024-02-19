@@ -118,6 +118,7 @@ export async function runDataAnalysis(
       ...defaultDataAnalysisParams,
       temperature: nLoops === 0 ? 0.1 : 0.8,
     };
+    nLoops += 1;
     // const graphDatas = (
     // await Promise.all(
     //   [1, 2, 3].map(async (i) => {
@@ -136,7 +137,12 @@ export async function runDataAnalysis(
 
     // Parse the result
     let parsedCode = parseDataAnalysis(llmResponse, filteredActions);
-    if (parsedCode === null || "error" in parsedCode) return parsedCode;
+    if (parsedCode === null) {
+      llmResponse = "";
+      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+      continue;
+    }
+    if ("error" in parsedCode) return parsedCode;
     console.info("Parsed LLM response:", parsedCode.code);
 
     // Send code to supabase edge function to execute
@@ -148,7 +154,6 @@ export async function runDataAnalysis(
         userApiKey,
       }),
     });
-    nLoops += 1;
 
     if (res.error) {
       console.error(
@@ -161,9 +166,9 @@ export async function runDataAnalysis(
 
     const returnedData = res.data as ExecuteCode2Item[] | null;
     // If data field is null
-    if (returnedData === null) {
+    if (returnedData === null || returnedData.length === 0) {
       console.error(
-        `Failed to write valid code for conversation ${conversationId} after 3 attempts`,
+        `Failed to write valid code for conversation ${conversationId}, attempt ${nLoops}/3`,
       );
       llmResponse = "";
       streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
@@ -173,7 +178,7 @@ export async function runDataAnalysis(
     const errorMessages = returnedData.filter((m) => m.type === "error");
     if (errorMessages.length > 0) {
       console.error(
-        `Error executing code for conversation ${conversationId}:\n${errorMessages
+        `Error executing code for conversation ${conversationId}, attempt ${nLoops}/3:\n${errorMessages
           // @ts-ignore
           .map((m) => m.args.message)
           .join("\n")}`,
@@ -192,7 +197,7 @@ export async function runDataAnalysis(
         !plotArgs.data.some((d) => Object.keys(d).length > 1)
       ) {
         console.error(
-          `Missing columns in data output by code for conversation ${conversationId}:\n${plotMessages
+          `Missing columns in data output by code for conversation ${conversationId}, attempt ${nLoops}/3:\n${plotMessages
             // @ts-ignore
             .map((m) => m.args.message)
             .join("\n")}`,
@@ -210,7 +215,7 @@ export async function runDataAnalysis(
         item.type === "plot"
           ? {
               type: item.type,
-              args: { ...item.args, data: item.args.data.slice(0, 5) },
+              args: { ...item.args, data: item.args.data?.slice(0, 5) },
             }
           : item,
       ),
