@@ -25,7 +25,7 @@ export function getDataAnalysisPrompt(args: {
 ${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
 api.ts
 \`\`\`
-${actionTS.join("\n")}
+${actionTS.join("\n\n")}
 
 /** Plots data for the user. Users can toggle to view data in a table. DO NOT call plot() more than two times **/
 function plot(title: string,
@@ -75,7 +75,9 @@ export function parseDataAnalysis(
   rawCode: string,
   actions: Pick<Action, "name">[],
 ): { code: string } | { error: string } | null {
-  // function parseOutput(output) {
+  /** Code output means the code is valid
+   * Error output is an error message to be shown to the AI
+   * null output means the **/
   // Check if it's just an error
   const errorMatch = /^\n?throw new Error\((.*)\);?$/.exec(rawCode);
   if (errorMatch) {
@@ -90,7 +92,8 @@ export function parseDataAnalysis(
       .trim(),
   );
   if (code === "") {
-    return { error: "No code (possibly comments) in code string" };
+    console.error("No code (possibly comments) in code string");
+    return null;
   }
 
   // Check that fetch(), eval(), new Function() and WebAssembly aren't used
@@ -106,15 +109,13 @@ export function parseDataAnalysis(
         regex,
       )}:\n---\n${code}\n---`;
       console.error(error);
-      return { error };
+      return null;
     }
   }
 
   // Check that awaited functions are either defined here, action functions or Promise.all
-  let actionNames = [
-    "Promise.all",
-    ...actions.map((a) => snakeToCamel(a.name)),
-  ];
+  const actionNames = actions.map((a) => snakeToCamel(a.name));
+  let awaitableActionNames = ["Promise.all", ...actionNames];
   const definedFnNames =
     code
       .match(/(async function (\w+)\(|(const|let|var) (\w+)\s*=\s*async\s*\()/g)
@@ -129,16 +130,16 @@ export function parseDataAnalysis(
       }) ?? [];
 
   // These are all valid await-able function names
-  actionNames = actionNames.concat(definedFnNames);
+  awaitableActionNames = awaitableActionNames.concat(definedFnNames);
 
   // Now, get the awaited function names
   const awaitedFns = code.match(/await \S+?\(/g) ?? [];
   for (let fnMatch of awaitedFns) {
     const fnName = fnMatch.slice(6, -1);
-    if (!actionNames.includes(fnName)) {
-      return {
-        error: `Function with name ${fnName} is awaited, yet is not defined or an action name`,
-      };
+    if (!awaitableActionNames.includes(fnName)) {
+      const errorMsg = `Function with name ${fnName} is awaited, yet is not defined or an action name`;
+      console.error(errorMsg);
+      return { error: errorMsg };
     }
   }
 
@@ -177,13 +178,22 @@ export function parseDataAnalysis(
     );
   }
 
-  // 3rd function case: named unnamed function called without await
+  // Unnamed function used as a variable called without await
   const unnamedFnVar = code.match(
     /(const|let|var) (\w+)\s*=\s*async\s*\([^)]*\)\s*=>\s*\{([\s\S]+?)\n};?\s*(\n\2\(\);?)?/,
   );
   if (unnamedFnVar) {
     code = code.replace(unnamedFnVar[4], `await ${unnamedFnVar[4]}`);
   }
+
+  // Rare: API function called with then without await
+  actionNames.forEach((actionName) => {
+    const thenCall = new RegExp(
+      // Capture group enclosing actionName until the end is used as $1 below
+      `(?<!await )(${actionName}\\([^)]*\\)\\.(then|catch)\\()`,
+    );
+    if (thenCall.test(code)) code = code.replace(thenCall, `await $1`);
+  });
 
   return { code };
 }
