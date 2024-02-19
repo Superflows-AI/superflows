@@ -162,6 +162,7 @@ export async function Bertie( // Bertie will eat you for breakfast
       FASTMODEL,
     ));
   }
+  let codeGenCalled = false;
 
   // Add analytics action if enabled
   actions.unshift(dataAnalysisAction(org));
@@ -198,7 +199,7 @@ export async function Bertie( // Bertie will eat you for breakfast
 
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
         cleanedMessages,
-        actions,
+        codeGenCalled ? [] : actions,
         reqData.user_description,
         org,
         language,
@@ -508,10 +509,9 @@ export async function Bertie( // Bertie will eat you for breakfast
       if (dataAnalysisAction && !anyNeedCorrection && toConfirm.length === 0) {
         console.log("Running data analysis!");
         streamInfo({ role: "loading", content: "Performing complex action" });
-        actions = actions.slice(1);
         const graphData = await runDataAnalysis(
           dataAnalysisAction.args["instruction"],
-          actions,
+          [...actions.slice(1)],
           // nonSystemMessages,
           org,
           { conversationId, index: nonSystemMessages.length },
@@ -523,7 +523,7 @@ export async function Bertie( // Bertie will eat you for breakfast
           reqData.user_api_key,
         );
         // Make last message an explanation-only message
-        actions = [];
+        codeGenCalled = true;
 
         // Return graph data to the user & add message to chat history
         if (graphData === null) {
