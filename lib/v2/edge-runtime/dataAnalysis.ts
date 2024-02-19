@@ -182,14 +182,14 @@ export async function runDataAnalysis(
       streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
       continue;
     }
-    // If 1 plot with either no data or not x & y in data
-    const plotMessages = returnedData.filter((m) => m.type === "error");
+    // If 1 plot with missing data
+    const plotMessages = returnedData.filter((m) => m.type === "plot");
     if (plotMessages.length === 1) {
       const plotArgs = plotMessages[0].args as BertieGraphData;
       if (
-        // Not x & y in data (exception is if it's a table)
-        plotArgs.type !== "table" &&
-        !plotArgs.data.every((d) => "x" in d && "y" in d)
+        // No data (exception is if it's a table or value)
+        (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
+        !plotArgs.data.some((d) => Object.keys(d).length > 1)
       ) {
         console.error(
           `Missing columns in data output by code for conversation ${conversationId}:\n${plotMessages
@@ -301,7 +301,7 @@ export function convertToGraphData(
         role: "graph",
         content: {
           type: g.args.data.length === 1 ? "value" : g.args.type,
-          data: g.args.data,
+          data: ensureDataWellFormatted(g.args),
           xLabel: g.args.labels?.x ?? "",
           yLabel: g.args.labels?.y ?? "",
           graphTitle: g.args.title,
@@ -319,4 +319,72 @@ export function convertToGraphData(
   }
 
   return [functionMessage, ...plotMessages];
+}
+
+export function ensureDataWellFormatted(
+  graphData: BertieGraphData,
+): BertieGraphData["data"] {
+  /** If there is no x and y in the data and it's not a table, we want to convert it to having
+   *  x and y.
+   *
+   *  1. We first check the labels and match against the keys in the data. If the labels
+   *  are the same as the keys, we convert these to x & y.
+   *  2. If the labels are not the same as the keys, we go on the order of key-value pairs in
+   *  the data and convert the first key to x and the second key to y.
+   * **/
+  if (
+    graphData.type === "table" ||
+    graphData.data.some((item) => "x" in item && "y" in item)
+  ) {
+    return graphData.data;
+  }
+
+  // Either x or y is missing from all data points - we want to make a mapping
+  const mapping: { x?: string; y?: string } = {}; // E.g. { "x": "date", "y": "value" }
+  const xMissing = graphData.data.every((item) => !("x" in item));
+  const yMissing = graphData.data.every((item) => !("y" in item));
+
+  // First, check the labels to see if we can work out what x and y should be
+  const keys = new Set();
+  graphData.data.forEach((item) => {
+    Object.keys(item).forEach((key) => keys.add(key));
+  });
+  const xLabel = graphData.labels.x;
+  if (xMissing) {
+    if (keys.has(xLabel)) {
+      mapping.x = xLabel;
+    } else if (keys.has(xLabel.toLowerCase())) {
+      mapping.x = xLabel.toLowerCase();
+    }
+  }
+  // Below we remove the units from the labels (look for something in brackets and cut it)
+  const yLabel = graphData.labels.y.match(/([^(]*)(?: \(.+\))?$/)?.[1] ?? "";
+  if (yMissing) {
+    if (keys.has(yLabel)) {
+      mapping.y = yLabel;
+    } else if (keys.has(yLabel.toLowerCase())) {
+      mapping.y = yLabel.toLowerCase();
+    }
+  }
+
+  // If the labels haven't helped, we'll just use the first key as x and the second as y
+  if (xMissing && !("x" in mapping)) {
+    const key = Array.from(keys)[0] as string;
+    mapping.x = key;
+    keys.delete(key);
+  }
+  if (yMissing && !("y" in mapping)) {
+    let key = Array.from(keys)[0] as string;
+    if (key === "x") key = Array.from(keys)[1] as string;
+    mapping.y = key;
+  }
+
+  // Use the mapping to update the data
+  Object.entries(mapping).forEach(([key, value]) => {
+    graphData.data.forEach((item) => {
+      item[key] = item[value];
+      delete item[value];
+    });
+  });
+  return graphData.data;
 }
