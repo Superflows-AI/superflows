@@ -161,6 +161,7 @@ export async function Bertie( // Bertie will eat you for breakfast
       org!.name,
       FASTMODEL,
     ));
+    // TODO: Deal with the situation where all the actions are filtered out!
   }
   let codeGenCalled = false;
 

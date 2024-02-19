@@ -48,6 +48,13 @@ export async function filterActions(
     // Nulls are returned if there's a LLM-based error
     .filter(Boolean) as ActionFilteringOutput[];
 
+  return combineSelectedFunctions(ensembleSelectedFns, actions);
+}
+
+export function combineSelectedFunctions(
+  ensembleSelectedFns: ActionFilteringOutput[],
+  actions: ActionPlusApiInfo[],
+): { thoughts: string; actions: ActionPlusApiInfo[] } {
   // We aggregate the results of the 3 runs into a single array of selected functions
   let chosenOut: string[] = [];
   // If more than 2 of the 3 output something, or 1 of 2 (if 1 failed)
@@ -69,10 +76,15 @@ export async function filterActions(
   );
   console.log("Chosen functions:", chosenOut);
 
+  let thoughts = "";
+  // Use the thoughts string from the thoughts associated with the most functions selected
+  thoughts = ensembleSelectedFns.reduce((a, b) =>
+    a.selectedFunctions.length > b.selectedFunctions.length ? a : b,
+  ).thoughts;
+
   // Return the action objects
   return {
-    // TODO: Select thoughts more intelligently
-    thoughts: ensembleSelectedFns[0].thoughts,
+    thoughts: thoughts,
     actions: chosenOut.map(
       (name) => actions.find((a) => snakeToCamel(a.name) === name)!,
     ),
