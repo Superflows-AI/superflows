@@ -20,10 +20,6 @@ export function processAPIoutput(
 ): Json | Json[] {
   const keys = chosenAction.keys_to_keep;
   if (keys && Array.isArray(keys) && keys.every((k) => typeof k === "string")) {
-    if (Array.isArray(out)) {
-      console.info("De-duplicating array");
-      out = deduplicateArray(out) as Json[];
-    }
     console.info("Filtering to keep keys:", keys);
     out = filterKeys(out, keys as string[]);
   }
@@ -381,23 +377,4 @@ export async function makeHttpRequest(
     return { output: await res.text(), isError: false };
   }
   return { output: responseText, isError: false };
-}
-
-export function getDocsChatRequest(
-  chosenAction: ActionPlusApiInfo,
-  user_input: string,
-): { url: string; requestOptions: RequestInit } {
-  return {
-    url: endpointUrlFromAction({
-      api_host: chosenAction.api.api_host,
-      path: chosenAction.path!,
-    }),
-    requestOptions: {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: user_input,
-      }),
-    },
-  };
 }
