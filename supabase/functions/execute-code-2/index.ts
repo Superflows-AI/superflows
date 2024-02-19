@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
    * Worth mentioning that variables are DELIBERATELY NAMED ERRATICALLY
    * since we don't want the AI to use them
    * **/
-  console.log("Request received");
+  console.info("Request received");
   let authHeader = req.headers.get("Authorization");
   // Auth check
   if (authHeader !== "Bearer " + Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
@@ -149,16 +149,9 @@ Deno.serve(async (req) => {
             type: "call",
             args: { name: camelName, params },
           });
-          return processAPIoutput(out.output, action);
-          // TODO: If we want error handling
-          // try {
-          //   out = await makeHttpRequest(url, requestOptions, Deno.env.NEXT_HOSTNAME);
-          //   out = processAPIoutput(out.output, action);
-          // } catch (e) {
-          //   console.error(e);
-          //   // @ts-ignore
-          //   out = `Failed to call ${url}\n\n${e.toString()}`;
-          // }
+          const processed = processAPIoutput(out.output, action);
+          console.info("API response:", processed);
+          return processed;
         },
       };
     })
@@ -201,7 +194,7 @@ return builtinFunctionCalls;
 const aVariableNameThatMustNotBeRepeated = doNotWriteAnotherFunctionCalledThis();
 aVariableNameThatMustNotBeRepeated
 `;
-  console.log("Code\n" + code);
+  console.info("Code\n" + code);
 
   // Last line must be builtinFunctionCalls since this is what's output and we ask the LLM to include it
   let result;
@@ -216,21 +209,22 @@ aVariableNameThatMustNotBeRepeated
   console.error = (message, ...otherParams) => {
     builtinFunctionCalls.push({
       type: "error",
-      args: { message: util.format(message, ...otherParams) },
+      args: {
+        message: `${message} ${otherParams.map((p) => p.toString())}`,
+      },
     });
   };
   try {
     // Run code, await result
     result = eval(code);
     // result = await result;
-    // Timeout if the code takes >10s to run
-    result = await Timeout.race([result], 10000);
+    // Timeout if the code takes >25s to run
+    result = await Timeout.race([result], 25000);
 
     // Reset console functions
     console.log = originalLog;
     console.error = originalErr;
-    console.log("Result\n", result);
-    // console.log("await result", await result);
+    console.info("Result\n", result);
 
     // Ensure the output is of the correct format (after it has been returned)
     return new Response(JSON.stringify(result), {
@@ -238,7 +232,7 @@ aVariableNameThatMustNotBeRepeated
     });
   } catch (e) {
     console.error = originalErr;
-    console.error("Error executing code", e);
+    console.warn("Error executing code", e);
     return new Response(
       JSON.stringify([
         {
