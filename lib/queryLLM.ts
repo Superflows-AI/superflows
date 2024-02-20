@@ -1,4 +1,5 @@
 import {
+  AnthropicResponse,
   ChatGPTMessage,
   ChatGPTParams,
   ChatGPTResponse,
@@ -8,6 +9,7 @@ import {
   TogetherAIResponse,
 } from "./models";
 import { removeEmptyCharacters } from "./utils";
+import { countTokens } from "@anthropic-ai/tokenizer";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
@@ -44,6 +46,12 @@ export async function getLLMResponse(
   const response = await fetch(url, options);
   const responseJson: ChatGPTResponse | { error: OpenAIError } =
     await response.json();
+  if (response.status >= 300) {
+    console.log(
+      "Response from LLM: ",
+      JSON.stringify(responseJson, undefined, 2),
+    );
+  }
 
   if (response.status === 429) {
     // Throwing an error triggers exponential backoff retry
@@ -64,8 +72,13 @@ export async function getLLMResponse(
 }
 
 export function textFromResponse(
-  response: ChatGPTResponse | RunPodResponse | TogetherAIResponse,
+  response:
+    | ChatGPTResponse
+    | RunPodResponse
+    | TogetherAIResponse
+    | AnthropicResponse,
 ): string {
+  if ("completion" in response) return response.completion;
   if ("output" in response) {
     if (typeof response.output === "string") return response.output;
     // @ts-ignore
@@ -164,6 +177,7 @@ function getLLMRequestChat(
   const isOpenAIModel = model.includes("gpt");
   const isMistralModel = model.includes("mistral");
   const isPhindModel = model.includes("Phind");
+  const isAnthropicModel = model.includes("anthropic");
   const isOS = isOSModel(model);
   let key: string, url: string;
   if (isOpenAIModel) {
@@ -172,6 +186,8 @@ function getLLMRequestChat(
   } else if (isMistralModel) {
     key = process.env.MISTRAL_API_KEY!;
     url = "https://api.mistral.ai/v1/chat/completions";
+    delete defaultParams.frequency_penalty;
+    delete defaultParams.presence_penalty;
     // Mistral doesn't know about function messages & is fussy about only replying to user messages!
     // Below stringify-parse is deepcopy
     messages = JSON.parse(JSON.stringify(messages)).map((m: ChatGPTMessage) =>
@@ -179,6 +195,31 @@ function getLLMRequestChat(
         ? { ...m }
         : { role: "user", content: `${m.name} output: ${m.content}` },
     );
+  } else if (isAnthropicModel) {
+    const prompt = GPTChatFormatToClaudeInstant(messages);
+    const max_tokens_to_sample = params.max_tokens;
+    const stop_sequences = params.stop;
+    const localParams = { ...params };
+    delete localParams.max_tokens;
+    delete localParams.stop;
+    return {
+      url: "https://api.anthropic.com/v1/complete",
+      options: {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          ...localParams,
+          max_tokens_to_sample,
+          stop_sequences,
+          model: model.split("/")[1],
+          prompt: prompt,
+        }),
+      },
+    };
   } else if (isPhindModel) {
     const phindParams = {
       ...defaultParams,
@@ -200,7 +241,7 @@ function getLLMRequestChat(
     }
     const promptText = GPTChatFormatToPhind(messages);
     // console.log("Prompt text: ", promptText);
-    const out = {
+    return {
       url: "https://api.together.xyz/inference",
       options: {
         method: "POST",
@@ -217,7 +258,6 @@ function getLLMRequestChat(
         }),
       },
     };
-    return out;
   } else if (isOS) {
     if (!process.env.OS_LLM_API_KEY || !process.env.OS_LLM_URL)
       throw new Error(
@@ -356,4 +396,21 @@ ${
     ? "### Assistant\n"
     : ""
 }`;
+}
+
+function GPTChatFormatToClaudeInstant(chatMessages: ChatGPTMessage[]): string {
+  const roleToName = {
+    system: "",
+    user: "Human: ",
+    assistant: "Assistant: ",
+    function: "Function: ", // Should never be used in Claude Instant
+  };
+  if (chatMessages.filter((m) => m.role === "function").length > 0) {
+    throw new Error(
+      "Function messages are not supported in Claude Instant. Please remove them.",
+    );
+  }
+  return `${chatMessages
+    .map((message) => `${roleToName[message.role]}${message.content}`)
+    .join("\n\n")}`;
 }
