@@ -91,6 +91,14 @@ export interface TogetherAIResponse {
   };
 }
 
+export interface AnthropicResponse {
+  type: string;
+  id: string;
+  completion: string;
+  stop_reason: "stop_sequence" | "max_tokens";
+  model: string;
+}
+
 export interface OpenAIError {
   message: string;
   type: string;
