@@ -62,15 +62,14 @@ export class LlmResponseCache {
 
           // Skip if the conversation is too short or the last message is the same as the user message
           if (
-            matchingChat.length === 1 ||
-            ["", userMessage].includes(matchingChat[1].content)
+            matchingChat.length > 1 ||
+            !["", userMessage].includes(matchingChat[1].content)
           ) {
-            continue;
+            console.log("Found matching conversation:", matchingChat);
+            this.matchConvId = convId;
+            this.messages = matchingChat as GPTMessageInclSummary[];
+            return;
           }
-
-          console.log("Found matching conversation:", matchingChat);
-          this.matchConvId = convId;
-          this.messages = matchingChat as GPTMessageInclSummary[];
         }
       }
     }
