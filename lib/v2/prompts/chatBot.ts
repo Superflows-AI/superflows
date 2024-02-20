@@ -265,9 +265,9 @@ RULES:
         : "If the graph doesn't exactly answer the question the user asked, use the graph and log messages from the coder to help answer the question for the user - they user can't see the coder's log messages."
     }
 2. DO NOT show the graph as a markdown image. The function message is visible to the user as a graph.
-3. ${language ? `Your reply should be written in ${language}.` : ""}
-3. Your reply should be written in English.
-4. Your reply should follow the format below (you MUST include both reasoning and tell user):
+3. DO NOT repeat the contents of the graph or table in full. Summarise it as concisely as you can - the user can ask follow-ups if they need more information. 
+4. ${language ? `Your reply should be written in ${language}.` : ""}
+5. Your reply should follow the format below (you MUST include both reasoning and tell user):
 \`\`\`
 Reasoning:
 1. Think step-by-step. Does the data array contain the text 'cut for brevity' for any graphs?
