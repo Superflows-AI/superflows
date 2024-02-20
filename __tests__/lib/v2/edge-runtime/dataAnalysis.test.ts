@@ -3,7 +3,7 @@ import {
   ensureDataWellFormatted,
 } from "../../../../lib/v2/edge-runtime/dataAnalysis";
 import { ExecuteCode2Item } from "../../../../lib/types";
-import { dataAnalysisActionName } from "../../../../lib/builtinActions";
+import { dataAnalysisActionName } from "../../../../lib/v2/builtinActions";
 
 describe("convertToGraphData", () => {
   const logMess1 = {

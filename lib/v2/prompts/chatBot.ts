@@ -7,7 +7,7 @@ import {
   isFunctionMessageTooLong,
 } from "../../edge-runtime/utils";
 import { isChoiceRequired } from "../../actionUtils";
-import { dataAnalysisActionName } from "../../builtinActions";
+import { dataAnalysisActionName } from "../builtinActions";
 
 export function formatDescription(
   description: string | undefined | null,
