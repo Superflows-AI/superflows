@@ -35,29 +35,43 @@ export class LlmResponseCache {
       })
       // Take the most recent matching conversation that isn't the current one
       .order("conversation_id", { ascending: false })
-      // This will return the current convo & optionally the most recent matching convo
-      .limit(2);
+      // This will return the current convo & optionally the most recent matching 4 convos
+      .limit(5);
     if (matchConvError) console.error(matchConvError.message);
 
     if (matchingConvData && matchingConvData?.length > 1) {
-      const matchingConv = matchingConvData[1];
+      // Get chat messages for all matching conversations
       const { data: matchingChatData, error: chatError } = await supabase
         .from("chat_messages")
-        .select("role,content,name,summary")
-        .match({
-          org_id: orgId,
-          conversation_id: matchingConv.conversation_id,
-        })
-        .order("conversation_index", { ascending: true });
+        .select("role,content,name,summary,conversation_index,conversation_id")
+        .eq("org_id", orgId)
+        .in(
+          "conversation_id",
+          matchingConvData.slice(1).map((c) => c.conversation_id),
+        )
+        .order("conversation_id", { ascending: false });
       if (chatError) console.error(chatError.message);
-
       if (matchingChatData && matchingChatData.length > 1) {
-        console.log(
-          "Found matching conversation with id:",
-          matchingConv.conversation_id,
-        );
-        this.matchConvId = matchingConv.conversation_id;
-        this.messages = matchingChatData as GPTMessageInclSummary[];
+        // Iterate through the matching conversations to find if there's a valid one
+        for (const convId of matchingConvData
+          .slice(1)
+          .map((c) => c.conversation_id)) {
+          const matchingChat = matchingChatData
+            .filter((c) => c.conversation_id === convId)
+            .sort((a, b) => a.conversation_index - b.conversation_index);
+
+          // Skip if the conversation is too short or the last message is the same as the user message
+          if (
+            matchingChat.length === 1 ||
+            ["", userMessage].includes(matchingChat[1].content)
+          ) {
+            continue;
+          }
+
+          console.log("Found matching conversation:", matchingChat);
+          this.matchConvId = convId;
+          this.messages = matchingChat as GPTMessageInclSummary[];
+        }
       }
     }
   }
