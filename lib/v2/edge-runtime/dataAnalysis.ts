@@ -6,26 +6,18 @@ import {
 } from "../../types";
 import { Database } from "../../database.types";
 import { getDataAnalysisPrompt } from "../prompts/dataAnalysis";
-import { exponentialRetryWrapper, roughSizeOfObject } from "../../utils";
+import { exponentialRetryWrapper } from "../../utils";
 import { getLLMResponse } from "../../queryLLM";
-import {
-  ChatGPTMessage,
-  FunctionMessage,
-  GPTMessageInclSummary,
-} from "../../models";
+import { FunctionMessage } from "../../models";
 import { parseDataAnalysis } from "../prompts/dataAnalysis";
 import {
-  AssistantMessage,
-  DebugMessage,
-  ErrorMessage,
-  GraphData,
   GraphMessage,
   LoadingMessage,
   StreamingStepInput,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
-import { dataAnalysisActionName } from "../../builtinActions";
+import { dataAnalysisActionName } from "../builtinActions";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers

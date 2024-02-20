@@ -15,7 +15,6 @@ import {
   sanitizeMessages,
 } from "../../edge-runtime/apiResponseSimplification";
 import {
-  hideMostRecentFunctionOutputs,
   MessageInclSummaryToGPT,
   preStreamProcessOutMessage,
   removeOldestFunctionCalls,
@@ -45,17 +44,14 @@ import summarizeText from "../../edge-runtime/summarize";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../database.types";
 import { convertToGraphData, runDataAnalysis } from "./dataAnalysis";
-import {
-  dataAnalysisActionName,
-  dataAnalysisAction,
-  getSearchDocsAction,
-} from "../../builtinActions";
+import { dataAnalysisActionName, dataAnalysisAction } from "../builtinActions";
 import {
   GraphData,
   StreamingStepInput,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { storeActionsAwaitingConfirmation } from "../../edge-runtime/ai";
+import { getSearchDocsAction } from "../../builtinActions";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
