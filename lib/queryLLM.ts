@@ -94,9 +94,7 @@ export async function streamLLMResponse(
   prompt: ChatGPTMessage[] | string,
   params: ChatGPTParams = {},
   model: string,
-): Promise<
-  ReadableStream | string | { message: string; status: number } | null
-> {
+): Promise<ReadableStream | { message: string; status: number } | null> {
   /** Have only tested on edge runtime endpoints - not 100% sure it will work on Node runtime **/
   if (typeof prompt === "string" && model !== "gpt-3.5-turbo-instruct")
     throw new Error(
@@ -122,11 +120,6 @@ export async function streamLLMResponse(
     const error = await response.json();
     console.error(`Error from ${model} LLM: ${JSON.stringify(error.error)}`);
     return { message: error.error, status: response.status };
-  }
-  if (response.headers.get("content-type")?.includes("application/json")) {
-    // Non-streaming
-    const out = await response.json();
-    return out.output;
   }
 
   return response.body;
@@ -179,6 +172,7 @@ function getLLMRequestChat(
   const isPhindModel = model.includes("Phind");
   const isAnthropicModel = model.includes("anthropic");
   const isOS = isOSModel(model);
+
   let key: string, url: string;
   if (isOpenAIModel) {
     key = process.env.OPENAI_API_KEY!;
@@ -312,8 +306,6 @@ function getLLMRequestChat(
 const baseSecondaryModelMapping = {
   "gpt-4-0613": "gpt-3.5-turbo-0613",
   "anthropic/claude-2": "anthropic/claude-instant-v1",
-  "meta-llama/llama-2-70b-chat": "meta-llama/llama-2-70b-chat",
-  "google/palm-2-chat-bison": "google/palm-2-chat-bison",
 };
 
 export function getSecondaryModel(mainModel: string): string {
