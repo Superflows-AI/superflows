@@ -145,7 +145,9 @@ export default async function handler(req: NextRequest) {
       if (!org) {
         const authRes = await supabase
           .from("organizations")
-          .select("*, is_paid(*), finetuned_models(*)")
+          .select(
+            "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled, is_paid(is_premium), finetuned_models(openai_name)",
+          )
           .eq("api_key", orgApiKey);
         if (authRes.error) throw new Error(authRes.error.message);
         // Set org in Redis for 30 minutes

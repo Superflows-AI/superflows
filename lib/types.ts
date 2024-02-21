@@ -40,10 +40,15 @@ export type IsPaid = Database["public"]["Tables"]["is_paid"]["Row"];
 
 type FinetunedModels = Database["public"]["Tables"]["finetuned_models"]["Row"];
 
-export type OrgJoinIsPaid = Organization & { is_paid: IsPaid[] };
+export type OrgJoinIsPaid = Organization & {
+  is_paid: Pick<IsPaid, "is_premium">[];
+};
 
-export type OrgJoinIsPaidFinetunedModels = OrgJoinIsPaid & {
-  finetuned_models: FinetunedModels[];
+export type OrgJoinIsPaidFinetunedModels = Omit<
+  OrgJoinIsPaid,
+  "created_at" | "join_link_id"
+> & {
+  finetuned_models: Pick<FinetunedModels, "openai_name">[];
 };
 
 export type HeadersInsert =
