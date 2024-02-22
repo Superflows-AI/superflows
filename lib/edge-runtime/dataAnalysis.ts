@@ -222,7 +222,7 @@ export function getCalledActions(
       return (
         parsedOutput.commands
           // Remove the data analysis action
-          .filter((command) => command.name !== dataAnalysisActionName)
+          .filter((command) => command?.name !== dataAnalysisActionName)
           .map((command, idx) => {
             let output: Json = pair.functionMessages[idx]?.content;
             try {
