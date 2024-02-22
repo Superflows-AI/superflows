@@ -610,3 +610,9 @@ export function roughSizeOfObject(object: object): number {
 
   return recurse(object);
 }
+
+export function capitaliseFirstLetter(text: string): string {
+  return text.replace(/(^\w|\s\w)/g, function (m: string) {
+    return m.toUpperCase();
+  });
+}
