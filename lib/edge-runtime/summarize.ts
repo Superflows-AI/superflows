@@ -8,7 +8,7 @@ import { chunkString } from "../utils";
 
 export default async function summarizeText(
   text: string,
-  organization: Organization,
+  organization: Omit<Organization, "created_at" | "join_link_id">,
 ): Promise<string> {
   // Split into chunks of 2000 tokens with an overlap of 50
   const chunks = chunkString(text, 2000, 50);

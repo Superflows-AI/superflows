@@ -10,7 +10,7 @@ export const summariseEmailGPTParams = {
 
 export function getSummarizeTextPrompt(
   textToSummarize: string,
-  organization: Organization,
+  organization: Omit<Organization, "created_at" | "join_link_id">,
 ): ChatGPTMessage[] {
   return [
     {
