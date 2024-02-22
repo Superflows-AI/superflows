@@ -50,6 +50,9 @@ export type OrgJoinIsPaidFinetunedModels = Omit<
 > & {
   finetuned_models: Pick<FinetunedModels, "openai_name">[];
 };
+export type OrgJoinIsPaidFinetunedModelsFrontend = OrgJoinIsPaid & {
+  finetuned_models: FinetunedModels[];
+};
 
 export type HeadersInsert =
   Database["public"]["Tables"]["fixed_headers"]["Insert"];
