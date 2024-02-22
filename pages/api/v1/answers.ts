@@ -21,7 +21,11 @@ import {
   ChatGPTMessage,
   GPTMessageInclSummary,
 } from "../../../lib/models";
-import { HeaderRow, OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
+import {
+  ActionTagJoinApiAndHeaders,
+  HeaderRow,
+  OrgJoinIsPaidFinetunedModels,
+} from "../../../lib/types";
 
 export const config = {
   runtime: "edge",
@@ -132,16 +136,13 @@ export default async function handler(req: NextRequest) {
 
     let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
-      const startTime = Date.now();
       if (redis) {
         const redisStored = await redis.get(orgApiKey);
         if (redisStored) {
-          console.log("Got org from Redis");
           org = redisStored as OrgJoinIsPaidFinetunedModels;
         }
       }
       if (!org) {
-        console.log("Get org from DB");
         const authRes = await supabase
           .from("organizations")
           .select("*, is_paid(*), finetuned_models(*)")
@@ -149,12 +150,8 @@ export default async function handler(req: NextRequest) {
         if (authRes.error) throw new Error(authRes.error.message);
         // Set org in Redis for 30 minutes
         redis?.setex(orgApiKey, 60 * 30, JSON.stringify(authRes.data?.[0]));
-        console.log("Set org in Redis");
         org = authRes.data?.[0] ?? null;
       }
-      console.log(
-        "Time to get org from DB or Redis: " + (Date.now() - startTime),
-      );
     }
     if (!org) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
@@ -254,29 +251,48 @@ export default async function handler(req: NextRequest) {
         `Conversation ID provided: ${requestData.conversation_id}. Fetching previous messages`,
       );
       conversationId = requestData.conversation_id;
-      const convResp = await supabase
-        .from("chat_messages")
-        .select()
-        .eq("conversation_id", requestData.conversation_id)
-        .eq("org_id", org.id)
-        .order("conversation_index", { ascending: true });
+      if (redis) {
+        const redisStored = await redis.get(
+          `chat_messages_${org.id}_${requestData.conversation_id}`,
+        );
+        if (redisStored) {
+          ({ previousMessages, language } = redisStored as {
+            previousMessages: GPTMessageInclSummary[];
+            language: string;
+          });
+        }
+      }
+      if (!previousMessages) {
+        const convResp = await supabase
+          .from("chat_messages")
+          .select()
+          .eq("conversation_id", requestData.conversation_id)
+          .eq("org_id", org.id)
+          .order("conversation_index", { ascending: true });
 
-      if (convResp.error) throw new Error(convResp.error.message);
-      const conversation = convResp.data.map(DBChatMessageToGPT);
+        if (convResp.error) throw new Error(convResp.error.message);
+        const conversation = convResp.data.map(DBChatMessageToGPT);
 
-      if (!conversation) {
-        return new Response(
-          JSON.stringify({
-            error: `Conversation with ID=${requestData.conversation_id} not found`,
-          }),
-          { status: 404, headers },
+        if (!conversation) {
+          return new Response(
+            JSON.stringify({
+              error: `Conversation with ID=${requestData.conversation_id} not found`,
+            }),
+            { status: 404, headers },
+          );
+        }
+        previousMessages = conversation;
+        // If the language is set for any message in the conversation, use that
+        language = convResp.data.find((m) => !!m.language)?.language ?? null;
+        // Set previous messages in Redis for 30 minutes
+        redis?.setex(
+          `chat_messages_${org.id}_${requestData.conversation_id}`,
+          60 * 30,
+          JSON.stringify({ previousMessages, language }),
         );
       }
-      previousMessages = conversation;
-
-      // If the language is set for any message in the conversation, use that
-      language = convResp.data.find((m) => !!m.language)?.language ?? null;
     } else {
+      // TODO: Move to the end
       console.log(`No conversation ID provided. Creating new conversation`);
       const convoInsertRes = await supabase
         .from("conversations")
@@ -321,13 +337,28 @@ export default async function handler(req: NextRequest) {
 
     // Get the active actions from the DB which we can choose between
     // Below gets the action tags and actions that are active
-    const actionTagResp = await supabase
-      .from("action_tags")
-      .select("*,actions!inner(*),apis(*, fixed_headers(*))")
-      .eq("org_id", org.id)
-      .eq("actions.active", true);
-    if (actionTagResp.error) throw new Error(actionTagResp.error.message);
-    const actionsWithTags = actionTagResp.data;
+    let actionsWithTags: ActionTagJoinApiAndHeaders[] | null = null;
+    if (redis) {
+      const redisStored = await redis.get(`action_tags_${org.id}`);
+      if (redisStored) {
+        actionsWithTags = redisStored as ActionTagJoinApiAndHeaders[];
+      }
+    }
+    if (!actionsWithTags) {
+      const actionTagResp = await supabase
+        .from("action_tags")
+        .select("*,actions!inner(*),apis(*, fixed_headers(*))")
+        .eq("org_id", org.id)
+        .eq("actions.active", true);
+      if (actionTagResp.error) throw new Error(actionTagResp.error.message);
+      actionsWithTags = actionTagResp.data;
+      // Set action tags in Redis for 30 minutes
+      redis?.setex(
+        `action_tags_${org.id}`,
+        60 * 30,
+        JSON.stringify(actionsWithTags),
+      );
+    }
 
     const currentHost = getHost(req);
 
@@ -338,7 +369,7 @@ export default async function handler(req: NextRequest) {
         // Check api_params names match apis in apis table
         const unmatchedApiParamNames = requestData.api_params
           .map((api_param) => {
-            const matchedApi = actionsWithTags.find(
+            const matchedApi = actionsWithTags!.find(
               (a) => a.apis?.name === api_param.name,
             );
             return matchedApi ? null : api_param.name;
