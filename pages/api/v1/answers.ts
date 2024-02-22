@@ -132,12 +132,29 @@ export default async function handler(req: NextRequest) {
 
     let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
-      const authRes = await supabase
-        .from("organizations")
-        .select("*, is_paid(*), finetuned_models(*)")
-        .eq("api_key", orgApiKey);
-      if (authRes.error) throw new Error(authRes.error.message);
-      org = authRes.data?.[0] ?? null;
+      const startTime = Date.now();
+      if (redis) {
+        const redisStored = await redis.get(orgApiKey);
+        if (redisStored) {
+          console.log("Got org from Redis");
+          org = redisStored as OrgJoinIsPaidFinetunedModels;
+        }
+      }
+      if (!org) {
+        console.log("Get org from DB");
+        const authRes = await supabase
+          .from("organizations")
+          .select("*, is_paid(*), finetuned_models(*)")
+          .eq("api_key", orgApiKey);
+        if (authRes.error) throw new Error(authRes.error.message);
+        // Set org in Redis for 30 minutes
+        redis?.setex(orgApiKey, 60 * 30, JSON.stringify(authRes.data?.[0]));
+        console.log("Set org in Redis");
+        org = authRes.data?.[0] ?? null;
+      }
+      console.log(
+        "Time to get org from DB or Redis: " + (Date.now() - startTime),
+      );
     }
     if (!org) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
