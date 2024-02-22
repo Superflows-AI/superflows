@@ -1,23 +1,19 @@
-import { snakeToCamel } from "../../utils";
+import { capitaliseFirstLetter, snakeToCamel } from "../../utils";
 import { ChatGPTMessage } from "../../models";
-
-if (!process.env.CLARIFICATION_MODEL) {
-  throw new Error("CLARIFICATION_MODEL env var is not defined");
-}
+import { searchDocsActionName } from "../../builtinActions";
+import { parseTellUser } from "./utils";
 
 export const clarificationLLMParams = {
   temperature: 0,
   max_tokens: 400,
   stop: ['"""', "```", "Clear: True", "Clear: true"],
-  model: process.env.CLARIFICATION_MODEL,
 };
 
 export function clarificationPrompt(args: {
-  question: string;
+  chatHistory: ChatGPTMessage[];
   selectedActions: { name: string; filtering_description: string }[];
   orgInfo: { name: string; description: string };
   userDescription: string;
-  searchDocsEnabled: boolean;
 }): ChatGPTMessage[] {
   const builtinActions = [
     {
@@ -25,11 +21,8 @@ export function clarificationPrompt(args: {
       filtering_description: "Plots a graph or table to be shown to the user",
     },
   ];
-  if (args.searchDocsEnabled) {
-    builtinActions.push({
-      name: "search_docs",
-      filtering_description: `Search ${args.orgInfo.name} documentation for questions on how to achieve tasks in the platform`,
-    });
+  if (args.chatHistory[args.chatHistory.length - 1].role === "assistant") {
+    throw new Error("Last message must be from user");
   }
 
   const actionDescriptions = args.selectedActions
@@ -39,7 +32,7 @@ export function clarificationPrompt(args: {
         `${idx + 1}. ${snakeToCamel(a.name)}: ${a.filtering_description}`,
     )
     .join("\n");
-  return [
+  const out: ChatGPTMessage[] = [
     {
       role: "system",
       content: `You are ${
@@ -80,7 +73,19 @@ Clear: True
 Answer type of page is clear. A metric is defined 'unique visitors' and a date range is specified 'last 6 months'.
 
 ---
+${
+  args.selectedActions.find((a) => a.name === searchDocsActionName)
+    ? `
+User: How do I add a user?
 
+Clear: True
+
+This question requires searching the ${args.orgInfo.name} documentation since it's a how-to question.
+
+---
+`
+    : ""
+}
 User: Which warehouse usually has the most items stored?
 
 Clear: False
@@ -117,23 +122,50 @@ Clear: False | True
 Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure!"). Be concise
 """`,
     },
-    {
-      role: "user",
-      content: args.question,
-    },
+    args.chatHistory[args.chatHistory.length - 1],
     {
       role: "assistant",
       content: "Thoughts:\n1. ",
     },
   ];
+  if (args.chatHistory.length > 1) {
+    // If there are previous messages, add them as a chat history - reason for this is because otherwise
+    // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
+    out[0].content += `
+
+CHAT HISTORY SUMMARY:
+"""
+${args.chatHistory
+  .slice(0, -1)
+  .filter(
+    (m, i) =>
+      m.role === "user" ||
+      (m.role === "assistant" &&
+        args.chatHistory[i + 1].role === "user" &&
+        parseTellUser(m.content)),
+  )
+  .map(
+    (m) =>
+      `${m.role === "user" ? "Human" : "Assistant"}: ${
+        m.role === "user" ? m.content : parseTellUser(m.content)
+      }`,
+  )
+  .join("\n\n")}
+"""`;
+  }
+  return out;
 }
 
-export function parseClarificationOutput(output: string): {
+export interface ParsedClarificationOutput {
   thoughts: string;
   tellUser: string;
   clear: boolean;
-} {
-  let thoughts = output.match(/^Thoughts:\s+((\d\. .+\n?)+)/)?.[1] || "";
+}
+
+export function parseClarificationOutput(
+  output: string,
+): ParsedClarificationOutput {
+  let thoughts = output.match(/^Thoughts:\s+((\d\.?\s?.*\n?)+)/)?.[1] || "";
   thoughts = thoughts.trim();
 
   let tellUser = output.split("Tell user:")[1] || "";

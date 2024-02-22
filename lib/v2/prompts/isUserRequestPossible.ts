@@ -1,31 +1,24 @@
-import { snakeToCamel } from "../../utils";
+import { capitaliseFirstLetter, snakeToCamel } from "../../utils";
 import { ChatGPTMessage } from "../../models";
-
-if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
-  throw new Error("IS_USER_REQUEST_POSSIBLE_MODEL env var is not defined");
-}
+import { parseTellUser } from "./utils";
+import { Organization } from "../../types";
 
 export const isUserRequestPossibleLLMParams = {
   temperature: 0,
   max_tokens: 400,
   stop: ['"""', "```", "Possible: True", "Possible: true"],
-  model: process.env.IS_USER_REQUEST_POSSIBLE_MODEL,
 };
 
-function isUserRequestPossiblePrompt(args: {
-  question: string;
+export function isUserRequestPossiblePrompt(args: {
+  chatHistory: ChatGPTMessage[];
   selectedActions: { name: string; filtering_description: string }[];
-  orgInfo: { name: string; description: string };
+  orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
 }): ChatGPTMessage[] {
   const builtinActions = [
     {
       name: "plot_graph",
       filtering_description: "Plots a graph or table to be shown to the user",
-    },
-    {
-      name: "search_docs",
-      filtering_description: `Search ${args.orgInfo.name} documentation for questions on how to achieve tasks in the platform`,
     },
   ];
   const actionDescriptions = builtinActions
@@ -35,7 +28,7 @@ function isUserRequestPossiblePrompt(args: {
         `${idx + 1}. ${snakeToCamel(a.name)}: ${a.filtering_description}`,
     )
     .join("\n");
-  return [
+  const out: ChatGPTMessage[] = [
     {
       role: "system",
       content: `You are ${args.orgInfo.name} AI. Your task is to decide if a user's request is possible to answer by writing code using FUNCTIONS. If the request is not possible, you must inform the user. Code can aggregate, filter, sort and transform data returned by FUNCTIONS.
@@ -50,7 +43,8 @@ ${actionDescriptions}
 RULES:
 1. Decide whether the user's request is possible by writing code that calls FUNCTIONS and output 'Possible: True | False'
 2. DO NOT tell the user about FUNCTIONS or that you are using them
-3. Respond in the following format (Thoughts as a numbered list, 'Possible' and 'Tell user'):
+3. DO NOT answer questions which are unrelated to ${args.orgInfo.name}
+4. Respond in the following format (Thoughts as a numbered list, 'Possible' and 'Tell user'):
 """
 Thoughts:
 1. Think step-by-step how to use FUNCTIONS to answer the user's request
@@ -65,21 +59,55 @@ Possible: False | True
 Tell user: Inform the user that their request is impossible. Mention the capabilities. Be concise. DO NOT mention FUNCTIONS
 """`,
     },
-    {
-      role: "user",
-      content: args.question,
-    },
   ];
+  if (args.chatHistory.length === 1) {
+    // If this is the first message, add it as a normal user message
+    out.push(args.chatHistory[args.chatHistory.length - 1]);
+  } else {
+    // If there are previous messages, add them as a chat history - reason for this is because otherwise
+    // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
+    out[0].content += `
+
+CHAT HISTORY SUMMARY:
+"""
+${args.chatHistory
+  .filter(
+    (m, i) =>
+      m.role === "user" ||
+      (m.role === "assistant" &&
+        args.chatHistory[i + 1].role === "user" &&
+        parseTellUser(m.content)),
+  )
+  .map(
+    (m) =>
+      `${capitaliseFirstLetter(m.role)}: ${
+        m.role === "user" ? m.content : parseTellUser(m.content)
+      }`,
+  )
+  .join("\n\n")}
+"""`;
+  }
+  return out;
 }
 
-export function parseRequestPossibleOutput(output: string): {
+export interface ParsedRequestPossibleOutput {
   thoughts: string;
   tellUser: string;
   possible: boolean;
-} {
-  output = output.trim();
+}
+
+export function parseRequestPossibleOutput(
+  output: string,
+): ParsedRequestPossibleOutput {
   // function parseOutput(output) {
-  let thoughts = output.match(/^Thoughts:\s+((\d\. .+\n?)+)/)?.[1] || "";
+  if (!output.trim()) {
+    return { thoughts: "", possible: true, tellUser: "" };
+  }
+  if ("Thoughts:\n1. ".includes(output)) {
+    return { thoughts: "", possible: false, tellUser: "" };
+  }
+  output = output.trim();
+  let thoughts = output.match(/^Thoughts:\s+((\d\.? ?.*\n?)+)/)?.[1] || "";
   thoughts = thoughts.trim();
 
   const possible = !Boolean(
@@ -91,13 +119,12 @@ export function parseRequestPossibleOutput(output: string): {
   let tellUser = "";
   if (output.includes("Tell user:")) {
     tellUser = output.split("Tell user:")[1];
-  } else if (thoughts) {
-    tellUser = output.replace(/Thoughts:/g, "").replace(thoughts, "");
-  } else if (output.includes("Possible:")) {
+  } else if (thoughts || output.match(/^Possible:?/m)) {
     tellUser = output
       .replace(/Thoughts:/g, "")
       .replace(thoughts, "")
-      .replace(/^Possible: ([Tt]rue|[Ff]alse)/m, "");
+      .replace(/^Possible:?\s?([Tt]rue|[Ff]alse)?$/m, "")
+      .replace(/^Tell( user)?/m, "");
   } else {
     tellUser = output;
   }
