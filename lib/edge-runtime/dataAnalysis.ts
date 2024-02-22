@@ -89,9 +89,11 @@ export async function runDataAnalysis(
   // First, split responseMessages into an array of pairs of assistant message & sequence of
   // function messages that follow it
   const assistantFnMessagePairs = getAssistantFnMessagePairs(relevantMessages);
+  console.log("assistantFnMessagePairs", assistantFnMessagePairs);
 
   // Then convert to 'CalledAction' format
   const calledActions = getCalledActions(assistantFnMessagePairs, actions);
+  console.log("calledActions", calledActions);
   const varNames = getVarNames(calledActions);
   console.log(
     "varNames",
@@ -214,6 +216,10 @@ export function getCalledActions(
   })[],
   actions: Action[],
 ): CalledAction[] {
+  console.log(
+    "actions",
+    actions.map((a) => a === undefined),
+  );
   const calledActions = assistantFnMessagePairs
     .map((pair) => {
       const parsedOutput = parseOutput(pair.content);
@@ -222,12 +228,18 @@ export function getCalledActions(
       return (
         parsedOutput.commands
           // Remove the data analysis action
-          .filter((command) => command?.name !== dataAnalysisActionName)
+          .filter(
+            (command) =>
+              ![dataAnalysisActionName, "instruct_coder"].includes(
+                command?.name,
+              ),
+          )
           .map((command, idx) => {
             let output: Json = pair.functionMessages[idx]?.content;
             try {
               output = JSON.parse(pair.functionMessages[idx]?.content);
             } catch {}
+            console.log(`command ${idx}:`, command);
             return {
               action: actions.find((a) => a.name === command.name)!,
               args: command.args,
@@ -237,6 +249,10 @@ export function getCalledActions(
       );
     })
     .flat();
+  console.log(
+    "calledActions",
+    calledActions.map((a) => a === undefined),
+  );
 
   return calledActions
     .reverse()
@@ -245,7 +261,7 @@ export function getCalledActions(
       const earliestCall =
         calledActions.findIndex(
           (otherAction) =>
-            otherAction.action.name === a.action.name &&
+            otherAction.action?.name === a.action?.name &&
             _.isEqual(otherAction.args, a.args),
         ) ?? idx;
       return idx === earliestCall;

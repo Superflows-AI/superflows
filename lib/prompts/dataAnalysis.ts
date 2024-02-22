@@ -139,7 +139,8 @@ function formatValueForVarName(key: string, value: any): string {
 export function getVarNames(calledActions: CalledAction[]): string[] {
   const varNames: string[] = [];
   for (const action of calledActions) {
-    const funcName = snakeToCamel(action.action.name);
+    console.log("action", action.action);
+    const funcName = snakeToCamel(action.action?.name);
     // If function name unique, add that and move on
     const baseAttempt = funcName + "Output";
     if (!varNames.includes(baseAttempt)) {
