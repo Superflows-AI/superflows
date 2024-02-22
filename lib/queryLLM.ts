@@ -390,11 +390,13 @@ ${
 }`;
 }
 
-function GPTChatFormatToClaudeInstant(chatMessages: ChatGPTMessage[]): string {
+export function GPTChatFormatToClaudeInstant(
+  chatMessages: ChatGPTMessage[],
+): string {
   const roleToName = {
     system: "",
-    user: "Human: ",
-    assistant: "Assistant: ",
+    user: "Human:\n",
+    assistant: "Assistant:\n",
     function: "Function: ", // Should never be used in Claude Instant
   };
   if (chatMessages.filter((m) => m.role === "function").length > 0) {
