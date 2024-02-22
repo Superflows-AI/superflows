@@ -219,8 +219,8 @@ export async function runDataAnalysis(
     );
     return { error: "Failed to execute code" };
   }
-  // Save to DB for possible reuse later
-  await saveAnalyticsToDB(
+  // Save to DB for possible reuse later - run async
+  void saveAnalyticsToDB(
     dataAnalysisPrompt[1].content,
     llmResponse,
     org.id,
