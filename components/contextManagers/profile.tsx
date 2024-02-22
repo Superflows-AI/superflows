@@ -7,12 +7,12 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
-import { OrgJoinIsPaid, OrgJoinIsPaidFinetunedModels } from "../../lib/types";
+import { OrgJoinIsPaidFinetunedModelsFrontend } from "../../lib/types";
 import { Session, useSession } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/router";
 
 type ProfilesRow = Database["public"]["Tables"]["profiles"]["Row"] & {
-  organizations: OrgJoinIsPaidFinetunedModels | null;
+  organizations: OrgJoinIsPaidFinetunedModelsFrontend | null;
   onboarding_steps: boolean[];
 };
 
