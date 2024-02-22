@@ -15,6 +15,10 @@ export type Api = Database["public"]["Tables"]["apis"]["Row"];
 
 export type ActionTagJoin = ActionTag & { actions: Action[] };
 
+export type ActionTagJoinApiAndHeaders = ActionTagJoin & {
+  apis: (Api & { fixed_headers: HeaderRow[] }) | null;
+};
+
 export type DBChatMessage =
   Database["public"]["Tables"]["chat_messages"]["Row"];
 
