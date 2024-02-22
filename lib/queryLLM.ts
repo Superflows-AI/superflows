@@ -9,7 +9,6 @@ import {
   TogetherAIResponse,
 } from "./models";
 import { removeEmptyCharacters } from "./utils";
-import { countTokens } from "@anthropic-ai/tokenizer";
 
 export const defaultParams: ChatGPTParams = {
   // This max tokens number is the maximum output tokens
