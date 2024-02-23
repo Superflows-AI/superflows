@@ -4,12 +4,16 @@ import {
   parseAnthropicStreamedData,
   parseGPTStreamedData,
 } from "../../parsers/parsers";
-import { replacePlaceholdersDuringStreaming } from "../../edge-runtime/angelaUtils";
+import {
+  replacePlaceholdersDuringStreaming,
+  streamResponseToUser,
+} from "../../edge-runtime/angelaUtils";
 import {
   GPTChatFormatToClaudeInstant,
   streamLLMResponse,
 } from "../../queryLLM";
 import {
+  impossibleExplanation,
   isUserRequestPossibleLLMParams,
   isUserRequestPossiblePrompt,
   ParsedRequestPossibleOutput,
@@ -34,14 +38,14 @@ if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
 }
 const isUserRequestPossibleModel = process.env.IS_USER_REQUEST_POSSIBLE_MODEL;
 
-export async function runClarificationAndStreamResponse(
-  chatHistory: ChatGPTMessage[],
-  selectedActions: Action[],
-  orgInfo: Pick<Organization, "name" | "description">,
-  userDescription: string,
-  conversationId: number,
-  streamInfo: (step: StreamingStepInput) => void,
-): Promise<{
+export async function runClarificationAndStreamResponse(args: {
+  chatHistory: ChatGPTMessage[];
+  selectedActions: Action[];
+  orgInfo: Pick<Organization, "name" | "description">;
+  userDescription: string;
+  conversationId: number;
+  streamInfo: (step: StreamingStepInput) => void;
+}): Promise<{
   message: ChatGPTMessage | null;
   possible: boolean;
   clear: boolean;
@@ -61,12 +65,7 @@ export async function runClarificationAndStreamResponse(
       | { output: string; parsed: ParsedRequestPossibleOutput }
       | { error: string }
     > => {
-      const prompt = isUserRequestPossiblePrompt({
-        chatHistory,
-        selectedActions,
-        orgInfo,
-        userDescription,
-      });
+      const prompt = isUserRequestPossiblePrompt(args);
       console.log("Prompt for isUserRequestPossible: ", prompt[0].content);
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
@@ -75,9 +74,9 @@ export async function runClarificationAndStreamResponse(
       );
       if (res === null || "message" in res) {
         console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
-            res,
-          )}`,
+          `OpenAI API call failed for conversation with id: ${
+            args.conversationId
+          }. The error was: ${JSON.stringify(res)}`,
         );
         return { error: "Call to Language Model API failed" };
       }
@@ -123,7 +122,6 @@ export async function runClarificationAndStreamResponse(
             placeholderToOriginalMap,
           ));
           if (content) {
-            console.log("Poss:", content);
             parsedOutput = parseRequestPossibleOutput(rawOutput);
             // If the output contains a "Tell user:" section, it's impossible. Also stream the reason to the user
             if (isPossible === null && parsedOutput.tellUser) {
@@ -131,12 +129,47 @@ export async function runClarificationAndStreamResponse(
               isPossible = false;
             }
             if (isPossible === false) {
-              streamInfo({ role: "assistant", content });
+              args.streamInfo({ role: "assistant", content });
               streamedText += content;
             }
           }
         }
         done = contentItems.done;
+      }
+      // If not possible, yet no explanation of why, we do _another_ stream to get the explanation
+      if (isPossible === false && streamedText === "") {
+        console.log("No tell user section, so now streaming explanation!");
+        const prompt = impossibleExplanation({
+          thoughts: parsedOutput!.thoughts,
+          ...args,
+        });
+        console.log("Prompt for impossibleExplanation: ", prompt[0].content);
+        const res = await exponentialRetryWrapper(
+          streamLLMResponse,
+          [prompt, { temperature: 0.6, max_tokens: 300 }, "gpt-3.5-turbo"],
+          3,
+        );
+        if (res === null || "message" in res) {
+          console.error(
+            `OpenAI API call failed for conversation with id: ${
+              args.conversationId
+            }. The error was: ${JSON.stringify(res)}`,
+          );
+          args.streamInfo({
+            role: "error",
+            content: "Call to Language Model API failed",
+          });
+          return {
+            output: rawOutput,
+            parsed: parseRequestPossibleOutput(rawOutput),
+          };
+        }
+
+        // Stream response chunk by chunk
+        rawOutput += `\n\nTell user:\n${await streamResponseToUser(
+          res,
+          args.streamInfo,
+        )}`;
       }
 
       return {
@@ -148,12 +181,7 @@ export async function runClarificationAndStreamResponse(
       { output: string; parsed: ParsedClarificationOutput } | { error: string }
     > => {
       // Run clarification
-      const prompt = clarificationPrompt({
-        chatHistory,
-        selectedActions,
-        orgInfo,
-        userDescription,
-      });
+      const prompt = clarificationPrompt(args);
       console.log(
         "Prompt for clarification: ",
         GPTChatFormatToClaudeInstant(prompt),
@@ -165,9 +193,9 @@ export async function runClarificationAndStreamResponse(
       );
       if (res === null || "message" in res) {
         console.error(
-          `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
-            res,
-          )}`,
+          `OpenAI API call failed for conversation with id: ${
+            args.conversationId
+          }. The error was: ${JSON.stringify(res)}`,
         );
         return { error: "Call to Language Model API failed" };
       }
@@ -220,7 +248,7 @@ export async function runClarificationAndStreamResponse(
                 "isPossible is true, so now streaming clarification!",
               );
               const newText = parsedOutput.tellUser.replace(streamedText, "");
-              streamInfo({ role: "assistant", content: newText });
+              args.streamInfo({ role: "assistant", content: newText });
               streamedText += newText;
             }
           }
@@ -236,10 +264,8 @@ export async function runClarificationAndStreamResponse(
   if (!("error" in outs[1]) && !outs[1].parsed.clear && !streamedText) {
     console.log("Anthropic beat GPT!");
     streamedText = outs[1].parsed.tellUser;
-    streamInfo({ role: "assistant", content: outs[1].parsed.tellUser });
+    args.streamInfo({ role: "assistant", content: outs[1].parsed.tellUser });
   }
-
-  // TODO: If not possible, but clear, but no tell user section in isPossible output?
 
   // TODO: Add caching of isPossible and clarification outputs
   const possible = "error" in outs[0] || outs[0].parsed.possible;
