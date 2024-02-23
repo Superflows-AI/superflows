@@ -150,14 +150,14 @@ export async function Bertie( // Bertie will eat you for breakfast
     actions.unshift(getSearchDocsAction(org, currentHost));
   }
 
-  const clarificationOutput = await runClarificationAndStreamResponse(
+  const clarificationOutput = await runClarificationAndStreamResponse({
     chatHistory,
-    actions,
-    org,
-    reqData.user_description ?? "",
+    selectedActions: actions,
+    orgInfo: org,
+    userDescription: reqData.user_description ?? "",
     conversationId,
     streamInfo,
-  );
+  });
   console.log("Clarification output:", clarificationOutput);
   if (!clarificationOutput.clear || !clarificationOutput.possible) {
     chatHistory.push(clarificationOutput.message!);
