@@ -1,10 +1,6 @@
 import { ChatGPTMessage } from "../../models";
 import { searchDocsActionName } from "../../builtinActions";
-import {
-  getActionFilteringDescriptions,
-  getChatHistorySummary,
-  parseTellUser,
-} from "./utils";
+import { getActionFilteringDescriptions, getChatHistorySummary } from "./utils";
 import { getIntroText } from "./chatBot";
 
 export const clarificationLLMParams = {
@@ -125,7 +121,7 @@ Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure
 
 CHAT HISTORY SUMMARY:
 """
-${getChatHistorySummary(args.chatHistory)}
+${getChatHistorySummary(args.chatHistory.slice(0, -1), true)}
 """`;
   }
   return out;
