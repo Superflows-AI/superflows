@@ -102,123 +102,133 @@ export async function runDataAnalysis(
     supabase,
   );
   console.log("LLM response from cache:", llmResponse);
-
-  let graphData: ExecuteCode2Item[] | null = null,
-    nLoops = 0;
-  while (graphData === null && nLoops < 3) {
-    defaultDataAnalysisParams = {
-      ...defaultDataAnalysisParams,
-      temperature: nLoops === 0 ? 0.1 : 0.8,
-    };
-    nLoops += 1;
-    // const graphDatas = (
-    // await Promise.all(
-    //   [1, 2, 3].map(async (i) => {
-    if (!llmResponse) {
-      llmResponse = await exponentialRetryWrapper(
-        getLLMResponse,
-        [
-          dataAnalysisPrompt,
-          defaultDataAnalysisParams,
-          process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
-        ],
-        3,
-      );
-      console.info("\nRaw LLM response:", llmResponse);
-    }
-
+  if (llmResponse) {
     // Parse the result
     let parsedCode = parseDataAnalysis(llmResponse, filteredActions);
-    if (parsedCode === null) {
-      llmResponse = "";
-      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-      continue;
-    }
-    if ("error" in parsedCode) return parsedCode;
-    console.info("Parsed LLM response:", parsedCode.code);
+    if (parsedCode !== null) {
+      if ("error" in parsedCode) return parsedCode;
+      console.info("Parsed LLM response from cache:", parsedCode.code);
+      // Send code to supabase edge function to execute
+      const res = await supabase.functions.invoke("execute-code-2", {
+        body: JSON.stringify({
+          actionsPlusApi: filteredActions,
+          org,
+          code: parsedCode.code,
+          userApiKey,
+        }),
+      });
 
-    // Send code to supabase edge function to execute
-    const res = await supabase.functions.invoke("execute-code-2", {
-      body: JSON.stringify({
-        actionsPlusApi: filteredActions,
-        org,
-        code: parsedCode.code,
-        userApiKey,
-      }),
-    });
-
-    if (res.error) {
+      if (!res.error) {
+        const returnedData = res.data as ExecuteCode2Item[] | null;
+        const codeOk = checkCodeExecutionOutput(returnedData, conversationId);
+        if (codeOk) {
+          // Save to DB for possible reuse later - run async
+          void saveAnalyticsToDB(
+            dataAnalysisPrompt[1].content,
+            llmResponse,
+            org.id,
+            dbData,
+            true,
+            filteredActions.map((a) => a.name),
+          );
+          return returnedData;
+        }
+      }
       console.error(
         `Error executing code for conversation ${conversationId}: ${res.error}`,
       );
-      llmResponse = "";
-      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-      continue;
     }
+  }
 
-    const returnedData = res.data as ExecuteCode2Item[] | null;
-    // If data field is null
-    if (returnedData === null || returnedData.length === 0) {
-      console.error(
-        `Failed to write valid code for conversation ${conversationId}, attempt ${nLoops}/3`,
-      );
-      llmResponse = "";
-      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-      continue;
-    }
-    // If error messages in the data output
-    const errorMessages = returnedData.filter((m) => m.type === "error");
-    if (errorMessages.length > 0) {
-      console.error(
-        `Error executing code for conversation ${conversationId}, attempt ${nLoops}/3:\n${errorMessages
-          // @ts-ignore
-          .map((m) => m.args.message)
-          .join("\n")}`,
-      );
-      llmResponse = "";
-      streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-      continue;
-    }
-    // If 1 plot with missing data
-    const plotMessages = returnedData.filter((m) => m.type === "plot");
-    if (plotMessages.length === 1) {
-      const plotArgs = plotMessages[0].args as BertieGraphData;
-      if (
-        // No data (exception is if it's a table or value)
-        (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
-        !plotArgs.data.some((d) => Object.keys(d).length > 1)
-      ) {
-        console.error(
-          `Missing columns in data output by code for conversation ${conversationId}, attempt ${nLoops}/3:\n${plotMessages
-            // @ts-ignore
-            .map((m) => m.args.message)
-            .join("\n")}`,
+  const graphData = await Promise.race(
+    [1, 2, 3].map(async (i) => {
+      console.log("\nAsync run", i);
+      let parallelGraphData: ExecuteCode2Item[] | null = null,
+        nLoops = 0;
+      while (parallelGraphData === null && nLoops < 3) {
+        defaultDataAnalysisParams = {
+          ...defaultDataAnalysisParams,
+          temperature: nLoops === 0 ? 0.1 : 0.8,
+        };
+        nLoops += 1;
+        const parallelLlmResponse = await exponentialRetryWrapper(
+          getLLMResponse,
+          [
+            dataAnalysisPrompt,
+            defaultDataAnalysisParams,
+            process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
+          ],
+          3,
         );
-        llmResponse = "";
-        streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-        continue;
-      }
-    }
+        console.info("\nRaw LLM response:", parallelLlmResponse);
 
-    graphData = returnedData;
-    console.info(
-      "Data analysis response:",
-      graphData.map((item) =>
-        item.type === "plot"
-          ? {
-              type: item.type,
-              args: { ...item.args, data: item.args.data?.slice(0, 5) },
-            }
-          : item,
-      ),
-    );
-  }
-  if (graphData === null) {
-    console.error(
-      `Failed to execute code for conversation ${conversationId} after 3 attempts`,
-    );
-    return { error: "Failed to execute code" };
-  }
+        // Parse the result
+        let parsedCode = parseDataAnalysis(
+          parallelLlmResponse,
+          filteredActions,
+        );
+        if (parsedCode === null) {
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+        if ("error" in parsedCode) return parsedCode;
+        console.info("Parsed LLM response:", parsedCode.code);
+
+        // Send code to supabase edge function to execute
+        const res = await supabase.functions.invoke("execute-code-2", {
+          body: JSON.stringify({
+            actionsPlusApi: filteredActions,
+            org,
+            code: parsedCode.code,
+            userApiKey,
+          }),
+        });
+
+        if (res.error) {
+          console.error(
+            `Error executing code for conversation ${conversationId}: ${res.error}`,
+          );
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+
+        const returnedData = res.data as ExecuteCode2Item[] | null;
+        const codeOk = checkCodeExecutionOutput(
+          returnedData,
+          conversationId,
+          nLoops,
+        );
+        if (!codeOk) {
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+        // For type-safety (doesn't ever get called)
+        if (returnedData === null) continue;
+
+        parallelGraphData = returnedData;
+      }
+      if (parallelGraphData === null) {
+        console.error(
+          `Failed to execute code for conversation ${conversationId} after 3 attempts`,
+        );
+        return { error: "Failed to execute code" };
+      }
+      console.log(`Async run ${i} succeeded`);
+      return parallelGraphData;
+    }),
+  );
+  if ("error" in graphData) return { error: "Failed to execute code" };
+  console.info(
+    "Data analysis response:",
+    graphData.map((item) =>
+      item.type === "plot"
+        ? {
+            type: item.type,
+            args: { ...item.args, data: item.args.data?.slice(0, 5) },
+          }
+        : item,
+    ),
+  );
   // Save to DB for possible reuse later - run async
   void saveAnalyticsToDB(
     dataAnalysisPrompt[1].content,
@@ -229,6 +239,56 @@ export async function runDataAnalysis(
     filteredActions.map((a) => a.name),
   );
   return graphData;
+}
+
+function checkCodeExecutionOutput(
+  returnedData: ExecuteCode2Item[] | null,
+  conversationId: number,
+  nLoops?: number,
+): boolean {
+  // If data field is null
+  if (returnedData === null || returnedData.length === 0) {
+    console.error(
+      `Failed to write valid code for conversation ${conversationId}${
+        nLoops ? `, attempt ${nLoops}/3` : ""
+      }`,
+    );
+    return false;
+  }
+  // If error messages in the data output
+  const errorMessages = returnedData.filter((m) => m.type === "error");
+  if (errorMessages.length > 0) {
+    console.error(
+      `Error executing code for conversation ${conversationId}${
+        nLoops ? `, attempt ${nLoops}/3` : ""
+      }:\n${errorMessages
+        // @ts-ignore
+        .map((m) => m.args.message)
+        .join("\n")}`,
+    );
+    return false;
+  }
+  // If 1 plot with missing data
+  const plotMessages = returnedData.filter((m) => m.type === "plot");
+  if (plotMessages.length === 1) {
+    const plotArgs = plotMessages[0].args as BertieGraphData;
+    if (
+      // No data (exception is if it's a table or value)
+      (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
+      !plotArgs.data.some((d) => Object.keys(d).length > 1)
+    ) {
+      console.error(
+        `Missing columns in data output by code for conversation ${conversationId}${
+          nLoops ? `, attempt ${nLoops}/3` : ""
+        }:\n${plotMessages
+          // @ts-ignore
+          .map((m) => m.args.message)
+          .join("\n")}`,
+      );
+      return false;
+    }
+  }
+  return true;
 }
 
 export function convertToGraphData(
