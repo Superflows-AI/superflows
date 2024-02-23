@@ -231,6 +231,7 @@ export async function runClarificationAndStreamResponse(args: {
             content = content.trimStart();
             first = false;
           }
+          console.log("Claude-instant content:", content);
           // Raw output is the actual output from the LLM!
           rawOutput += content;
           // What streams back to the user has the variables replaced with their real values
