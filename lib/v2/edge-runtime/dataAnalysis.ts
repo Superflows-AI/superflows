@@ -410,8 +410,10 @@ export function ensureDataWellFormatted(
   if (xMissing) {
     if (keys.has(xLabel)) {
       mapping.x = xLabel;
+      keys.delete(xLabel);
     } else if (keys.has(xLabel.toLowerCase())) {
       mapping.x = xLabel.toLowerCase();
+      keys.delete(xLabel.toLowerCase());
     }
   }
   // Below we remove the units from the labels (look for something in brackets and cut it)
