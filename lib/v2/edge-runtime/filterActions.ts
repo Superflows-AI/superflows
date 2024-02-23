@@ -31,12 +31,14 @@ export async function filterActions(
   // Run the filtering prompt in an ensemble of 3
   const ensembleSelectedFns = (
     await Promise.all(
-      [1, 2, 3].map(async () => {
+      [1, 2, 3].map(async (i) => {
+        console.log(`Running LLM ${i}`);
         const out = await exponentialRetryWrapper(
           getLLMResponse,
           [actionFilterPrompt, defaultFilterParams, model],
           3,
         );
+        console.log(`LLM ${i} output:`, out);
         if (out === "") return null;
         return parseActionFilteringOutput(
           out,
