@@ -37,7 +37,10 @@ export function getActionFilteringDescriptions(
     .join("\n");
 }
 
-export function getChatHistorySummary(chatHistory: ChatGPTMessage[]): string {
+export function getChatHistorySummary(
+  chatHistory: ChatGPTMessage[],
+  isClaude: boolean = false,
+): string {
   return chatHistory
     .slice(0, -1)
     .filter(
@@ -49,7 +52,7 @@ export function getChatHistorySummary(chatHistory: ChatGPTMessage[]): string {
     )
     .map(
       (m) =>
-        `${m.role === "user" ? "Human" : "Assistant"}: ${
+        `${m.role === "user" ? (isClaude ? "Human" : "User") : "Assistant"}: ${
           m.role === "user" ? m.content : parseTellUser(m.content)
         }`,
     )

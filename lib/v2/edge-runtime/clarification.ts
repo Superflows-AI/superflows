@@ -184,7 +184,7 @@ export async function runClarificationAndStreamResponse(args: {
       const prompt = clarificationPrompt(args);
       console.log(
         "Prompt for clarification: ",
-        GPTChatFormatToClaudeInstant(prompt),
+        GPTChatFormatToClaudeInstant(prompt).slice(500),
       );
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
