@@ -1,7 +1,11 @@
-import { capitaliseFirstLetter, snakeToCamel } from "../../utils";
 import { ChatGPTMessage } from "../../models";
 import { searchDocsActionName } from "../../builtinActions";
-import { parseTellUser } from "./utils";
+import {
+  getActionFilteringDescriptions,
+  getChatHistorySummary,
+  parseTellUser,
+} from "./utils";
+import { getIntroText } from "./chatBot";
 
 export const clarificationLLMParams = {
   temperature: 0,
@@ -15,35 +19,21 @@ export function clarificationPrompt(args: {
   orgInfo: { name: string; description: string };
   userDescription: string;
 }): ChatGPTMessage[] {
-  const builtinActions = [
-    {
-      name: "plot_graph",
-      filtering_description: "Plots a graph or table to be shown to the user",
-    },
-  ];
   if (args.chatHistory[args.chatHistory.length - 1].role === "assistant") {
     throw new Error("Last message must be from user");
   }
-
-  const actionDescriptions = args.selectedActions
-    .concat(builtinActions)
-    .map(
-      (a, idx) =>
-        `${idx + 1}. ${snakeToCamel(a.name)}: ${a.filtering_description}`,
-    )
-    .join("\n");
   const out: ChatGPTMessage[] = [
     {
       role: "system",
-      content: `You are ${
-        args.orgInfo.name
-      } AI. Your task is to filter out unclear user requests. If unclear, you should ask clarifying questions to help the user get the answer they are looking for. If it is clear, the user's request is passed to a coder to write code that calls FUNCTIONS to answer the user. The coder can use multiple FUNCTIONS and can perform data analysis when necessary.
+      content: `${getIntroText(
+        args.orgInfo,
+      )}. Your task is to filter out unclear user requests. If unclear, you should ask clarifying questions to help the user get the answer they are looking for. If it is clear, the user's request is passed to a coder to write code that calls FUNCTIONS to answer the user. The coder can use multiple FUNCTIONS and can perform data analysis when necessary.
 
 User description: ${args.userDescription}
 
 FUNCTIONS:
 \`\`\`
-${actionDescriptions}
+${getActionFilteringDescriptions(args.selectedActions)}
 \`\`\`
 
 Today's date is ${new Date().toISOString().split("T")[0]}
@@ -135,22 +125,7 @@ Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure
 
 CHAT HISTORY SUMMARY:
 """
-${args.chatHistory
-  .slice(0, -1)
-  .filter(
-    (m, i) =>
-      m.role === "user" ||
-      (m.role === "assistant" &&
-        args.chatHistory[i + 1].role === "user" &&
-        parseTellUser(m.content)),
-  )
-  .map(
-    (m) =>
-      `${m.role === "user" ? "Human" : "Assistant"}: ${
-        m.role === "user" ? m.content : parseTellUser(m.content)
-      }`,
-  )
-  .join("\n\n")}
+${getChatHistorySummary(args.chatHistory)}
 """`;
   }
   return out;

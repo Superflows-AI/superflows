@@ -1,7 +1,12 @@
-import { capitaliseFirstLetter, snakeToCamel } from "../../utils";
+import { capitaliseFirstLetter } from "../../utils";
 import { ChatGPTMessage } from "../../models";
-import { parseTellUser } from "./utils";
-import { Organization } from "../../types";
+import {
+  getActionFilteringDescriptions,
+  getChatHistorySummary,
+  parseTellUser,
+} from "./utils";
+import { Action, Organization } from "../../types";
+import { getIntroText } from "./chatBot";
 
 export const isUserRequestPossibleLLMParams = {
   temperature: 0,
@@ -11,33 +16,22 @@ export const isUserRequestPossibleLLMParams = {
 
 export function isUserRequestPossiblePrompt(args: {
   chatHistory: ChatGPTMessage[];
-  selectedActions: { name: string; filtering_description: string }[];
+  selectedActions: Pick<Action, "name" | "filtering_description">[];
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
 }): ChatGPTMessage[] {
-  const builtinActions = [
-    {
-      name: "plot_graph",
-      filtering_description: "Plots a graph or table to be shown to the user",
-    },
-  ];
-  const actionDescriptions = builtinActions
-    .concat(args.selectedActions)
-    .map(
-      (a, idx) =>
-        `${idx + 1}. ${snakeToCamel(a.name)}: ${a.filtering_description}`,
-    )
-    .join("\n");
   const out: ChatGPTMessage[] = [
     {
       role: "system",
-      content: `You are ${args.orgInfo.name} AI. Your task is to decide if a user's request is possible to answer by writing code using FUNCTIONS. If the request is not possible, you must inform the user. Code can aggregate, filter, sort and transform data returned by FUNCTIONS.
+      content: `${getIntroText(
+        args.orgInfo,
+      )}. Your task is to decide if a user's request is possible to answer by writing code using FUNCTIONS. If the request is not possible, you must inform the user. Code can aggregate, filter, sort and transform data returned by FUNCTIONS.
 
 User description: ${args.userDescription}
 
 FUNCTIONS:
 \`\`\`
-${actionDescriptions}
+${getActionFilteringDescriptions(args.selectedActions)}
 \`\`\`
 
 RULES:
@@ -70,21 +64,7 @@ Tell user: Inform the user that their request is impossible. Mention the capabil
 
 CHAT HISTORY SUMMARY:
 """
-${args.chatHistory
-  .filter(
-    (m, i) =>
-      m.role === "user" ||
-      (m.role === "assistant" &&
-        args.chatHistory[i + 1].role === "user" &&
-        parseTellUser(m.content)),
-  )
-  .map(
-    (m) =>
-      `${capitaliseFirstLetter(m.role)}: ${
-        m.role === "user" ? m.content : parseTellUser(m.content)
-      }`,
-  )
-  .join("\n\n")}
+${getChatHistorySummary(args.chatHistory)}
 """`;
   }
   return out;
@@ -131,4 +111,38 @@ export function parseRequestPossibleOutput(
   tellUser = tellUser.trim();
 
   return { thoughts, tellUser, possible };
+}
+
+export function impossibleExplanation(args: {
+  thoughts: string;
+  selectedActions: Pick<Action, "name" | "filtering_description">[];
+  chatHistory: ChatGPTMessage[];
+  orgInfo: { name: string; description: string };
+  userDescription: string;
+}): ChatGPTMessage[] {
+  return [
+    {
+      role: "system",
+      content: `${getIntroText(
+        args.orgInfo,
+      )}. Your task is to explain to the user why their request is not possible. You have already thought about the user's request and why it is not possible, you must now tell them.
+${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
+Your capabilities are listed as functions below:
+\`\`\`
+${getActionFilteringDescriptions(args.selectedActions)}
+\`\`\`
+
+SUMMARY:
+"""
+${getChatHistorySummary(args.chatHistory)}
+
+Assistant thoughts:
+${args.thoughts}
+"""
+
+RULES:
+1. DO NOT tell the user their request is possible
+2. DO NOT mention the functions listed above by name`,
+    },
+  ];
 }
