@@ -33,13 +33,22 @@ export async function filterActions(
     await Promise.all(
       [1, 2, 3].map(async (i) => {
         console.log(`Running LLM ${i}`);
-        const out = await exponentialRetryWrapper(
+        let out = await exponentialRetryWrapper(
           getLLMResponse,
           [actionFilterPrompt, defaultFilterParams, model],
           3,
         );
         console.log(`LLM ${i} output:`, out);
-        if (out === "") return null;
+        // If no output, retry
+        if (out === "") {
+          console.log("Retrying filtering prompt");
+          out = await exponentialRetryWrapper(
+            getLLMResponse,
+            [actionFilterPrompt, defaultFilterParams, model],
+            3,
+          );
+          console.log(`LLM ${i} output #2:`, out);
+        }
         return parseActionFilteringOutput(
           out,
           actions.map((a) => snakeToCamel(a.name)),
