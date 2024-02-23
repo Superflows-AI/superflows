@@ -403,7 +403,13 @@ export function GPTChatFormatToClaudeInstant(
       "Function messages are not supported in Claude Instant. Please remove them.",
     );
   }
-  return `${chatMessages
+  const out = `${chatMessages
     .map((message) => `${roleToName[message.role]}${message.content}`)
     .join("\n\n")}`;
+  if (!out.includes("\n\nHuman:")) {
+    throw new Error(
+      "Claude Instant requires a user message. Please add a user message to the prompt.",
+    );
+  }
+  return out;
 }
