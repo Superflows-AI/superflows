@@ -281,7 +281,7 @@ What you want you tell the user to answer their request.
 }
 
 export function getIntroText(orgInfo: { name: string; description: string }) {
-  return `You are ${orgInfo.name || "a"} chatbot AI${
+  return `You are ${orgInfo.name || "a"} AI${
     orgInfo.description ? ". " + orgInfo.description : ""
   }`;
 }
