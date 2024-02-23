@@ -43,25 +43,23 @@ export function parseAnthropicStreamedData(
   } as ParsedStreamedData;
   console.log("claudeOutString:", claudeOutString);
 
-  if (claudeOutString.includes("event: completion")) {
-    claudeOutString
-      .split("event: completion")
-      .filter((l: string) => l.trim())
-      .forEach((line: string) => {
-        line = line.replaceAll("data: ", "");
-        try {
-          const parsedLine = JSON.parse(line.trim());
-          const choice = parsedLine.completion;
-          if (choice) output.completeChunks.push(choice);
-          if (parsedLine.stop_reason) {
-            output.done = true;
-          }
-        } catch (e) {
-          output.incompleteChunk = line;
-          return output;
+  claudeOutString
+    .split("event: ")
+    .filter((l: string) => l.trim() && l.match(/\{[^}]*}/))
+    .forEach((line: string) => {
+      line = line.match(/\{[^}]*}/)![0];
+      try {
+        const parsedLine = JSON.parse(line.trim());
+        const choice = parsedLine.completion;
+        if (choice) output.completeChunks.push(choice);
+        if (parsedLine.stop_reason) {
+          output.done = true;
         }
-      });
-  }
+      } catch (e) {
+        output.incompleteChunk = line;
+        return output;
+      }
+    });
   return output;
 }
 

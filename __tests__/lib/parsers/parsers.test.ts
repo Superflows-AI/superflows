@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  parseAnthropicStreamedData,
   parseFollowUpSuggestions,
   parseGPTStreamedData,
 } from "../../../lib/parsers/parsers";
@@ -148,5 +149,64 @@ describe("parseFollowUpSuggestions", () => {
       "What's up with you?",
       "What time is it right now .com?",
     ]);
+  });
+});
+
+describe("parseAnthropicStreamedData", () => {
+  it("anthropic example", () => {
+    const testStr = `event: completion
+data: {"type":"completion","id":"compl_01XMs74TyRye1whxj41pJrQh","completion":" The","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01XMs74TyRye1whxj41pJrQh"}
+
+event: completion
+data: {"type":"completion","id":"compl_01XMs74TyRye1whxj41pJrQh","completion":" user","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01XMs74TyRye1whxj41pJrQh"}
+
+
+`;
+    const out = parseAnthropicStreamedData(testStr);
+    expect(out).toStrictEqual({
+      completeChunks: [" The", " user"],
+      done: false,
+      incompleteChunk: null,
+    });
+  });
+  it("contains ping", () => {
+    const testStr = `event: completion
+data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" The","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+
+event: completion
+data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" user","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+
+event: ping
+data: {"type": "ping"}
+
+event: completion
+data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" wants","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+
+event: completion
+data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" a","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+`;
+    const out = parseAnthropicStreamedData(testStr);
+    expect(out).toStrictEqual({
+      completeChunks: [" The", " user", " wants", " a"],
+      done: false,
+      incompleteChunk: null,
+    });
+  });
+  it("real world: incomplete chunk", () => {
+    const testStr = ` 
+ {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" visualization","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+
+
+claudeOutString: event: completion
+data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" of","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
+
+
+`;
+    const out = parseAnthropicStreamedData(testStr);
+    expect(out).toStrictEqual({
+      completeChunks: [" visualization", " of"],
+      done: false,
+      incompleteChunk: null,
+    });
   });
 });
