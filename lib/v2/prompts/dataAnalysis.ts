@@ -76,7 +76,7 @@ export function parseDataAnalysis(
 ): { code: string } | { error: string } | null {
   /** Code output means the code is valid
    * Error output is an error message to be shown to the AI
-   * null output means the **/
+   * null output means that you need to retry **/
   // Check if it's just an error
   const errorMatch = /^\n?throw new Error\((.*)\);?$/.exec(rawCode);
   if (errorMatch) {

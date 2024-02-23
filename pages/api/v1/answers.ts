@@ -307,8 +307,8 @@ export default async function handler(req: NextRequest) {
     // If the language is not set, try to detect it using detectlanguage.com
     if (org.language !== "Detect Language") {
       language = org.language;
-    } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
-      language = await getLanguage(requestData.user_input);
+      // } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
+      //   language = await getLanguage(requestData.user_input);
     }
 
     if (requestData.user_input) {
@@ -487,7 +487,7 @@ export default async function handler(req: NextRequest) {
               language,
               currentHost,
             );
-        supabase.from("chat_messages").insert(
+        await supabase.from("chat_messages").insert(
           allMessages.slice(previousMessages.length).map((m, idx) => {
             if (m.role === "function" && m.content.length > 10000) {
               m.content = ApiResponseCutText;
@@ -506,7 +506,7 @@ export default async function handler(req: NextRequest) {
           `chat_messages_${org!.id}_${conversationId}`,
           60 * 30,
           JSON.stringify({
-            previousMessages: allMessages.map((m, idx) => {
+            previousMessages: allMessages.map((m) => {
               if (m.role === "function" && m.content.length > 10000) {
                 m.content = ApiResponseCutText;
               }

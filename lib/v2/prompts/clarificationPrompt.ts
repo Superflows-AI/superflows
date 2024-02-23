@@ -108,22 +108,25 @@ Clear: False | True
 Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure!"). Be concise
 """`,
     },
-    args.chatHistory[args.chatHistory.length - 1],
+    // args.chatHistory[args.chatHistory.length - 1],
+    ...args.chatHistory.slice(
+      args.chatHistory.findIndex((m) => m.role === "user"),
+    ),
     {
       role: "assistant",
       content: "Thoughts:\n1. ",
     },
   ];
-  if (args.chatHistory.length > 1) {
-    // If there are previous messages, add them as a chat history - reason for this is because otherwise
-    // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
-    out[0].content += `
-
-CHAT HISTORY SUMMARY:
-"""
-${getChatHistorySummary(args.chatHistory.slice(0, -1), true)}
-"""`;
-  }
+  //   if (args.chatHistory.length > 1) {
+  //     // If there are previous messages, add them as a chat history - reason for this is because otherwise
+  //     // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
+  //     out[0].content += `
+  //
+  // CHAT HISTORY SUMMARY:
+  // """
+  // ${getChatHistorySummary(args.chatHistory, true)}
+  // """`;
+  //   }
   return out;
 }
 

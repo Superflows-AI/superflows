@@ -11,7 +11,6 @@ export function parseTellUser(output: string): string {
   // If "Tell user:" is found, return the string after it, but before the next "Keyword: "
   if (output.includes("Tell user:")) {
     const textAfterTellUser = output.split("Tell user:")[1];
-    console.log("textAfterTellUser:", textAfterTellUser);
     return textAfterTellUser.split(/^.+:\s?$/m)[0].trim();
   }
 
