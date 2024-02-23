@@ -487,26 +487,33 @@ export default async function handler(req: NextRequest) {
               language,
               currentHost,
             );
-        const allMessagesFormatted = allMessages.map((m, idx) => {
-          if (m.role === "function" && m.content.length > 10000) {
-            m.content = ApiResponseCutText;
-          }
-          return {
-            ...m,
-            org_id: org!.id,
-            conversation_id: conversationId,
-            conversation_index: previousMessages.length + idx,
-            language,
-          };
-        });
-        supabase
-          .from("chat_messages")
-          .insert(allMessagesFormatted.slice(previousMessages.length));
+        supabase.from("chat_messages").insert(
+          allMessages.slice(previousMessages.length).map((m, idx) => {
+            if (m.role === "function" && m.content.length > 10000) {
+              m.content = ApiResponseCutText;
+            }
+            return {
+              ...m,
+              org_id: org!.id,
+              conversation_id: conversationId,
+              conversation_index: previousMessages.length + idx,
+              language,
+            };
+          }),
+        );
         // Set previous messages in Redis for 30 minutes
         redis?.setex(
           `chat_messages_${org!.id}_${conversationId}`,
           60 * 30,
-          JSON.stringify({ previousMessages: allMessagesFormatted, language }),
+          JSON.stringify({
+            previousMessages: allMessages.map((m, idx) => {
+              if (m.role === "function" && m.content.length > 10000) {
+                m.content = ApiResponseCutText;
+              }
+              return m;
+            }),
+            language,
+          }),
         );
 
         if (
