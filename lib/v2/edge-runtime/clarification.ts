@@ -193,7 +193,7 @@ export async function runClarificationAndStreamResponse(args: {
       );
       if (res === null || "message" in res) {
         console.error(
-          `OpenAI API call failed for conversation with id: ${
+          `Anthropic API call failed for conversation with id: ${
             args.conversationId
           }. The error was: ${JSON.stringify(res)}`,
         );
@@ -231,7 +231,6 @@ export async function runClarificationAndStreamResponse(args: {
             content = content.trimStart();
             first = false;
           }
-          console.log("Claude-instant content:", content);
           // Raw output is the actual output from the LLM!
           rawOutput += content;
           // What streams back to the user has the variables replaced with their real values
@@ -259,9 +258,9 @@ export async function runClarificationAndStreamResponse(args: {
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
     })(),
   ]);
+  console.log("isPossible and clarification outputs", outs);
 
   // If clarification finishes before isPossible
-  console.log("streamedText", streamedText);
   if (!("error" in outs[1]) && !outs[1].parsed.clear && !streamedText) {
     console.log("Anthropic beat GPT!");
     streamedText = outs[1].parsed.tellUser;
@@ -271,18 +270,6 @@ export async function runClarificationAndStreamResponse(args: {
   // TODO: Add caching of isPossible and clarification outputs
   const possible = "error" in outs[0] || outs[0].parsed.possible;
   const clear = "error" in outs[1] || outs[1].parsed.clear;
-  console.log("clarification out:", {
-    possibleMessage:
-      "error" in outs[0]
-        ? null
-        : { role: "assistant", content: outs[0].output },
-    possible,
-    clarificationMessage:
-      "error" in outs[1]
-        ? null
-        : { role: "assistant", content: outs[1].output },
-    clear,
-  });
   return {
     message:
       !possible && !("error" in outs[0]) && outs[0].parsed.tellUser

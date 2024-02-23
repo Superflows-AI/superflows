@@ -152,7 +152,7 @@ export async function Bertie( // Bertie will eat you for breakfast
 
   const clarificationOutput = await runClarificationAndStreamResponse({
     chatHistory,
-    selectedActions: actions,
+    selectedActions: actions.slice(Math.max(0, chatHistory.length - 10)),
     orgInfo: org,
     userDescription: reqData.user_description ?? "",
     conversationId,
@@ -275,7 +275,7 @@ export async function Bertie( // Bertie will eat you for breakfast
           [
             chatGptPrompt,
             completionOptions,
-            actions.length > 0 ? model : FASTMODEL,
+            !codeGenCalled ? model : FASTMODEL,
           ],
           3,
         );

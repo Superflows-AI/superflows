@@ -41,7 +41,6 @@ export function parseAnthropicStreamedData(
     incompleteChunk: null,
     done: false,
   } as ParsedStreamedData;
-  console.log("claudeOutString:", claudeOutString);
 
   claudeOutString
     .split("event: ")

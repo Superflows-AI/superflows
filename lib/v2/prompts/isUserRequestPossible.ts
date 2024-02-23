@@ -26,14 +26,23 @@ export function isUserRequestPossiblePrompt(args: {
       content: `${getIntroText(
         args.orgInfo,
       )}. Your task is to decide if a user's request is possible to answer by writing code using FUNCTIONS. If the request is not possible, you must inform the user. Code can aggregate, filter, sort and transform data returned by FUNCTIONS.
-
-User description: ${args.userDescription}
-
+${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
 FUNCTIONS:
 \`\`\`
 ${getActionFilteringDescriptions(args.selectedActions)}
 \`\`\`
-
+${
+  // If there are previous messages, add them as a chat history - reason for this is because otherwise
+  // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
+  args.chatHistory.length > 1
+    ? `
+CHAT HISTORY SUMMARY:
+"""
+${getChatHistorySummary(args.chatHistory)}
+"""
+`
+    : ""
+}
 RULES:
 1. Decide whether the user's request is possible by writing code that calls FUNCTIONS and output 'Possible: True | False'
 2. DO NOT tell the user about FUNCTIONS or that you are using them
@@ -53,20 +62,12 @@ Possible: False | True
 Tell user: Inform the user that their request is impossible. Mention the capabilities. Be concise. DO NOT mention FUNCTIONS
 """`,
     },
+    args.chatHistory[args.chatHistory.length - 1],
   ];
-  if (args.chatHistory.length === 1) {
-    // If this is the first message, add it as a normal user message
-    out.push(args.chatHistory[args.chatHistory.length - 1]);
-  } else {
-    // If there are previous messages, add them as a chat history - reason for this is because otherwise
-    // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
-    out[0].content += `
-
-CHAT HISTORY SUMMARY:
-"""
-${getChatHistorySummary(args.chatHistory)}
-"""`;
-  }
+  // if (args.chatHistory.length === 1) {
+  //   // If this is the first message, add it as a normal user message
+  //   out.push(args.chatHistory[args.chatHistory.length - 1]);
+  // }
   return out;
 }
 
@@ -96,7 +97,7 @@ export function parseRequestPossibleOutput(
       output.match(/^Tell user:/m),
   );
 
-  let tellUser = "";
+  let tellUser = output;
   if (output.includes("Tell user:")) {
     tellUser = output.split("Tell user:")[1];
   } else if (thoughts || output.match(/^Possible:?/m)) {
@@ -105,10 +106,15 @@ export function parseRequestPossibleOutput(
       .replace(thoughts, "")
       .replace(/^Possible:?\s?([Tt]rue|[Ff]alse)?$/m, "")
       .replace(/^Tell( user)?/m, "");
-  } else {
-    tellUser = output;
   }
   tellUser = tellUser.trim();
+  if (
+    "Inform the user that their request is impossible. Mention the capabilities. Be concise. DO NOT mention FUNCTIONS".includes(
+      tellUser,
+    )
+  ) {
+    tellUser = "";
+  }
 
   return { thoughts, tellUser, possible };
 }
