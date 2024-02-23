@@ -369,7 +369,7 @@ export async function Angela( // Good ol' Angela
           [chatGptPrompt, completionOptions, model],
           3,
         );
-        if (res === null || (typeof res !== "string" && "message" in res)) {
+        if (res === null || "message" in res) {
           console.error(
             `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
               res,
@@ -382,18 +382,12 @@ export async function Angela( // Good ol' Angela
           return { nonSystemMessages, cost: totalCost, numUserQueries };
         }
 
-        if (typeof res === "string") {
-          // If non-streaming response, just return the full output
-          rawOutput = res;
-          streamInfo({ role: "assistant", content: res });
-        } else {
-          // Stream response chunk by chunk
-          rawOutput = await streamResponseToUser(
-            res,
-            streamInfo,
-            originalToPlaceholderMap,
-          );
-        }
+        // Stream response chunk by chunk
+        rawOutput = await streamResponseToUser(
+          res,
+          streamInfo,
+          originalToPlaceholderMap,
+        );
       }
 
       const newMessage = {
