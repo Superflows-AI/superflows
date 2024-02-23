@@ -133,6 +133,19 @@ Tell user: I'm sorry, but it seems that adding a user is not within the capabili
       ).toContain(parsed.tellUser);
     }
   });
+  it("stream parrot response", () => {
+    const response = `Possible: False
+
+Tell user: Inform the user that their request is impossible. Mention the capabilities. Be concise. DO NOT mention FUNCTIONS`;
+    const tokens = tokenizer.encode(response);
+    for (let i = 0; i < tokens.length; i++) {
+      const partial = tokenizer.decode(tokens.slice(0, i));
+      const parsed = parseRequestPossibleOutput(partial);
+      expect("").toContain(parsed.thoughts);
+      if (i > 0) expect(parsed.possible).toBe(false);
+      expect("").toEqual(parsed.tellUser);
+    }
+  });
 });
 
 describe("isUserRequestPossiblePrompt", () => {
