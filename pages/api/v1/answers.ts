@@ -137,7 +137,7 @@ export default async function handler(req: NextRequest) {
     let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
       if (redis) {
-        const redisStored = await redis.get(orgApiKey);
+        const redisStored = await redis.get(`org-${orgApiKey}`);
         if (redisStored) {
           org = redisStored as OrgJoinIsPaidFinetunedModels;
         }
@@ -149,7 +149,11 @@ export default async function handler(req: NextRequest) {
           .eq("api_key", orgApiKey);
         if (authRes.error) throw new Error(authRes.error.message);
         // Set org in Redis for 30 minutes
-        redis?.setex(orgApiKey, 60 * 30, JSON.stringify(authRes.data?.[0]));
+        redis?.setex(
+          `org-${orgApiKey}`,
+          60 * 30,
+          JSON.stringify(authRes.data?.[0]),
+        );
         org = authRes.data?.[0] ?? null;
       }
     }
