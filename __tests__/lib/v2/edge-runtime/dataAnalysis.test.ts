@@ -307,4 +307,21 @@ describe("ensureDataWellFormatted", () => {
       { x: 1, y: 2 },
     ]);
   });
+  it("Real world: x & y missing, get one from label, one from order", () => {
+    const out = ensureDataWellFormatted({
+      title: "title",
+      type: "line",
+      data: [
+        // @ts-ignore
+        { rep: "Emma", wonDeals: 14, closedDeals: 0 },
+        // @ts-ignore
+        { rep: "Ava", wonDeals: 12, closedDeals: 0 },
+      ],
+      labels: { x: "rep", y: "deals" },
+    });
+    expect(out).toStrictEqual([
+      { closedDeals: 0, x: "Emma", y: 14 },
+      { closedDeals: 0, x: "Ava", y: 12 },
+    ]);
+  });
 });
