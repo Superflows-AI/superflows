@@ -1,5 +1,5 @@
-import { ChatGPTMessage } from "../../../local/loop/run_history_summarisation";
 import { parseTellUser } from "./utils";
+import { ChatGPTMessage } from "../../models";
 
 export const summariseChatHistoryLLMParams = {
   temperature: 0.0,
