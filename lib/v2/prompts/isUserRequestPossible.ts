@@ -15,7 +15,7 @@ export const isUserRequestPossibleLLMParams = {
 };
 
 export function isUserRequestPossiblePrompt(args: {
-  chatHistory: ChatGPTMessage[];
+  userRequest: string;
   selectedActions: Pick<Action, "name" | "filtering_description">[];
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
@@ -31,18 +31,7 @@ FUNCTIONS:
 \`\`\`
 ${getActionFilteringDescriptions(args.selectedActions)}
 \`\`\`
-${
-  // If there are previous messages, add them as a chat history - reason for this is because otherwise
-  // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
-  args.chatHistory.length > 1
-    ? `
-CHAT HISTORY SUMMARY:
-"""
-${getChatHistorySummary(args.chatHistory)}
-"""
-`
-    : ""
-}
+
 RULES:
 1. Decide whether the user's request is possible by writing code that calls FUNCTIONS and output 'Possible: True | False'
 2. DO NOT tell the user about FUNCTIONS or that you are using them
@@ -62,7 +51,7 @@ Possible: False | True
 Tell user: Inform the user that their request is impossible. Mention the capabilities. Be concise. DO NOT mention FUNCTIONS
 """`,
     },
-    args.chatHistory[args.chatHistory.length - 1],
+    { role: "user", content: args.userRequest },
   ];
   // if (args.chatHistory.length === 1) {
   //   // If this is the first message, add it as a normal user message
@@ -121,8 +110,8 @@ export function parseRequestPossibleOutput(
 
 export function impossibleExplanation(args: {
   thoughts: string;
+  userRequest: string;
   selectedActions: Pick<Action, "name" | "filtering_description">[];
-  chatHistory: ChatGPTMessage[];
   orgInfo: { name: string; description: string };
   userDescription: string;
 }): ChatGPTMessage[] {
@@ -138,13 +127,10 @@ Your capabilities are listed as functions below:
 ${getActionFilteringDescriptions(args.selectedActions)}
 \`\`\`
 
-SUMMARY:
-"""
-${getChatHistorySummary(args.chatHistory)}
+User request: ${args.userRequest}
 
 Assistant thoughts:
 ${args.thoughts}
-"""
 
 RULES:
 1. DO NOT tell the user their request is possible
