@@ -42,7 +42,19 @@ export async function getLLMResponse(
       ? getOAIRequestCompletion(prompt, params, model)
       : getLLMRequestChat(prompt, params, model);
 
-  const response = await fetch(url, options);
+  const response = await Promise.race([
+    fetch(url, options),
+    (async () => {
+      // Time out after 30s
+      await new Promise((resolve) => setTimeout(resolve, 30000));
+      return new Response(
+        JSON.stringify({ error: { message: "Timed out!" } }),
+        {
+          status: 500,
+        },
+      );
+    })(),
+  ]);
   const responseJson: ChatGPTResponse | { error: OpenAIError } =
     await response.json();
   if (response.status >= 300) {
@@ -365,7 +377,7 @@ function combineMessagesForHFEndpoints(messages: LLMChatMessage[]): string {
     )
     .join("\n");
 }
-function GPTChatFormatToPhind(chatMessages: ChatGPTMessage[]): string {
+export function GPTChatFormatToPhind(chatMessages: ChatGPTMessage[]): string {
   const roleToName = {
     system: "System Prompt",
     user: "User Message",
