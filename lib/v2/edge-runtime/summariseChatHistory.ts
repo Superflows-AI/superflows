@@ -9,8 +9,13 @@ import {
 export async function summariseChatHistory(
   chatHistory: ChatGPTMessage[],
   userDescription: string,
+  language: string | null,
 ): Promise<string> {
-  const prompt = chatHistorySummaryPrompt(chatHistory, userDescription);
+  const prompt = chatHistorySummaryPrompt(
+    chatHistory,
+    userDescription,
+    language,
+  );
   console.log("Prompt for summariseChatHistory: ", prompt[0].content);
   let out: string = await exponentialRetryWrapper(
     getLLMResponse,

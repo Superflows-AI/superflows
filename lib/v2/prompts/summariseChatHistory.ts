@@ -1,4 +1,4 @@
-import { parseTellUser } from "./utils";
+import { languageLine, parseTellUser } from "./utils";
 import { ChatGPTMessage } from "../../models";
 
 export const summariseChatHistoryLLMParams = {
@@ -9,6 +9,7 @@ export const summariseChatHistoryLLMParams = {
 export function chatHistorySummaryPrompt(
   chatHistory: ChatGPTMessage[],
   userDescription: string,
+  language: string | null,
 ): ChatGPTMessage[] {
   return [
     {
@@ -26,8 +27,9 @@ RULES:
 3. Include ALL relevant information from PAST_CONVERSATION - especially when previously requested by the assistant
 4. Write from the user's perspective - in the first-person. Start with I/Tell me/Who/What/How
 5. Include relevant information from the user description
-6. If the PAST_CONVERSATION is irrelevant to the user's request, simply repeat the user's message
-7. If the user doesn't answer the assistant's most recent clarifying question, leave this aspect ambiguous in the instruction`,
+6. If the user doesn't answer the assistant's most recent clarifying question, leave this aspect ambiguous in the instruction
+7. ${languageLine(language)}
+8. If the PAST_CONVERSATION is irrelevant to the user's request, simply repeat the user's message`,
     },
   ];
 }

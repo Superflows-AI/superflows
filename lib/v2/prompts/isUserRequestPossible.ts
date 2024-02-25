@@ -3,6 +3,7 @@ import { ChatGPTMessage } from "../../models";
 import {
   getActionFilteringDescriptions,
   getChatHistorySummary,
+  languageLine,
   parseTellUser,
 } from "./utils";
 import { Action, Organization } from "../../types";
@@ -19,6 +20,7 @@ export function isUserRequestPossiblePrompt(args: {
   selectedActions: Pick<Action, "name" | "filtering_description">[];
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
+  language: string | null;
 }): ChatGPTMessage[] {
   const out: ChatGPTMessage[] = [
     {
@@ -36,7 +38,8 @@ RULES:
 1. Decide whether the user's request is possible by writing code that calls FUNCTIONS and output 'Possible: True | False'
 2. DO NOT tell the user about FUNCTIONS or that you are using them
 3. DO NOT answer questions which are unrelated to ${args.orgInfo.name}
-4. Respond in the following format (Thoughts as a numbered list, 'Possible' and 'Tell user'):
+4. ${languageLine(args.language, "'Thoughts', 'Possible' or 'Tell user'")}
+5. Respond in the following format (Thoughts as a numbered list, 'Possible' and 'Tell user'):
 """
 Thoughts:
 1. Think step-by-step how to use FUNCTIONS to answer the user's request
