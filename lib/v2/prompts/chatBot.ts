@@ -2,12 +2,12 @@ import { OpenAPIV3_1 } from "openapi-types";
 import { ChatGPTMessage } from "../../models";
 import { Action, Organization } from "../../types";
 import {
-  ApiResponseCutText,
   getJsonMIMEType,
   isFunctionMessageTooLong,
 } from "../../edge-runtime/utils";
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../builtinActions";
+import _ from "lodash";
 
 export function formatDescription(
   description: string | undefined | null,
@@ -219,6 +219,10 @@ export default function getMessages(
           orgInfo,
           language,
           graphCut,
+          _.findLast(
+            userCopilotMessages,
+            (m) => m.role === "function",
+          )!.content.includes('"type": "table",'),
         ),
     ...userCopilotMessages,
   ];
@@ -229,13 +233,15 @@ export function explainPlotChatPrompt(
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
   graphCut: boolean,
+  isTable: boolean,
 ): ChatGPTMessage {
   const lt = "<";
+  const graphOrTable = isTable ? "table" : "graph";
   return {
     role: "system",
-    content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
+    content: `${getIntroText(orgInfo)}. Your purpose is to assist users ${
       orgInfo.name ? `in ${orgInfo.name} ` : ""
-    }with helpful replies
+    }with helpful replies.
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
@@ -245,12 +251,14 @@ Example:
 What are the top 10 best performing products by revenue in the past 6 months?
 
 ### Function:
-{"type":"bar","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+{"type":"${
+      isTable ? "table" : "bar"
+    }","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
 
 ### Assistant:
 Reasoning:
 1. The data has been cut for brevity
-2. As a result, I should inform the user that they should look at the graph above
+2. As a result, I should inform the user that they should look at the ${graphOrTable} above
 
 Tell user:
 Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
@@ -261,16 +269,16 @@ The x axis shows the product name, while the y axis is the revenue in $.
 RULES:
 1. ${
       graphCut
-        ? 'DO NOT invent the contents of the graph data cut for brevity. DO NOT tell the user that you cannot see the graph or that you cannot tell them about the data. Instead, tell them to "View the graph above".'
-        : "If the graph doesn't exactly answer the question the user asked, use the graph and log messages from the coder to help answer the question for the user - they user can't see the coder's log messages."
+        ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
+        : `If the ${graphOrTable} doesn't exactly answer the question the user asked, use the ${graphOrTable} and log messages from the coder to help answer the question for the user - they user can't see the coder's log messages.`
     }
-2. DO NOT show the graph as a markdown image. The function message is visible to the user as a graph.
-3. DO NOT repeat the contents of the graph or table in full. Summarise it as concisely as you can - the user can ask follow-ups if they need more information. 
+2. DO NOT repeat the ${graphOrTable} as a markdown image/table. The user can see the ${graphOrTable} already.
+3. DO NOT repeat the contents of the ${graphOrTable} in full. Summarise it as concisely as you can - the user can ask follow-ups if they need more information. 
 4. ${language ? `Your reply should be written in ${language}.` : ""}
 5. Your reply should follow the format below (you MUST include both reasoning and tell user):
 \`\`\`
 Reasoning:
-1. Think step-by-step. Does the data array contain the text 'cut for brevity' for any graphs?
+1. Think step-by-step. Does the data array contain the text 'cut for brevity' for any ${graphOrTable}s?
 2. If the data array is empty, this may mean that there's no data
 3. Consider the API calls made by the coder (look at the logs) - would these make sense if there's no data?
 

@@ -10,14 +10,11 @@ export const clarificationLLMParams = {
 };
 
 export function clarificationPrompt(args: {
-  chatHistory: ChatGPTMessage[];
+  userRequest: string;
   selectedActions: { name: string; filtering_description: string }[];
   orgInfo: { name: string; description: string };
   userDescription: string;
 }): ChatGPTMessage[] {
-  if (args.chatHistory[args.chatHistory.length - 1].role === "assistant") {
-    throw new Error("Last message must be from user");
-  }
   const out: ChatGPTMessage[] = [
     {
       role: "system",
@@ -109,9 +106,10 @@ Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure
 """`,
     },
     // args.chatHistory[args.chatHistory.length - 1],
-    ...args.chatHistory.slice(
-      args.chatHistory.findIndex((m) => m.role === "user"),
-    ),
+    // ...args.chatHistory.slice(
+    //   args.chatHistory.findIndex((m) => m.role === "user"),
+    // ),
+    { role: "user", content: args.userRequest },
     {
       role: "assistant",
       content: "Thoughts:\n1. ",
