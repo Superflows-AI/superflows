@@ -1,6 +1,10 @@
 import { ChatGPTMessage } from "../../models";
 import { searchDocsActionName } from "../../builtinActions";
-import { getActionFilteringDescriptions, getChatHistorySummary } from "./utils";
+import {
+  getActionFilteringDescriptions,
+  getChatHistorySummary,
+  languageLine,
+} from "./utils";
 import { getIntroText } from "./chatBot";
 
 export const clarificationLLMParams = {
@@ -14,8 +18,9 @@ export function clarificationPrompt(args: {
   selectedActions: { name: string; filtering_description: string }[];
   orgInfo: { name: string; description: string };
   userDescription: string;
+  language: string | null;
 }): ChatGPTMessage[] {
-  const out: ChatGPTMessage[] = [
+  return [
     {
       role: "system",
       content: `${getIntroText(
@@ -89,8 +94,9 @@ RULES:
 2. DO NOT make any assumptions about the metrics or date ranges to use
 3. DO NOT give the user a command, tell them to talk to a data analyst or call FUNCTIONS themselves
 4. DO NOT mention FUNCTIONS or the coder to the user
-5. Think about what the user knows when asking them questions. The user may not know IDs, but might know other details which you can search for 
-6. Respond in the following format (Thoughts as a numbered list, 'Clear' and 'Tell user'):
+5. Think about what the user knows when asking them questions. The user may not know IDs, but might know other details which you can search for
+6. ${languageLine(args.language, "'Thoughts', 'Clear' or 'Tell user'")} 
+7. Respond in the following format (Thoughts as a numbered list, 'Clear' and 'Tell user'):
 """
 Thoughts:
 1. Think step-by-step: break down the user's request in extreme detail. Be verbose
@@ -115,17 +121,6 @@ Tell user: Ask clarifying questions here. Be friendly (example: start with "Sure
       content: "Thoughts:\n1. ",
     },
   ];
-  //   if (args.chatHistory.length > 1) {
-  //     // If there are previous messages, add them as a chat history - reason for this is because otherwise
-  //     // we'll have messages of different formats in the chat history, which the LLM will sometimes try to copy
-  //     out[0].content += `
-  //
-  // CHAT HISTORY SUMMARY:
-  // """
-  // ${getChatHistorySummary(args.chatHistory, true)}
-  // """`;
-  //   }
-  return out;
 }
 
 export interface ParsedClarificationOutput {

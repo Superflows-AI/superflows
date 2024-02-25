@@ -8,6 +8,7 @@ import {
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../builtinActions";
 import _ from "lodash";
+import { languageLine } from "./utils";
 
 export function formatDescription(
   description: string | undefined | null,
@@ -274,7 +275,7 @@ RULES:
     }
 2. DO NOT repeat the ${graphOrTable} as a markdown image/table. The user can see the ${graphOrTable} already.
 3. DO NOT repeat the contents of the ${graphOrTable} in full. Summarise it as concisely as you can - the user can ask follow-ups if they need more information. 
-4. ${language ? `Your reply should be written in ${language}.` : ""}
+4. ${languageLine(language, "'Reasoning' or 'Tell user'")}
 5. Your reply should follow the format below (you MUST include both reasoning and tell user):
 \`\`\`
 Reasoning:

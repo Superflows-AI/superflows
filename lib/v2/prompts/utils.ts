@@ -57,3 +57,16 @@ export function getChatHistorySummary(
     )
     .join("\n\n");
 }
+
+export function languageLine(
+  language: string | null,
+  keywordsStr?: string,
+): string {
+  let out = language
+    ? `Your reply should be written in ${language}`
+    : `Write in the same language as the user`;
+  if (keywordsStr) {
+    out += `, but NEVER translate ${keywordsStr} - these MUST remain in English`;
+  }
+  return out;
+}

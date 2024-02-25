@@ -157,6 +157,7 @@ export async function Bertie( // Bertie will eat you for breakfast
     userRequest = await summariseChatHistory(
       chatHistory,
       reqData.user_description ?? "",
+      language,
     );
   }
 
@@ -166,6 +167,7 @@ export async function Bertie( // Bertie will eat you for breakfast
     orgInfo: org,
     userDescription: reqData.user_description ?? "",
     conversationId,
+    language,
     streamInfo,
   });
   console.log("Clarification output:", clarificationOutput);

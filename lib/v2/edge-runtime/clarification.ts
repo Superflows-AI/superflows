@@ -44,6 +44,7 @@ export async function runClarificationAndStreamResponse(args: {
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
   conversationId: number;
+  language: string | null;
   streamInfo: (step: StreamingStepInput) => void;
 }): Promise<{
   message: ChatGPTMessage | null;
