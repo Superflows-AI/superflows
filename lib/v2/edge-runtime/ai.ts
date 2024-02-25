@@ -53,6 +53,7 @@ import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { storeActionsAwaitingConfirmation } from "../../edge-runtime/ai";
 import { getSearchDocsAction } from "../../builtinActions";
 import { runClarificationAndStreamResponse } from "./clarification";
+import { summariseChatHistory } from "./summariseChatHistory";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -149,10 +150,19 @@ export async function Bertie( // Bertie will eat you for breakfast
   if (org.chat_to_docs_enabled) {
     actions.unshift(getSearchDocsAction(org, currentHost));
   }
+  // If there are multiple messages in the chat history, we summarise the chat history into a single user
+  //  request - this makes future prompts have a _much_ easier time understanding the user's request
+  let userRequest = reqData.user_input;
+  if (previousMessages.length > 1) {
+    userRequest = await summariseChatHistory(
+      chatHistory,
+      reqData.user_description ?? "",
+    );
+  }
 
   const clarificationOutput = await runClarificationAndStreamResponse({
-    chatHistory,
-    selectedActions: actions.slice(Math.max(0, chatHistory.length - 10)),
+    userRequest,
+    selectedActions: actions,
     orgInfo: org,
     userDescription: reqData.user_description ?? "",
     conversationId,
@@ -171,8 +181,8 @@ export async function Bertie( // Bertie will eat you for breakfast
   let thoughts = "";
   if (actions.length > 2) {
     ({ thoughts, actions } = await filterActions(
+      userRequest,
       actions,
-      chatHistory,
       org!.name,
       FASTMODEL,
     ));
@@ -271,7 +281,6 @@ export async function Bertie( // Bertie will eat you for breakfast
 
         const res = await exponentialRetryWrapper(
           streamLLMResponse,
-          // No actions means it's explaining a graph output to the user
           [
             chatGptPrompt,
             completionOptions,

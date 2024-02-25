@@ -7,7 +7,7 @@ import {
 import { Database } from "../../database.types";
 import { getDataAnalysisPrompt } from "../prompts/dataAnalysis";
 import { exponentialRetryWrapper } from "../../utils";
-import { getLLMResponse } from "../../queryLLM";
+import { getLLMResponse, GPTChatFormatToPhind } from "../../queryLLM";
 import { FunctionMessage } from "../../models";
 import { parseDataAnalysis } from "../prompts/dataAnalysis";
 import {
@@ -93,7 +93,10 @@ export async function runDataAnalysis(
     userDescription,
     thoughts,
   });
-  console.log("Data analysis prompt:", dataAnalysisPrompt);
+  console.log(
+    "Data analysis prompt:",
+    JSON.stringify(GPTChatFormatToPhind(dataAnalysisPrompt)),
+  );
 
   let llmResponse = await cache.checkBertieAnalyticsCache(
     dataAnalysisPrompt[1].content,
@@ -358,7 +361,10 @@ export function convertToGraphData(
         role: "graph",
         content: {
           type: g.args.data.length === 1 ? "value" : g.args.type,
-          data: ensureDataWellFormatted(g.args),
+          data:
+            g.args.type !== "table"
+              ? ensureDataWellFormatted(g.args)
+              : g.args.data,
           xLabel: g.args.labels?.x ?? "",
           yLabel: g.args.labels?.y ?? "",
           graphTitle: g.args.title,

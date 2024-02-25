@@ -39,7 +39,7 @@ if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
 const isUserRequestPossibleModel = process.env.IS_USER_REQUEST_POSSIBLE_MODEL;
 
 export async function runClarificationAndStreamResponse(args: {
-  chatHistory: ChatGPTMessage[];
+  userRequest: string;
   selectedActions: Action[];
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
