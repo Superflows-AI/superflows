@@ -32,7 +32,7 @@ export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
     console.log(
       `Exponential retry wrapper completed in ${
         Date.now() - t1
-      } ms". Retries remaining: ${retries - 1}`,
+      } ms. Retries remaining: ${retries - 1}`,
     );
     return res;
   } catch (error) {
