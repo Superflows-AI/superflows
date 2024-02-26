@@ -274,9 +274,15 @@ export async function runClarificationAndStreamResponse(args: {
   return {
     message:
       !possible && !("error" in outs[0]) && outs[0].parsed.tellUser
-        ? { role: "assistant", content: outs[0].output }
+        ? {
+            role: "assistant",
+            content: outs[0].output.replace(/Possible: False\n\n/, ""),
+          }
         : !clear && !("error" in outs[1]) && outs[1].parsed.tellUser
-        ? { role: "assistant", content: outs[1].output }
+        ? {
+            role: "assistant",
+            content: outs[1].output.replace(/Clear: False\n\n/, ""),
+          }
         : null,
     possible,
     clear,
