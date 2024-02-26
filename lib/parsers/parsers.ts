@@ -45,11 +45,10 @@ export function parseAnthropicStreamedData(
 
   claudeOutString
     .split("event: ")
-    .filter((l: string) => l.trim() && l.match(/\{[^}]*}/))
+    .filter((l: string) => l.trim())
     .forEach((line: string) => {
-      line = line.match(/\{[^}]*}/)![0];
       try {
-        const parsedLine = JSON.parse(line.trim());
+        const parsedLine = JSON.parse(line.match(/\{[^}]*}/)![0].trim());
         const choice = parsedLine.completion;
         if (choice) output.completeChunks.push(choice);
         if (parsedLine.stop_reason) {
