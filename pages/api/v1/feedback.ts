@@ -14,6 +14,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
 export const config = {
   runtime: "edge",
   // Edge gets upset with our use of recharts in chat-ui-react.
+  regions: ["iad1", "cle1"],
   // TODO: Make it possible to import chat-ui-react without recharts
   unstable_allowDynamic: [
     "**/node_modules/@superflows/chat-ui-react/**",
