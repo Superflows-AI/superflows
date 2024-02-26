@@ -154,11 +154,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   //  request - this makes future prompts have a _much_ easier time understanding the user's request
   let userRequest = reqData.user_input;
   if (previousMessages.length > 1) {
-    userRequest = await summariseChatHistory(
-      chatHistory,
-      reqData.user_description ?? "",
-      language,
-    );
+    userRequest = await summariseChatHistory(chatHistory, language);
   }
 
   const clarificationOutput = await runClarificationAndStreamResponse({
