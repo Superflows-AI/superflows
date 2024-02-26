@@ -86,6 +86,7 @@ export async function runDataAnalysis(
   streamInfo: (step: StreamingStepInput) => void,
   userApiKey?: string,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
+  streamInfo({ role: "loading", content: "Performing data analysis" });
   const dataAnalysisPrompt = getDataAnalysisPrompt({
     question: instruction,
     selectedActions: filteredActions,
@@ -175,6 +176,7 @@ export async function runDataAnalysis(
           continue;
         }
         if ("error" in parsedCode) return parsedCode;
+        streamInfo({ role: "loading", content: "Executing code" });
         console.info("Parsed LLM response:", parsedCode.code);
 
         // Send code to supabase edge function to execute

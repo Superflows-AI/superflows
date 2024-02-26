@@ -535,7 +535,6 @@ export async function Bertie( // Bertie will eat you for breakfast
       };
       if (dataAnalysisAction && !anyNeedCorrection && toConfirm.length === 0) {
         console.log("Running data analysis!");
-        streamInfo({ role: "loading", content: "Performing complex action" });
         const graphData = await runDataAnalysis(
           dataAnalysisAction.args["instruction"],
           [...actions.slice(1)],
