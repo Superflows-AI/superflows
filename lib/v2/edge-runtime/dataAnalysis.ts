@@ -143,13 +143,13 @@ export async function runDataAnalysis(
       );
     }
   }
-
+  var promiseFinished = false;
   const graphData = await Promise.race(
     [1, 2, 3].map(async (i) => {
       console.log("\nCode gen run", i);
       let parallelGraphData: ExecuteCode2Item[] | null = null,
         nLoops = 0;
-      while (parallelGraphData === null && nLoops < 3) {
+      while (parallelGraphData === null && nLoops < 3 && !promiseFinished) {
         defaultDataAnalysisParams = {
           ...defaultDataAnalysisParams,
           temperature: nLoops === 0 ? 0.1 : 0.8,
@@ -176,50 +176,59 @@ export async function runDataAnalysis(
           continue;
         }
         if ("error" in parsedCode) return parsedCode;
-        streamInfo({ role: "loading", content: "Executing code" });
-        console.info("Parsed LLM response:", parsedCode.code);
+        if (!promiseFinished) {
+          streamInfo({ role: "loading", content: "Executing code" });
+          console.info("Parsed LLM response:", parsedCode.code);
 
-        // Send code to supabase edge function to execute
-        const res = await supabase.functions.invoke("execute-code-2", {
-          body: JSON.stringify({
-            actionsPlusApi: filteredActions,
-            org,
-            code: parsedCode.code,
-            userApiKey,
-          }),
-        });
+          // Send code to supabase edge function to execute
+          const res = await supabase.functions.invoke("execute-code-2", {
+            body: JSON.stringify({
+              actionsPlusApi: filteredActions,
+              org,
+              code: parsedCode.code,
+              userApiKey,
+            }),
+          });
 
-        if (res.error) {
-          console.error(
-            `Error executing code for conversation ${conversationId}: ${res.error}`,
+          if (res.error) {
+            console.error(
+              `Error executing code for conversation ${conversationId}: ${res.error}`,
+            );
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
+
+          const returnedData = res.data as ExecuteCode2Item[] | null;
+          const codeOk = checkCodeExecutionOutput(
+            returnedData,
+            conversationId,
+            nLoops,
           );
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
-        }
+          if (!codeOk) {
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
+          // For type-safety (doesn't ever get called)
+          if (returnedData === null) continue;
 
-        const returnedData = res.data as ExecuteCode2Item[] | null;
-        const codeOk = checkCodeExecutionOutput(
-          returnedData,
-          conversationId,
-          nLoops,
-        );
-        if (!codeOk) {
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
+          parallelGraphData = returnedData;
         }
-        // For type-safety (doesn't ever get called)
-        if (returnedData === null) continue;
-
-        parallelGraphData = returnedData;
       }
-      if (parallelGraphData === null) {
-        console.error(
-          `Failed to execute code for conversation ${conversationId} after 3 attempts`,
-        );
-        return { error: "Failed to execute code" };
+      if (!promiseFinished) {
+        if (parallelGraphData === null) {
+          console.error(
+            `Failed to execute code for conversation ${conversationId} after 3 attempts`,
+          );
+          return { error: "Failed to execute code" };
+        }
+        console.log(`Async run ${i} succeeded`);
+        promiseFinished = true;
+        return parallelGraphData;
       }
-      console.log(`Async run ${i} succeeded`);
-      return parallelGraphData;
+      return {
+        error:
+          "Another promise settled first - this should never be in the logs",
+      };
     }),
   );
   if ("error" in graphData) return { error: "Failed to execute code" };
