@@ -8,14 +8,13 @@ export const summariseChatHistoryLLMParams = {
 
 export function chatHistorySummaryPrompt(
   chatHistory: ChatGPTMessage[],
-  userDescription: string,
   language: string | null,
 ): ChatGPTMessage[] {
   return [
     {
       role: "system",
       content: `Paraphrase the user's most recent request as an instruction. This should include relevant information they've given from past messages (PAST_CONVERSATION). This instruction alone is passed to an AI that will carry it out.
-${userDescription ? `\nUser description: ${userDescription}\n` : ""}
+
 PAST_CONVERSATION:
 """
 ${getChatHistoryText(chatHistory)}
@@ -26,10 +25,9 @@ RULES:
 2. DO NOT summarise the assistant's messages
 3. Include ALL relevant information from PAST_CONVERSATION - especially when previously requested by the assistant
 4. Write from the user's perspective - in the first-person. Start with I/Tell me/Who/What/How
-5. Include relevant information from the user description
-6. If the user doesn't answer the assistant's most recent clarifying question, leave this aspect ambiguous in the instruction
-7. ${languageLine(language)}
-8. If the PAST_CONVERSATION is irrelevant to the user's request, simply repeat the user's message`,
+5. If the user doesn't answer the assistant's most recent clarifying question, leave this aspect ambiguous in the instruction
+6. ${languageLine(language)}
+7. If the PAST_CONVERSATION is irrelevant to the user's request, simply repeat the user's message`,
     },
   ];
 }
