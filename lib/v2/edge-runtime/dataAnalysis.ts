@@ -176,43 +176,43 @@ export async function runDataAnalysis(
           continue;
         }
         if ("error" in parsedCode) return parsedCode;
-        if (!promiseFinished) {
-          streamInfo({ role: "loading", content: "Executing code" });
-          console.info("Parsed LLM response:", parsedCode.code);
+        if (promiseFinished) return { error: "Another promise settled first" };
+        streamInfo({ role: "loading", content: "Executing code" });
+        console.info("Parsed LLM response:", parsedCode.code);
 
-          // Send code to supabase edge function to execute
-          const res = await supabase.functions.invoke("execute-code-2", {
-            body: JSON.stringify({
-              actionsPlusApi: filteredActions,
-              org,
-              code: parsedCode.code,
-              userApiKey,
-            }),
-          });
+        // Send code to supabase edge function to execute
+        const res = await supabase.functions.invoke("execute-code-2", {
+          body: JSON.stringify({
+            actionsPlusApi: filteredActions,
+            org,
+            code: parsedCode.code,
+            userApiKey,
+          }),
+        });
+        if (promiseFinished) return { error: "Another promise settled first" };
 
-          if (res.error) {
-            console.error(
-              `Error executing code for conversation ${conversationId}: ${res.error}`,
-            );
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
-          }
-
-          const returnedData = res.data as ExecuteCode2Item[] | null;
-          const codeOk = checkCodeExecutionOutput(
-            returnedData,
-            conversationId,
-            nLoops,
+        if (res.error) {
+          console.error(
+            `Error executing code for conversation ${conversationId}: ${res.error}`,
           );
-          if (!codeOk) {
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
-          }
-          // For type-safety (doesn't ever get called)
-          if (returnedData === null) continue;
-
-          parallelGraphData = returnedData;
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
         }
+
+        const returnedData = res.data as ExecuteCode2Item[] | null;
+        const codeOk = checkCodeExecutionOutput(
+          returnedData,
+          conversationId,
+          nLoops,
+        );
+        if (!codeOk) {
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+        // For type-safety (doesn't ever get called)
+        if (returnedData === null) continue;
+
+        parallelGraphData = returnedData;
       }
       if (!promiseFinished) {
         if (parallelGraphData === null) {
