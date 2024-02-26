@@ -87,8 +87,8 @@ export class LlmResponseCache {
   }
 
   _history_matches(chatHistory: GPTMessageInclSummary[]): boolean {
-    // If cache conversation length less than current convo length, no match
-    if (this.messages.length < chatHistory.length) return false;
+    // If cache conversation length less than current convo length or the same (no new messages), no match
+    if (this.messages.length <= chatHistory.length) return false;
 
     return chatHistory.every((m, idx) => {
       const msg = this.messages[idx];
@@ -126,7 +126,7 @@ export class LlmResponseCache {
     if (isMatch) {
       console.log("Chat output match found - returning cached message");
       const matchingMessage = this.messages[chatHistory.length];
-      return matchingMessage.content;
+      return matchingMessage?.content ?? "";
     }
     this.messages = [];
     return "";
