@@ -65,6 +65,14 @@ export class LlmResponseCache {
             matchingChat.length > 1 &&
             !["", userMessage].includes(matchingChat[1].content)
           ) {
+            // Sometimes due to errors, there are gaps in the conversation index, we cut
+            //  the history to where these gaps are
+            const cutIdx = matchingChat.findIndex(
+              (m, idx) => m.conversation_index !== idx,
+            );
+            if (cutIdx !== -1) {
+              matchingChat.splice(cutIdx);
+            }
             console.log("Found matching conversation:", matchingChat);
             this.matchConvId = convId;
             this.messages = matchingChat as GPTMessageInclSummary[];
