@@ -25,7 +25,7 @@ import {
   clarificationPrompt,
   parseClarificationOutput,
   ParsedClarificationOutput,
-} from "../prompts/clarificationPrompt";
+} from "../prompts/clarification";
 import { Action, Organization } from "../../types";
 
 if (!process.env.CLARIFICATION_MODEL) {
