@@ -209,4 +209,14 @@ data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" 
       incompleteChunk: null,
     });
   });
+  it("real world: incomplete chunk", () => {
+    const testStr = `event: completion
+data: {"t`;
+    const out = parseAnthropicStreamedData(testStr);
+    expect(out).toStrictEqual({
+      completeChunks: [],
+      done: false,
+      incompleteChunk: 'completion\ndata: {"t',
+    });
+  });
 });
