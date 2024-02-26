@@ -41,6 +41,7 @@ export function parseAnthropicStreamedData(
     incompleteChunk: null,
     done: false,
   } as ParsedStreamedData;
+  console.log("claudeOutString", claudeOutString);
 
   claudeOutString
     .split("event: ")
@@ -59,6 +60,7 @@ export function parseAnthropicStreamedData(
         return output;
       }
     });
+  console.log("Parsed claude out:", output);
   return output;
 }
 

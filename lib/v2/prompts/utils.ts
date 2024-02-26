@@ -4,14 +4,14 @@ import { ChatGPTMessage } from "../../models";
 
 export function parseTellUser(output: string): string {
   // If no "Keyword: " is found, return the whole output
-  if (!output.match(/^.+:\s?/m)) {
+  if (!output.match(/^\S+(\s\S+)?:\s?/m)) {
     return output;
   }
 
   // If "Tell user:" is found, return the string after it, but before the next "Keyword: "
   if (output.includes("Tell user:")) {
     const textAfterTellUser = output.split("Tell user:")[1];
-    return textAfterTellUser.split(/^.+:\s?$/m)[0].trim();
+    return textAfterTellUser.split(/^\S+(\s\S+)?:\s?/m)[0].trim();
   }
 
   // Otherwise, return an empty string
