@@ -1,4 +1,4 @@
-import { parseClarificationOutput } from "../../../../lib/v2/prompts/clarificationPrompt";
+import { parseClarificationOutput } from "../../../../lib/v2/prompts/clarification";
 import tokenizer from "gpt-tokenizer";
 
 describe("parseOutput", () => {

@@ -146,7 +146,7 @@ export async function runDataAnalysis(
 
   const graphData = await Promise.race(
     [1, 2, 3].map(async (i) => {
-      console.log("\nAsync run", i);
+      console.log("\nCode gen run", i);
       let parallelGraphData: ExecuteCode2Item[] | null = null,
         nLoops = 0;
       while (parallelGraphData === null && nLoops < 3) {
