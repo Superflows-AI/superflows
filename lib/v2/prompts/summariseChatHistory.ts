@@ -1,5 +1,6 @@
 import { languageLine, parseTellUser } from "./utils";
 import { ChatGPTMessage } from "../../models";
+import { getTokenCount } from "../../utils";
 
 export const summariseChatHistoryLLMParams = {
   temperature: 0.0,
@@ -9,15 +10,22 @@ export const summariseChatHistoryLLMParams = {
 export function chatHistorySummaryPrompt(
   chatHistory: ChatGPTMessage[],
   language: string | null,
-): ChatGPTMessage[] {
-  return [
-    {
-      role: "system",
-      content: `Paraphrase the user's most recent request as an instruction. This should include relevant information they've given from past messages (PAST_CONVERSATION). This instruction alone is passed to an AI that will carry it out.
+): {
+  prompt: ChatGPTMessage[];
+  numPastMessagesIncluded: number;
+  pastConvTokenCount: number;
+} {
+  const { pastConversation, numPastMessagesIncluded } =
+    getChatHistoryText(chatHistory);
+  return {
+    prompt: [
+      {
+        role: "system",
+        content: `Paraphrase the user's most recent request as an instruction. This should include relevant information they've given from past messages (PAST_CONVERSATION). This instruction alone is passed to an AI that will carry it out.
 
 PAST_CONVERSATION:
 """
-${getChatHistoryText(chatHistory)}
+${pastConversation}
 """
 
 RULES:
@@ -28,28 +36,40 @@ RULES:
 5. If the user doesn't answer the assistant's most recent clarifying question, leave this aspect ambiguous in the instruction
 6. ${languageLine(language)}
 7. If the PAST_CONVERSATION is irrelevant to the user's request, simply repeat the user's message`,
-    },
-  ];
+      },
+    ],
+    numPastMessagesIncluded,
+    pastConvTokenCount: getTokenCount(pastConversation),
+  };
 }
 
-function getChatHistoryText(chatHistory: ChatGPTMessage[]): string {
-  return chatHistory
-    .filter(
-      (m, i) =>
-        m.role === "user" ||
-        (m.role === "assistant" &&
-          chatHistory[i + 1].role === "user" &&
-          parseTellUser(m.content)),
-    )
-    .map(
-      (m, idx, arr) =>
-        `${m.role === "user" ? "User" : "Assistant"}${
-          ![0, arr.length - 1].includes(idx)
-            ? ""
-            : idx === 0
-            ? " (oldest)"
-            : " (most recent)"
-        }: ${m.role === "user" ? m.content : parseTellUser(m.content)}`,
-    )
-    .join("\n\n");
+function getChatHistoryText(chatHistory: ChatGPTMessage[]): {
+  pastConversation: string;
+  numPastMessagesIncluded: number;
+} {
+  const filteredHist = chatHistory.filter(
+    (m, i) =>
+      m.role === "user" ||
+      (m.role === "assistant" &&
+        chatHistory[i + 1].role === "user" &&
+        parseTellUser(m.content)),
+  );
+  const messagesIncluded = filteredHist.slice(
+    Math.max(0, filteredHist.length - 11),
+  );
+  return {
+    pastConversation: messagesIncluded
+      .map(
+        (m, idx, arr) =>
+          `${m.role === "user" ? "User" : "Assistant"}${
+            ![0, arr.length - 1].includes(idx)
+              ? ""
+              : idx === 0
+              ? " (oldest)"
+              : " (most recent)"
+          }: ${m.role === "user" ? m.content : parseTellUser(m.content)}`,
+      )
+      .join("\n\n"),
+    numPastMessagesIncluded: messagesIncluded.length,
+  };
 }

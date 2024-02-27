@@ -10,11 +10,17 @@ export async function summariseChatHistory(
   chatHistory: ChatGPTMessage[],
   language: string | null,
 ): Promise<string> {
-  const prompt = chatHistorySummaryPrompt(chatHistory, language);
+  const { prompt, numPastMessagesIncluded, pastConvTokenCount } =
+    chatHistorySummaryPrompt(chatHistory, language);
   console.log("Prompt for summariseChatHistory: ", prompt[0].content);
+  const use4 = numPastMessagesIncluded > 5 || pastConvTokenCount > 100;
   let out: string = await exponentialRetryWrapper(
     getLLMResponse,
-    [prompt, summariseChatHistoryLLMParams, "gpt-4-0125-preview"],
+    [
+      prompt,
+      summariseChatHistoryLLMParams,
+      use4 ? "gpt-4-0125-preview" : "gpt-3-turbo-0125",
+    ],
     3,
   );
   console.log("Summarised user request:", out);
