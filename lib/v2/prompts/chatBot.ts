@@ -8,7 +8,7 @@ import {
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../builtinActions";
 import _ from "lodash";
-import { languageLine } from "./utils";
+import { languageLine, parseTellUser } from "./utils";
 
 export function formatDescription(
   description: string | undefined | null,
@@ -205,29 +205,37 @@ export default function getMessages(
     ? `\nUser description: ${userDescription}\n`
     : "";
 
+  if (actions.length > 0) {
+    return [
+      systemPromptWithActions(
+        userDescriptionSection,
+        orgInfo,
+        getActionDescriptions(actions),
+        language,
+        includeIdLine,
+        userCopilotMessages,
+      ),
+      ...userCopilotMessages,
+    ];
+  }
+  const lastUserIdx = _.findLastIndex(
+    userCopilotMessages,
+    (m) => m.role === "user",
+  );
   return [
-    actions.length > 0
-      ? systemPromptWithActions(
-          userDescriptionSection,
-          orgInfo,
-          getActionDescriptions(actions),
-          language,
-          includeIdLine,
+    explainPlotChatPrompt(
+      userDescriptionSection,
+      orgInfo,
+      language,
+      graphCut,
+      Boolean(
+        _.findLast(
           userCopilotMessages,
-        )
-      : explainPlotChatPrompt(
-          userDescriptionSection,
-          orgInfo,
-          language,
-          graphCut,
-          Boolean(
-            _.findLast(
-              userCopilotMessages,
-              (m) => m.role === "function",
-            )!.content.match(/"type":\s?"table",/),
-          ),
-        ),
-    ...userCopilotMessages,
+          (m) => m.role === "function",
+        )!.content.match(/"type":\s?"table",/),
+      ),
+    ),
+    ...userCopilotMessages.slice(lastUserIdx),
   ];
 }
 

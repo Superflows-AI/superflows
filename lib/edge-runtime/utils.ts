@@ -91,7 +91,7 @@ export function removeOldestFunctionCalls(
       // No function calls left to remove
       break;
     }
-    chatGptPrompt[oldestFunctionCallIndex].content = "Cut due to context limit";
+    chatGptPrompt[oldestFunctionCallIndex].content = "Cut for brevity";
     tokenCount = getTokenCount(chatGptPrompt);
     numberRemoved += 1;
   }
