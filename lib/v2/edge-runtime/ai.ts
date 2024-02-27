@@ -51,7 +51,10 @@ import {
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { storeActionsAwaitingConfirmation } from "../../edge-runtime/ai";
-import { getSearchDocsAction } from "../../builtinActions";
+import {
+  getSearchDocsAction,
+  searchDocsActionName,
+} from "../../builtinActions";
 import { runClarificationAndStreamResponse } from "./clarification";
 import { summariseChatHistory } from "./summariseChatHistory";
 
@@ -159,7 +162,7 @@ export async function Bertie( // Bertie will eat you for breakfast
 
   const clarificationOutput = await runClarificationAndStreamResponse({
     userRequest,
-    selectedActions: actions,
+    actions,
     orgInfo: org,
     userDescription: reqData.user_description ?? "",
     conversationId,
@@ -175,17 +178,21 @@ export async function Bertie( // Bertie will eat you for breakfast
       numUserQueries,
     };
   }
+  actions = clarificationOutput.actions.filter(
+    (a) => a.name !== searchDocsActionName,
+  );
+  let thoughts = clarificationOutput.thoughts;
 
-  let thoughts = "";
-  if (actions.length > 2) {
-    ({ thoughts, actions } = await filterActions(
-      userRequest,
-      actions,
-      org!.name,
-      FASTMODEL,
-    ));
-    // TODO: Deal with the situation where all the actions are filtered out!
-  }
+  // let thoughts = "";
+  // if (actions.length > 2) {
+  //   ({ thoughts, actions } = await filterActions(
+  //     userRequest,
+  //     actions,
+  //     org!.name,
+  //     FASTMODEL,
+  //   ));
+  //   // TODO: Deal with the situation where all the actions are filtered out!
+  // }
   let codeGenCalled = false;
 
   // Add analytics action if enabled
