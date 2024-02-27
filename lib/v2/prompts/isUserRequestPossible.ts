@@ -22,7 +22,7 @@ export function isUserRequestPossiblePrompt(args: {
   userDescription: string;
   language: string | null;
 }): ChatGPTMessage[] {
-  const out: ChatGPTMessage[] = [
+  return [
     {
       role: "system",
       content: `${getIntroText(
@@ -43,11 +43,9 @@ RULES:
 """
 Thoughts:
 1. Think step-by-step how to use FUNCTIONS to answer the user's request
-2. take a breath: be slow and deliberate
-3. break down the user's request into steps in extreme detail
-4. specifically name EVERY SINGLE function and variable the code will use
-5. double-check these functions exist - mention their number from the list
-6. specify where to get every variable from - the code may need to call other functions first
+2. break down the user's request into steps in extreme detail
+3. specifically name EVERY SINGLE function and variable the code will use
+4. specify where to get every variable from - the code may need to call other functions first
 
 Possible: False | True
 
@@ -56,11 +54,6 @@ Tell user: Inform the user that their request is impossible. Mention the capabil
     },
     { role: "user", content: args.userRequest },
   ];
-  // if (args.chatHistory.length === 1) {
-  //   // If this is the first message, add it as a normal user message
-  //   out.push(args.chatHistory[args.chatHistory.length - 1]);
-  // }
-  return out;
 }
 
 export interface ParsedRequestPossibleOutput {
