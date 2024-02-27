@@ -275,10 +275,10 @@ export async function runClarificationAndStreamResponse(args: {
         }
         done = contentItems.done;
       }
+      console.log("Clarification output", rawOutput);
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
     })(),
   ]);
-  console.log("isPossible and clarification outputs", outs);
 
   // If clarification finishes before isPossible
   if (!("error" in outs[1]) && !outs[1].parsed.clear && !streamedText) {
