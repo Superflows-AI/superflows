@@ -15,7 +15,7 @@ export const clarificationLLMParams = {
 
 export function clarificationPrompt(args: {
   userRequest: string;
-  selectedActions: { name: string; filtering_description: string }[];
+  actions: { name: string; filtering_description: string }[];
   orgInfo: { name: string; description: string };
   userDescription: string;
   language: string | null;
@@ -31,7 +31,7 @@ User description: ${args.userDescription}
 
 FUNCTIONS:
 \`\`\`
-${getActionFilteringDescriptions(args.selectedActions)}
+${getActionFilteringDescriptions(args.actions)}
 \`\`\`
 
 Today's date is ${new Date().toISOString().split("T")[0]}
@@ -62,7 +62,7 @@ Answer type of page is clear. A metric is defined 'unique visitors' and a date r
 
 ---
 ${
-  args.selectedActions.find((a) => a.name === searchDocsActionName)
+  args.actions.find((a) => a.name === searchDocsActionName)
     ? `
 User: How do I add a user?
 

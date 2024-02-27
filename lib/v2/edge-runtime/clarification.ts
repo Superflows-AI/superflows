@@ -26,7 +26,8 @@ import {
   parseClarificationOutput,
   ParsedClarificationOutput,
 } from "../prompts/clarification";
-import { Action, Organization } from "../../types";
+import { ActionPlusApiInfo, Organization } from "../../types";
+import { filterActions } from "./filterActions";
 
 if (!process.env.CLARIFICATION_MODEL) {
   throw new Error("CLARIFICATION_MODEL env var is not defined");
@@ -37,10 +38,11 @@ if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
   throw new Error("IS_USER_REQUEST_POSSIBLE_MODEL env var is not defined");
 }
 const isUserRequestPossibleModel = process.env.IS_USER_REQUEST_POSSIBLE_MODEL;
+const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
 
 export async function runClarificationAndStreamResponse(args: {
   userRequest: string;
-  selectedActions: Action[];
+  actions: ActionPlusApiInfo[];
   orgInfo: Pick<Organization, "name" | "description">;
   userDescription: string;
   conversationId: number;
@@ -50,6 +52,8 @@ export async function runClarificationAndStreamResponse(args: {
   message: ChatGPTMessage | null;
   possible: boolean;
   clear: boolean;
+  thoughts: string;
+  actions: ActionPlusApiInfo[];
 }> {
   const placeholderToOriginalMap = {
     FUNCTIONS: "functions",
@@ -63,85 +67,100 @@ export async function runClarificationAndStreamResponse(args: {
   const outs = await Promise.all([
     // Run isPossible
     (async (): Promise<
-      | { output: string; parsed: ParsedRequestPossibleOutput }
+      | {
+          output: string;
+          // parsed: ParsedRequestPossibleOutput;
+          thoughts: string;
+          actions: ActionPlusApiInfo[];
+        }
       | { error: string }
     > => {
-      const prompt = isUserRequestPossiblePrompt(args);
-      console.log("Prompt for isUserRequestPossible: ", prompt[0].content);
-      const res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [prompt, isUserRequestPossibleLLMParams, isUserRequestPossibleModel],
-        3,
+      // const prompt = isUserRequestPossiblePrompt(args);
+      // console.log("Prompt for isUserRequestPossible: ", prompt[0].content);
+      // const res = await exponentialRetryWrapper(
+      //   streamLLMResponse,
+      //   [prompt, isUserRequestPossibleLLMParams, isUserRequestPossibleModel],
+      //   3,
+      // );
+      // if (res === null || "message" in res) {
+      //   console.error(
+      //     `OpenAI API call failed for conversation with id: ${
+      //       args.conversationId
+      //     }. The error was: ${JSON.stringify(res)}`,
+      //   );
+      //   return { error: "Call to Language Model API failed" };
+      // }
+      //
+      // // Stream response chunk by chunk
+      // const decoder = new TextDecoder();
+      // const reader = res.getReader();
+      // let parsedOutput: ParsedRequestPossibleOutput;
+      //
+      // let rawOutput = "",
+      //   done = false,
+      //   incompleteChunk = "",
+      //   first = true;
+      // // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
+      // let placeholderBuffer = "";
+      //
+      // // https://web.dev/streams/#asynchronous-iteration
+      // while (!done) {
+      //   const { value, done: doneReading } = await reader.read();
+      //
+      //   done = doneReading;
+      //   if (done) break;
+      //
+      //   const contentItems = parseGPTStreamedData(
+      //     incompleteChunk + decoder.decode(value),
+      //   );
+      //
+      //   incompleteChunk = contentItems.incompleteChunk ?? "";
+      //
+      //   for (let content of contentItems.completeChunks) {
+      //     // Sometimes starts with a newline
+      //     if (first) {
+      //       content = content.trimStart();
+      //       first = false;
+      //     }
+      //     // Raw output is the actual output from the LLM!
+      //     rawOutput += content;
+      //     // What streams back to the user has the variables replaced with their real values
+      //     //  so FUNCTIONS is replaced by the actual URL
+      //     ({ content, placeholderBuffer } = replacePlaceholdersDuringStreaming(
+      //       content,
+      //       placeholderBuffer,
+      //       placeholderToOriginalMap,
+      //     ));
+      //     if (content) {
+      //       parsedOutput = parseRequestPossibleOutput(rawOutput);
+      //       // If the output contains a "Tell user:" section, it's impossible. Also stream the reason to the user
+      //       if (isPossible === null && parsedOutput.tellUser) {
+      //         console.log("Tell user is present, so now streaming tellUser!");
+      //         isPossible = false;
+      //       }
+      //       if (isPossible === false) {
+      //         args.streamInfo({ role: "assistant", content });
+      //         streamedText += content;
+      //       }
+      //     }
+      //   }
+      //   done = contentItems.done;
+      // }
+      const { thoughts, actions } = await filterActions(
+        args.userRequest,
+        args.actions,
+        args.orgInfo.name,
+        FASTMODEL,
       );
-      if (res === null || "message" in res) {
-        console.error(
-          `OpenAI API call failed for conversation with id: ${
-            args.conversationId
-          }. The error was: ${JSON.stringify(res)}`,
-        );
-        return { error: "Call to Language Model API failed" };
-      }
+      isPossible = actions.length > 0;
 
-      // Stream response chunk by chunk
-      const decoder = new TextDecoder();
-      const reader = res.getReader();
-      let parsedOutput: ParsedRequestPossibleOutput;
-
-      let rawOutput = "",
-        done = false,
-        incompleteChunk = "",
-        first = true;
-      // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
-      let placeholderBuffer = "";
-
-      // https://web.dev/streams/#asynchronous-iteration
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-
-        done = doneReading;
-        if (done) break;
-
-        const contentItems = parseGPTStreamedData(
-          incompleteChunk + decoder.decode(value),
-        );
-
-        incompleteChunk = contentItems.incompleteChunk ?? "";
-
-        for (let content of contentItems.completeChunks) {
-          // Sometimes starts with a newline
-          if (first) {
-            content = content.trimStart();
-            first = false;
-          }
-          // Raw output is the actual output from the LLM!
-          rawOutput += content;
-          // What streams back to the user has the variables replaced with their real values
-          //  so FUNCTIONS is replaced by the actual URL
-          ({ content, placeholderBuffer } = replacePlaceholdersDuringStreaming(
-            content,
-            placeholderBuffer,
-            placeholderToOriginalMap,
-          ));
-          if (content) {
-            parsedOutput = parseRequestPossibleOutput(rawOutput);
-            // If the output contains a "Tell user:" section, it's impossible. Also stream the reason to the user
-            if (isPossible === null && parsedOutput.tellUser) {
-              console.log("Tell user is present, so now streaming tellUser!");
-              isPossible = false;
-            }
-            if (isPossible === false) {
-              args.streamInfo({ role: "assistant", content });
-              streamedText += content;
-            }
-          }
-        }
-        done = contentItems.done;
-      }
       // If not possible, yet no explanation of why, we do _another_ stream to get the explanation
-      if (isPossible === false && streamedText === "") {
+      // if (isPossible === false && streamedText === "") {
+      let rawOutput = "";
+      if (actions.length === 0) {
         console.log("No tell user section, so now streaming explanation!");
         const prompt = impossibleExplanation({
-          thoughts: parsedOutput!.thoughts,
+          thoughts,
           ...args,
         });
         console.log("Prompt for impossibleExplanation: ", prompt[0].content);
@@ -161,21 +180,21 @@ export async function runClarificationAndStreamResponse(args: {
             content: "Call to Language Model API failed",
           });
           return {
-            output: rawOutput,
-            parsed: parseRequestPossibleOutput(rawOutput),
+            output: "",
+            thoughts,
+            actions,
           };
         }
 
         // Stream response chunk by chunk
-        rawOutput += `\n\nTell user:\n${await streamResponseToUser(
-          res,
-          args.streamInfo,
-        )}`;
+        rawOutput = await streamResponseToUser(res, args.streamInfo);
       }
+      streamedText += rawOutput;
 
       return {
         output: rawOutput,
-        parsed: parseRequestPossibleOutput(rawOutput),
+        thoughts,
+        actions,
       };
     })(),
     (async (): Promise<
@@ -263,17 +282,19 @@ export async function runClarificationAndStreamResponse(args: {
 
   // If clarification finishes before isPossible
   if (!("error" in outs[1]) && !outs[1].parsed.clear && !streamedText) {
-    console.log("Anthropic beat GPT!");
+    console.log(
+      "Streaming clarification output because it is possible, but unclear.",
+    );
     streamedText = outs[1].parsed.tellUser;
     args.streamInfo({ role: "assistant", content: outs[1].parsed.tellUser });
   }
 
   // TODO: Add caching of isPossible and clarification outputs
-  const possible = "error" in outs[0] || outs[0].parsed.possible;
+  const possible = "error" in outs[0] || outs[0].actions.length > 0;
   const clear = "error" in outs[1] || outs[1].parsed.clear;
   return {
     message:
-      !possible && !("error" in outs[0]) && outs[0].parsed.tellUser
+      !possible && !("error" in outs[0]) && outs[0].output
         ? {
             role: "assistant",
             content: outs[0].output.replace(/Possible: False\n\n/, ""),
@@ -286,5 +307,7 @@ export async function runClarificationAndStreamResponse(args: {
         : null,
     possible,
     clear,
+    thoughts: "error" in outs[0] ? "" : outs[0].thoughts,
+    actions: "error" in outs[0] ? [] : outs[0].actions,
   };
 }

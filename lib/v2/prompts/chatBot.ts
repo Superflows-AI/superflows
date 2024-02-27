@@ -220,10 +220,12 @@ export default function getMessages(
           orgInfo,
           language,
           graphCut,
-          _.findLast(
-            userCopilotMessages,
-            (m) => m.role === "function",
-          )!.content.includes('"type": "table",'),
+          Boolean(
+            _.findLast(
+              userCopilotMessages,
+              (m) => m.role === "function",
+            )!.content.match(/"type":\s?"table",/),
+          ),
         ),
     ...userCopilotMessages,
   ];

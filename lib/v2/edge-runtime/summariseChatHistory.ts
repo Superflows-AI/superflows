@@ -19,7 +19,7 @@ export async function summariseChatHistory(
     [
       prompt,
       summariseChatHistoryLLMParams,
-      use4 ? "gpt-4-0125-preview" : "gpt-3-turbo-0125",
+      use4 ? "gpt-4-0125-preview" : "gpt-3.5-turbo-0125",
     ],
     3,
   );
@@ -27,7 +27,7 @@ export async function summariseChatHistory(
   if (!out) {
     out = await exponentialRetryWrapper(
       getLLMResponse,
-      [prompt, summariseChatHistoryLLMParams, "gpt-3-turbo-0125"],
+      [prompt, summariseChatHistoryLLMParams, "gpt-3.5-turbo-0125"],
       3,
     );
   }

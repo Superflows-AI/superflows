@@ -107,7 +107,7 @@ export function parseRequestPossibleOutput(
 export function impossibleExplanation(args: {
   thoughts: string;
   userRequest: string;
-  selectedActions: Pick<Action, "name" | "filtering_description">[];
+  actions: Pick<Action, "name" | "filtering_description">[];
   orgInfo: { name: string; description: string };
   userDescription: string;
 }): ChatGPTMessage[] {
@@ -120,7 +120,7 @@ export function impossibleExplanation(args: {
 ${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
 Your capabilities are listed as functions below:
 \`\`\`
-${getActionFilteringDescriptions(args.selectedActions)}
+${getActionFilteringDescriptions(args.actions)}
 \`\`\`
 
 User request: ${args.userRequest}
