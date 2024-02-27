@@ -126,7 +126,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   const streamInfo = await preamble(controller, conversationId);
 
   let chatHistory = [...previousMessages];
-  const model = org.model;
+  let model = org.model;
   // GPT4 can deal with longer context window better
   const maxConvLength = model === "gpt-4" ? 20 : 14;
   let mostRecentParsedOutput = {
@@ -286,11 +286,7 @@ export async function Bertie( // Bertie will eat you for breakfast
 
         const res = await exponentialRetryWrapper(
           streamLLMResponse,
-          [
-            chatGptPrompt,
-            completionOptions,
-            !codeGenCalled ? model : FASTMODEL,
-          ],
+          [chatGptPrompt, completionOptions, model],
           3,
         );
         if (res === null || "message" in res) {
@@ -553,6 +549,7 @@ export async function Bertie( // Bertie will eat you for breakfast
         );
         // Make last message an explanation-only message
         codeGenCalled = true;
+        model = FASTMODEL;
 
         // Return graph data to the user & add message to chat history
         if (graphData === null) {
