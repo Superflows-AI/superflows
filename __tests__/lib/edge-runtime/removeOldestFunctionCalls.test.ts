@@ -15,7 +15,7 @@ const assistantMessage: ChatGPTMessage = {
 };
 const replacementFunctionMessage: ChatGPTMessage = {
   role: "function",
-  content: "Cut due to context limit",
+  content: "Cut for brevity",
   name: "longFunctionCall",
 };
 function getLongFunctionCall(numTokens: number): ChatGPTMessage {
