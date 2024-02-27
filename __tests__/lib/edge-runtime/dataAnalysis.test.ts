@@ -9,6 +9,7 @@ import {
   UserMessage,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { dataAnalysisActionName } from "../../../lib/builtinActions";
+import { checkCodeExecutionOutput } from "../../../lib/v2/edge-runtime/dataAnalysis";
 
 describe("getCalledActions", () => {
   const assistant: AssistantMessage = {
@@ -268,5 +269,85 @@ ${dataAnalysisActionName}()`,
       assMsgDataAnalysisCall,
     ]);
     expect(out).toBe(null);
+  });
+});
+
+describe("checkCodeExecutionOutput", () => {
+  it("null", () => {
+    expect(checkCodeExecutionOutput(null, 1)).toBe(false);
+  });
+  it("Only calls, no logs or plots", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(false);
+  });
+  it("1 log", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+          {
+            type: "log",
+            args: { message: "This is a log message" },
+          },
+        ],
+        1,
+      ),
+    ).toBe(true);
+  });
+  it("1 plot", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "plot",
+            args: {
+              type: "bar",
+              title: "graph",
+              data: [{ x: 1, y: 2 }],
+              labels: { x: "a", y: "b" },
+            },
+          },
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(true);
+  });
+  it("Plot, no data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "plot",
+            args: {
+              type: "bar",
+              title: "graph",
+              data: [],
+              labels: { x: "a", y: "b" },
+            },
+          },
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(false);
   });
 });
