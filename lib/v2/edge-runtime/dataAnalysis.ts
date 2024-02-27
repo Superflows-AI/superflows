@@ -152,7 +152,7 @@ export async function runDataAnalysis(
       while (parallelGraphData === null && nLoops < 3 && !promiseFinished) {
         defaultDataAnalysisParams = {
           ...defaultDataAnalysisParams,
-          temperature: nLoops === 0 ? 0.1 : 0.8,
+          temperature: nLoops === 0 && i === 0 ? 0.1 : 0.8,
         };
         nLoops += 1;
         const parallelLlmResponse = await exponentialRetryWrapper(
