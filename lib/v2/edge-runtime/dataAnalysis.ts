@@ -255,7 +255,7 @@ export async function runDataAnalysis(
   return graphData;
 }
 
-function checkCodeExecutionOutput(
+export function checkCodeExecutionOutput(
   returnedData: ExecuteCode2Item[] | null,
   conversationId: number,
   nLoops?: number,
@@ -289,7 +289,7 @@ function checkCodeExecutionOutput(
     if (
       // No data (exception is if it's a table or value)
       (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
-      !plotArgs.data.some((d) => Object.keys(d).length > 1)
+      plotArgs.data.every((d) => Object.keys(d).length <= 1)
     ) {
       console.error(
         `Missing columns in data output by code for conversation ${conversationId}${
@@ -302,7 +302,10 @@ function checkCodeExecutionOutput(
       return false;
     }
   }
-  return true;
+  // If only calls, return false - no logs (an answer might be written in a log) or plots
+  return (
+    returnedData.filter((m) => ["log", "plot"].includes(m.type)).length > 0
+  );
 }
 
 export function convertToGraphData(
