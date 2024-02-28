@@ -18,6 +18,7 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { dataAnalysisActionName } from "../builtinActions";
+import { isFormDataLike } from "form-data-encoder";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -369,22 +370,7 @@ export function convertToGraphData(
     { type: "plot" }
   >[];
 
-  const plotMessages = plotItems.map(
-    (g) =>
-      ({
-        role: "graph",
-        content: {
-          type: g.args.data.length === 1 ? "value" : g.args.type,
-          data:
-            g.args.type !== "table"
-              ? ensureDataWellFormatted(g.args)
-              : g.args.data,
-          xLabel: g.args.labels?.x ?? "",
-          yLabel: g.args.labels?.y ?? "",
-          graphTitle: g.args.title,
-        },
-      } as GraphMessage),
-  );
+  const plotMessages = plotItems.map(formatPlotData);
 
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
@@ -398,7 +384,48 @@ export function convertToGraphData(
   return [functionMessage, ...plotMessages];
 }
 
-export function ensureDataWellFormatted(
+export function formatPlotData(
+  plotMessage: Extract<ExecuteCode2Item, { type: "plot" }>,
+): GraphMessage {
+  let graphData = plotMessage.args;
+  if (graphData.type !== "table") {
+    graphData.data = ensureXandYinData(graphData);
+
+    // Must ensure that the y value is a number
+    graphData.data.forEach((item, idx) => {
+      if (typeof item.y === "string") {
+        const num = Number(item.y);
+        if (!isNaN(num)) {
+          item.y = num;
+        }
+      } else if (typeof item.y === "object" && !Array.isArray(item.y)) {
+        // Find the first number in the object and use that as y
+        const key = Object.keys(item.y).find(
+          (k) => typeof item.y[k] === "number",
+        );
+        if (key) {
+          item.y.y = item.y[key];
+          delete item.y[key];
+        }
+        graphData.data[idx] = { ...item, ...item.y };
+      }
+    });
+  }
+  return {
+    role: "graph",
+    content: {
+      type: graphData.data.length === 1 ? "value" : graphData.type,
+      // TODO: Fix below typing issues by making the functions type safe
+      // @ts-ignore
+      data: graphData.data,
+      xLabel: graphData.labels?.x ?? "",
+      yLabel: graphData.labels?.y ?? "",
+      graphTitle: graphData.title,
+    },
+  };
+}
+
+export function ensureXandYinData(
   graphData: BertieGraphData,
 ): BertieGraphData["data"] {
   /** If there is no x and y in the data and it's not a table, we want to convert it to having
@@ -426,7 +453,7 @@ export function ensureDataWellFormatted(
   graphData.data.forEach((item) => {
     Object.keys(item).forEach((key) => keys.add(key));
   });
-  const xLabel = graphData.labels.x;
+  const xLabel = graphData.labels?.x ?? "";
   if (xMissing) {
     if (keys.has(xLabel)) {
       mapping.x = xLabel;
@@ -437,7 +464,7 @@ export function ensureDataWellFormatted(
     }
   }
   // Below we remove the units from the labels (look for something in brackets and cut it)
-  const yLabel = graphData.labels.y.match(/([^(]*)(?: \(.+\))?$/)?.[1] ?? "";
+  const yLabel = graphData.labels?.y.match(/([^(]*)(?: \(.+\))?$/)?.[1] ?? "";
   if (yMissing) {
     if (keys.has(yLabel)) {
       mapping.y = yLabel;
@@ -454,7 +481,15 @@ export function ensureDataWellFormatted(
   }
   if (yMissing && !("y" in mapping)) {
     let key = Array.from(keys)[0] as string;
-    if (key === "x") key = Array.from(keys)[1] as string;
+    let i = 1;
+    while (
+      (key === "x" ||
+        graphData.data.some((item) => typeof item[key] !== "number")) &&
+      i < keys.size
+    ) {
+      key = Array.from(keys)[i] as string;
+      i += 1;
+    }
     mapping.y = key;
   }
 

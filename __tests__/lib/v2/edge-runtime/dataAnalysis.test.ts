@@ -1,6 +1,6 @@
 import {
   convertToGraphData,
-  ensureDataWellFormatted,
+  formatPlotData,
 } from "../../../../lib/v2/edge-runtime/dataAnalysis";
 import { ExecuteCode2Item } from "../../../../lib/types";
 import { dataAnalysisActionName } from "../../../../lib/v2/builtinActions";
@@ -157,188 +157,356 @@ Plot generated successfully`,
 
 describe("ensureDataWellFormatted", () => {
   it("x and y present: do nothing", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        { x: 1, y: 2 },
-        { x: 1, y: 2 },
-      ],
-      labels: { x: "date", y: "value" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        labels: { x: "date", y: "value" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "date",
+        yLabel: "value",
+      },
+    });
   });
   it("x missing, get from labels", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { date: 1, y: 2 },
-        // @ts-ignore
-        { date: 1, y: 2 },
-      ],
-      labels: { x: "date", y: "value" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { date: 1, y: 2 },
+
+          { date: 1, y: 2 },
+        ],
+        labels: { x: "date", y: "value" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "date",
+        yLabel: "value",
+      },
+    });
   });
   it("x missing, get from labels (lowercase)", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { date: 1, y: 2 },
-        // @ts-ignore
-        { date: 1, y: 2 },
-      ],
-      labels: { x: "Date", y: "value" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { date: 1, y: 2 },
+
+          { date: 1, y: 2 },
+        ],
+        labels: { x: "Date", y: "value" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Date",
+        yLabel: "value",
+      },
+    });
   });
   it("y missing, get from labels", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { x: 1, value: 2 },
-        // @ts-ignore
-        { x: 1, value: 2 },
-      ],
-      labels: { x: "date", y: "value" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: 1, value: 2 },
+          { x: 1, value: 2 },
+        ],
+        labels: { x: "date", y: "value" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "date",
+        yLabel: "value",
+      },
+    });
   });
   it("y missing, get from labels, remove units", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { x: 1, age: 23, value: 2 },
-        // @ts-ignore
-        { x: 1, age: 23, value: 2 },
-      ],
-      labels: { x: "Date", y: "Value ($)" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: 1, age: 23, value: 2 },
+          { x: 1, age: 23, value: 2 },
+        ],
+        labels: { x: "Date", y: "Value ($)" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2, age: 23 },
-      { x: 1, y: 2, age: 23 },
-    ]);
+    expect(out).toEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2, age: 23 },
+          { x: 1, y: 2, age: 23 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Date",
+        yLabel: "Value ($)",
+      },
+    });
   });
   it("y missing, get from order", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { x: 1, value: 2 },
-        // @ts-ignore
-        { x: 1, value: 2 },
-      ],
-      labels: { x: "Date", y: "Units ($)" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: 1, value: 2 },
+          { x: 1, value: 2 },
+        ],
+        labels: { x: "Date", y: "Units ($)" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Date",
+        yLabel: "Units ($)",
+      },
+    });
   });
   it("y missing, get from labels, out of order", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { value: 2, x: 1 },
-        // @ts-ignore
-        { value: 2, x: 1 },
-      ],
-      labels: { x: "Date", y: "Value ($)" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { value: 2, x: 1 },
+          { value: 2, x: 1 },
+        ],
+        labels: { x: "Date", y: "Value ($)" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Date",
+        yLabel: "Value ($)",
+      },
+    });
   });
   it("x & y missing, get from labels", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { value: 2, date: 1 },
-        // @ts-ignore
-        { value: 2, date: 1 },
-      ],
-      labels: { x: "Date", y: "Value ($)" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { value: 2, date: 1 },
+          { value: 2, date: 1 },
+        ],
+        labels: { x: "Date", y: "Value ($)" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Date",
+        yLabel: "Value ($)",
+      },
+    });
   });
   it("x & y missing, get from order", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { date: 1, value: 2 },
-        // @ts-ignore
-        { date: 1, value: 2 },
-      ],
-      labels: { x: "Mornings", y: "Units ($)" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { date: 1, value: 2 },
+          { date: 1, value: 2 },
+        ],
+        labels: { x: "Mornings", y: "Units ($)" },
+      },
     });
-    expect(out).toStrictEqual([
-      { x: 1, y: 2 },
-      { x: 1, y: 2 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "Mornings",
+        yLabel: "Units ($)",
+      },
+    });
   });
   it("Real world: x & y missing, get one from label, one from order", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { rep: "Emma", wonDeals: 14, closedDeals: 0 },
-        // @ts-ignore
-        { rep: "Ava", wonDeals: 12, closedDeals: 0 },
-      ],
-      labels: { x: "rep", y: "deals" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { rep: "Emma", wonDeals: 14, closedDeals: 0 },
+          { rep: "Ava", wonDeals: 12, closedDeals: 0 },
+        ],
+        labels: { x: "rep", y: "deals" },
+      },
     });
-    expect(out).toStrictEqual([
-      { closedDeals: 0, x: "Emma", y: 14 },
-      { closedDeals: 0, x: "Ava", y: 12 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { closedDeals: 0, x: "Emma", y: 14 },
+          { closedDeals: 0, x: "Ava", y: 12 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "rep",
+        yLabel: "deals",
+      },
+    });
   });
   it("Real world: x & y missing, get one from label, one from order", () => {
-    const out = ensureDataWellFormatted({
-      title: "title",
-      type: "line",
-      data: [
-        // @ts-ignore
-        { rep: "Emma", wonDeals: 14, closedDeals: 0 },
-        // @ts-ignore
-        { rep: "Ava", wonDeals: 12, closedDeals: 0 },
-      ],
-      labels: { x: "rep", y: "deals" },
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { rep: "Emma", wonDeals: 14, closedDeals: 0 },
+          { rep: "Ava", wonDeals: 12, closedDeals: 0 },
+        ],
+        labels: { x: "rep", y: "deals" },
+      },
     });
-    expect(out).toStrictEqual([
-      { closedDeals: 0, x: "Emma", y: 14 },
-      { closedDeals: 0, x: "Ava", y: 12 },
-    ]);
+    expect(out).toStrictEqual({
+      role: "graph",
+      content: {
+        data: [
+          { closedDeals: 0, x: "Emma", y: 14 },
+          { closedDeals: 0, x: "Ava", y: 12 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "rep",
+        yLabel: "deals",
+      },
+    });
+  });
+  it("Real world: y is an object", () => {
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: "Emma", y: { wonDeals: 14, closedDeals: 0 } },
+          { x: "Ava", y: { wonDeals: 12, closedDeals: 0 } },
+        ],
+        labels: { x: "rep", y: "deals" },
+      },
+    });
+    expect(out).toEqual({
+      role: "graph",
+      content: {
+        data: [
+          { closedDeals: 0, x: "Emma", y: 14 },
+          { closedDeals: 0, x: "Ava", y: 12 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "rep",
+        yLabel: "deals",
+      },
+    });
+  });
+  it("Real world: y is an object in later datapoints, not first", () => {
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          { x: "Emma", y: 14 },
+          { x: "Ava", y: { wonDeals: 12, closedDeals: 0 } },
+        ],
+        labels: { x: "rep", y: "deals" },
+      },
+    });
+    expect(out).toEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: "Emma", y: 14 },
+          { closedDeals: 0, x: "Ava", y: 12 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "rep",
+        yLabel: "deals",
+      },
+    });
   });
 });
