@@ -61,11 +61,11 @@ export interface BertieGraphData {
   title: string | number;
   type: "line" | "bar" | "table";
   data: {
-    x: number | string;
-    y: number;
+    x?: any; // Should be a number | string;
+    y?: any; // Should be a number;
     [key: string]: any; // The wildcard is to add extra information shown in the table and when hovering the data point
   }[];
-  labels: { x: string; y: string };
+  labels?: { x: string; y: string };
 }
 
 export type ExecuteCode2Item =
