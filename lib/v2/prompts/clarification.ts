@@ -95,7 +95,10 @@ RULES:
 3. DO NOT give the user a command, tell them to talk to a data analyst or call FUNCTIONS themselves
 4. DO NOT mention FUNCTIONS or the coder to the user
 5. Think about what the user knows when asking them questions. The user may not know IDs, but might know other details which you can search for
-6. ${languageLine(args.language, "'Thoughts', 'Clear' or 'Tell user'")} 
+6. ${languageLine(
+        args.language,
+        "'Thoughts', 'Clear', 'True', 'False' or 'Tell user'",
+      )} 
 7. Respond in the following format (Thoughts as a numbered list, 'Clear' and 'Tell user'):
 """
 Thoughts:
@@ -135,12 +138,20 @@ export function parseClarificationOutput(
   let thoughts = output.match(/^Thoughts:\s+((\d\.?\s?.*\n?)+)/)?.[1] || "";
   thoughts = thoughts.trim();
 
-  let tellUser = output.split("Tell user:")[1] || "";
-  tellUser = tellUser.trim();
-
   const clear = !Boolean(
     output.match(/Clear: [Ff]alse/m) || output.match(/^Tell user:/m),
   );
+
+  let tellUser = "";
+  if (output.match(/^Tell user:/m)) {
+    tellUser = output.split(/^Tell user:/m)[1];
+  } else if (!clear) {
+    tellUser = output.split(/Clear: [Ff]alse/)[1].trim();
+    if ("Tell user:".includes(tellUser)) {
+      tellUser = "";
+    }
+  }
+  tellUser = tellUser.trim();
 
   return { thoughts, tellUser, clear };
 }
