@@ -7,14 +7,14 @@ export function explainNotPossiblePrompt(args: {
   thoughts: string;
   userRequest: string;
   actions: Pick<Action, "name" | "filtering_description">[];
-  orgInfo: { name: string; description: string };
+  org: { name: string; description: string };
   userDescription: string;
 }): ChatGPTMessage[] {
   return [
     {
       role: "system",
       content: `${getIntroText(
-        args.orgInfo,
+        args.org,
       )}. Your task is to explain to the user why their request is not possible. You have already thought about the user's request and why it is not possible, you must now tell them.
 ${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
 Your capabilities are listed as functions below:

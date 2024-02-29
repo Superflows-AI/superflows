@@ -77,31 +77,17 @@ const anotherMistake = {
 export async function runDataAnalysis(
   instruction: string,
   filteredActions: ActionPlusApiInfo[],
-  // fullChatHistory: GPTMessageInclSummary[],
   org: Pick<Organization, "id" | "name" | "description">,
   dbData: { conversationId: number; index: number },
   userDescription: string,
   cache: LlmResponseCache,
-  thoughts: string,
-  conversationId: number,
+  thoughts: string[],
   streamInfo: (step: StreamingStepInput) => void,
   userApiKey?: string,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
   streamInfo({ role: "loading", content: "Performing data analysis" });
-  const dataAnalysisPrompt = getDataAnalysisPrompt({
-    question: instruction,
-    selectedActions: filteredActions,
-    orgInfo: org,
-    userDescription,
-    thoughts,
-  });
-  console.log(
-    "Data analysis prompt:",
-    JSON.stringify(GPTChatFormatToPhind(dataAnalysisPrompt)),
-  );
-
   let llmResponse = await cache.checkBertieAnalyticsCache(
-    dataAnalysisPrompt[1].content,
+    instruction,
     filteredActions.map((a) => a.name),
     org.id,
     supabase,
@@ -125,11 +111,14 @@ export async function runDataAnalysis(
 
       if (!res.error) {
         const returnedData = res.data as ExecuteCode2Item[] | null;
-        const codeOk = checkCodeExecutionOutput(returnedData, conversationId);
+        const codeOk = checkCodeExecutionOutput(
+          returnedData,
+          dbData.conversationId,
+        );
         if (codeOk) {
           // Save to DB for possible reuse later - run async
           void saveAnalyticsToDB(
-            dataAnalysisPrompt[1].content,
+            instruction,
             llmResponse,
             org.id,
             dbData,
@@ -140,99 +129,135 @@ export async function runDataAnalysis(
         }
       }
       console.error(
-        `Error executing code for conversation ${conversationId}: ${res.error}`,
+        `Error executing code for conversation ${dbData.conversationId}: ${res.error}`,
       );
     }
   }
-  var promiseFinished = false;
-  const graphData = await Promise.race(
-    [1, 2, 3].map(async (i) => {
-      console.log("\nCode gen run", i);
-      let parallelGraphData: ExecuteCode2Item[] | null = null,
-        nLoops = 0;
-      while (parallelGraphData === null && nLoops < 3 && !promiseFinished) {
-        defaultDataAnalysisParams = {
-          ...defaultDataAnalysisParams,
-          temperature: nLoops === 0 && i === 0 ? 0.1 : 0.8,
-        };
-        nLoops += 1;
-        const parallelLlmResponse = await exponentialRetryWrapper(
-          getLLMResponse,
-          [
-            dataAnalysisPrompt,
-            defaultDataAnalysisParams,
-            process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
-          ],
-          3,
-        );
-        console.info("\nRaw LLM response:", parallelLlmResponse);
 
-        // Parse the result
-        let parsedCode = parseDataAnalysis(
-          parallelLlmResponse,
-          filteredActions,
-        );
-        if (parsedCode === null) {
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
-        }
-        if ("error" in parsedCode) return parsedCode;
-        if (promiseFinished) return { error: "Another promise settled first" };
-        streamInfo({ role: "loading", content: "Executing code" });
-        console.info("Parsed LLM response:", parsedCode.code);
-
-        // Send code to supabase edge function to execute
-        const res = await supabase.functions.invoke("execute-code-2", {
-          body: JSON.stringify({
-            actionsPlusApi: filteredActions,
-            org,
-            code: parsedCode.code,
-            userApiKey,
-          }),
-        });
-        if (promiseFinished) return { error: "Another promise settled first" };
-
-        if (res.error) {
-          console.error(
-            `Error executing code for conversation ${conversationId}: ${res.error}`,
-          );
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
-        }
-
-        const returnedData = res.data as ExecuteCode2Item[] | null;
-        const codeOk = checkCodeExecutionOutput(
-          returnedData,
-          conversationId,
-          nLoops,
-        );
-        if (!codeOk) {
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
-        }
-        // For type-safety (doesn't ever get called)
-        if (returnedData === null) continue;
-
-        parallelGraphData = returnedData;
-      }
-      if (!promiseFinished) {
-        if (parallelGraphData === null) {
-          console.error(
-            `Failed to execute code for conversation ${conversationId} after 3 attempts`,
-          );
-          return { error: "Failed to execute code" };
-        }
-        console.log(`Async run ${i} succeeded`);
-        promiseFinished = true;
-        return parallelGraphData;
-      }
-      return {
-        error:
-          "Another promise settled first - this should never be in the logs",
-      };
-    }),
+  console.log(
+    "Data analysis prompt:",
+    JSON.stringify(
+      GPTChatFormatToPhind(
+        getDataAnalysisPrompt({
+          question: instruction,
+          selectedActions: filteredActions,
+          orgInfo: org,
+          userDescription,
+          thoughts: thoughts[0],
+        }),
+      ),
+    ),
   );
-  if ("error" in graphData) return { error: "Failed to execute code" };
+  var promiseFinished = false;
+  const promiseOut = await Promise.race(
+    [1, 2, 3].map(
+      async (
+        i,
+      ): Promise<
+        | { graphData: ExecuteCode2Item[]; llmResponse: string }
+        | { error: string }
+      > => {
+        const dataAnalysisPrompt = getDataAnalysisPrompt({
+          question: instruction,
+          selectedActions: filteredActions,
+          orgInfo: org,
+          userDescription,
+          thoughts: thoughts[(i - 1) % thoughts.length],
+        });
+        console.log("\nCode gen run", i);
+        let parallelGraphData: ExecuteCode2Item[] | null = null,
+          nLoops = 0;
+        let parallelLlmResponse = "";
+        while (parallelGraphData === null && nLoops < 3 && !promiseFinished) {
+          defaultDataAnalysisParams = {
+            ...defaultDataAnalysisParams,
+            temperature: nLoops === 0 && i === 0 ? 0.1 : 0.8,
+          };
+          nLoops += 1;
+          parallelLlmResponse = await exponentialRetryWrapper(
+            getLLMResponse,
+            [
+              dataAnalysisPrompt,
+              defaultDataAnalysisParams,
+              process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
+            ],
+            3,
+          );
+          console.info("\nRaw LLM response:", parallelLlmResponse);
+
+          // Parse the result
+          let parsedCode = parseDataAnalysis(
+            parallelLlmResponse,
+            filteredActions,
+          );
+          if (parsedCode === null) {
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
+          if ("error" in parsedCode) return parsedCode;
+          if (promiseFinished)
+            return { error: "Another promise settled first" };
+          streamInfo({ role: "loading", content: "Executing code" });
+          console.info("Parsed LLM response:", parsedCode.code);
+
+          // Send code to supabase edge function to execute
+          const res = await supabase.functions.invoke("execute-code-2", {
+            body: JSON.stringify({
+              actionsPlusApi: filteredActions,
+              org,
+              code: parsedCode.code,
+              userApiKey,
+            }),
+          });
+          if (promiseFinished)
+            return { error: "Another promise settled first" };
+
+          if (res.error) {
+            console.error(
+              `Error executing code for conversation ${dbData.conversationId}: ${res.error}`,
+            );
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
+
+          const returnedData = res.data as ExecuteCode2Item[] | null;
+          const codeOk = checkCodeExecutionOutput(
+            returnedData,
+            dbData.conversationId,
+            nLoops,
+          );
+          if (!codeOk) {
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
+          // For type-safety (doesn't ever get called)
+          if (returnedData === null) continue;
+
+          parallelGraphData = returnedData;
+        }
+        if (!promiseFinished) {
+          if (parallelGraphData === null) {
+            console.error(
+              `Failed to execute code for conversation ${dbData.conversationId} after 3 attempts`,
+            );
+            return { error: "Failed to execute code" };
+          }
+          console.log(`Async run ${i} succeeded`);
+          promiseFinished = true;
+          return {
+            graphData: parallelGraphData,
+            llmResponse: parallelLlmResponse,
+          };
+        }
+        return {
+          error:
+            "Another promise settled first - this should never be in the logs",
+        };
+      },
+    ),
+  );
+  if ("error" in promiseOut) return { error: "Failed to execute code" };
+  const graphData = promiseOut.graphData;
   console.info(
     "Data analysis response:",
     graphData.map((item) =>
@@ -246,8 +271,8 @@ export async function runDataAnalysis(
   );
   // Save to DB for possible reuse later - run async
   void saveAnalyticsToDB(
-    dataAnalysisPrompt[1].content,
-    llmResponse,
+    instruction,
+    promiseOut.llmResponse,
     org.id,
     dbData,
     true,
@@ -283,6 +308,24 @@ export function checkCodeExecutionOutput(
     );
     return false;
   }
+  // If there are log messages starting with the word Error or ERROR
+  const logMessages = returnedData.filter((m) => m.type === "log");
+  if (
+    logMessages.some(
+      (m) => "message" in m.args && m.args.message.match(/^E(rror|RROR)/),
+    )
+  ) {
+    console.error(
+      `Error executing code for conversation ${conversationId}${
+        nLoops ? `, attempt ${nLoops}/3` : ""
+      }:\n${logMessages
+        // @ts-ignore
+        .map((m) => m.args.message)
+        .join("\n")}`,
+    );
+    return false;
+  }
+
   // If 1 plot with missing data
   const plotMessages = returnedData.filter((m) => m.type === "plot");
   if (plotMessages.length === 1) {

@@ -19,58 +19,81 @@ import {
 import { ActionPlusApiInfo, Organization } from "../../types";
 import { filterActions } from "./filterActions";
 import { explainNotPossiblePrompt } from "../prompts/explainNotPossible";
+import {
+  parseRoutingOutput,
+  routingLLMParams,
+  routingPrompt,
+} from "../prompts/routing";
+import {
+  getSearchDocsAction,
+  searchDocsActionName,
+} from "../../builtinActions";
 
 if (!process.env.CLARIFICATION_MODEL) {
   throw new Error("CLARIFICATION_MODEL env var is not defined");
 }
 const clarificationModel = process.env.CLARIFICATION_MODEL;
 
+if (!process.env.ROUTING_MODEL) {
+  throw new Error("ROUTING_MODEL env var is not defined");
+}
+const routingModel = process.env.ROUTING_MODEL;
+
 if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
   throw new Error("IS_USER_REQUEST_POSSIBLE_MODEL env var is not defined");
 }
 const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
 
-export async function runClarificationAndStreamResponse(args: {
+export type Route = "DOCS" | "DIRECT" | "CODE";
+
+export async function LLMPreProcess(args: {
   userRequest: string;
   actions: ActionPlusApiInfo[];
-  orgInfo: Pick<Organization, "name" | "description">;
+  org: Pick<
+    Organization,
+    "id" | "name" | "description" | "chat_to_docs_enabled" | "api_key"
+  >;
   userDescription: string;
   conversationId: number;
   language: string | null;
   streamInfo: (step: StreamingStepInput) => void;
+  currentHost: string;
 }): Promise<{
   message: ChatGPTMessage | null;
   possible: boolean;
   clear: boolean;
-  thoughts: string;
+  thoughts: string[];
   actions: ActionPlusApiInfo[];
+  route: Route;
 }> {
-  const placeholderToOriginalMap = {
-    FUNCTIONS: "functions",
-    FUNCTION: "function",
-  };
-
+  // Cross-thread variables
   var streamedText = "",
-    isPossible = null;
-
-  // Run isPossible and clarification prompts in parallel in Promise.all()
+    isPossible = null,
+    isDocs = null;
+  const startTime = Date.now();
+  // Run filtering, clarification and routing prompts in parallel in Promise.all()
   const outs = await Promise.all([
-    // Run isPossible
+    // Run filtering
     (async (): Promise<
       | {
           output: string;
           // parsed: ParsedRequestPossibleOutput;
-          thoughts: string;
+          thoughts: string[];
           actions: ActionPlusApiInfo[];
         }
       | { error: string }
     > => {
+      // This adds the 'Search docs' action if it's enabled
+      const localActions = args.org.chat_to_docs_enabled
+        ? [getSearchDocsAction(args.org, args.currentHost), ...args.actions]
+        : args.actions;
       const { thoughts, actions } = await filterActions(
         args.userRequest,
-        args.actions,
-        args.orgInfo.name,
+        localActions,
+        args.org.name,
         FASTMODEL,
       );
+      console.log("SETTING isPossible, filtering output", actions);
       isPossible = actions.length > 0;
 
       // If not possible, yet no explanation of why, we do _another_ stream to get the explanation
@@ -79,7 +102,7 @@ export async function runClarificationAndStreamResponse(args: {
       if (actions.length === 0) {
         console.log("No tell user section, so now streaming explanation!");
         const prompt = explainNotPossiblePrompt({
-          thoughts,
+          thoughts: thoughts[0],
           ...args,
         });
         console.log("Prompt for explainNotPossible: ", prompt[0].content);
@@ -123,7 +146,7 @@ export async function runClarificationAndStreamResponse(args: {
       const prompt = clarificationPrompt(args);
       console.log(
         "Prompt for clarification: ",
-        GPTChatFormatToClaudeInstant(prompt).slice(1500),
+        JSON.stringify(GPTChatFormatToClaudeInstant(prompt).slice(1500)),
       );
       const res = await exponentialRetryWrapper(
         streamLLMResponse,
@@ -150,6 +173,10 @@ export async function runClarificationAndStreamResponse(args: {
       let parsedOutput: ParsedClarificationOutput;
       // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
       let placeholderBuffer = "";
+      const placeholderToOriginalMap = {
+        FUNCTIONS: "functions",
+        FUNCTION: "function",
+      };
 
       // https://web.dev/streams/#asynchronous-iteration
       while (!done) {
@@ -182,9 +209,9 @@ export async function runClarificationAndStreamResponse(args: {
 
           if (content) {
             parsedOutput = parseClarificationOutput(rawOutput);
-            if (isPossible) {
+            if (isPossible && isDocs === false) {
               console.log(
-                "isPossible is true, so now streaming clarification!",
+                "isPossible is true and isDocs is false, so now streaming clarification!",
               );
               const newText = parsedOutput.tellUser.replace(streamedText, "");
               args.streamInfo({ role: "assistant", content: newText });
@@ -194,21 +221,139 @@ export async function runClarificationAndStreamResponse(args: {
         }
         done = contentItems.done;
       }
-      console.log("Clarification output", rawOutput);
+      console.log(
+        `Clarification output after ${startTime - Date.now()}ms:\n${rawOutput}`,
+      );
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
+    })(),
+    // Run routing - should the request go to DOCS, DIRECT, or CODE?
+    (async (): Promise<Route | { error: string }> => {
+      const prompt = routingPrompt({
+        ...args,
+        actions: args.actions.filter((a) => a.name !== searchDocsActionName),
+        isAnthropic: true,
+      });
+      console.log(
+        "Prompt for routing: ",
+        JSON.stringify(GPTChatFormatToClaudeInstant(prompt)),
+      );
+      let res = await exponentialRetryWrapper(
+        streamLLMResponse,
+        [prompt, routingLLMParams, routingModel],
+        3,
+      );
+      if (res === null || "message" in res) {
+        console.error(
+          `Anthropic API call failed for conversation with id: ${
+            args.conversationId
+          }. The error was: ${JSON.stringify(res)}`,
+        );
+        return { error: "Call to Language Model API failed" };
+      }
+
+      // Stream response chunk by chunk
+      const decoder = new TextDecoder();
+      const reader = res.getReader();
+
+      let rawOutput = "Thoughts:\n1. ",
+        done = false,
+        incompleteChunk = "",
+        first = true;
+      let parsedOutput: { thoughts: string; choice: string } | null = null;
+
+      // https://web.dev/streams/#asynchronous-iteration
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        if (isPossible === false) {
+          console.log("CANCELLING BECAUSE ISPOSSIBLE IS FALSE");
+          // When filtering finishes and says this is impossible before this completes, we cancel the stream
+          reader.releaseLock();
+          await res.cancel();
+          break;
+        }
+
+        done = doneReading;
+        if (done) break;
+
+        const contentItems = parseAnthropicStreamedData(
+          incompleteChunk + decoder.decode(value),
+        );
+
+        incompleteChunk = contentItems.incompleteChunk ?? "";
+
+        for (let content of contentItems.completeChunks) {
+          // Sometimes starts with a newline
+          if (first) {
+            content = content.trimStart();
+            first = false;
+          }
+          // Raw output is the actual output from the LLM!
+          rawOutput += content;
+
+          if (content) {
+            parsedOutput = parseRoutingOutput(rawOutput);
+            if (parsedOutput !== null) {
+              console.log(
+                `Routing output after ${
+                  startTime - Date.now()
+                }ms:\n${rawOutput}`,
+              );
+              console.log("Parsed output", parsedOutput);
+              // Cancel stream
+              reader.releaseLock();
+              await res.cancel();
+              if (["DIRECT", "DOCS", "CODE"].includes(parsedOutput.choice)) {
+                isDocs = parsedOutput.choice === "DOCS";
+                return parsedOutput.choice as Route;
+              } else {
+                // What if it returns an invalid answer?
+                console.error(
+                  `Routing output is not valid: ${JSON.stringify(
+                    parsedOutput,
+                  )}`,
+                );
+                return { error: "Routing output is not valid" };
+              }
+            }
+          }
+        }
+        done = contentItems.done;
+      }
+      console.log(
+        `Routing output after ${startTime - Date.now()}ms:\n${rawOutput}`,
+      );
+      console.error("Routing output is not valid");
+      return { error: "Invalid routing output" };
     })(),
   ]);
 
   // If clarification finishes before isPossible
-  if (!("error" in outs[1]) && !outs[1].parsed.clear && !streamedText) {
+  if (
+    !("error" in outs[1]) &&
+    !outs[1].parsed.clear &&
+    !streamedText &&
+    isDocs === false
+  ) {
     console.log(
-      "Streaming clarification output because it is possible, but unclear.",
+      "Streaming full clarification output because it is possible, unclear and not a docs question.",
     );
     streamedText = outs[1].parsed.tellUser;
     args.streamInfo({ role: "assistant", content: outs[1].parsed.tellUser });
   }
 
-  // TODO: Add caching of isPossible and clarification outputs
+  let actions = "error" in outs[0] ? [] : outs[0].actions;
+  let route: Route;
+  if (typeof outs[2] === "object" && "error" in outs[2]) {
+    // If routing failed, use the output from filtering & don't remove the search docs action
+    route = "DIRECT";
+  } else {
+    route = outs[2] as Route;
+    if (route !== "DOCS") {
+      actions = actions.filter((a) => a.name !== searchDocsActionName);
+    }
+  }
+
+  // TODO: Add caching of filtering, clarification and routing outputs
   const possible = "error" in outs[0] || outs[0].actions.length > 0;
   const clear = "error" in outs[1] || outs[1].parsed.clear;
   return {
@@ -226,7 +371,8 @@ export async function runClarificationAndStreamResponse(args: {
         : null,
     possible,
     clear,
-    thoughts: "error" in outs[0] ? "" : outs[0].thoughts,
-    actions: "error" in outs[0] ? [] : outs[0].actions,
+    thoughts: "error" in outs[0] ? [] : outs[0].thoughts,
+    actions,
+    route,
   };
 }

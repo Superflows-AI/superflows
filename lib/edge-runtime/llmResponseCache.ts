@@ -200,7 +200,7 @@ export class LlmResponseCache {
     if (analyticsError) console.error(analyticsError.message);
 
     if (matchingAnalytics?.length) {
-      console.log("Analytics match found");
+      console.log("Bertie analytics match found");
       return matchingAnalytics[0].output;
     }
     return "";
