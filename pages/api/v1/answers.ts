@@ -308,8 +308,8 @@ export default async function handler(req: NextRequest) {
     // If the language is not set, try to detect it using detectlanguage.com
     if (org.language !== "Detect Language") {
       language = org.language;
-      // } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
-      //   language = await getLanguage(requestData.user_input);
+    } else if (!language && process.env.NEXT_PUBLIC_DETECT_LANGUAGE_KEY) {
+      language = await getLanguage(requestData.user_input);
     }
 
     if (requestData.user_input) {
