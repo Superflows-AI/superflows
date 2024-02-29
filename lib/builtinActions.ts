@@ -11,7 +11,7 @@ export function getSearchDocsAction(
     action_type: "http",
     active: true,
     description: `Performs a semantic search over the ${org.name} documentation. Use this when asked how-to questions or any question about ${org.name}. DO NOT make up answers about ${org.name}`,
-    filtering_description: `Searches over the ${org.name} documentation. Use this when asked how-to questions or any question about ${org.name}`,
+    filtering_description: `Searches over the ${org.name} documentation. Use this when asked how-to questions, how the system works or the meaning of terminology`,
     name: searchDocsActionName,
     org_id: org.id,
     parameters: [
