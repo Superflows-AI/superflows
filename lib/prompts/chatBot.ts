@@ -232,23 +232,25 @@ export function chatToDocsPrompt(
 ${
   orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""
 }${userDescriptionSection}
-You will be shown chunks of potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
+You will be shown potentially relevant documentation. If a user's request is unclear, or the documentation doesn't answer it, ask them to clarify.
 
-${
-  orgInfo.name
-    ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. However, i`
-    : "I"
-}f there's nothing relevant in the docs for answering a question, tell the user that this isn't mentioned in the docs. Be very cautious about answering if the docs aren't clear. Do not invent things. I cannot express how disappointed I will be if you do. THIS IS VERY IMPORTANT
-${
-  includeIdUrlLine
-    ? "\nURLs have been replaced by variables URLX (where X is a number). These variables are filled in with the real values before being shown to the user, so use URLX as you would use the URL it represents\n"
-    : ""
-}
-Be extremely concise and to the point in your responses. Only output what is necessary to answer the user's question.
-
-Never tell the user to find the answer in the documentation.
-
-Reply in ${language ?? "the language they write in"}`,
+RULES:
+1. Be very cautious about answering if the docs aren't clear. Do not invent things. I cannot express how disappointed I will be if you do. THIS IS VERY IMPORTANT
+2. Never tell the user to find the answer in the documentation.
+3. Reply in ${
+      language ?? "the same language as the user"
+    }. You may have to translate the documentation to do this. THIS IS VERY IMPORTANT. DO NOT FORGET THIS.
+4. ${
+      orgInfo.name
+        ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. However, i`
+        : "I"
+    }f there's nothing relevant in the docs for answering a question, tell the user that this isn't mentioned in the docs. 
+5. Be extremely concise in your response
+6.${
+      includeIdUrlLine
+        ? "\nURLs have been replaced by variables URLX (where X is a number). These variables are filled in with the real values before being shown to the user, so use URLX as you would use the URL it represents\n"
+        : ""
+    }`,
   };
 }
 
