@@ -151,7 +151,7 @@ export async function Dottie( // Dottie talks to docs
     );
     console.log("Original to placeholder map", originalToPlaceholderMap);
 
-    let chatGptPrompt: ChatGPTMessage[] = [
+    let prompt: ChatGPTMessage[] = [
       chatToDocsPrompt(
         reqData.user_description,
         org,
@@ -161,21 +161,21 @@ export async function Dottie( // Dottie talks to docs
       ...cleanedMessages,
     ];
 
-    const promptInputCost = openAiCost(chatGptPrompt, "in", model);
+    const promptInputCost = openAiCost(prompt, "in", model);
     console.log("GPT input cost:", promptInputCost);
     cost += promptInputCost;
 
     console.log(
       "Dottie prompt:\n",
-      JSON.stringify(chatGptPrompt, undefined, 2),
+      JSON.stringify(prompt, undefined, 2),
       "\n\n",
     );
     const res = await exponentialRetryWrapper(
       streamLLMResponse,
-      [chatGptPrompt, { ...completionOptions, temperature: 0.4 }, model],
+      [prompt, { ...completionOptions, temperature: 0.4 }, model],
       3,
     );
-    if (res === null || (typeof res !== "string" && "message" in res)) {
+    if (res === null || "message" in res) {
       console.error(
         `OpenAI API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
           res,
@@ -188,19 +188,12 @@ export async function Dottie( // Dottie talks to docs
       return { nonSystemMessages, cost, numUserQueries: 0 };
     }
 
-    let rawOutput: string;
-    if (typeof res === "string") {
-      // If non-streaming response, just return the full output
-      rawOutput = res;
-      streamInfo({ role: "assistant", content: res });
-    } else {
-      // Stream response chunk by chunk
-      rawOutput = await streamResponseToUser(
-        res,
-        streamInfo,
-        originalToPlaceholderMap,
-      );
-    }
+    // Stream response chunk by chunk
+    const rawOutput = await streamResponseToUser(
+      res,
+      streamInfo,
+      originalToPlaceholderMap,
+    );
 
     const newMessage = {
       role: "assistant",

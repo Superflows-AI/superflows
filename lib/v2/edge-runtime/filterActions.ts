@@ -18,7 +18,7 @@ export async function filterActions(
   actions: ActionPlusApiInfo[],
   orgName: string,
   model: string,
-): Promise<{ thoughts: string; actions: ActionPlusApiInfo[] }> {
+): Promise<{ thoughts: string[]; actions: ActionPlusApiInfo[] }> {
   const actionFilterPrompt = actionFilteringPrompt({
     userRequest,
     actionDescriptions: actions.map(
@@ -64,7 +64,7 @@ export async function filterActions(
 export function combineSelectedFunctions(
   ensembleSelectedFns: ActionFilteringOutput[],
   actions: ActionPlusApiInfo[],
-): { thoughts: string; actions: ActionPlusApiInfo[] } {
+): { thoughts: string[]; actions: ActionPlusApiInfo[] } {
   // We aggregate the results of the 3 runs into a single array of selected functions
   let chosenOut: string[] = [];
   // If more than 2 of the 3 output something, or 1 of 2 (if 1 failed)
@@ -86,15 +86,29 @@ export function combineSelectedFunctions(
   );
   console.log("Chosen functions:", chosenOut);
 
-  let thoughts = "";
-  // Use the thoughts string from the thoughts associated with the most functions selected
-  thoughts = ensembleSelectedFns.reduce((a, b) =>
-    a.selectedFunctions.length > b.selectedFunctions.length ? a : b,
-  ).thoughts;
+  let thoughts = ensembleSelectedFns
+    // Convert to thoughts strings
+    .map((e) => e.thoughts)
+    .filter((t, idx) =>
+      // If there are no functions chosen, only keep the thoughts for the runs that didn't choose any functions
+      chosenOut.length === 0
+        ? ensembleSelectedFns[idx].selectedFunctions.length === 0
+        : // If there are functions chosen, keep thoughts corresponding to runs that chose functions
+          ensembleSelectedFns[idx].selectedFunctions.length > 0,
+    )
+    .sort((a, b) => {
+      const thoughtsOrder = ensembleSelectedFns.map((e) => e.thoughts);
+      const aIdx = thoughtsOrder.indexOf(a);
+      const bIdx = thoughtsOrder.indexOf(b);
+      const aChosen = ensembleSelectedFns[aIdx].selectedFunctions;
+      const bChosen = ensembleSelectedFns[bIdx].selectedFunctions;
+      // Sort by number of chosen functions
+      return bChosen.length - aChosen.length;
+    });
 
   // Return the action objects
   return {
-    thoughts: thoughts,
+    thoughts,
     actions: chosenOut.map(
       (name) => actions.find((a) => snakeToCamel(a.name) === name)!,
     ),

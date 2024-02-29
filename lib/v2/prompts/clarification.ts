@@ -16,7 +16,7 @@ export const clarificationLLMParams = {
 export function clarificationPrompt(args: {
   userRequest: string;
   actions: { name: string; filtering_description: string }[];
-  orgInfo: { name: string; description: string };
+  org: { name: string; description: string };
   userDescription: string;
   language: string | null;
 }): ChatGPTMessage[] {
@@ -24,7 +24,7 @@ export function clarificationPrompt(args: {
     {
       role: "system",
       content: `${getIntroText(
-        args.orgInfo,
+        args.org,
       )}. Your task is to filter out unclear user requests. If unclear, you should ask clarifying questions to help the user get the answer they are looking for. If it is clear, the user's request is passed to a coder to write code that calls FUNCTIONS to answer the user. The coder can use multiple FUNCTIONS and can perform data analysis when necessary.
 
 User description: ${args.userDescription}
@@ -68,7 +68,7 @@ User: How do I add a user?
 
 Clear: True
 
-This question requires searching the ${args.orgInfo.name} documentation since it's a how-to question.
+This question requires searching the ${args.org.name} documentation since it's a how-to question.
 
 ---
 `

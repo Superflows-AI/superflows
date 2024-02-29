@@ -16,7 +16,7 @@ describe("combineSelectedFunctions", () => {
         [{ name: "a" }, { name: "b" }, { name: "c" }],
       ),
     ).toStrictEqual({
-      thoughts: "This is the one to select",
+      thoughts: ["This is the one to select", "", ""],
       actions: [{ name: "a" }, { name: "b" }, { name: "c" }],
     });
   });
