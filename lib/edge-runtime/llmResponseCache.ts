@@ -141,12 +141,11 @@ export class LlmResponseCache {
     if (!this.isHit()) return { llmResponse: "" };
 
     // Get the analytics output if all the messages (incl API outputs) match
-    let isMatch = chatHistory.every((m, idx) => {
-      return (
+    let isMatch = chatHistory.every(
+      (m, idx) =>
         m.content === this.messages[idx].content &&
-        m.role === this.messages[idx].role
-      );
-    });
+        m.role === this.messages[idx].role,
+    );
     if (isMatch) console.log("Analytics output match found.");
 
     if (this.analyticsMessages === null) {
@@ -167,11 +166,13 @@ export class LlmResponseCache {
       (m) => m.instruction_message === instruction,
     );
     if (matchingMessage) {
+      let graphData = undefined;
+      try {
+        graphData = JSON.parse(this.messages[chatHistory.length].content);
+      } catch (e) {}
       return {
         llmResponse: matchingMessage.output,
-        graphData: isMatch
-          ? JSON.parse(this.messages[chatHistory.length].content)
-          : undefined,
+        graphData: isMatch ? graphData : undefined,
       };
     }
     return { llmResponse: "" };
