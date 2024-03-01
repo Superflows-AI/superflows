@@ -13,13 +13,13 @@ export async function summariseChatHistory(
   const { prompt, numPastMessagesIncluded, pastConvTokenCount } =
     chatHistorySummaryPrompt(chatHistory, language);
   console.log("Prompt for summariseChatHistory: ", prompt[0].content);
-  const use4 = numPastMessagesIncluded > 5 || pastConvTokenCount > 100;
+  const use4 = numPastMessagesIncluded >= 5 || pastConvTokenCount > 100;
   let out: string = await exponentialRetryWrapper(
     getLLMResponse,
     [
       prompt,
       summariseChatHistoryLLMParams,
-      use4 ? "gpt-4-0125-preview" : "gpt-3.5-turbo-0125",
+      use4 ? "gpt-4" : "gpt-4-0125-preview",
     ],
     3,
   );
