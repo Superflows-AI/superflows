@@ -388,17 +388,15 @@ export function GPTChatFormatToPhind(chatMessages: ChatGPTMessage[]): string {
     .map(
       (message) => `
 ### ${roleToName[message.role]}${
-        message.role === "function" ? message.name : ""
+        message.role === "function" ? " " + message.name : ""
       }
-${message.content}
-  `,
+${message.content}`,
     )
-    .join("\n")}
-${
-  chatMessages[chatMessages.length - 1].role !== "assistant"
-    ? "### Assistant\n"
-    : ""
-}`;
+    .join("\n")}${
+    chatMessages[chatMessages.length - 1].role !== "assistant"
+      ? "\n### Assistant\n"
+      : ""
+  }`;
 }
 
 export function GPTChatFormatToClaudeInstant(
