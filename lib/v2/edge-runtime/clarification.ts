@@ -294,7 +294,7 @@ export async function LLMPreProcess(args: {
           rawOutput += content;
 
           if (content) {
-            parsedOutput = parseRoutingOutput(rawOutput);
+            parsedOutput = parseRoutingOutput(rawOutput, true);
             if (parsedOutput !== null) {
               console.log(
                 `Routing output after ${
@@ -325,7 +325,17 @@ export async function LLMPreProcess(args: {
       console.log(
         `Routing output after ${Date.now() - startTime}ms:\n${rawOutput}`,
       );
-      console.error("Routing output is not valid");
+      parsedOutput = parseRoutingOutput(rawOutput, false);
+      if (
+        parsedOutput !== null &&
+        ["DIRECT", "DOCS", "CODE"].includes(parsedOutput.choice)
+      ) {
+        isDocs = parsedOutput.choice === "DOCS";
+        return parsedOutput.choice as Route;
+      }
+      console.error(
+        `Routing output is not valid: ${JSON.stringify(parsedOutput)}`,
+      );
       return { error: "Invalid routing output" };
     })(),
   ]);

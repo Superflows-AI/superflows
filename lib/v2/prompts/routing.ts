@@ -94,12 +94,22 @@ Choice: ${args.org.chat_to_docs_enabled ? "DOCS/" : ""}DIRECT/CODE
 
 export function parseRoutingOutput(
   output: string,
+  streaming: boolean,
 ): { thoughts: string; choice: string } | null {
-  if (!output.match(/^Choice: .*\s/m)) {
+  if (streaming) {
+    if (!output.match(/^Choice: .*\s/m)) {
+      return null;
+    }
+    return {
+      thoughts: output.split("Thoughts:")[1].split("Choice:")[0].trim(),
+      choice: output.match(/^Choice: (.*)\s/m)![1],
+    };
+  }
+  if (!output.match(/^Choice: .*/m)) {
     return null;
   }
   return {
     thoughts: output.split("Thoughts:")[1].split("Choice:")[0].trim(),
-    choice: output.match(/^Choice: (.*)\s/m)![1],
+    choice: output.match(/^Choice: (\w*)\b/m)![1],
   };
 }
