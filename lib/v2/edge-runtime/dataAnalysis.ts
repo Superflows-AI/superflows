@@ -183,6 +183,8 @@ export async function runDataAnalysis(
             ],
             3,
           );
+          if (promiseFinished)
+            return { error: "Another promise settled first" };
           console.info("\nRaw LLM response:", parallelLlmResponse);
 
           // Parse the result
@@ -267,6 +269,17 @@ export async function runDataAnalysis(
             type: item.type,
             args: { ...item.args, data: item.args.data?.slice(0, 5) },
           }
+        : item.type === "call"
+        ? {
+            type: item.type,
+            args: {
+              ...item.args,
+              params: JSON.stringify(item.args.params, undefined, 2).slice(
+                0,
+                200,
+              ),
+            },
+          }
         : item,
     ),
   );
@@ -290,7 +303,7 @@ export function checkCodeExecutionOutput(
   // If data field is null
   if (returnedData === null || returnedData.length === 0) {
     console.error(
-      `Failed to write valid code for conversation ${conversationId}${
+      `ERROR: Failed to write valid code for conversation ${conversationId}${
         nLoops ? `, attempt ${nLoops}/3` : ""
       }`,
     );
@@ -300,7 +313,7 @@ export function checkCodeExecutionOutput(
   const errorMessages = returnedData.filter((m) => m.type === "error");
   if (errorMessages.length > 0) {
     console.error(
-      `Error executing code for conversation ${conversationId}${
+      `ERROR executing code for conversation ${conversationId}${
         nLoops ? `, attempt ${nLoops}/3` : ""
       }:\n${errorMessages
         // @ts-ignore
@@ -317,7 +330,7 @@ export function checkCodeExecutionOutput(
     )
   ) {
     console.error(
-      `Error executing code for conversation ${conversationId}${
+      `ERROR executing code for conversation ${conversationId}${
         nLoops ? `, attempt ${nLoops}/3` : ""
       }:\n${logMessages
         // @ts-ignore
@@ -342,7 +355,7 @@ export function checkCodeExecutionOutput(
       plotArgs.data.every((d) => Object.keys(d).length <= 1)
     ) {
       console.error(
-        `Missing columns in data output by code for conversation ${conversationId}${
+        `ERROR: Missing columns in data output by code for conversation ${conversationId}${
           nLoops ? `, attempt ${nLoops}/3` : ""
         }:\n${plotMessages
           // @ts-ignore
@@ -364,13 +377,21 @@ export function checkCodeExecutionOutput(
       )
     ) {
       console.error(
-        `Insufficient number of not-null columns in data output by code for conversation ${conversationId}${
+        `ERROR: Insufficient number of not-null columns in data output by code for conversation ${conversationId}${
           nLoops ? `, attempt ${nLoops}/3` : ""
         }:\n${plotMessages
           // @ts-ignore
           .map((m) => m.args.message)
           .join("\n")}`,
       );
+      return false;
+    }
+    if (
+      isValue &&
+      Object.values(plotArgs.data[0]).filter((v) => typeof v === "number")
+        .length === 0
+    ) {
+      console.error("ERROR: No number in value data: ", plotArgs.data);
       return false;
     }
   }

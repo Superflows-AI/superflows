@@ -377,4 +377,23 @@ describe("checkCodeExecutionOutput", () => {
       ),
     ).toEqual(false);
   });
+  it("API call & plot, bad value data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          { type: "call", args: { name: "getInventorySummary", params: {} } },
+          {
+            type: "plot",
+            args: {
+              title: "Frozen Units Percentage",
+              type: "bar",
+              data: [{ x: "Frozen Units", y: null }],
+              labels: { x: "Percentage (%)", y: "Value" },
+            },
+          },
+        ],
+        1,
+      ),
+    ).toEqual(false);
+  });
 });
