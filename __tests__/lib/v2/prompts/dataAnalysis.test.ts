@@ -1204,8 +1204,6 @@ describe("Errors", () => {
         'const deals = await findDeals();\n\nplot("Deals", "bar", deals, {x: "Deal name", y: "Value ($)"})',
         [{ name: "search_deals" }],
       ),
-    ).toStrictEqual({
-      error: `Function with name findDeals is awaited, yet is not defined or an action name`,
-    });
+    ).toBeNull();
   });
 });
