@@ -55,6 +55,7 @@ function getChatHistoryText(chatHistory: ChatGPTMessage[]): {
         parseTellUser(m.content)),
   );
   const messagesIncluded = filteredHist.slice(
+    // Only include the last 11 messages
     Math.max(0, filteredHist.length - 11),
   );
   return {
