@@ -350,4 +350,31 @@ describe("checkCodeExecutionOutput", () => {
       ),
     ).toBe(false);
   });
+  it("API call & plot, borked data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: {
+              name: "getInventoryProjections",
+              params: { includeProjections: "true" },
+            },
+          },
+          {
+            type: "plot",
+            args: {
+              title: "Stock Levels by Product Categories",
+              type: "bar",
+              data: [
+                { category: "undefined", totalUnits: null, totalCost: null },
+              ],
+              labels: { x: "Product Category", y: "Total Units" },
+            },
+          },
+        ],
+        1,
+      ),
+    ).toEqual(false);
+  });
 });
