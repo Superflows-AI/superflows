@@ -333,6 +333,7 @@ export function checkCodeExecutionOutput(
     if (
       // No data (exception is if it's a table or value)
       (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
+      // @ts-ignore
       plotArgs.data.every((d) => Object.keys(d).length <= 1)
     ) {
       console.error(
@@ -405,6 +406,7 @@ export function convertToGraphData(
         );
       });
       if (matchedPlotIdx === -1) return g1;
+      // @ts-ignore
       items[matchedPlotIdx].args.data.push(g1.args.data[0]);
       return undefined;
     })
@@ -470,7 +472,7 @@ export function formatPlotData(
 
 export function ensureXandYinData(
   graphData: BertieGraphData,
-): BertieGraphData["data"] {
+): { [key: string]: any }[] {
   /** If there is no x and y in the data and it's not a table, we want to convert it to having
    *  x and y.
    *
@@ -479,21 +481,38 @@ export function ensureXandYinData(
    *  2. If the labels are not the same as the keys, we go on the order of key-value pairs in
    *  the data and convert the first key to x and the second key to y.
    * **/
+  if (graphData.data.some((item) => Array.isArray(item))) {
+    graphData.data = graphData.data.map((item) => {
+      if (Array.isArray(item) && item.length >= 2) {
+        const newObj: Record<string, string | number> = {
+          x: item[0],
+          y: item[1],
+        };
+        item.slice(2).forEach((val, idx) => {
+          newObj[idx.toString()] = val;
+        });
+        return newObj;
+      }
+      return item;
+    });
+  }
+  // For typing reasons
+  let graphDataOut = graphData.data as { [key: string]: any }[];
   if (
     graphData.type === "table" ||
-    graphData.data.some((item) => "x" in item && "y" in item)
+    graphDataOut.every((item) => "x" in item && "y" in item)
   ) {
-    return graphData.data;
+    return graphDataOut;
   }
 
   // Either x or y is missing from all data points - we want to make a mapping
   const mapping: { x?: string; y?: string } = {}; // E.g. { "x": "date", "y": "value" }
-  const xMissing = graphData.data.every((item) => !("x" in item));
-  const yMissing = graphData.data.every((item) => !("y" in item));
+  const xMissing = graphDataOut.every((item) => !("x" in item));
+  const yMissing = graphDataOut.every((item) => !("y" in item));
 
   // First, check the labels to see if we can work out what x and y should be
   const keys = new Set();
-  graphData.data.forEach((item) => {
+  graphDataOut.forEach((item) => {
     Object.keys(item).forEach((key) => keys.add(key));
   });
   const xLabel = graphData.labels?.x ?? "";
@@ -527,7 +546,7 @@ export function ensureXandYinData(
     let i = 1;
     while (
       (key === "x" ||
-        graphData.data.some((item) => typeof item[key] !== "number")) &&
+        graphDataOut.some((item) => typeof item[key] !== "number")) &&
       i < keys.size
     ) {
       key = Array.from(keys)[i] as string;
@@ -538,10 +557,10 @@ export function ensureXandYinData(
 
   // Use the mapping to update the data
   Object.entries(mapping).forEach(([key, value]) => {
-    graphData.data.forEach((item) => {
+    graphDataOut.forEach((item) => {
       item[key] = item[value];
       delete item[value];
     });
   });
-  return graphData.data;
+  return graphDataOut;
 }
