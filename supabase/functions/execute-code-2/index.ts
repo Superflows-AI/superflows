@@ -150,7 +150,13 @@ Deno.serve(async (req) => {
             args: { name: camelName, params },
           });
           const processed = processAPIoutput(out.output, action);
-          console.info("API response:", processed);
+          console.info(
+            "API response:",
+            Array.isArray(processed)
+              ? // API responses can be very long
+                processed.slice(0, 3) + "\n..."
+              : processed,
+          );
           return processed;
         },
       };

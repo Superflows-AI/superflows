@@ -60,11 +60,13 @@ export type HeadersInsert =
 export interface BertieGraphData {
   title: string | number;
   type: "line" | "bar" | "table";
-  data: {
-    x?: any; // Should be a number | string;
-    y?: any; // Should be a number;
-    [key: string]: any; // The wildcard is to add extra information shown in the table and when hovering the data point
-  }[];
+  data:
+    | {
+        x?: any; // Should be a number | string;
+        y?: any; // Should be a number;
+        [key: string]: any; // The wildcard is to add extra information shown in the table and when hovering the data point
+      }[]
+    | (string | number)[][]; // Sometimes it makes the mistake of putting in Object.entries()-esque data
   labels?: { x: string; y: string };
 }
 

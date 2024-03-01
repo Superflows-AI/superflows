@@ -509,4 +509,31 @@ describe("ensureDataWellFormatted", () => {
       },
     });
   });
+  it("Real world: data is array of arrays", () => {
+    const out = formatPlotData({
+      type: "plot",
+      args: {
+        title: "title",
+        type: "line",
+        data: [
+          ["Emma", 14],
+          ["Ava", 12],
+        ],
+        labels: { x: "rep", y: "deals" },
+      },
+    });
+    expect(out).toEqual({
+      role: "graph",
+      content: {
+        data: [
+          { x: "Emma", y: 14 },
+          { x: "Ava", y: 12 },
+        ],
+        graphTitle: "title",
+        type: "line",
+        xLabel: "rep",
+        yLabel: "deals",
+      },
+    });
+  });
 });

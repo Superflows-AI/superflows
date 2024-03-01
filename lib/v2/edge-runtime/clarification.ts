@@ -93,7 +93,10 @@ export async function LLMPreProcess(args: {
         args.org.name,
         FASTMODEL,
       );
-      console.log("SETTING isPossible, filtering output", actions);
+      console.log(
+        "SETTING isPossible, filtering output",
+        actions.map((a) => a.name),
+      );
       isPossible = actions.length > 0;
 
       // If not possible, yet no explanation of why, we do _another_ stream to get the explanation
@@ -222,7 +225,7 @@ export async function LLMPreProcess(args: {
         done = contentItems.done;
       }
       console.log(
-        `Clarification output after ${startTime - Date.now()}ms:\n${rawOutput}`,
+        `Clarification output after ${Date.now() - startTime}ms:\n${rawOutput}`,
       );
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
     })(),
@@ -295,7 +298,7 @@ export async function LLMPreProcess(args: {
             if (parsedOutput !== null) {
               console.log(
                 `Routing output after ${
-                  startTime - Date.now()
+                  Date.now() - startTime
                 }ms:\n${rawOutput}`,
               );
               console.log("Parsed output", parsedOutput);
@@ -320,7 +323,7 @@ export async function LLMPreProcess(args: {
         done = contentItems.done;
       }
       console.log(
-        `Routing output after ${startTime - Date.now()}ms:\n${rawOutput}`,
+        `Routing output after ${Date.now() - startTime}ms:\n${rawOutput}`,
       );
       console.error("Routing output is not valid");
       return { error: "Invalid routing output" };
