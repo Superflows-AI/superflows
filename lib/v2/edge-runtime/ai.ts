@@ -196,12 +196,13 @@ export async function Bertie( // Bertie will eat you for breakfast
     };
   }
   let thoughts = clarificationOutput.thoughts;
+  actions = clarificationOutput.actions;
   let graphDataHidden = false;
 
   if (clarificationOutput.route === "CODE") {
     const outMessages = await runCodeGen(
       userRequest,
-      clarificationOutput.actions,
+      actions,
       org,
       { conversationId, index: chatHistory.length },
       reqData.user_description ?? "",

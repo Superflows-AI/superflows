@@ -46,7 +46,7 @@ RULES:
 6. Use await NOT .then()
 7. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
 8. When calculating cumulative values, ORDER THE DATA first!
-9. Respond with code in \`\`\` starting with imports and a commented plan like below:
+9. Respond with code in \`\`\` starting with imports and a plan like below:
 \`\`\`
 // imports
 
@@ -65,7 +65,13 @@ import { ${actionTS
         .map((a) => a.match(/async function (\S+)\(/m)?.[1])
         .join(", ")}, plot } from "./api.ts";
 
-// Plan:${args.thoughts.split("\n").map((t) => `\n// ${t}`)}`,
+// Plan:
+${args.thoughts
+  .split("\n")
+  .map((t) => `// ${t}`)
+  .join("\n")}
+
+`,
     },
   ];
 }
@@ -136,9 +142,9 @@ export function parseDataAnalysis(
   for (let fnMatch of awaitedFns) {
     const fnName = fnMatch.slice(6, -1);
     if (!awaitableActionNames.includes(fnName)) {
-      const errorMsg = `Function with name ${fnName} is awaited, yet is not defined or an action name`;
+      const errorMsg = `ERROR parsing data analysis output: Function with name ${fnName} is awaited, yet is not defined or an action name`;
       console.error(errorMsg);
-      return { error: errorMsg };
+      return null;
     }
   }
 
