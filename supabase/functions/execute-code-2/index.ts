@@ -86,6 +86,15 @@ Deno.serve(async (req) => {
    * Worth mentioning that variables are DELIBERATELY NAMED ERRATICALLY
    * since we don't want the AI to use them
    * **/
+  // This adds a debugging number to the console.info() calls so it's
+  // clear which are from which request
+  const ranNum = Math.floor(Math.random() * 1000);
+  const originalInfo = console.info;
+  console.info = function () {
+    const args = Array.prototype.slice.call(arguments);
+    args.unshift(`${ranNum}:`);
+    originalInfo.apply(console, args);
+  };
   console.info("Request received");
   let authHeader = req.headers.get("Authorization");
   // Auth check
@@ -149,12 +158,19 @@ Deno.serve(async (req) => {
             type: "call",
             args: { name: camelName, params },
           });
+          if (out.isError) {
+            console.error(`API error (${camelName}):`, out.error.toString());
+            throw new Error(out.error.toString());
+          }
           const processed = processAPIoutput(out.output, action);
           console.info(
-            "API response:",
+            `API response (${camelName}):`,
             Array.isArray(processed)
               ? // API responses can be very long
-                processed.slice(0, 3) + "\n..."
+                JSON.stringify(processed.slice(0, 2), undefined, 2).slice(
+                  0,
+                  1000,
+                ) + "\n..."
               : processed,
           );
           return processed;
