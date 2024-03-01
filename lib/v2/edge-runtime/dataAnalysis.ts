@@ -256,6 +256,7 @@ export async function runDataAnalysis(
       },
     ),
   );
+  promiseFinished = true;
   if ("error" in promiseOut) return { error: "Failed to execute code" };
   const graphData = promiseOut.graphData;
   console.info(
@@ -330,14 +331,40 @@ export function checkCodeExecutionOutput(
   const plotMessages = returnedData.filter((m) => m.type === "plot");
   if (plotMessages.length === 1) {
     const plotArgs = plotMessages[0].args as BertieGraphData;
+    const isValue = plotArgs.data.length === 1;
+    const isTable = plotArgs.type === "table";
     if (
       // No data (exception is if it's a table or value)
-      (plotArgs.type !== "table" || plotArgs.data.length === 1) &&
+      !isTable &&
+      !isValue &&
+      // Every data point has only 1 key
       // @ts-ignore
       plotArgs.data.every((d) => Object.keys(d).length <= 1)
     ) {
       console.error(
         `Missing columns in data output by code for conversation ${conversationId}${
+          nLoops ? `, attempt ${nLoops}/3` : ""
+        }:\n${plotMessages
+          // @ts-ignore
+          .map((m) => m.args.message)
+          .join("\n")}`,
+      );
+      return false;
+    }
+    const minNonNullsAllowed = isValue || isTable ? 1 : 2;
+    if (
+      // @ts-ignore
+      plotArgs.data.every(
+        // @ts-ignore
+        (d) =>
+          Object.values(d).filter(
+            // @ts-ignore
+            (v) => !["", undefined, null, "undefined", "null"].includes(v),
+          ).length < minNonNullsAllowed,
+      )
+    ) {
+      console.error(
+        `Insufficient number of not-null columns in data output by code for conversation ${conversationId}${
           nLoops ? `, attempt ${nLoops}/3` : ""
         }:\n${plotMessages
           // @ts-ignore
