@@ -5,11 +5,13 @@ import {
   Organization,
 } from "../../types";
 import { Database } from "../../database.types";
-import { getDataAnalysisPrompt } from "../prompts/dataAnalysis";
+import {
+  getDataAnalysisPrompt,
+  parseDataAnalysis,
+} from "../prompts/dataAnalysisPhind";
 import { exponentialRetryWrapper } from "../../utils";
 import { getLLMResponse, GPTChatFormatToPhind } from "../../queryLLM";
 import { FunctionMessage } from "../../models";
-import { parseDataAnalysis } from "../prompts/dataAnalysis";
 import {
   GraphMessage,
   LoadingMessage,
@@ -18,7 +20,6 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { dataAnalysisActionName } from "../builtinActions";
-import { isFormDataLike } from "form-data-encoder";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
