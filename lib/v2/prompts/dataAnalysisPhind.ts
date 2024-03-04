@@ -1,13 +1,13 @@
 import { ChatGPTMessage } from "../../models";
-import { Action } from "../../types";
+import { Action, Organization } from "../../types";
 import { getIntroText } from "../../prompts/chatBot";
 import { getActionTSSignature } from "../../prompts/tsConversion";
 import { snakeToCamel } from "../../utils";
 
-export function getDataAnalysisPrompt(args: {
+export function getPhindDataAnalysisPrompt(args: {
   question: string;
   selectedActions: Action[];
-  orgInfo: { name: string; description: string };
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">;
   userDescription: string;
   thoughts: string;
 }): ChatGPTMessage[] {
@@ -22,7 +22,13 @@ export function getDataAnalysisPrompt(args: {
       )} Your task is to help the user by writing a Javascript snippet to call ${
         args.orgInfo.name + "'s" || "the"
       } API which can then be visualized to answer the user's question. Plot data to give a complete picture when possible.
-${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}
+${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}${
+        args.orgInfo.description ? "\n" + args.orgInfo.description + "\n" : ""
+      }${
+        args.orgInfo.chatbot_instructions
+          ? "\n" + args.orgInfo.chatbot_instructions + "\n"
+          : ""
+      }
 api.ts
 \`\`\`
 ${actionTS.join("\n\n")}
@@ -41,12 +47,11 @@ RULES:
 1. ONLY use the standard JS library and api.ts. DO NOT use other libraries or frameworks. THIS IS VERY IMPORTANT!
 2. NEVER write TODO comments, placeholder code or ... in place of code
 3. The following cause runtime errors: fetch() (or calling another server), eval(), new Function(), WebAssembly, try-catch, TS types and function definitions
-4. If the user's request is impossible given api.ts, inform them of this or ask a clarifying question with console.log(). DO NOT write any code other than this. You cannot get input from the user in the code
-5. DO NOT answer a question by using return to send data. Use plot() to visualize data
-6. Use await NOT .then()
-7. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
-8. When calculating cumulative values, ORDER THE DATA first!
-9. Respond with code in \`\`\` starting with imports and a plan like below:
+4. DO NOT answer a question by using return to send data. Use plot() to visualize data
+5. Use await NOT .then()
+6. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
+7. When calculating cumulative values, ORDER THE DATA first!
+8. Respond with code in \`\`\` starting with imports and a plan like below:
 \`\`\`
 // imports
 
@@ -76,7 +81,7 @@ ${args.thoughts
   ];
 }
 
-export function parseDataAnalysis(
+export function parsePhindDataAnalysis(
   rawCode: string,
   actions: Pick<Action, "name">[],
 ): { code: string } | { error: string } | null {
@@ -97,7 +102,7 @@ export function parseDataAnalysis(
       .trim(),
   );
   if (code === "") {
-    console.error("No code (possibly comments) in code string");
+    console.error("ERROR: No code (possibly comments) in code string");
     return null;
   }
 
@@ -110,7 +115,7 @@ export function parseDataAnalysis(
   ];
   for (const regex of illegalRegexes) {
     if (regex.test(code)) {
-      const error = `Illegal code found by ${String(
+      const error = `ERROR: Illegal code found by ${String(
         regex,
       )}:\n---\n${code}\n---`;
       console.error(error);
@@ -203,8 +208,7 @@ export function parseDataAnalysis(
   return { code };
 }
 
-function stripBasicTypescriptTypes(jsCodeString: string): string {
-  // function stripBasicTypescriptTypes(jsCodeString) {
+export function stripBasicTypescriptTypes(jsCodeString: string): string {
   // Remove type definitions like `: string`, `: number`, `: any` etc.
   jsCodeString = jsCodeString.replace(/:\s*\w*(?=\s*=\s*)/g, "");
 
