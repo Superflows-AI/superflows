@@ -137,28 +137,28 @@ export default async function handler(req: NextRequest) {
 
     let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
-      if (redis) {
-        const redisStored = await redis.get(`org-${orgApiKey}`);
-        if (redisStored) {
-          org = redisStored as OrgJoinIsPaidFinetunedModels;
-        }
-      }
-      if (!org) {
-        const authRes = await supabase
-          .from("organizations")
-          .select(
-            "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled, is_paid(is_premium), finetuned_models(openai_name)",
-          )
-          .eq("api_key", orgApiKey);
-        if (authRes.error) throw new Error(authRes.error.message);
-        // Set org in Redis for 30 minutes
-        redis?.setex(
-          `org-${orgApiKey}`,
-          60 * 30,
-          JSON.stringify(authRes.data?.[0]),
-        );
-        org = authRes.data?.[0] ?? null;
-      }
+      // if (redis) {
+      //   const redisStored = await redis.get(`org-${orgApiKey}`);
+      //   if (redisStored) {
+      //     org = redisStored as OrgJoinIsPaidFinetunedModels;
+      //   }
+      // }
+      // if (!org) {
+      const authRes = await supabase
+        .from("organizations")
+        .select(
+          "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled, is_paid(is_premium), finetuned_models(openai_name)",
+        )
+        .eq("api_key", orgApiKey);
+      if (authRes.error) throw new Error(authRes.error.message);
+      // Set org in Redis for 30 minutes
+      // redis?.setex(
+      //   `org-${orgApiKey}`,
+      //   60 * 30,
+      //   JSON.stringify(authRes.data?.[0]),
+      // );
+      org = authRes.data?.[0] ?? null;
+      // }
     }
     if (!org) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
