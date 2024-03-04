@@ -1,4 +1,5 @@
 import {
+  checkCodeExecutionOutput,
   convertToGraphData,
   formatPlotData,
 } from "../../../../lib/v2/edge-runtime/dataAnalysis";
@@ -535,5 +536,131 @@ describe("ensureDataWellFormatted", () => {
         yLabel: "deals",
       },
     });
+  });
+});
+
+describe("checkCodeExecutionOutput", () => {
+  it("null", () => {
+    expect(checkCodeExecutionOutput(null, 1)).toBe(false);
+  });
+  it("Only calls, no logs or plots", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(false);
+  });
+  it("1 log", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+          {
+            type: "log",
+            args: { message: "This is a log message" },
+          },
+        ],
+        1,
+      ),
+    ).toBe(true);
+  });
+  it("1 plot", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "plot",
+            args: {
+              type: "bar",
+              title: "graph",
+              data: [{ x: 1, y: 2 }],
+              labels: { x: "a", y: "b" },
+            },
+          },
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(true);
+  });
+  it("Plot, no data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "plot",
+            args: {
+              type: "bar",
+              title: "graph",
+              data: [],
+              labels: { x: "a", y: "b" },
+            },
+          },
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+        ],
+        1,
+      ),
+    ).toBe(false);
+  });
+  it("API call & plot, borked data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: {
+              name: "getInventoryProjections",
+              params: { includeProjections: "true" },
+            },
+          },
+          {
+            type: "plot",
+            args: {
+              title: "Stock Levels by Product Categories",
+              type: "bar",
+              data: [
+                { category: "undefined", totalUnits: null, totalCost: null },
+              ],
+              labels: { x: "Product Category", y: "Total Units" },
+            },
+          },
+        ],
+        1,
+      ),
+    ).toEqual(false);
+  });
+  it("API call & plot, bad value data", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          { type: "call", args: { name: "getInventorySummary", params: {} } },
+          {
+            type: "plot",
+            args: {
+              title: "Frozen Units Percentage",
+              type: "bar",
+              data: [{ x: "Frozen Units", y: null }],
+              labels: { x: "Percentage (%)", y: "Value" },
+            },
+          },
+        ],
+        1,
+      ),
+    ).toEqual(false);
   });
 });

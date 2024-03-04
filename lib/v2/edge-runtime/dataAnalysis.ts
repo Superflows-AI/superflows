@@ -508,7 +508,8 @@ export function checkCodeExecutionOutput(
     }
     if (
       isValue &&
-      Object.values(plotArgs.data[0]).filter((v) => !isNaN(v)).length === 0
+      Object.values(plotArgs.data[0]).filter((v) => !isNaN(v) && v !== null)
+        .length === 0
     ) {
       console.error("ERROR: No number in value data: ", plotArgs.data);
       return false;
@@ -613,7 +614,7 @@ export function formatPlotData(
       } else if (typeof item.y === "object" && !Array.isArray(item.y)) {
         // Find the first number in the object and use that as y
         const key = Object.keys(item.y).find(
-          (k) => typeof item.y[k] === "number",
+          (k) => !isNaN(item.y[k]) && item.y[k] !== null,
         );
         if (key) {
           item.y.y = item.y[key];
