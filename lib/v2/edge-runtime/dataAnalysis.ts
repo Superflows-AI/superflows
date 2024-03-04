@@ -508,8 +508,7 @@ export function checkCodeExecutionOutput(
     }
     if (
       isValue &&
-      Object.values(plotArgs.data[0]).filter((v) => typeof v === "number")
-        .length === 0
+      Object.values(plotArgs.data[0]).filter((v) => !isNaN(v)).length === 0
     ) {
       console.error("ERROR: No number in value data: ", plotArgs.data);
       return false;
