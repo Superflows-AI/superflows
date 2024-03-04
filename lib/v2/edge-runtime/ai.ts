@@ -761,7 +761,10 @@ async function preamble(
 async function runCodeGen(
   userRequest: string,
   actions: ActionPlusApiInfo[],
-  org: Pick<Organization, "id" | "name" | "description">,
+  org: Pick<
+    Organization,
+    "id" | "name" | "description" | "chatbot_instructions"
+  >,
   dbData: { conversationId: number; index: number },
   userDescription: string,
   chatMessageCache: LlmResponseCache,
