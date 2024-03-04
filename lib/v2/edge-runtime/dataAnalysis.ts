@@ -6,8 +6,8 @@ import {
 } from "../../types";
 import { Database } from "../../database.types";
 import {
-  getDataAnalysisPrompt,
-  parseDataAnalysis,
+  getPhindDataAnalysisPrompt,
+  parsePhindDataAnalysis,
 } from "../prompts/dataAnalysisPhind";
 import { exponentialRetryWrapper } from "../../utils";
 import { getLLMResponse, GPTChatFormatToPhind } from "../../queryLLM";
@@ -20,6 +20,11 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { dataAnalysisActionName } from "../builtinActions";
+import {
+  getGPTDataAnalysisPrompt,
+  GPTDataAnalysisLLMParams,
+  parseGPTDataAnalysis,
+} from "../prompts/dataAnalysisGPT";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -78,7 +83,10 @@ const anotherMistake = {
 export async function runDataAnalysis(
   instruction: string,
   filteredActions: ActionPlusApiInfo[],
-  org: Pick<Organization, "id" | "name" | "description">,
+  org: Pick<
+    Organization,
+    "id" | "name" | "description" | "chatbot_instructions"
+  >,
   dbData: { conversationId: number; index: number },
   userDescription: string,
   cache: LlmResponseCache,
@@ -96,7 +104,12 @@ export async function runDataAnalysis(
   console.log("LLM response from cache:", llmResponse);
   if (llmResponse) {
     // Parse the result
-    let parsedCode = parseDataAnalysis(llmResponse, filteredActions);
+    let parsedCode;
+    if (llmResponse.includes("```")) {
+      parsedCode = parseGPTDataAnalysis(llmResponse, filteredActions);
+    } else {
+      parsedCode = parsePhindDataAnalysis(llmResponse, filteredActions);
+    }
     if (parsedCode !== null) {
       if ("error" in parsedCode) return parsedCode;
       console.info("Parsed LLM response from cache:", parsedCode.code);
@@ -139,7 +152,7 @@ export async function runDataAnalysis(
     "Data analysis prompt:",
     JSON.stringify(
       GPTChatFormatToPhind(
-        getDataAnalysisPrompt({
+        getPhindDataAnalysisPrompt({
           question: instruction,
           selectedActions: filteredActions,
           orgInfo: org,
@@ -150,22 +163,126 @@ export async function runDataAnalysis(
     ),
   );
   var promiseFinished = false;
-  const promiseOut = await Promise.race(
-    [1, 2, 3].map(
+  const promiseOut = await Promise.race([
+    // GPT4 data analysis
+    (async (): Promise<
+      { graphData: ExecuteCode2Item[]; llmResponse: string } | { error: string }
+    > => {
+      const dataAnalysisPrompt = getGPTDataAnalysisPrompt({
+        question: instruction,
+        selectedActions: filteredActions,
+        orgInfo: org,
+        userDescription,
+      });
+      console.log("\nGPT4 Code gen run");
+      console.log(
+        "GPT data analysis prompt:",
+        JSON.stringify(dataAnalysisPrompt, undefined, 2),
+      );
+      let parallelGraphData: ExecuteCode2Item[] | null = null,
+        nLoops = 0;
+      let parallelLlmResponse = "";
+      // Retry if it fails once
+      while (parallelGraphData === null && nLoops < 2) {
+        nLoops += 1;
+        parallelLlmResponse = await exponentialRetryWrapper(
+          getLLMResponse,
+          [
+            dataAnalysisPrompt,
+            {
+              ...GPTDataAnalysisLLMParams,
+              temperature: nLoops === 0 ? 0.1 : 0.8,
+            },
+            "gpt-4",
+          ],
+          3,
+        );
+        if (promiseFinished) return { error: "Another promise settled first" };
+        console.info("\nRaw LLM response (GPT):", parallelLlmResponse);
+
+        // Parse the result
+        let parsedCode = parseGPTDataAnalysis(
+          parallelLlmResponse,
+          filteredActions,
+        );
+        if (parsedCode === null) {
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+        if ("error" in parsedCode) return parsedCode;
+        if (promiseFinished) return { error: "Another promise settled first" };
+        streamInfo({ role: "loading", content: "Executing code" });
+        console.info("Parsed LLM response (GPT):", parsedCode.code);
+
+        // Send code to supabase edge function to execute
+        const res = await supabase.functions.invoke("execute-code-2", {
+          body: JSON.stringify({
+            actionsPlusApi: filteredActions,
+            org,
+            code: parsedCode.code,
+            userApiKey,
+          }),
+        });
+        if (promiseFinished) return { error: "Another promise settled first" };
+
+        if (res.error) {
+          console.error(
+            `Error executing GPT code for conversation ${dbData.conversationId}: ${res.error}`,
+          );
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+
+        const returnedData = res.data as ExecuteCode2Item[] | null;
+        const codeOk = checkCodeExecutionOutput(
+          returnedData,
+          dbData.conversationId,
+          nLoops,
+        );
+        if (!codeOk) {
+          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+          continue;
+        }
+        // For type-safety (doesn't ever get called)
+        if (returnedData === null) continue;
+
+        parallelGraphData = returnedData;
+      }
+      if (!promiseFinished) {
+        if (parallelGraphData === null) {
+          console.error(
+            `Failed to execute GPT code for conversation ${dbData.conversationId} after 3 attempts`,
+          );
+          return { error: "Failed to execute code" };
+        }
+        console.log(`GPT code-gen run succeeded`);
+        promiseFinished = true;
+        return {
+          graphData: parallelGraphData,
+          llmResponse: parallelLlmResponse,
+        };
+      }
+      return {
+        error:
+          "Another promise settled first - this should never be in the logs",
+      };
+    })(),
+    // Phind data analysis
+    ...[1, 2].map(
       async (
         i,
       ): Promise<
         | { graphData: ExecuteCode2Item[]; llmResponse: string }
         | { error: string }
       > => {
-        const dataAnalysisPrompt = getDataAnalysisPrompt({
+        const dataAnalysisPrompt = getPhindDataAnalysisPrompt({
           question: instruction,
           selectedActions: filteredActions,
           orgInfo: org,
           userDescription,
           thoughts: thoughts[(i - 1) % thoughts.length],
         });
-        console.log("\nCode gen run", i);
+        console.log("\nPhind code gen run", i);
         let parallelGraphData: ExecuteCode2Item[] | null = null,
           nLoops = 0;
         let parallelLlmResponse = "";
@@ -186,10 +303,10 @@ export async function runDataAnalysis(
           );
           if (promiseFinished)
             return { error: "Another promise settled first" };
-          console.info("\nRaw LLM response:", parallelLlmResponse);
+          console.info("\nRaw LLM response (Phind):", parallelLlmResponse);
 
           // Parse the result
-          let parsedCode = parseDataAnalysis(
+          let parsedCode = parsePhindDataAnalysis(
             parallelLlmResponse,
             filteredActions,
           );
@@ -201,7 +318,7 @@ export async function runDataAnalysis(
           if (promiseFinished)
             return { error: "Another promise settled first" };
           streamInfo({ role: "loading", content: "Executing code" });
-          console.info("Parsed LLM response:", parsedCode.code);
+          console.info("Parsed LLM response (Phind):", parsedCode.code);
 
           // Send code to supabase edge function to execute
           const res = await supabase.functions.invoke("execute-code-2", {
@@ -217,7 +334,7 @@ export async function runDataAnalysis(
 
           if (res.error) {
             console.error(
-              `Error executing code for conversation ${dbData.conversationId}: ${res.error}`,
+              `Error executing Phind code for conversation ${dbData.conversationId}: ${res.error}`,
             );
             streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
             continue;
@@ -241,11 +358,11 @@ export async function runDataAnalysis(
         if (!promiseFinished) {
           if (parallelGraphData === null) {
             console.error(
-              `Failed to execute code for conversation ${dbData.conversationId} after 3 attempts`,
+              `Failed to execute Phind code for conversation ${dbData.conversationId} after 3 attempts`,
             );
             return { error: "Failed to execute code" };
           }
-          console.log(`Async run ${i} succeeded`);
+          console.log(`Phind code-gen run ${i} succeeded`);
           promiseFinished = true;
           return {
             graphData: parallelGraphData,
@@ -258,7 +375,7 @@ export async function runDataAnalysis(
         };
       },
     ),
-  );
+  ]);
   promiseFinished = true;
   if ("error" in promiseOut) return { error: "Failed to execute code" };
   const graphData = promiseOut.graphData;
@@ -285,14 +402,16 @@ export async function runDataAnalysis(
     ),
   );
   // Save to DB for possible reuse later - run async
-  void saveAnalyticsToDB(
-    instruction,
-    promiseOut.llmResponse,
-    org.id,
-    dbData,
-    true,
-    filteredActions.map((a) => a.name),
-  );
+  if (promiseOut.llmResponse) {
+    void saveAnalyticsToDB(
+      instruction,
+      promiseOut.llmResponse,
+      org.id,
+      dbData,
+      true,
+      filteredActions.map((a) => a.name),
+    );
+  }
   return graphData;
 }
 
