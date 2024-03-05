@@ -1,5 +1,5 @@
 import { ChatGPTMessage } from "../../models";
-import { getActionFilteringDescriptions } from "./utils";
+import { getActionFilteringDescriptions, languageLine } from "./utils";
 import { Action } from "../../types";
 import { getIntroText } from "./chatBot";
 
@@ -9,6 +9,7 @@ export function explainNotPossiblePrompt(args: {
   actions: Pick<Action, "name" | "filtering_description">[];
   org: { name: string; description: string };
   userDescription: string;
+  language: string | null;
 }): ChatGPTMessage[] {
   return [
     {
@@ -29,7 +30,8 @@ ${args.thoughts}
 
 RULES:
 1. DO NOT tell the user their request is possible
-2. DO NOT mention the functions listed above by name`,
+2. DO NOT mention the functions listed above by name
+3. ${languageLine(args.language)}`,
     },
   ];
 }
