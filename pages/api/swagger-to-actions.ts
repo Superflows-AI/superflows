@@ -250,7 +250,7 @@ export default async function handler(
     }
     actionIds = actionIds.concat(actionInsertResp.data.map((a) => a.id));
   }
-  // Generate filtering descriptions for <20 of the actions
+  // Generate filtering descriptions for <40 of the actions
   void fetch(req.headers.origin + "/api/write-action-descriptions", {
     method: "POST",
     headers: {

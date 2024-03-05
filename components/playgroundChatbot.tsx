@@ -90,6 +90,7 @@ export default function PlaygroundChatbot(props: {
           mockApiResponses={props.mockAPIresponses}
           initialFocus={initialFocus}
           showFunctionCalls={true}
+          enableSpeech={false}
         />
       </div>
       {props.submitErrorMessage && (
