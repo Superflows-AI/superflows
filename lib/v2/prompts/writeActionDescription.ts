@@ -34,7 +34,10 @@ ${getWriteActionDescriptionExamples(args.action.request_method === "get")}
 
 FUNCTION:
 \`\`\`
-${getActionTSSignature(args.action, true)}
+${getActionTSSignature(args.action, true).replace(
+  "): {",
+  "): ReturnType\n\ninterface ReturnType {",
+)}
 \`\`\`
 
 RULES:
