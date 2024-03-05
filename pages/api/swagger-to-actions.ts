@@ -238,15 +238,30 @@ export default async function handler(
   actionInserts = actionInserts.filter(
     (action) => !existingActionNames.includes(action.name!),
   );
+  let actionIds: number[] = [];
   for (let i = 0; i < Math.ceil(actionInserts.length / 100); i++) {
     const actionInsertResp = await supabase
       .from("actions")
-      .insert(actionInserts.slice(i * 100, (i + 1) * 100));
+      .insert(actionInserts.slice(i * 100, (i + 1) * 100))
+      .select();
     if (actionInsertResp.error) {
       res.status(500).send(actionInsertResp);
       return;
     }
+    actionIds = actionIds.concat(actionInsertResp.data.map((a) => a.id));
   }
+  // Generate filtering descriptions for <20 of the actions
+  void fetch(req.headers.origin + "/api/write-action-descriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      org_id: orgId,
+      action_ids: actionIds,
+    }),
+  });
 
   res.status(200).send({ success: true });
 }
