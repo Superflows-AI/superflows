@@ -22,7 +22,9 @@ export async function filterActions(
   const actionFilterPrompt = actionFilteringPrompt({
     userRequest,
     actionDescriptions: actions.map(
-      (a) => `${snakeToCamel(a.name)}: ${a.filtering_description}`,
+      // Fallback to using description if no filtering_description
+      (a) =>
+        `${snakeToCamel(a.name)}: ${a.filtering_description || a.description}`,
     ),
     orgName,
   });

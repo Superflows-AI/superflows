@@ -1,5 +1,4 @@
 import { ChatGPTMessage } from "../../models";
-import { parseOutput } from "@superflows/chat-ui-react";
 
 export function actionFilteringPrompt(args: {
   userRequest: string;
