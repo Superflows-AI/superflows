@@ -82,9 +82,9 @@ export default async function handler(req: NextRequest): Promise<Response> {
     orgResponse.data.map((a) => a.name),
   );
   let actions = orgResponse.data.filter((a) => !a.filtering_description);
-  // Limit to 20 actions max
-  if (actions.length > 20) {
-    actions = actions.filter((a) => a.active).slice(0, 20);
+  // Limit to 40 actions max
+  if (actions.length > 40) {
+    actions = actions.filter((a) => a.active).slice(0, 40);
   }
   console.log(
     "Chosen action names:",
