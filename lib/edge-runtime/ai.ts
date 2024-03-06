@@ -117,7 +117,11 @@ export async function Dottie( // Dottie talks to docs
 
     const hallucinatedRes = await exponentialRetryWrapper(
       getLLMResponse,
-      [hallucinatedDocsPrompt, { ...completionOptions, temperature: 1 }, model],
+      [
+        hallucinatedDocsPrompt,
+        { ...completionOptions, temperature: 0.6 },
+        model,
+      ],
       3,
     );
     console.log("Hallucination: ", hallucinatedRes);
@@ -172,7 +176,7 @@ export async function Dottie( // Dottie talks to docs
     );
     const res = await exponentialRetryWrapper(
       streamLLMResponse,
-      [prompt, { ...completionOptions, temperature: 0.4 }, model],
+      [prompt, { ...completionOptions, temperature: 0.2 }, model],
       3,
     );
     if (res === null || "message" in res) {

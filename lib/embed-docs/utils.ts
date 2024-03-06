@@ -77,7 +77,11 @@ export function splitIntoTextChunks(
         codeNonCodeChunk
           .split("\n")
           .filter(
-            (chunk) => !ignoreLines.includes(RemoveMarkdown(chunk.trim())),
+            (chunk) =>
+              !(
+                ignoreLines.includes(RemoveMarkdown(chunk.trim())) ||
+                ignoreLines.includes(chunk.trim())
+              ),
           )
           // Below aims to remove not-useful lines. E.g. link to privacy policy, today's date etc
           .filter((chunk) => isTextWithSubstance(chunk.trim()))
