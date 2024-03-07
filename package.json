@@ -7,7 +7,7 @@
     "start": "next start",
     "prepare": "husky install",
     "test": "jest --watch --runInBand --changedSince=@{push} || jest --watch --runInBand --changedSince=origin/main",
-    "testprepush": "jest --runInBand --changedSince=@{push} -- --watchAll=false --bail --ci --silent || jest --runInBand --changedSince=origin/main -- --watchAll=false --bail --ci --silent"
+    "testprepush": "jest --runInBand --passWithNoTests --changedSince=@{push} -- --watchAll=false --bail --ci --silent || jest --runInBand --changedSince=origin/main --passWithNoTests -- --watchAll=false --bail --ci --silent"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
