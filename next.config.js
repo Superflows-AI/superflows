@@ -16,6 +16,7 @@ const headers = [
 
 module.exports = {
   reactStrictMode: true,
+  poweredByHeader: false,
   // This enables calls to /api/v1 from users' domains
   async headers() {
     return [
