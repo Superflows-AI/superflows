@@ -49,12 +49,6 @@ function OnboardingContent() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            // Set as empty for now
-            org_name: "",
-            description: "",
-            user_id: profile?.id,
-          }),
         });
         if (createOrgRes.status !== 200) {
           throw new Error("Failed to create org: " + createOrgRes.statusText);
