@@ -541,7 +541,10 @@ describe("ensureDataWellFormatted", () => {
 
 describe("checkCodeExecutionOutput", () => {
   it("null", () => {
-    expect(checkCodeExecutionOutput(null, 1)).toBe(false);
+    expect(checkCodeExecutionOutput(null, 1)).toEqual({
+      isValid: false,
+      retry: true,
+    });
   });
   it("Only calls, no logs or plots", () => {
     expect(
@@ -554,7 +557,7 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toBe(false);
+    ).toEqual({ isValid: false, retry: true });
   });
   it("1 log", () => {
     expect(
@@ -571,7 +574,41 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toBe(true);
+    ).toEqual({ isValid: true, retry: false });
+  });
+  it("Includes an error", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+          {
+            type: "error",
+            args: { message: "TypeError: This is an error" },
+          },
+        ],
+        1,
+      ),
+    ).toEqual({ isValid: false, retry: true });
+  });
+  it("401 error", () => {
+    expect(
+      checkCodeExecutionOutput(
+        [
+          {
+            type: "call",
+            args: { name: "searchDeals", params: { query: "Larry" } },
+          },
+          {
+            type: "error",
+            args: { message: '{"status": 401, "message": "Unauthorized"}' },
+          },
+        ],
+        1,
+      ),
+    ).toEqual({ isValid: false, retry: false });
   });
   it("1 plot", () => {
     expect(
@@ -593,7 +630,7 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toBe(true);
+    ).toEqual({ isValid: true, retry: false });
   });
   it("Plot, no data", () => {
     expect(
@@ -615,7 +652,7 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toBe(false);
+    ).toEqual({ isValid: false, retry: true });
   });
   it("API call & plot, borked data", () => {
     expect(
@@ -642,7 +679,7 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toEqual(false);
+    ).toEqual({ isValid: false, retry: true });
   });
   it("API call & plot, bad value data", () => {
     expect(
@@ -661,6 +698,6 @@ describe("checkCodeExecutionOutput", () => {
         ],
         1,
       ),
-    ).toEqual(false);
+    ).toEqual({ isValid: false, retry: true });
   });
 });

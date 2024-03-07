@@ -159,8 +159,14 @@ Deno.serve(async (req) => {
             args: { name: camelName, params },
           });
           if (out.isError) {
-            console.error(`API error (${camelName}):`, out.error.toString());
-            throw new Error(out.error.toString());
+            console.error(
+              `API error (${camelName}): ${JSON.stringify(
+                out.output,
+                undefined,
+                2,
+              )}`,
+            );
+            throw new Error(JSON.stringify(out.output, undefined, 2));
           }
           const processed = processAPIoutput(out.output, action);
           console.info(

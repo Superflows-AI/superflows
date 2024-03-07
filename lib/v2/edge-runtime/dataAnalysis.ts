@@ -129,7 +129,7 @@ export async function runDataAnalysis(
           returnedData,
           dbData.conversationId,
         );
-        if (codeOk) {
+        if (codeOk.isValid) {
           // Save to DB for possible reuse later - run async
           void saveAnalyticsToDB(
             instruction,
@@ -239,9 +239,19 @@ export async function runDataAnalysis(
           dbData.conversationId,
           nLoops,
         );
-        if (!codeOk) {
-          streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-          continue;
+        if (!codeOk.isValid) {
+          if (codeOk.retry) {
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          } else {
+            return {
+              error: returnedData?.find(
+                (m) =>
+                  m.type === "error" && m.args.message.includes('"status": 4'),
+                // @ts-ignore
+              )!.args.message,
+            };
+          }
         }
         // For type-safety (doesn't ever get called)
         if (returnedData === null) continue;
@@ -346,9 +356,20 @@ export async function runDataAnalysis(
             dbData.conversationId,
             nLoops,
           );
-          if (!codeOk) {
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
+          if (!codeOk.isValid) {
+            if (codeOk.retry) {
+              streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+              continue;
+            } else {
+              return {
+                error: returnedData?.find(
+                  (m) =>
+                    m.type === "error" &&
+                    m.args.message.includes('"status": 4'),
+                  // @ts-ignore
+                )!.args.message,
+              };
+            }
           }
           // For type-safety (doesn't ever get called)
           if (returnedData === null) continue;
@@ -377,7 +398,7 @@ export async function runDataAnalysis(
     ),
   ]);
   promiseFinished = true;
-  if ("error" in promiseOut) return { error: "Failed to execute code" };
+  if ("error" in promiseOut) return promiseOut;
   const graphData = promiseOut.graphData;
   console.info(
     "Data analysis response:",
@@ -419,7 +440,7 @@ export function checkCodeExecutionOutput(
   returnedData: ExecuteCode2Item[] | null,
   conversationId: number,
   nLoops?: number,
-): boolean {
+): { isValid: boolean; retry: boolean } {
   // If data field is null
   if (returnedData === null || returnedData.length === 0) {
     console.error(
@@ -427,7 +448,7 @@ export function checkCodeExecutionOutput(
         nLoops ? `, attempt ${nLoops}/3` : ""
       }`,
     );
-    return false;
+    return { isValid: false, retry: true };
   }
   // If error messages in the data output
   const errorMessages = returnedData.filter((m) => m.type === "error");
@@ -440,7 +461,12 @@ export function checkCodeExecutionOutput(
         .map((m) => m.args.message)
         .join("\n")}`,
     );
-    return false;
+    // Any 4XX status code is a permanent error
+    // @ts-ignore
+    if (errorMessages.some((m) => m.args.message.includes('"status": 4'))) {
+      return { isValid: false, retry: false };
+    }
+    return { isValid: false, retry: true };
   }
   // If there are log messages starting with the word Error or ERROR
   const logMessages = returnedData.filter((m) => m.type === "log");
@@ -457,7 +483,7 @@ export function checkCodeExecutionOutput(
         .map((m) => m.args.message)
         .join("\n")}`,
     );
-    return false;
+    return { isValid: false, retry: true };
   }
 
   // If 1 plot with missing data
@@ -482,7 +508,7 @@ export function checkCodeExecutionOutput(
           .map((m) => m.args.message)
           .join("\n")}`,
       );
-      return false;
+      return { isValid: false, retry: true };
     }
     const minNonNullsAllowed = isValue || isTable ? 1 : 2;
     if (
@@ -504,7 +530,7 @@ export function checkCodeExecutionOutput(
           .map((m) => m.args.message)
           .join("\n")}`,
       );
-      return false;
+      return { isValid: false, retry: true };
     }
     if (
       isValue &&
@@ -512,13 +538,13 @@ export function checkCodeExecutionOutput(
         .length === 0
     ) {
       console.error("ERROR: No number in value data: ", plotArgs.data);
-      return false;
+      return { isValid: false, retry: true };
     }
   }
-  // If only calls, return false - no logs (an answer might be written in a log) or plots
-  return (
-    returnedData.filter((m) => ["log", "plot"].includes(m.type)).length > 0
-  );
+  // If only calls, return false - no plots or logs (an answer might be written in a log)
+  const plotOrLog =
+    returnedData.filter((m) => ["log", "plot"].includes(m.type)).length > 0;
+  return { isValid: plotOrLog, retry: !plotOrLog };
 }
 
 export function convertToGraphData(
