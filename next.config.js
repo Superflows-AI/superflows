@@ -21,6 +21,12 @@ module.exports = {
   async headers() {
     return [
       {
+        source: "/([^/]*?)",
+        headers: [{
+          key: "X-Content-Type-Options", value: "nosniff"
+        }]
+      },
+      {
         source: "/api/v1/answers",
         headers: headers,
       },
