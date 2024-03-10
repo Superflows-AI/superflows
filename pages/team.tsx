@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Navbar } from "../components/navbar";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import Headers from "../components/headers";
 import { useProfile } from "../components/contextManagers/profile";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
@@ -54,7 +53,10 @@ function Dashboard() {
               )}
               <button
                 className={classNames(
-                  "text-gray-100 hover:text-gray-50 bg-blue-600 hover:bg-blue-500 focus:ring-2 ring-offset-2 ring-blue-500 px-3 py-2 rounded-md",
+                  "text-gray-100 hover:text-gray-50 px-3 py-2 rounded-md",
+                  token
+                    ? "bg-blue-600 hover:bg-blue-500 focus:ring-2 ring-offset-2 ring-blue-500"
+                    : "bg-gray-600 cursor-not-allowed",
                 )}
                 onClick={() => {
                   if (!token) return;

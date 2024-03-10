@@ -58,10 +58,6 @@ import {
   Dottie,
   storeActionsAwaitingConfirmation,
 } from "../../edge-runtime/ai";
-import {
-  getSearchDocsAction,
-  searchDocsActionName,
-} from "../../builtinActions";
 import { LLMPreProcess, Route } from "./clarification";
 import { summariseChatHistory } from "./summariseChatHistory";
 

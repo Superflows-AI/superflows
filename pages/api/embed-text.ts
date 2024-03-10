@@ -3,7 +3,10 @@ import { Database } from "../../lib/database.types";
 import { z } from "zod";
 import { embedText } from "../../lib/embed-docs/embedText";
 import { NextRequest } from "next/server";
-import { isValidBody } from "../../lib/edge-runtime/utils";
+import {
+  getSessionFromCookie,
+  isValidBody,
+} from "../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
@@ -28,7 +31,6 @@ const supabase = createClient<Database>(
 );
 
 const EmbedTextZod = z.object({
-  org_id: z.number(),
   title: z.string(),
   docsText: z.string(),
   sectionName: z.string().optional(),
@@ -52,7 +54,30 @@ export default async function handler(req: NextRequest) {
       status: 400,
     });
   }
-  //   console.log(requestData);
+  const session = await getSessionFromCookie(req);
+  if (!session) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const profileRes = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", session.user.id)
+    .single();
+  if (profileRes.error) {
+    return new Response(JSON.stringify({ error: "Server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (profileRes.data.org_id === null) {
+    return new Response(JSON.stringify({ error: "No organization found" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   const embedInserts = await embedText(
     requestData.docsText,
     requestData.title,
@@ -63,7 +88,7 @@ export default async function handler(req: NextRequest) {
   await supabase.from("doc_chunks").insert(
     embedInserts.map((insert) => ({
       ...insert,
-      org_id: requestData.org_id,
+      org_id: profileRes.data.org_id!,
     })),
   );
 

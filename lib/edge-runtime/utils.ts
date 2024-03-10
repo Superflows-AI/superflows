@@ -6,13 +6,14 @@ import {
 } from "../models";
 import { Action, DBChatMessage, SimilaritySearchResult } from "../types";
 import { MAX_TOKENS_OUT, USAGE_LIMIT } from "../consts";
-import { SupabaseClient } from "@supabase/auth-helpers-react";
+import { Session, SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import RemoveMarkdown from "remove-markdown";
 import { z } from "zod/lib";
 import { FunctionCall } from "@superflows/chat-ui-react";
 import { dataAnalysisActionName } from "../builtinActions";
+import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 export function isValidBody<T extends Record<string, unknown>>(
   body: any,
@@ -389,4 +390,18 @@ export function hideMostRecentFunctionOutputs(
     }
   }
   return chatHistory;
+}
+
+export async function getSessionFromCookie(
+  req: NextRequest,
+  res?: NextResponse,
+): Promise<Session | null> {
+  const cookie = req.headers.get("cookie");
+  if (!cookie) return null;
+  res = res || NextResponse.next();
+  const authSupa = createMiddlewareSupabaseClient({ req, res });
+  const {
+    data: { session },
+  } = await authSupa.auth.getSession();
+  return session;
 }

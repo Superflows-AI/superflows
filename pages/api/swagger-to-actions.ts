@@ -35,7 +35,6 @@ export const config = {
 };
 
 const SwaggerEndpointZod = z.object({
-  org_id: z.number(),
   swagger: z.record(z.any()),
   api_id: z.optional(z.string()),
 });
@@ -55,7 +54,39 @@ export default async function handler(
     res.status(400).json({ message: "Invalid request body" });
     return;
   }
-  const orgId = req.body.org_id;
+  const cookie = req.headers.cookie;
+  if (!cookie) return res.status(401).json({ message: "Unauthorized" });
+  const tokenString = req.cookies["supabase-auth-token"];
+  if (!tokenString) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  const token = JSON.parse(tokenString) as string[];
+
+  await supabase.auth.setSession({
+    access_token: token[0] as string,
+    refresh_token: token[1] as string,
+  });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) return res.status(401).json({ message: "Unauthorized" });
+  const profileRes = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", session?.user.id)
+    .single();
+
+  if (profileRes.error) {
+    res.status(500).json({ message: "Error fetching data" });
+    return;
+  }
+  if (profileRes.data.org_id === null) {
+    res.status(400).json({ message: "User doesn't have an org" });
+    return;
+  }
+  const orgId = profileRes.data.org_id;
   const swagger = req.body.swagger;
   let dereferencedSwagger: OpenAPIV3_1.Document;
   try {

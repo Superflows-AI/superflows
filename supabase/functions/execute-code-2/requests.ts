@@ -371,6 +371,7 @@ export async function makeHttpRequest(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: "Bearer " + Deno.env.SUPABASE_SERVICE_ROLE_KEY,
       },
       body: JSON.stringify({ html: responseText }),
     });

@@ -403,14 +403,12 @@ function AddDocsModal(props: {
             )}
             onClick={async (event) => {
               const body: {
-                org_id: number | null | undefined;
                 docsText: string;
                 title: string;
                 sectionName?: string;
                 url?: string;
                 createdAt?: string;
               } = {
-                org_id: profile?.org_id,
                 docsText,
                 title,
               };

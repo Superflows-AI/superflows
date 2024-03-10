@@ -83,7 +83,6 @@ export default function UploadModal(props: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          org_id: profile!.org_id,
           swagger: json,
           api_id,
         }),

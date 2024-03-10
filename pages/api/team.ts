@@ -1,13 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { Database } from "../../lib/database.types";
+import { getSessionFromCookie } from "../../lib/edge-runtime/utils";
 
 export const config = {
   runtime: "edge",
-  // Edge gets upset with our use of recharts in chat-ui-react.
-  // TODO: Make it possible to import chat-ui-react without recharts
-  unstable_allowDynamic: ["**/node_modules/@superflows/chat-ui-react/**"],
 };
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -31,11 +28,6 @@ const supabase = createClient<Database>(
   },
 );
 
-const GetTeamZod = z.object({
-  org_id: z.number(),
-});
-type GetTeamType = z.infer<typeof GetTeamZod>;
-
 const headers = { "Content-Type": "application/json" };
 
 export default async function handler(req: NextRequest): Promise<Response> {
@@ -47,11 +39,26 @@ export default async function handler(req: NextRequest): Promise<Response> {
       { status: 405, headers },
     );
   }
-  const params = new URLSearchParams(req.url.split("?")[1]);
-  const org_id = Number(params.get("org_id"));
-
-  if (isNaN(org_id)) {
-    return new Response(JSON.stringify({ message: "Invalid parameters" }), {
+  const session = await getSessionFromCookie(req);
+  if (!session) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers,
+    });
+  }
+  const usersProfileRes = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", session.user.id)
+    .single();
+  if (usersProfileRes.error) {
+    return new Response(JSON.stringify({ error: "Error fetching data" }), {
+      status: 500,
+      headers,
+    });
+  }
+  if (usersProfileRes.data === null || usersProfileRes.data.org_id === null) {
+    return new Response(JSON.stringify({ error: "User doesn't have an org" }), {
       status: 400,
       headers,
     });
@@ -60,7 +67,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const { data, error } = await supabase
     .from("profiles")
     .select("full_name, email_address, avatar_url")
-    .eq("org_id", org_id);
+    .eq("org_id", usersProfileRes.data!.org_id);
 
   if (error) {
     console.error(error.message);
