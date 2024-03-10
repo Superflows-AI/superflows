@@ -1,8 +1,9 @@
 import {
-  AnthropicResponse,
+  AnthropicLegacyResponse,
   ChatGPTMessage,
   ChatGPTParams,
   ChatGPTResponse,
+  Claude3Response,
   EmbeddingResponse,
   OpenAIError,
   RunPodResponse,
@@ -87,9 +88,14 @@ export function textFromResponse(
     | ChatGPTResponse
     | RunPodResponse
     | TogetherAIResponse
-    | AnthropicResponse,
+    | AnthropicLegacyResponse
+    | Claude3Response,
 ): string {
   if ("completion" in response) return response.completion;
+  if ("content" in response) {
+    // Claude 3
+    return response.content[0].text;
+  }
   if ("output" in response) {
     if (typeof response.output === "string") return response.output;
     // @ts-ignore
@@ -200,7 +206,7 @@ function getLLMRequestChat(
         ? { ...m }
         : { role: "user", content: `${m.name} output: ${m.content}` },
     );
-  } else if (isAnthropicModel) {
+  } else if (isAnthropicModel && model.includes("claude-instant")) {
     const prompt = GPTChatFormatToClaudeInstant(messages);
     const max_tokens_to_sample = params.max_tokens;
     const stop_sequences = params.stop;
@@ -222,6 +228,29 @@ function getLLMRequestChat(
           stop_sequences,
           model: model.split("/")[1],
           prompt: prompt,
+        }),
+      },
+    };
+  } else if (isAnthropicModel) {
+    // Claude 3
+    const stop_sequences = params.stop;
+    const localParams = { ...params };
+    delete localParams.stop;
+    return {
+      url: "https://api.anthropic.com/v1/messages",
+      options: {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          ...localParams,
+          stop_sequences,
+          model: model.split("/")[1], // Remove 'anthropic/'
+          system: messages[0].content,
+          messages: messages.slice(1),
         }),
       },
     };
@@ -377,6 +406,7 @@ function combineMessagesForHFEndpoints(messages: LLMChatMessage[]): string {
     )
     .join("\n");
 }
+
 export function GPTChatFormatToPhind(chatMessages: ChatGPTMessage[]): string {
   const roleToName = {
     system: "System Prompt",

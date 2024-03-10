@@ -91,12 +91,29 @@ export interface TogetherAIResponse {
   };
 }
 
-export interface AnthropicResponse {
+export interface AnthropicLegacyResponse {
   type: string;
   id: string;
   completion: string;
   stop_reason: "stop_sequence" | "max_tokens";
   model: string;
+}
+
+export interface Claude3Response {
+  content: {
+    text: string;
+    type: string;
+  }[];
+  id: string;
+  model: string;
+  role: "assistant";
+  stop_reason: "end_turn" | "stop_sequence";
+  stop_sequence: string | null;
+  type: "message";
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
 }
 
 export interface OpenAIError {
