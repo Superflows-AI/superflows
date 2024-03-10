@@ -6,6 +6,10 @@ import { isValidBody } from "../../lib/edge-runtime/utils";
 const ParseHtmlZod = z.object({ html: z.string() });
 type ParseHtmlType = z.infer<typeof ParseHtmlZod>;
 
+if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
+  throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -14,6 +18,15 @@ export default async function handler(
     res.status(405).json({
       error: "Only POST requests allowed",
     });
+    return;
+  }
+  if (
+    !req.headers.authorization ||
+    !req.headers.authorization.includes(
+      process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "",
+    )
+  ) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
   if (!isValidBody<ParseHtmlType>(req.body, ParseHtmlZod)) {

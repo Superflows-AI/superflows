@@ -1,10 +1,6 @@
 import { ChatGPTMessage } from "../../models";
 import { searchDocsActionName } from "../../builtinActions";
-import {
-  getActionFilteringDescriptions,
-  getChatHistorySummary,
-  languageLine,
-} from "./utils";
+import { getActionFilteringDescriptions, languageLine } from "./utils";
 import { getIntroText } from "./chatBot";
 
 export const clarificationLLMParams = {

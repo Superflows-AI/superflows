@@ -373,6 +373,7 @@ export async function makeHttpRequest(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: "Bearer " + process.env.SERVICE_LEVEL_KEY_SUPABASE,
       },
       body: JSON.stringify({ html: responseText }),
     });

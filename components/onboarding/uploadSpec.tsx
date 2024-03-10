@@ -86,7 +86,6 @@ export default function UploadSpec(props: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        org_id: props.orgId,
         swagger: json,
       }),
     });

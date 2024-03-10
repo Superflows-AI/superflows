@@ -1,8 +1,15 @@
-import { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
 import { z } from "zod";
-import { isValidBody } from "../../lib/edge-runtime/utils";
+import {
+  getSessionFromCookie,
+  isValidBody,
+} from "../../lib/edge-runtime/utils";
+import { NextRequest, NextResponse } from "next/server";
+
+export const config = {
+  runtime: "edge",
+};
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -25,19 +32,26 @@ const supabase = createClient<Database>(
 const JoinOrgZod = z.object({ join_id: z.string(), user_id: z.string() });
 type JoinOrgType = z.infer<typeof JoinOrgZod>;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-): Promise<void> {
+export default async function handler(req: NextRequest) {
   if (req.method !== "POST") {
-    res.status(405).json({
-      error: "Only POST requests allowed",
-    });
-    return;
+    return new Response(
+      JSON.stringify({
+        error: "Only POST requests allowed",
+      }),
+      { status: 405 },
+    );
   }
   if (!isValidBody<JoinOrgType>(req.body, JoinOrgZod)) {
-    res.status(400).send({ message: "Invalid request body" });
-    return;
+    return new Response(JSON.stringify({ message: "Invalid request body" }), {
+      status: 400,
+    });
+  }
+  const session = await getSessionFromCookie(req);
+  if (!session) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const { data, error } = await supabase
@@ -58,5 +72,5 @@ export default async function handler(
   if (profileResp.data === null)
     throw new Error("No data returned from profiles update");
 
-  res.status(200).send({ success: true });
+  return new Response(JSON.stringify({ success: true }), { status: 200 });
 }
