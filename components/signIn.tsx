@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { useRouter } from "next/router";
 
 function getRedirectUrl(): string {
   return location.origin + "/sign-in/";
@@ -12,7 +11,6 @@ export default function SignInComponent(props: {
   view: "sign_in" | "sign_up" | "update_password";
 }) {
   const supabase = useSupabaseClient();
-  const router = useRouter();
   const [redirectUrl, setRedirectUrl] = React.useState<string | null>(null);
   const [view, setView] = React.useState<
     "sign_in" | "sign_up" | "update_password"
