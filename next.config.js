@@ -21,25 +21,34 @@ module.exports = {
   async headers() {
     return [
       {
-        source: "/([^/]*?)",
+        source: "/([^/]*?)", // Match all non-nested pages
         headers: [{
-          key: "X-Content-Type-Options", value: "nosniff"
-        }]
+          key: "X-Content-Type-Options",
+          value: "nosniff",
+        },
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=31536000; includeSubDomains",
+        },
+        {
+          key: "X-Frame-Options",
+          value: "deny"
+        },
+        {
+          key: "Content-Security-Policy",
+          value: "frame-ancestors 'none'"
+        }
+        ]
       },
       {
-        source: "/api/v1/answers",
-        headers: headers,
+        source: "/api/(.*)", // All API endpoints
+        headers: [{
+          key: "Cache-Control",
+          value: "no-store"
+        }],
       },
       {
-        source: "/api/v1/confirm",
-        headers: headers,
-      },
-      {
-        source: "/api/v1/feedback",
-        headers: headers,
-      },
-      {
-        source: "/api/v1/follow-ups",
+        source: "/api/v1/(.*)", // Public endpoints
         headers: headers,
       },
     ];
