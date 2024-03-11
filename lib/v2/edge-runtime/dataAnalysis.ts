@@ -224,6 +224,15 @@ export async function runDataAnalysis(
             streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
             continue;
           }
+          if (!Array.isArray(res.data)) {
+            console.error(
+              `ERROR: Invalid output from code-gen for conversation ${
+                dbData.conversationId
+              }: ${JSON.stringify(res.data, undefined, 2)}`,
+            );
+            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+            continue;
+          }
 
           const returnedData = res.data as ExecuteCode2Item[] | null;
           const codeOk = checkCodeExecutionOutput(
