@@ -26,10 +26,6 @@ module.exports = {
           value: "nosniff",
         },
         {
-          key: "Strict-Transport-Security",
-          value: "max-age=31536000; includeSubDomains",
-        },
-        {
           key: "X-Frame-Options",
           value: "deny"
         },
@@ -38,6 +34,13 @@ module.exports = {
           value: "frame-ancestors 'none'"
         }
         ]
+      },
+      {
+        source: "/(.*?)", // Match all pages
+        headers: [{
+          key: "Strict-Transport-Security",
+          value: "max-age=31536000; includeSubDomains",
+        }]
       },
       {
         source: "/api/(.*)", // All Serverless API endpoints (NOT Edge Functions)
