@@ -17,7 +17,6 @@ const headers = [
 module.exports = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // This enables calls to /api/v1 from users' domains
   async headers() {
     return [
       {
@@ -41,7 +40,7 @@ module.exports = {
         ]
       },
       {
-        source: "/api/(.*)", // All API endpoints
+        source: "/api/(.*)", // All Serverless API endpoints (NOT Edge Functions)
         headers: [{
           key: "Cache-Control",
           value: "no-store"
@@ -49,6 +48,7 @@ module.exports = {
       },
       {
         source: "/api/v1/(.*)", // Public endpoints
+        // This enables calls to /api/v1 from users' domains
         headers: headers,
       },
     ];

@@ -53,6 +53,7 @@ if (
 
 const headers = {
   "Content-Type": "application/json",
+  "Cache-control": "no-store",
 };
 
 export default async function handler(req: NextRequest) {

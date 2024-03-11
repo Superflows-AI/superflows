@@ -39,7 +39,10 @@ const supabase = createClient<Database>(
   },
 );
 
-const headers = { "Content-Type": "application/json" };
+const headers = {
+  "Content-Type": "application/json",
+  "Cache-control": "no-store",
+};
 
 const WriteActionDescriptionZod = z
   .object({

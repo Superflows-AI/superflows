@@ -32,25 +32,31 @@ const supabase = createClient<Database>(
 const JoinOrgZod = z.object({ join_id: z.string() }).strict();
 type JoinOrgType = z.infer<typeof JoinOrgZod>;
 
+const headers = {
+  "Content-type": "application/json",
+  "Cache-control": "no-store",
+};
+
 export default async function handler(req: NextRequest) {
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({
         error: "Only POST requests allowed",
       }),
-      { status: 405 },
+      { status: 405, headers },
     );
   }
   if (!isValidBody<JoinOrgType>(req.body, JoinOrgZod)) {
     return new Response(JSON.stringify({ message: "Invalid request body" }), {
       status: 400,
+      headers,
     });
   }
   const session = await getSessionFromCookie(req);
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
 
@@ -72,5 +78,8 @@ export default async function handler(req: NextRequest) {
   if (profileResp.data === null)
     throw new Error("No data returned from profiles update");
 
-  return new Response(JSON.stringify({ success: true }), { status: 200 });
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers,
+  });
 }

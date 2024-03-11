@@ -28,7 +28,10 @@ const supabase = createClient<Database>(
   },
 );
 
-const headers = { "Content-Type": "application/json" };
+const headers = {
+  "Content-Type": "application/json",
+  "Cache-control": "no-store",
+};
 
 export default async function handler(req: NextRequest): Promise<Response> {
   if (req.method !== "GET") {

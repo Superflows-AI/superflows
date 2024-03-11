@@ -30,6 +30,11 @@ const supabase = createClient<Database>(
   },
 );
 
+const headers = {
+  "Content-type": "application/json",
+  "Cache-control": "no-store",
+};
+
 const EmbedTextZod = z
   .object({
     title: z.string(),
@@ -47,20 +52,21 @@ export default async function handler(req: NextRequest) {
       JSON.stringify({
         error: "Only POST requests allowed",
       }),
-      { status: 405 },
+      { status: 405, headers },
     );
   }
   const requestData = await req.json();
   if (!isValidBody<EmbedTextType>(requestData, EmbedTextZod)) {
     return new Response(JSON.stringify({ message: "Invalid request body" }), {
       status: 400,
+      headers,
     });
   }
   const session = await getSessionFromCookie(req);
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
   const profileRes = await supabase
@@ -71,13 +77,13 @@ export default async function handler(req: NextRequest) {
   if (profileRes.error) {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
   if (profileRes.data.org_id === null) {
     return new Response(JSON.stringify({ error: "No organization found" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
   const embedInserts = await embedText(
@@ -94,5 +100,8 @@ export default async function handler(req: NextRequest) {
     })),
   );
 
-  return new Response(JSON.stringify({ success: true }), { status: 200 });
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers,
+  });
 }
