@@ -72,7 +72,6 @@ function Dashboard() {
               },
               body: JSON.stringify({
                 join_id,
-                user_id: session?.user.id,
               }),
             });
             localStorage.removeItem("join_id");

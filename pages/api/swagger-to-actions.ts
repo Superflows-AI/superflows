@@ -34,10 +34,12 @@ export const config = {
   maxDuration: 60,
 };
 
-const SwaggerEndpointZod = z.object({
-  swagger: z.record(z.any()),
-  api_id: z.optional(z.string()),
-});
+const SwaggerEndpointZod = z
+  .object({
+    swagger: z.record(z.any()),
+    api_id: z.optional(z.string()),
+  })
+  .strict();
 type SwaggerEndpointType = z.infer<typeof SwaggerEndpointZod>;
 
 export default async function handler(

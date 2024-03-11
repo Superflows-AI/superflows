@@ -41,10 +41,12 @@ const supabase = createClient<Database>(
 
 const headers = { "Content-Type": "application/json" };
 
-const WriteActionDescriptionZod = z.object({
-  org_id: z.number(),
-  action_ids: z.array(z.number()),
-});
+const WriteActionDescriptionZod = z
+  .object({
+    org_id: z.number(),
+    action_ids: z.array(z.number()),
+  })
+  .strict();
 type WriteActionDescriptionType = z.infer<typeof WriteActionDescriptionZod>;
 
 export default async function handler(req: NextRequest): Promise<Response> {

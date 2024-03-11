@@ -29,7 +29,7 @@ const supabase = createClient<Database>(
   },
 );
 
-const JoinOrgZod = z.object({ join_id: z.string(), user_id: z.string() });
+const JoinOrgZod = z.object({ join_id: z.string() }).strict();
 type JoinOrgType = z.infer<typeof JoinOrgZod>;
 
 export default async function handler(req: NextRequest) {
@@ -66,7 +66,7 @@ export default async function handler(req: NextRequest) {
   const profileResp = await supabase
     .from("profiles")
     .update({ org_id: data[0].id })
-    .eq("id", req.body.user_id)
+    .eq("id", session.user.id)
     .select();
   if (profileResp.error) throw profileResp.error;
   if (profileResp.data === null)

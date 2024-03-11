@@ -30,13 +30,15 @@ const supabase = createClient<Database>(
   },
 );
 
-const EmbedTextZod = z.object({
-  title: z.string(),
-  docsText: z.string(),
-  sectionName: z.string().optional(),
-  url: z.string().optional(),
-  createdAt: z.string().optional(),
-});
+const EmbedTextZod = z
+  .object({
+    title: z.string(),
+    docsText: z.string(),
+    sectionName: z.string().optional(),
+    url: z.string().optional(),
+    createdAt: z.string().optional(),
+  })
+  .strict();
 type EmbedTextType = z.infer<typeof EmbedTextZod>;
 
 export default async function handler(req: NextRequest) {

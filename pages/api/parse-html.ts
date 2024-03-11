@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 import { z } from "zod";
 import { isValidBody } from "../../lib/edge-runtime/utils";
 
-const ParseHtmlZod = z.object({ html: z.string() });
+const ParseHtmlZod = z.object({ html: z.string() }).strict();
 type ParseHtmlType = z.infer<typeof ParseHtmlZod>;
 
 if (!process.env.SERVICE_LEVEL_KEY_SUPABASE) {
