@@ -10,7 +10,7 @@ import {
 
 export const GPTDataAnalysisLLMParams = {
   max_tokens: 800,
-  stop: ['"""'],
+  stop: [],
 };
 
 export function getGPTDataAnalysisPrompt(args: {
