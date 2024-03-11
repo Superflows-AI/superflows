@@ -122,7 +122,9 @@ export class LlmResponseCache {
 
   checkChatCache(chatHistory: GPTMessageInclSummary[]): string {
     if (!this.isHit()) return "";
-    let isMatch = this._history_matches(chatHistory);
+    let isMatch =
+      this._history_matches(chatHistory) &&
+      this.messages[chatHistory.length].role === "assistant";
     if (isMatch) {
       console.log("Chat output match found - returning cached message");
       const matchingMessage = this.messages[chatHistory.length];
