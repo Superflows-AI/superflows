@@ -21,9 +21,9 @@ import { createClient } from "@supabase/supabase-js";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import { dataAnalysisActionName } from "../builtinActions";
 import {
-  getGPTDataAnalysisPrompt,
+  getOpusOrGPTDataAnalysisPrompt,
   GPTDataAnalysisLLMParams,
-  parseGPTDataAnalysis,
+  parseOpusOrGPTDataAnalysis,
 } from "../prompts/dataAnalysisGPT";
 
 const supabase = createClient<Database>(
@@ -104,7 +104,7 @@ export async function runDataAnalysis(
     // Parse the result
     let parsedCode;
     if (llmResponse.includes("```")) {
-      parsedCode = parseGPTDataAnalysis(llmResponse, filteredActions);
+      parsedCode = parseOpusOrGPTDataAnalysis(llmResponse, filteredActions);
     } else {
       parsedCode = parsePhindDataAnalysis(llmResponse, filteredActions);
     }
@@ -146,7 +146,7 @@ export async function runDataAnalysis(
     }
   }
 
-  const dataAnalysisPrompt = getGPTDataAnalysisPrompt({
+  const dataAnalysisPrompt = getOpusOrGPTDataAnalysisPrompt({
     question: instruction,
     selectedActions: filteredActions,
     orgInfo: org,
@@ -158,7 +158,7 @@ export async function runDataAnalysis(
   );
   var promiseFinished = false;
   const promiseOut = await Promise.race([
-    // GPT4 data analysis
+    // Data analysis
     ...[1, 2].map(
       async (
         i,
@@ -178,9 +178,9 @@ export async function runDataAnalysis(
               dataAnalysisPrompt,
               {
                 ...GPTDataAnalysisLLMParams,
-                temperature: nLoops === 0 && i === 1 ? 0.1 : 0.8,
+                temperature: nLoops === 0 ? 0.1 : 0.8,
               },
-              "gpt-4",
+              i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
             ],
             3,
           );
@@ -189,7 +189,7 @@ export async function runDataAnalysis(
           console.info("\nRaw code-gen response:", parallelLlmResponse);
 
           // Parse the result
-          let parsedCode = parseGPTDataAnalysis(
+          let parsedCode = parseOpusOrGPTDataAnalysis(
             parallelLlmResponse,
             filteredActions,
           );

@@ -13,7 +13,7 @@ export const GPTDataAnalysisLLMParams = {
   stop: [],
 };
 
-export function getGPTDataAnalysisPrompt(args: {
+export function getOpusOrGPTDataAnalysisPrompt(args: {
   question: string;
   selectedActions: Action[];
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">;
@@ -74,23 +74,51 @@ Plan:
   ];
 }
 
-export function parseGPTDataAnalysis(
-  llmOutput: string,
+export function parseOpusOrGPTDataAnalysis(
+  output: string,
   actions: Pick<Action, "name">[],
 ): { code: string } | { error: string } | null {
   /** Code output means the code is valid
    * Error output is an error message to be shown to the AI
    * null output means that you need to retry **/
-  let code =
-    llmOutput.match(
-      /```(?:javascript|typescript|js|ts)?\n([\s\S]+?)\n```/,
-    )?.[1] ?? "";
-  if (!code) {
-    console.error("ERROR: No code found in output");
+  const match = output.match(
+    /^(```jsx?|```javascript|\(?async |function |const |let |var |\/\/ )/m,
+  );
+  if (!match) {
+    console.error(
+      "Couldn't find the start of the code:\n---\n" + output + "\n---",
+    );
     return null;
   }
-  return parsePhindDataAnalysis(code, actions);
+  // Remove everything before the first code block (incl the code block opener if there is one)
+  let rawCode = output
+    .slice(match.index)
+    .replace(/^(```jsx?|```javascript)/, "");
+  // Find the next end of code
+  rawCode = rawCode.split("```")[0];
+  // Remove the plan if there is one
+  rawCode = rawCode.replace(/Plan:\s?(\n\d\. .*)+/, "");
+
+  return parsePhindDataAnalysis(rawCode, actions);
 }
+
+// export function parseGPTDataAnalysis(
+//   llmOutput: string,
+//   actions: Pick<Action, "name">[],
+// ): { code: string } | { error: string } | null {
+//   /** Code output means the code is valid
+//    * Error output is an error message to be shown to the AI
+//    * null output means that you need to retry **/
+//   let code =
+//     llmOutput.match(
+//       /```(?:javascript|typescript|js|ts)?\n([\s\S]+?)\n```/,
+//     )?.[1] ?? "";
+//   if (!code) {
+//     console.error("ERROR: No code found in output");
+//     return null;
+//   }
+//   return parsePhindDataAnalysis(code, actions);
+// }
 
 export function shouldEndGPTDataAnalysisStreaming(
   streamedText: string,
