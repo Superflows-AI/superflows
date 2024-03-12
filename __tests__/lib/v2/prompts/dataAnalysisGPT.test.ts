@@ -1,9 +1,9 @@
-import { parseGPTDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysisGPT";
+import { parseOpusOrGPTDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysisGPT";
 
 describe("Success", () => {
   it("Remove text afterwards", () => {
     expect(
-      parseGPTDataAnalysis(
+      parseOpusOrGPTDataAnalysis(
         "Plan:\n1. Think\n2. step-by-step\n\n```\n// Write code here\nasync function main() {\n\treturn searchDeals();\n}\n\nmain();\n```\n\nText can go here",
         [{ name: "search_deals" }],
       ),
@@ -16,7 +16,7 @@ describe("Success", () => {
 describe("Errors", () => {
   it("Empty", () => {
     expect(
-      parseGPTDataAnalysis(
+      parseOpusOrGPTDataAnalysis(
         "Plan:\n1. Think\n2. step-by-step\n\n```// Write code here\n```",
         [],
       ),
@@ -24,7 +24,7 @@ describe("Errors", () => {
   });
   it("No code block", () => {
     expect(
-      parseGPTDataAnalysis("Plan:\n1. Think\n2. step-by-step\n", []),
+      parseOpusOrGPTDataAnalysis("Plan:\n1. Think\n2. step-by-step\n", []),
     ).toBeNull();
   });
 });
