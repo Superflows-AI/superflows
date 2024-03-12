@@ -256,11 +256,8 @@ export function explainPlotChatPrompt(
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
-Example:
+EXAMPLE:
 """
-### User:
-What are the top 10 best performing products by revenue in the past 6 months?
-
 ### Function:
 {"type":"${
       isTable ? "table" : "bar"
