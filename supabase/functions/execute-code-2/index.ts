@@ -1,9 +1,12 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { Redis } from "https://esm.sh/@upstash/redis";
 import { Ratelimit } from "https://cdn.skypack.dev/@upstash/ratelimit@latest";
-import * as util from "https://deno.land/std@0.110.0/node/util.ts";
 import { Timeout } from "https://deno.land/x/timeout/mod.ts";
-import { exponentialRetryWrapper, snakeToCamel } from "./utils.ts";
+import {
+  exponentialRetryWrapper,
+  formatString,
+  snakeToCamel,
+} from "./utils.ts";
 import {
   constructHttpRequest,
   makeHttpRequest,
@@ -230,7 +233,7 @@ aVariableNameThatMustNotBeRepeated
   console.log = (message, ...otherParams) => {
     builtinFunctionCalls.push({
       type: "log",
-      args: { message: util.format(message, ...otherParams) },
+      args: { message: formatString(message, ...otherParams) },
     });
   };
   const originalErr = console.error;
