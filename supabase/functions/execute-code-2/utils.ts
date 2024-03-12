@@ -187,3 +187,32 @@ export function parseErrorHtml(str: string): string {
   const result = elements.filter(Boolean).join("\n");
   return result.length > 0 ? result : str;
 }
+
+export function formatString() {
+  const args = Array.prototype.slice.call(arguments);
+  if (args.length === 0) return null;
+  let str = args[0];
+  let i = 1;
+  let formatted = str.replace(/%([a-z%])/g, function (x: string) {
+    if (i < args.length) {
+      switch (x) {
+        case "%s":
+          return String(args[i++]);
+        case "%d":
+          return Number(args[i++]);
+        case "%j":
+          return JSON.stringify(args[i++]);
+        case "%%":
+          return "%";
+        default:
+          return x;
+      }
+    } else {
+      return x;
+    }
+  });
+  for (; i < args.length; i++) {
+    formatted += JSON.stringify(args[i]);
+  }
+  return formatted;
+}
