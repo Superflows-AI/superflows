@@ -68,8 +68,6 @@ async function saveAnalyticsToDB(
   }
 }
 
-const defaultCodeGenModel = "Phind/Phind-CodeLlama-34B-v2";
-
 const madeAMistake = {
   role: "loading",
   content: "Made a mistake. Retrying",
@@ -156,7 +154,7 @@ export async function runDataAnalysis(
   });
   console.log(
     "Code-gen data analysis prompt:",
-    JSON.stringify(dataAnalysisPrompt, undefined, 2),
+    JSON.stringify(dataAnalysisPrompt),
   );
   var promiseFinished = false;
   const promiseOut = await Promise.race([

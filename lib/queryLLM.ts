@@ -46,8 +46,8 @@ export async function getLLMResponse(
   const response = await Promise.race([
     fetch(url, options),
     (async () => {
-      // Time out after 30s
-      await new Promise((resolve) => setTimeout(resolve, 30000));
+      // Time out after 45s
+      await new Promise((resolve) => setTimeout(resolve, 45000));
       return new Response(
         JSON.stringify({ error: { message: "Timed out!" } }),
         {
