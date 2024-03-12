@@ -177,8 +177,8 @@ export async function LLMPreProcess(args: {
       // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
       let placeholderBuffer = "";
       const placeholderToOriginalMap = {
-        FUNCTIONS: "functions",
-        FUNCTION: "function",
+        FUNCTIONS: "operations",
+        FUNCTION: "operation",
       };
 
       // https://web.dev/streams/#asynchronous-iteration

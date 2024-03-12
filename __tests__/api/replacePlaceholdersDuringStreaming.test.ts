@@ -71,4 +71,28 @@ describe("replacePlaceholdersDuringStreaming", () => {
     expect(out.content).toEqual("ff3a5-3f3a5-3f3a5-77877 ");
     expect(out.placeholderBuffer).toEqual("");
   });
+  it("FUNCTION, put in buffer", () => {
+    const out = replacePlaceholdersDuringStreaming("FUNCTION", "", {
+      FUNCTIONS: "functions",
+      FUNCTION: "function",
+    });
+    expect(out.content).toEqual("");
+    expect(out.placeholderBuffer).toEqual("FUNCTION");
+  });
+  it("FUNCTION, match", () => {
+    const out = replacePlaceholdersDuringStreaming(" is", "FUNCTION", {
+      FUNCTIONS: "functions",
+      FUNCTION: "function",
+    });
+    expect(out.content).toEqual("function is");
+    expect(out.placeholderBuffer).toEqual("");
+  });
+  it("FUNCTIONS, ", () => {
+    const out = replacePlaceholdersDuringStreaming("S ", "FUNCTION", {
+      FUNCTIONS: "functions",
+      FUNCTION: "function",
+    });
+    expect(out.content).toEqual("functions ");
+    expect(out.placeholderBuffer).toEqual("");
+  });
 });
