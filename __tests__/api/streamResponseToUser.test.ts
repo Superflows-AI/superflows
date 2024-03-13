@@ -26,7 +26,7 @@ describe("streamResponseToUser", () => {
       'data: {"choices": [{"delta": {"content": "The id is"}}]}',
     );
     mockReadable.push('data: {"choices": [{"delta": {"content": " ID"}}]}');
-    mockReadable.push('data: {"choices": [{"delta": {"content": "1"}}]}');
+    mockReadable.push('data: {"choices": [{"delta": {"content": "1 "}}]}');
     mockReadable.push(null); // end the stream
 
     const uint8array = new TextEncoder().encode(mockReadable.read());
@@ -41,11 +41,11 @@ describe("streamResponseToUser", () => {
     const out = await streamResponseToUser(mockStream, mockFn, {
       "53fa4-3f3f3-3f3f3-3f3f3-3f3f3": "ID1",
     });
-    expect(out).toEqual("The id is ID1");
+    expect(out).toEqual("The id is ID1 ");
     expect(mockFn).toBeCalledWith({ role: "assistant", content: "The id is" });
     expect(mockFn).toBeCalledWith({
       role: "assistant",
-      content: " 53fa4-3f3f3-3f3f3-3f3f3-3f3f3",
+      content: " 53fa4-3f3f3-3f3f3-3f3f3-3f3f3 ",
     });
   });
 });
