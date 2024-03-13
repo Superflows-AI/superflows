@@ -191,6 +191,12 @@ export function parseErrorHtml(str: string): string {
 export function formatString() {
   const args = Array.prototype.slice.call(arguments);
   if (args.length === 0) return null;
+  if (args.length === 1) {
+    if (typeof args[0] === "object") {
+      return JSON.stringify(args[0]);
+    }
+    return String(args[0]);
+  }
   let str = args[0];
   let i = 1;
   let formatted = str.replace(/%([a-z%])/g, function (x: string) {
