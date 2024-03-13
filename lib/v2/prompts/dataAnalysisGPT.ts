@@ -55,7 +55,7 @@ RULES:
 1. ONLY use the standard JS library and FUNCTIONS. DO NOT use other libraries or frameworks. THIS IS VERY IMPORTANT!
 2. NEVER write TODO comments, placeholder code or ... in place of code
 3. The following cause runtime errors: fetch() (or calling another server), eval(), new Function(), WebAssembly, try-catch, TS types and function definitions
-4. DO NOT use return to send data to the user. Use plot() to visualize data or console.log() to output text
+4. DO NOT use return to send data to the user. Use plot() to display data or console.log() to output text. To list data, plot a table
 5. Use await NOT .then()
 6. DO NOT call FUNCTIONS in a loop, UNLESS wrapped by Promise.all() or the loop is 5 or less. THIS IS VERY IMPORTANT!
 7. When calculating cumulative values, ORDER THE DATA first!
