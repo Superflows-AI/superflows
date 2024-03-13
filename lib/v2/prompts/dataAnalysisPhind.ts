@@ -205,6 +205,10 @@ export function parsePhindDataAnalysis(
     if (thenCall.test(code)) code = code.replace(thenCall, `await $1`);
   });
 
+  // Using TS notation ! or ? in code (or strings - we cut these out too, but not a big issue)
+  code = code.replace(/([\w_)\]])!([.)}\[\]\s])/g, "$1$2");
+  code = code.replace(/([\w_)\]])\?([.\[])/g, "$1$2");
+
   return { code };
 }
 
