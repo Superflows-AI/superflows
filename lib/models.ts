@@ -18,8 +18,13 @@ export interface FunctionMessage {
 
 export type GPTMessageInclSummary =
   | {
-      role: "system" | "user" | "assistant";
+      role: "system" | "assistant";
       content: string;
+    }
+  | {
+      role: "user";
+      content: string;
+      chat_summary?: string;
     }
   | FunctionMessageInclSummary;
 

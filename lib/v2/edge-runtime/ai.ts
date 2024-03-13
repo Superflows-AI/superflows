@@ -351,7 +351,7 @@ export async function Bertie( // Bertie will eat you for breakfast
       );
 
       // To stop going over the context limit: only remember the last 'maxConvLength' messages
-      const recentMessages = chatHistory
+      const recentMessages = addAssistantHistory(chatHistory)
         .slice(Math.max(0, chatHistory.length - maxConvLength))
         // Set summaries to 'content' - don't show AI un-summarized output
         .map(MessageInclSummaryToGPT);
@@ -806,4 +806,40 @@ async function runCodeGen(
         typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     }));
   }
+}
+
+export function addAssistantHistory(
+  oldHistory: GPTMessageInclSummary[],
+): GPTMessageInclSummary[] {
+  /** When CODE has been selected in the past, it jumps from a user message to
+   * a function message. This function adds an assistant message in between
+   * to make the history more complete. Otherwise future DIRECT mode AI will
+   * try to output something that looks like a function message. */
+  const newHistory: GPTMessageInclSummary[] = [];
+  oldHistory.forEach((message, idx) => {
+    newHistory.push(message);
+    // Is last message
+    if (idx + 1 === oldHistory.length) {
+      return;
+    }
+    // Add a made-up assistant message after a user message if previously it was
+    //  followed by a function message
+    const nextMessage = oldHistory[idx + 1];
+    if (
+      message.role === "user" &&
+      nextMessage.role === "function" &&
+      nextMessage.name === dataAnalysisActionName
+    ) {
+      //@ts-ignore
+      const actionParam = dataAnalysisAction({ id: 0 }).parameters[0].name;
+      newHistory.push({
+        role: "assistant",
+        content: `Commands:
+${dataAnalysisActionName}(${actionParam}=\"${
+          message.chat_summary || message.content
+        }\")`,
+      });
+    }
+  });
+  return newHistory;
 }
