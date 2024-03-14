@@ -4,12 +4,16 @@ import { getIntroText } from "../../prompts/chatBot";
 import { getActionTSSignature } from "../../prompts/tsConversion";
 import { snakeToCamel } from "../../utils";
 
-export function getPhindDataAnalysisPrompt(args: {
+export const GPTDataAnalysisLLMParams = {
+  max_tokens: 800,
+  stop: [],
+};
+
+export function getOpusOrGPTDataAnalysisPrompt(args: {
   question: string;
   selectedActions: Action[];
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">;
   userDescription: string;
-  thoughts: string;
 }): ChatGPTMessage[] {
   const actionTS = args.selectedActions.map((action) => {
     return getActionTSSignature(action, true, null, true);
@@ -29,7 +33,7 @@ ${args.userDescription ? `\nUser description: ${args.userDescription}\n` : ""}${
           ? "\n" + args.orgInfo.chatbot_instructions + "\n"
           : ""
       }
-api.ts
+FUNCTIONS
 \`\`\`
 ${actionTS.join("\n\n")}
 
@@ -44,44 +48,66 @@ labels: {x:string,y:string} // Include axis units in brackets. Example: Conversi
 Today's date is ${new Date().toISOString().split("T")[0]}
 
 RULES:
-1. ONLY use the standard JS library and api.ts. DO NOT use other libraries or frameworks. THIS IS VERY IMPORTANT!
+1. ONLY use the standard JS library and FUNCTIONS. DO NOT use other libraries or frameworks. THIS IS VERY IMPORTANT!
 2. NEVER write TODO comments, placeholder code or ... in place of code
 3. The following cause runtime errors: fetch() (or calling another server), eval(), new Function(), WebAssembly, try-catch, TS types and function definitions
-4. DO NOT answer a question by using return to send data. Use plot() to visualize data
+4. DO NOT use return to send data to the user. Use plot() to display data or console.log() to output text. To list data, plot a table
 5. Use await NOT .then()
-6. It's CRUCIAL to call the API efficiently. DO NOT call APIs in a loop, unless it's wrapped in a promise
+6. DO NOT call FUNCTIONS in a loop, UNLESS wrapped by Promise.all() or the loop is 5 or less. THIS IS VERY IMPORTANT!
 7. When calculating cumulative values, ORDER THE DATA first!
-8. Respond with code in \`\`\` starting with imports and a plan like below:
+8. Respond with your plan, followed by code enclosed by \`\`\` like below:
+"""
+Plan:
+1. Think
+2. step-by-step
+
 \`\`\`
-// imports
-
-// Plan:
-// 1. Think
-// 2. step-by-step
-
-...
-\`\`\``,
+// Write code here
+\`\`\`
+"""`,
     },
     { role: "user", content: args.question },
-    {
-      role: "assistant",
-      content: `\`\`\`javascript
-import { ${actionTS
-        .map((a) => a.match(/async function (\S+)\(/m)?.[1])
-        .join(", ")}, plot } from "./api.ts";
-
-// Plan:
-${args.thoughts
-  .split("\n")
-  .map((t) => `// ${t}`)
-  .join("\n")}
-
-`,
-    },
   ];
 }
 
-export function parsePhindDataAnalysis(
+export function shouldEndGPTDataAnalysisStreaming(
+  streamedText: string,
+): boolean {
+  /** It's common for GPT to write text after the code to explain it. I think it's been
+   * fine-tuned to do this. A way to deal with this is to stream the response and stop
+   * when it outputs a 2nd ``` which signifies the end of the code **/
+  return streamedText.split(/^```/m).length >= 3;
+}
+
+export function parseOpusOrGPTDataAnalysis(
+  output: string,
+  actions: Pick<Action, "name">[],
+): { code: string } | { error: string } | null {
+  /** Code output means the code is valid
+   * Error output is an error message to be shown to the AI
+   * null output means that you need to retry **/
+  const match = output.match(
+    /^(```jsx?|```javascript|\(?async |function |const |let |var |\/\/ )/m,
+  );
+  if (!match) {
+    console.error(
+      "Couldn't find the start of the code:\n---\n" + output + "\n---",
+    );
+    return null;
+  }
+  // Remove everything before the first code block (incl the code block opener if there is one)
+  let rawCode = output
+    .slice(match.index)
+    .replace(/^(```jsx?|```javascript)/, "");
+  // Find the next end of code
+  rawCode = rawCode.split("```")[0];
+  // Remove the plan if there is one
+  rawCode = rawCode.replace(/Plan:\s?(\n\d\. .*)+/, "");
+
+  return parseGeneratedCode(rawCode, actions);
+}
+
+export function parseGeneratedCode(
   rawCode: string,
   actions: Pick<Action, "name">[],
 ): { code: string } | { error: string } | null {
