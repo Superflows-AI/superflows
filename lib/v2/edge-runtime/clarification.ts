@@ -1,14 +1,7 @@
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { exponentialRetryWrapper } from "../../utils";
-import { parseAnthropicStreamedData } from "../../parsers/parsers";
-import {
-  replacePlaceholdersDuringStreaming,
-  streamResponseToUser,
-} from "../../edge-runtime/angelaUtils";
-import {
-  GPTChatFormatToClaudeInstant,
-  streamLLMResponse,
-} from "../../queryLLM";
+import { streamResponseToUser } from "../../edge-runtime/angelaUtils";
+import { streamLLMResponse } from "../../queryLLM";
 import { ChatGPTMessage } from "../../models";
 import {
   clarificationLLMParams,
@@ -28,6 +21,7 @@ import {
   getSearchDocsAction,
   searchDocsActionName,
 } from "../../builtinActions";
+import { streamWithEarlyTermination } from "./utils";
 
 if (!process.env.CLARIFICATION_MODEL) {
   throw new Error("CLARIFICATION_MODEL env var is not defined");
@@ -68,9 +62,8 @@ export async function LLMPreProcess(args: {
 }> {
   // Cross-thread variables
   var streamedText = "",
-    isPossible = null,
-    isDocs = null;
-  const startTime = Date.now();
+    isPossible: boolean | null = null,
+    isDocs: boolean | null = null;
   // Run filtering, clarification and routing prompts in parallel in Promise.all()
   const outs = await Promise.all([
     // Run filtering
@@ -147,86 +140,37 @@ export async function LLMPreProcess(args: {
     > => {
       // Run clarification
       const prompt = clarificationPrompt(args);
-      console.log(
-        "Prompt for clarification: ",
-        JSON.stringify(GPTChatFormatToClaudeInstant(prompt).slice(1500)),
-      );
-      const res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [prompt, clarificationLLMParams, clarificationModel],
-        3,
-      );
-      if (res === null || "message" in res) {
-        console.error(
-          `Anthropic API call failed for conversation with id: ${
-            args.conversationId
-          }. The error was: ${JSON.stringify(res)}`,
-        );
-        return { error: "Call to Language Model API failed" };
-      }
-
-      // Stream response chunk by chunk
-      const decoder = new TextDecoder();
-      const reader = res.getReader();
-
-      let rawOutput = "Thoughts:\n1. ",
-        done = false,
-        incompleteChunk = "",
-        first = true;
-      let parsedOutput: ParsedClarificationOutput;
-      // Below buffer is used to store the partial value of a variable if it's split across multiple chunks
-      let placeholderBuffer = "";
-      const placeholderToOriginalMap = {
-        FUNCTIONS: "operations",
-        FUNCTION: "operation",
-      };
-
-      // https://web.dev/streams/#asynchronous-iteration
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-
-        done = doneReading;
-        if (done) break;
-
-        const contentItems = parseAnthropicStreamedData(
-          incompleteChunk + decoder.decode(value),
-        );
-
-        incompleteChunk = contentItems.incompleteChunk ?? "";
-
-        for (let content of contentItems.completeChunks) {
-          // Sometimes starts with a newline
-          if (first) {
-            content = content.trimStart();
-            first = false;
-          }
-          // Raw output is the actual output from the LLM!
-          rawOutput += content;
-          // What streams back to the user has the variables replaced with their real values
-          //  so URL1 is replaced by the actual URL
-          ({ content, placeholderBuffer } = replacePlaceholdersDuringStreaming(
-            content,
-            placeholderBuffer,
-            placeholderToOriginalMap,
-          ));
-
-          if (content) {
-            parsedOutput = parseClarificationOutput(rawOutput);
-            if (isPossible && isDocs === false) {
+      let loggedStreamingClarification = false;
+      const rawOutput = await streamWithEarlyTermination(
+        prompt,
+        clarificationLLMParams,
+        clarificationModel,
+        () => false,
+        (rawOutput: string) => {
+          if (isPossible && isDocs === false) {
+            if (loggedStreamingClarification) {
               console.log(
                 "isPossible is true and isDocs is false, so now streaming clarification!",
               );
-              const newText = parsedOutput.tellUser.replace(streamedText, "");
-              args.streamInfo({ role: "assistant", content: newText });
-              streamedText += newText;
+              loggedStreamingClarification = true;
             }
+            const newText = parseClarificationOutput(
+              rawOutput,
+            ).tellUser.replace(streamedText, "");
+            args.streamInfo({ role: "assistant", content: newText });
+            streamedText += newText;
           }
-        }
-        done = contentItems.done;
-      }
-      console.log(
-        `Clarification output after ${Date.now() - startTime}ms:\n${rawOutput}`,
+        },
+        "Clarification",
+        "Thoughts:\n1. ",
+        {
+          FUNCTIONS: "operations",
+          FUNCTION: "operation",
+        },
       );
+      if (rawOutput === null) {
+        return { error: "Call to Language Model API failed" };
+      }
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
     })(),
     // Run routing - should the request go to DOCS, DIRECT, or CODE?
@@ -236,96 +180,23 @@ export async function LLMPreProcess(args: {
         actions: args.actions.filter((a) => a.name !== searchDocsActionName),
         isAnthropic: true,
       });
-      console.log(
-        "Prompt for routing: ",
-        JSON.stringify(GPTChatFormatToClaudeInstant(prompt)),
+      let rawOutput = await streamWithEarlyTermination(
+        prompt,
+        routingLLMParams,
+        routingModel,
+        (rawOutput: string) => {
+          return (
+            isPossible === false || parseRoutingOutput(rawOutput, true) !== null
+          );
+        },
+        () => {},
+        "Routing",
+        "Thoughts:\n1. ",
       );
-      let res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [prompt, routingLLMParams, routingModel],
-        3,
-      );
-      if (res === null || "message" in res) {
-        console.error(
-          `Anthropic API call failed for conversation with id: ${
-            args.conversationId
-          }. The error was: ${JSON.stringify(res)}`,
-        );
+      if (rawOutput === null) {
         return { error: "Call to Language Model API failed" };
       }
-
-      // Stream response chunk by chunk
-      const decoder = new TextDecoder();
-      const reader = res.getReader();
-
-      let rawOutput = "Thoughts:\n1. ",
-        done = false,
-        incompleteChunk = "",
-        first = true;
-      let parsedOutput: { thoughts: string; choice: string } | null = null;
-
-      // https://web.dev/streams/#asynchronous-iteration
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        if (isPossible === false) {
-          console.log("CANCELLING BECAUSE ISPOSSIBLE IS FALSE");
-          // When filtering finishes and says this is impossible before this completes, we cancel the stream
-          reader.releaseLock();
-          await res.cancel();
-          break;
-        }
-
-        done = doneReading;
-        if (done) break;
-
-        const contentItems = parseAnthropicStreamedData(
-          incompleteChunk + decoder.decode(value),
-        );
-
-        incompleteChunk = contentItems.incompleteChunk ?? "";
-
-        for (let content of contentItems.completeChunks) {
-          // Sometimes starts with a newline
-          if (first) {
-            content = content.trimStart();
-            first = false;
-          }
-          // Raw output is the actual output from the LLM!
-          rawOutput += content;
-
-          if (content) {
-            parsedOutput = parseRoutingOutput(rawOutput, true);
-            if (parsedOutput !== null) {
-              console.log(
-                `Routing output after ${
-                  Date.now() - startTime
-                }ms:\n${rawOutput}`,
-              );
-              console.log("Parsed output", parsedOutput);
-              // Cancel stream
-              reader.releaseLock();
-              await res.cancel();
-              if (["DIRECT", "DOCS", "CODE"].includes(parsedOutput.choice)) {
-                isDocs = parsedOutput.choice === "DOCS";
-                return parsedOutput.choice as Route;
-              } else {
-                // What if it returns an invalid answer?
-                console.error(
-                  `Routing output is not valid: ${JSON.stringify(
-                    parsedOutput,
-                  )}`,
-                );
-                return { error: "Routing output is not valid" };
-              }
-            }
-          }
-        }
-        done = contentItems.done;
-      }
-      console.log(
-        `Routing output after ${Date.now() - startTime}ms:\n${rawOutput}`,
-      );
-      parsedOutput = parseRoutingOutput(rawOutput, false);
+      const parsedOutput = parseRoutingOutput(rawOutput, false);
       if (
         parsedOutput !== null &&
         ["DIRECT", "DOCS", "CODE"].includes(parsedOutput.choice)
