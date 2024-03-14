@@ -188,12 +188,17 @@ function getLLMRequestChat(
   const isMistralModel = model.includes("mistral");
   const isPhindModel = model.includes("Phind");
   const isAnthropicModel = model.includes("anthropic");
+  const isGroqModel = model.startsWith("groq");
   const isOS = isOSModel(model);
 
   let key: string, url: string;
   if (isOpenAIModel) {
     key = process.env.OPENAI_API_KEY!;
     url = "https://api.openai.com/v1/chat/completions";
+  } else if (isGroqModel) {
+    key = process.env.GROQ_API_KEY!;
+    url = "https://api.groq.com/openai/v1/chat/completions";
+    model = model.split("/")[1];
   } else if (isMistralModel) {
     key = process.env.MISTRAL_API_KEY!;
     url = "https://api.mistral.ai/v1/chat/completions";
