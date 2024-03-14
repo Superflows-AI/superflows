@@ -5,12 +5,8 @@ import {
   Organization,
 } from "../../types";
 import { Database } from "../../database.types";
-import {
-  getPhindDataAnalysisPrompt,
-  parsePhindDataAnalysis,
-} from "../prompts/dataAnalysisPhind";
 import { exponentialRetryWrapper } from "../../utils";
-import { getLLMResponse, GPTChatFormatToPhind } from "../../queryLLM";
+import { getLLMResponse } from "../../queryLLM";
 import { FunctionMessage } from "../../models";
 import {
   GraphMessage,
@@ -24,7 +20,8 @@ import {
   getOpusOrGPTDataAnalysisPrompt,
   GPTDataAnalysisLLMParams,
   parseOpusOrGPTDataAnalysis,
-} from "../prompts/dataAnalysisGPT";
+  parseGeneratedCode,
+} from "../prompts/dataAnalysis";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -106,7 +103,7 @@ export async function runDataAnalysis(
     if (llmResponse.includes("```")) {
       parsedCode = parseOpusOrGPTDataAnalysis(llmResponse, filteredActions);
     } else {
-      parsedCode = parsePhindDataAnalysis(llmResponse, filteredActions);
+      parsedCode = parseGeneratedCode(llmResponse, filteredActions);
     }
     if (parsedCode !== null) {
       if ("error" in parsedCode) return parsedCode;
@@ -278,125 +275,6 @@ export async function runDataAnalysis(
         };
       },
     ),
-    // Phind data analysis
-    // ...[1, 2].map(
-    //   async (
-    //     i,
-    //   ): Promise<
-    //     | { graphData: ExecuteCode2Item[]; llmResponse: string }
-    //     | { error: string }
-    //   > => {
-    //     const dataAnalysisPrompt = getPhindDataAnalysisPrompt({
-    //       question: instruction,
-    //       selectedActions: filteredActions,
-    //       orgInfo: org,
-    //       userDescription,
-    //       thoughts: thoughts[(i - 1) % thoughts.length],
-    //     });
-    //     console.log("\nPhind code gen run", i);
-    //     let parallelGraphData: ExecuteCode2Item[] | null = null,
-    //       nLoops = 0;
-    //     let parallelLlmResponse = "";
-    //     while (parallelGraphData === null && nLoops < 3 && !promiseFinished) {
-    //       defaultDataAnalysisParams = {
-    //         ...defaultDataAnalysisParams,
-    //         temperature: nLoops === 0 && i === 0 ? 0.1 : 0.8,
-    //       };
-    //       nLoops += 1;
-    //       parallelLlmResponse = await exponentialRetryWrapper(
-    //         getLLMResponse,
-    //         [
-    //           dataAnalysisPrompt,
-    //           defaultDataAnalysisParams,
-    //           process.env.CODE_GEN_LLM ?? defaultCodeGenModel,
-    //         ],
-    //         3,
-    //       );
-    //       if (promiseFinished)
-    //         return { error: "Another promise settled first" };
-    //       console.info("\nRaw LLM response (Phind):", parallelLlmResponse);
-    //
-    //       // Parse the result
-    //       let parsedCode = parsePhindDataAnalysis(
-    //         parallelLlmResponse,
-    //         filteredActions,
-    //       );
-    //       if (parsedCode === null) {
-    //         streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-    //         continue;
-    //       }
-    //       if ("error" in parsedCode) return parsedCode;
-    //       if (promiseFinished)
-    //         return { error: "Another promise settled first" };
-    //       streamInfo({ role: "loading", content: "Executing code" });
-    //       console.info("Parsed LLM response (Phind):", parsedCode.code);
-    //
-    //       // Send code to supabase edge function to execute
-    //       const res = await supabase.functions.invoke("execute-code-2", {
-    //         body: JSON.stringify({
-    //           actionsPlusApi: filteredActions,
-    //           org,
-    //           code: parsedCode.code,
-    //           userApiKey,
-    //         }),
-    //       });
-    //       if (promiseFinished)
-    //         return { error: "Another promise settled first" };
-    //
-    //       if (res.error) {
-    //         console.error(
-    //           `Error executing Phind code for conversation ${dbData.conversationId}: ${res.error}`,
-    //         );
-    //         streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-    //         continue;
-    //       }
-    //
-    //       const returnedData = res.data as ExecuteCode2Item[] | null;
-    //       const codeOk = checkCodeExecutionOutput(
-    //         returnedData,
-    //         dbData.conversationId,
-    //         nLoops,
-    //       );
-    //       if (!codeOk.isValid) {
-    //         if (codeOk.retry) {
-    //           streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-    //           continue;
-    //         } else {
-    //           return {
-    //             error: returnedData?.find(
-    //               (m) =>
-    //                 m.type === "error" &&
-    //                 m.args.message.includes('"status": 4'),
-    //               // @ts-ignore
-    //             )!.args.message,
-    //           };
-    //         }
-    //       }
-    //       // For type-safety (doesn't ever get called)
-    //       if (returnedData === null) continue;
-    //
-    //       parallelGraphData = returnedData;
-    //     }
-    //     if (!promiseFinished) {
-    //       if (parallelGraphData === null) {
-    //         console.error(
-    //           `Failed to execute Phind code for conversation ${dbData.conversationId} after 3 attempts`,
-    //         );
-    //         return { error: "Failed to execute code" };
-    //       }
-    //       console.log(`Phind code-gen run ${i} succeeded`);
-    //       promiseFinished = true;
-    //       return {
-    //         graphData: parallelGraphData,
-    //         llmResponse: parallelLlmResponse,
-    //       };
-    //     }
-    //     return {
-    //       error:
-    //         "Another promise settled first - this should never be in the logs",
-    //     };
-    //   },
-    // ),
   ]);
   promiseFinished = true;
   if ("error" in promiseOut) return promiseOut;

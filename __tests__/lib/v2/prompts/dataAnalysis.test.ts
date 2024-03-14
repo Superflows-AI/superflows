@@ -1,5 +1,4 @@
-import { parseOpusOrGPTDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysisGPT";
-import { parsePhindDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysisPhind";
+import { parseOpusOrGPTDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysis";
 
 describe("Success", () => {
   it("Remove text afterwards", () => {

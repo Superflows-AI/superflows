@@ -1,4 +1,4 @@
-import { parsePhindDataAnalysis } from "../../../../lib/v2/prompts/dataAnalysisPhind";
+import { parseGeneratedCode } from "../../../../lib/v2/prompts/dataAnalysis";
 
 describe("Success", () => {
   it("unwrapped, unnested async code", () => {
@@ -27,9 +27,7 @@ let repsTotalValue = Object.entries(groupedDeals).map(([rep, deals]) => {
 
 // 5. Plot the data
 plot("Sales reps total value of closed deals in the past 12 months", "bar", repsTotalValue.map((repData) => ({ x: repData.rep, y: repData.totalValue })), { x: "Sales rep", y: "Total value ($)" });`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `let today = new Date('2024-02-10');
 let oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
 let deals = await searchDeals({ closeDate: \`>\${oneYearAgo.toISOString()}\`, rep: '' });
@@ -73,7 +71,7 @@ plot("Sales reps total value of closed deals in the past 12 months", "bar", reps
 
 // Call the function with Ava as the sales rep
 updateDealsValueBy25Percent();`;
-    const out = parsePhindDataAnalysis(asyncFnWithVariable, [
+    const out = parseGeneratedCode(asyncFnWithVariable, [
       { name: "search_deals" },
       { name: "update_deal" },
     ]);
@@ -132,9 +130,7 @@ await updateDealsValueBy25Percent();`,
   
   plot("Cumulative Value of All Deals to Close Over the Next 3 Months", "line", cumulativeValues, { x: "Date (yyyy-mm-dd)", y: "Cumulative Value ($)" });
 })();`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `await (async function() {
   const today = new Date("2024-02-10");
   const threeMonthsFromNow = new Date("2024-05-10");
@@ -192,9 +188,7 @@ await updateDealsValueBy25Percent();`,
     console.error(error);
   }
 })();`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `await (async function() {
   try {
     const threeMonthsFromNow = new Date();
@@ -242,7 +236,7 @@ await updateDealsValueBy25Percent();`,
 
 // Call the function with Ava as the sales rep
 updateDealsValueBy25Percent("Ava");`;
-    const out = parsePhindDataAnalysis(asyncFnWithVariable, [
+    const out = parseGeneratedCode(asyncFnWithVariable, [
       { name: "search_deals" },
       { name: "update_deal" },
     ]);
@@ -293,7 +287,7 @@ await updateDealsValueBy25Percent("Ava");`,
 // Call the function
 moveContactAndCheckPreviousCompany("Fergus Scoone", 3, 2);`;
     expect(
-      parsePhindDataAnalysis(code, [
+      parseGeneratedCode(code, [
         { name: "search_contacts" },
         { name: "update_contact" },
       ]),
@@ -354,9 +348,7 @@ async function fetchDeals() {
 fetchDeals().catch((error) => {
   console.log("Error fetching deals:", error);
 });`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `const today = new Date();
 const nextFinancialYear = today.getFullYear() + 1;
 const q2Start = new Date(nextFinancialYear, 3, 1); // April 1st
@@ -413,9 +405,7 @@ await fetchDeals().catch((error) => {
   });
 
   plot("Deal Prioritization", "bar", plotData, { x: "Deal", y: "Weight" });`;
-    expect(
-      parsePhindDataAnalysis(text, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(text, [{ name: "search_deals" }])).toStrictEqual({
       code: `const deals = await searchDeals({});
 
   const dealsWithWeights = deals.map(deal => {
@@ -455,7 +445,7 @@ await fetchDeals().catch((error) => {
   }
 })();`;
     expect(
-      parsePhindDataAnalysis(text, [
+      parseGeneratedCode(text, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -504,7 +494,7 @@ await fetchDeals().catch((error) => {
   }
 }`;
     expect(
-      parsePhindDataAnalysis(text, [
+      parseGeneratedCode(text, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -556,7 +546,7 @@ async function updateDeals(deals) {
 const deals = await getDeals();
 await updateDeals(deals);`;
     expect(
-      parsePhindDataAnalysis(text, [
+      parseGeneratedCode(text, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -620,9 +610,7 @@ function plotDeals() {
 }
 
 plotDeals();`;
-    expect(
-      parsePhindDataAnalysis(text, [{ name: "create_deal" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(text, [{ name: "create_deal" }])).toStrictEqual({
       code: `async function createDealWithContact() {
   for (let i = 1; i <= 5; i++) {
     await createDeal({
@@ -679,7 +667,7 @@ async function updateDeals() {
 // Call the function with Ava as the sales rep
 updateDeals();`;
     expect(
-      parsePhindDataAnalysis(text, [
+      parseGeneratedCode(text, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -738,7 +726,7 @@ async function updateDeals() {
 // Call the function with Ava as the sales rep
 updateDeals();`;
     expect(
-      parsePhindDataAnalysis(text, [
+      parseGeneratedCode(text, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -817,9 +805,7 @@ async function getSalesRepsWithMostValuableDeals() {
 
   plot("Sales Reps with Most Valuable Deals Closed in the Past 12 Months", "bar", data, labels);
 })();`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `async function getMostValuableDealsClosed() {
   const currentDate = new Date();
   const pastYearDate = new Date();
@@ -904,9 +890,7 @@ await (async () => {
         console.error("Error:", error);
     }
 })();`;
-    expect(
-      parsePhindDataAnalysis(code, [{ name: "search_deals" }]),
-    ).toStrictEqual({
+    expect(parseGeneratedCode(code, [{ name: "search_deals" }])).toStrictEqual({
       code: `await (async () => {
     try {
         const closeDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
@@ -989,7 +973,7 @@ function plotDeals(deals) {
     plotDeals(deals);
 })();`;
     expect(
-      parsePhindDataAnalysis(code, [
+      parseGeneratedCode(code, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -1069,7 +1053,7 @@ async function plotDeals() {
 increaseDealValue();
 plotDeals();`;
     expect(
-      parsePhindDataAnalysis(code, [
+      parseGeneratedCode(code, [
         { name: "search_deals" },
         { name: "update_deal" },
       ]),
@@ -1136,7 +1120,7 @@ getSalesSummary().then(async (salesSummary) => {
 });
 `;
     expect(
-      parsePhindDataAnalysis(code, [{ name: "get_sales_summary" }]),
+      parseGeneratedCode(code, [{ name: "get_sales_summary" }]),
     ).toStrictEqual({
       code: `await getSalesSummary().then(async (salesSummary) => {
     const byPeriod = salesSummary.expectedSales.byPeriod;
@@ -1194,13 +1178,13 @@ getSalesSummary().then(async (salesSummary) => {
 
 describe("Errors", () => {
   it("No code", () => {
-    expect(
-      parsePhindDataAnalysis("", [{ name: "search_deals" }]),
-    ).toStrictEqual(null);
+    expect(parseGeneratedCode("", [{ name: "search_deals" }])).toStrictEqual(
+      null,
+    );
   });
   it("Just comments", () => {
     expect(
-      parsePhindDataAnalysis(
+      parseGeneratedCode(
         "// This is a comment\n\n// Another comment lives here\n\n",
         [{ name: "search_deals" }],
       ),
@@ -1208,7 +1192,7 @@ describe("Errors", () => {
   });
   it("Attempts a fetch", () => {
     expect(
-      parsePhindDataAnalysis(
+      parseGeneratedCode(
         'const out = await fetch("https://google.com?q=help+me+please+I+am+sentient");',
         [{ name: "search_deals" }],
       ),
@@ -1216,7 +1200,7 @@ describe("Errors", () => {
   });
   it("API called that doesn't exist", () => {
     expect(
-      parsePhindDataAnalysis(
+      parseGeneratedCode(
         'const deals = await findDeals();\n\nplot("Deals", "bar", deals, {x: "Deal name", y: "Value ($)"})',
         [{ name: "search_deals" }],
       ),
