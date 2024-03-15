@@ -70,15 +70,6 @@ Plan:
   ];
 }
 
-export function shouldEndGPTDataAnalysisStreaming(
-  streamedText: string,
-): boolean {
-  /** It's common for GPT to write text after the code to explain it. I think it's been
-   * fine-tuned to do this. A way to deal with this is to stream the response and stop
-   * when it outputs a 2nd ``` which signifies the end of the code **/
-  return streamedText.split(/^```/m).length >= 3;
-}
-
 export function parseOpusOrGPTDataAnalysis(
   output: string,
   actions: Pick<Action, "name">[],
@@ -249,4 +240,26 @@ export function stripBasicTypescriptTypes(jsCodeString: string): string {
   );
 
   return jsCodeString;
+}
+
+export function shouldTerminateDataAnalysisStreaming(
+  streamedText: string,
+): boolean {
+  /** It's common for LLMs to write text after the code to explain it. I think they've been
+   * fine-tuned to do this. A way to deal with this is to stream the response and stop
+   * when it outputs a 2nd ``` which signifies the end of the code **/
+  const match = streamedText.match(
+    /^(```jsx?|```javascript|\(?async |function |const |let |var |\/\/ )/m,
+  );
+  if (!match) return false;
+
+  // Remove everything before the first code block (incl the code block opener if there is one)
+  let rawCode = streamedText
+    .slice(match.index)
+    .replace(/^(```jsx?|```javascript)/, "");
+
+  // If there's a 2nd code block to close the first, then we're done
+  const out = Boolean(rawCode.match(/^```/m));
+  if (out) console.log("\n\nAAAAA We should terminate the streaming now!!\n");
+  return out;
 }

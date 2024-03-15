@@ -269,9 +269,11 @@ Reasoning:
 2. As a result, I should inform the user that they should look at the ${graphOrTable} above
 
 Tell user:
-Above is a bar graph displaying the top 10 products by revenue over the past 6 months.
-
-The x axis shows the product name, while the y axis is the revenue in $.
+Above is a ${graphOrTable} displaying the top 10 products by revenue over the past 6 months.${
+      graphOrTable === "graph"
+        ? "\n\nThe x axis shows the product name, while the y axis is the revenue in $."
+        : ""
+    }
 """
 
 RULES:

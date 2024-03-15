@@ -141,6 +141,7 @@ export async function LLMPreProcess(args: {
       // Run clarification
       const prompt = clarificationPrompt(args);
       let loggedStreamingClarification = false;
+      console.log(`Clarification prompt:`, JSON.stringify(prompt));
       const rawOutput = await streamWithEarlyTermination(
         prompt,
         clarificationLLMParams,
@@ -180,6 +181,7 @@ export async function LLMPreProcess(args: {
         actions: args.actions.filter((a) => a.name !== searchDocsActionName),
         isAnthropic: true,
       });
+      console.log(`Routing prompt:`, JSON.stringify(prompt));
       let rawOutput = await streamWithEarlyTermination(
         prompt,
         routingLLMParams,

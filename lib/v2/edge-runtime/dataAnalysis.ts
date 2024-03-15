@@ -21,7 +21,9 @@ import {
   GPTDataAnalysisLLMParams,
   parseOpusOrGPTDataAnalysis,
   parseGeneratedCode,
+  shouldTerminateDataAnalysisStreaming,
 } from "../prompts/dataAnalysis";
+import { streamWithEarlyTermination } from "./utils";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -169,21 +171,25 @@ export async function runDataAnalysis(
         // Retry if it fails once
         while (parallelGraphData === null && nLoops < 2) {
           nLoops += 1;
-          parallelLlmResponse = await exponentialRetryWrapper(
-            getLLMResponse,
-            [
-              dataAnalysisPrompt,
-              {
-                ...GPTDataAnalysisLLMParams,
-                temperature: nLoops === 0 ? 0.1 : 0.8,
-              },
-              i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
-            ],
-            3,
+          const streamedOut = await streamWithEarlyTermination(
+            dataAnalysisPrompt,
+            {
+              ...GPTDataAnalysisLLMParams,
+              temperature: nLoops === 0 ? 0.1 : 0.8,
+            },
+            i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
+            shouldTerminateDataAnalysisStreaming,
+            () => {}, // Don't stream as of yet - we want to for debugging purposes
+            i === 1 ? "GPT data analysis" : "Opus data analysis",
           );
+          if (streamedOut === null) {
+            // If it fails, wait 25 seconds (so the other LLM can finish) and then return an error
+            await new Promise((resolve) => setTimeout(resolve, 25000));
+            return { error: "Stream failed" };
+          }
+          parallelLlmResponse = streamedOut;
           if (promiseFinished)
             return { error: "Another promise settled first" };
-          console.info("\nRaw code-gen response:", parallelLlmResponse);
 
           // Parse the result
           let parsedCode = parseOpusOrGPTDataAnalysis(
@@ -198,7 +204,10 @@ export async function runDataAnalysis(
           if (promiseFinished)
             return { error: "Another promise settled first" };
           streamInfo({ role: "loading", content: "Executing code" });
-          console.info(`Parsed code-gen response ${i}:`, parsedCode.code);
+          console.info(
+            `${i === 1 ? "GPT" : "Opus"} parsed code:`,
+            parsedCode.code,
+          );
 
           // Send code to supabase edge function to execute
           const res = await supabase.functions.invoke("execute-code-2", {
@@ -258,7 +267,7 @@ export async function runDataAnalysis(
         if (!promiseFinished) {
           if (parallelGraphData === null) {
             console.error(
-              `Failed to execute generated code for conversation ${dbData.conversationId} after 3 attempts`,
+              `Failed to execute generated code for conversation ${dbData.conversationId} after 2 attempts`,
             );
             return { error: "Failed to execute code" };
           }
@@ -324,7 +333,7 @@ export function checkCodeExecutionOutput(
   if (returnedData === null || returnedData.length === 0) {
     console.error(
       `ERROR: Failed to write valid code for conversation ${conversationId}${
-        nLoops ? `, attempt ${nLoops}/3` : ""
+        nLoops ? `, attempt ${nLoops}/2` : ""
       }`,
     );
     return { isValid: false, retry: true };
@@ -334,7 +343,7 @@ export function checkCodeExecutionOutput(
   if (errorMessages.length > 0) {
     console.error(
       `ERROR executing code for conversation ${conversationId}${
-        nLoops ? `, attempt ${nLoops}/3` : ""
+        nLoops ? `, attempt ${nLoops}/2` : ""
       }:\n${errorMessages
         // @ts-ignore
         .map((m) => m.args.message)
@@ -356,7 +365,7 @@ export function checkCodeExecutionOutput(
   ) {
     console.error(
       `ERROR executing code for conversation ${conversationId}${
-        nLoops ? `, attempt ${nLoops}/3` : ""
+        nLoops ? `, attempt ${nLoops}/2` : ""
       }:\n${logMessages
         // @ts-ignore
         .map((m) => m.args.message)
@@ -381,7 +390,7 @@ export function checkCodeExecutionOutput(
     ) {
       console.error(
         `ERROR: Missing columns in data output by code for conversation ${conversationId}${
-          nLoops ? `, attempt ${nLoops}/3` : ""
+          nLoops ? `, attempt ${nLoops}/2` : ""
         }:\n${plotMessages
           // @ts-ignore
           .map((m) => m.args.message)
@@ -403,7 +412,7 @@ export function checkCodeExecutionOutput(
     ) {
       console.error(
         `ERROR: Insufficient number of not-null columns in data output by code for conversation ${conversationId}${
-          nLoops ? `, attempt ${nLoops}/3` : ""
+          nLoops ? `, attempt ${nLoops}/2` : ""
         }:\n${plotMessages
           // @ts-ignore
           .map((m) => m.args.message)

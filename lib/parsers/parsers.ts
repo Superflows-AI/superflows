@@ -33,7 +33,7 @@ export function parseGPTStreamedData(gptOutString: string): ParsedStreamedData {
   return output;
 }
 
-export function parseAnthropicStreamedData(
+export function parseLegacyAnthropicStreamedData(
   claudeOutString: string,
 ): ParsedStreamedData {
   const output = {
@@ -56,6 +56,38 @@ export function parseAnthropicStreamedData(
       } catch (e) {
         output.incompleteChunk = line;
         return output;
+      }
+    });
+  return output;
+}
+
+export function parseClaude3StreamedData(
+  claudeOutString: string,
+): ParsedStreamedData {
+  const output = {
+    completeChunks: [] as string[],
+    incompleteChunk: null,
+    done: false,
+  } as ParsedStreamedData;
+
+  claudeOutString
+    .split("event: ")
+    .filter((l: string) => l.trim())
+    .forEach((line: string) => {
+      try {
+        const parsedLine = JSON.parse(line.match(/\{.*}/)![0].trim());
+        if ("message_start" === parsedLine.type) {
+          output.completeChunks = output.completeChunks.concat(
+            parsedLine.message.content,
+          );
+        } else if ("content_block_delta" === parsedLine.type) {
+          output.completeChunks.push(parsedLine.delta.text);
+        } else if (parsedLine.type === "message_stop") {
+          output.done = true;
+        } else return;
+      } catch (e) {
+        output.incompleteChunk = line;
+        return;
       }
     });
   return output;
