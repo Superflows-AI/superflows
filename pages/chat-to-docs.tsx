@@ -15,11 +15,8 @@ import FloatingLabelInput, {
   FloatingLabelTextArea,
 } from "../components/floatingLabelInput";
 import { classNames } from "../lib/utils";
-import { embedText } from "../lib/embed-docs/embedText";
 import { LoadingSpinner } from "../components/loadingspinner";
-import { DocChunk } from "../lib/types";
 import PaginationPageSelector from "../components/paginationPageSelector";
-import { set } from "zod";
 import WarningModal from "../components/warningModal";
 import { PostgrestError } from "@supabase/supabase-js";
 import useDocumentsLoader, { Document } from "../lib/hooks/useDocumentsLoader";
