@@ -1,5 +1,5 @@
 import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextRequest, NextResponse } from "next/server";
@@ -75,7 +75,7 @@ if (
 }
 
 // Bring me my Bow of burning gold:
-const supabase = createClient<Database>(
+const serviceLevelSupabase = createClient<Database>(
   // Bring me my arrows of desire:
   process.env.API_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL,
   // Bring me my Spear: O clouds unfold!
@@ -144,7 +144,7 @@ export default async function handler(req: NextRequest) {
       //   }
       // }
       // if (!org) {
-      const authRes = await supabase
+      const authRes = await serviceLevelSupabase
         .from("organizations")
         .select(
           "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled, is_paid(is_premium), finetuned_models(openai_name)",
@@ -185,6 +185,7 @@ export default async function handler(req: NextRequest) {
       }
     }
 
+    let supabase = serviceLevelSupabase;
     // Check the cookie to see if the user is logged in via supabase (in playground) or not
     // This determines whether to increment usage or not
     let isPlayground: boolean;
@@ -196,6 +197,7 @@ export default async function handler(req: NextRequest) {
         data: { session },
       } = await authSupa.auth.getSession();
       isPlayground = !!(session && session.user);
+      if (isPlayground) supabase = authSupa;
     } else {
       isPlayground = false;
     }
