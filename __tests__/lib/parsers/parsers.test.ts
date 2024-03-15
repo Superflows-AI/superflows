@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
-  parseAnthropicStreamedData,
+  parseLegacyAnthropicStreamedData,
   parseFollowUpSuggestions,
   parseGPTStreamedData,
 } from "../../../lib/parsers/parsers";
@@ -162,7 +162,7 @@ data: {"type":"completion","id":"compl_01XMs74TyRye1whxj41pJrQh","completion":" 
 
 
 `;
-    const out = parseAnthropicStreamedData(testStr);
+    const out = parseLegacyAnthropicStreamedData(testStr);
     expect(out).toStrictEqual({
       completeChunks: [" The", " user"],
       done: false,
@@ -185,7 +185,7 @@ data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" 
 event: completion
 data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" a","stop_reason":null,"model":"claude-instant-1.2","stop":null,"log_id":"compl_01LS1aVyfLdGMbWKGNY9YQMq"}
 `;
-    const out = parseAnthropicStreamedData(testStr);
+    const out = parseLegacyAnthropicStreamedData(testStr);
     expect(out).toStrictEqual({
       completeChunks: [" The", " user", " wants", " a"],
       done: false,
@@ -202,7 +202,7 @@ data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" 
 
 
 `;
-    const out = parseAnthropicStreamedData(testStr);
+    const out = parseLegacyAnthropicStreamedData(testStr);
     expect(out).toStrictEqual({
       completeChunks: [" visualization", " of"],
       done: false,
@@ -212,7 +212,7 @@ data: {"type":"completion","id":"compl_01LS1aVyfLdGMbWKGNY9YQMq","completion":" 
   it("real world: incomplete chunk", () => {
     const testStr = `event: completion
 data: {"t`;
-    const out = parseAnthropicStreamedData(testStr);
+    const out = parseLegacyAnthropicStreamedData(testStr);
     expect(out).toStrictEqual({
       completeChunks: [],
       done: false,
