@@ -80,6 +80,8 @@ export function parseClaude3StreamedData(
           output.completeChunks = output.completeChunks.concat(
             parsedLine.message.content,
           );
+        } else if ("content_block_start" === parsedLine.type) {
+          output.completeChunks.push(parsedLine.content_block.text);
         } else if ("content_block_delta" === parsedLine.type) {
           output.completeChunks.push(parsedLine.delta.text);
         } else if (parsedLine.type === "message_stop") {
