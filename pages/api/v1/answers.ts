@@ -237,6 +237,21 @@ export default async function handler(req: NextRequest) {
       );
     }
 
+    const convMutexKey = `conversation_mutex-${requestData.conversation_id}`;
+    if (requestData.conversation_id && redis) {
+      const convIdInUse = await redis.get(convMutexKey);
+      if (convIdInUse) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "A response for this conversation is already being generated - clear chat in this window and try again",
+          }),
+        );
+      } else {
+        void redis.setex(convMutexKey, 5, true);
+      }
+    }
+
     console.log(
       `Answers endpoint called with valid request body for conversation id: ${requestData.conversation_id}`,
     );
@@ -490,6 +505,7 @@ export default async function handler(req: NextRequest) {
               language,
               currentHost,
             );
+        if (redis && requestData.conversation_id) await redis.del(convMutexKey);
         await supabase.from("chat_messages").insert(
           allMessages.slice(previousMessages.length).map((m, idx) => {
             if (m.role === "function" && m.content.length > 10000) {
