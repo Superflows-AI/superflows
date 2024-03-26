@@ -58,8 +58,9 @@ import {
   Dottie,
   storeActionsAwaitingConfirmation,
 } from "../../edge-runtime/ai";
-import { LLMPreProcess, Route } from "./clarification";
+import { LLMPreProcess, PreProcessOutType, Route } from "./clarification";
 import { summariseChatHistory } from "./summariseChatHistory";
+import { getSearchDocsAction } from "../../builtinActions";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -152,28 +153,57 @@ export async function Bertie( // Bertie will eat you for breakfast
     chatHistory.length - 1,
     supabase,
   );
+  const cachedChatHistory = chatMessageCache.checkChatHistoryCache(chatHistory);
+
   // If there are multiple messages in the chat history, we summarise the chat history into a single user
   //  request - this makes future prompts have a _much_ easier time understanding the user's request
-  let userRequest = reqData.user_input;
-  if (previousMessages.length > 1) {
-    userRequest = await summariseChatHistory(chatHistory, language);
+  let userRequest: string;
+  if (previousMessages.length === 1) {
+    userRequest = reqData.user_input;
+  } else {
+    userRequest =
+      cachedChatHistory || (await summariseChatHistory(chatHistory, language));
+  }
+  // If the summary is different from the user message, add it to the chatHistory
+  // (for storage in DB later)
+  const userMessage = chatHistory[chatHistory.length - 1];
+  if (userRequest !== reqData.user_input && userMessage.role === "user") {
+    userMessage.chat_summary = userRequest;
   }
 
-  const clarificationOutput = await LLMPreProcess({
+  const preprocessedCache = await chatMessageCache.checkPreprocessingCache(
+    chatHistory,
     userRequest,
-    actions,
-    org,
-    userDescription: reqData.user_description ?? "",
-    conversationId,
-    language,
-    streamInfo,
-    currentHost,
-  });
-  console.log("Clarification output:", {
-    ...clarificationOutput,
-    actions: clarificationOutput.actions.map((a) => a.name),
-  });
-  if (clarificationOutput.route === "DOCS") {
+    supabase,
+  );
+  const preprocessOut: PreProcessOutType = preprocessedCache?.chosen_actions
+    ? {
+        actions: [...actions, getSearchDocsAction(org, currentHost)].filter(
+          (a) => preprocessedCache.chosen_actions!.includes(a.name),
+        ),
+        // If no route, we use DIRECT to send cached clarification/refusal message
+        route: (preprocessedCache.chosen_route as Route) ?? "DIRECT",
+        clear: true,
+        possible: true,
+        message: null,
+      }
+    : await LLMPreProcess({
+        userRequest,
+        actions,
+        org,
+        userDescription: reqData.user_description ?? "",
+        conversationId,
+        language,
+        streamInfo,
+        currentHost,
+      });
+  // Fill in the chosen_actions and chosen_route
+  if (userMessage.role === "user") {
+    userMessage.chosen_actions = preprocessOut.actions.map((a) => a.name);
+    userMessage.chosen_route = preprocessOut.route;
+  }
+  chatHistory[chatHistory.length - 1] = userMessage;
+  if (preprocessOut.route === "DOCS") {
     return Dottie(
       controller,
       reqData,
@@ -183,19 +213,18 @@ export async function Bertie( // Bertie will eat you for breakfast
       language,
     );
   }
-  if (!clarificationOutput.clear || !clarificationOutput.possible) {
-    chatHistory.push(clarificationOutput.message!);
+  if (!preprocessOut.clear || !preprocessOut.possible) {
+    chatHistory.push(preprocessOut.message!);
     return {
       nonSystemMessages: chatHistory,
       cost: totalCost,
       numUserQueries,
     };
   }
-  let thoughts = clarificationOutput.thoughts;
-  actions = clarificationOutput.actions;
+  actions = preprocessOut.actions;
   let graphDataHidden = false;
 
-  if (clarificationOutput.route === "CODE") {
+  if (preprocessOut.route === "CODE") {
     const outMessages = await runCodeGen(
       userRequest,
       actions,
@@ -203,7 +232,6 @@ export async function Bertie( // Bertie will eat you for breakfast
       { conversationId, index: chatHistory.length },
       reqData.user_description ?? "",
       chatMessageCache,
-      thoughts,
       streamInfo,
       reqData.user_api_key,
     );
@@ -678,7 +706,6 @@ export async function Bertie( // Bertie will eat you for breakfast
           { conversationId, index: chatHistory.length },
           reqData.user_description ?? "",
           chatMessageCache,
-          thoughts,
           streamInfo,
           reqData.user_api_key,
         );
@@ -764,7 +791,6 @@ async function runCodeGen(
   dbData: { conversationId: number; index: number },
   userDescription: string,
   chatMessageCache: LlmResponseCache,
-  thoughts: string[],
   streamInfo: (step: StreamingStepInput) => void,
   userApiKey: string | undefined,
 ): Promise<FunctionMessage[]> {
@@ -776,7 +802,6 @@ async function runCodeGen(
     dbData,
     userDescription,
     chatMessageCache,
-    thoughts,
     streamInfo,
     userApiKey,
   );

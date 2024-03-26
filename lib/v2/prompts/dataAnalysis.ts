@@ -260,6 +260,6 @@ export function shouldTerminateDataAnalysisStreaming(
 
   // If there's a 2nd code block to close the first, then we're done
   const out = Boolean(rawCode.match(/^```/m));
-  if (out) console.log("\n\nAAAAA We should terminate the streaming now!!\n");
+  if (out) console.log("\nTerminating streaming now");
   return out;
 }

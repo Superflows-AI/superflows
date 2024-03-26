@@ -74,7 +74,6 @@ export function filterConversationForFollowUps(
       if (m.role === "assistant") {
         const parsedOutput = parseOutput(m.content);
         if (parsedOutput.tellUser) {
-          console.log("Replacing", m.content, "with", parsedOutput.tellUser);
           return { ...m, content: parsedOutput.tellUser, role: "user" };
         }
       }

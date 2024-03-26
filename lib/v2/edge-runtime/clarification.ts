@@ -40,6 +40,14 @@ const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
 
 export type Route = "DOCS" | "DIRECT" | "CODE";
 
+export type PreProcessOutType = {
+  message: ChatGPTMessage | null;
+  possible: boolean;
+  clear: boolean;
+  actions: ActionPlusApiInfo[];
+  route: Route;
+};
+
 export async function LLMPreProcess(args: {
   userRequest: string;
   actions: ActionPlusApiInfo[];
@@ -52,14 +60,7 @@ export async function LLMPreProcess(args: {
   language: string | null;
   streamInfo: (step: StreamingStepInput) => void;
   currentHost: string;
-}): Promise<{
-  message: ChatGPTMessage | null;
-  possible: boolean;
-  clear: boolean;
-  thoughts: string[];
-  actions: ActionPlusApiInfo[];
-  route: Route;
-}> {
+}): Promise<PreProcessOutType> {
   // Cross-thread variables
   var streamedText = "",
     isPossible: boolean | null = null,
@@ -70,8 +71,6 @@ export async function LLMPreProcess(args: {
     (async (): Promise<
       | {
           output: string;
-          // parsed: ParsedRequestPossibleOutput;
-          thoughts: string[];
           actions: ActionPlusApiInfo[];
         }
       | { error: string }
@@ -119,7 +118,6 @@ export async function LLMPreProcess(args: {
           });
           return {
             output: "",
-            thoughts,
             actions,
           };
         }
@@ -131,7 +129,6 @@ export async function LLMPreProcess(args: {
 
       return {
         output: rawOutput,
-        thoughts,
         actions,
       };
     })(),
@@ -229,8 +226,12 @@ export async function LLMPreProcess(args: {
 
   let actions = "error" in outs[0] ? [] : outs[0].actions;
   let route: Route;
-  if (typeof outs[2] === "object" && "error" in outs[2]) {
+  if (
     // If routing failed, use the output from filtering & don't remove the search docs action
+    (typeof outs[2] === "object" && "error" in outs[2]) ||
+    // If no actions are possible, user has already been told this is impossible
+    actions.length === 0
+  ) {
     route = "DIRECT";
   } else {
     route = outs[2] as Route;
@@ -239,10 +240,9 @@ export async function LLMPreProcess(args: {
     }
   }
 
-  // TODO: Add caching of filtering, clarification and routing outputs
   const possible = "error" in outs[0] || outs[0].actions.length > 0;
   const clear = "error" in outs[1] || outs[1].parsed.clear;
-  return {
+  const out: PreProcessOutType = {
     message:
       !possible && !("error" in outs[0]) && outs[0].output
         ? {
@@ -257,8 +257,12 @@ export async function LLMPreProcess(args: {
         : null,
     possible,
     clear,
-    thoughts: "error" in outs[0] ? [] : outs[0].thoughts,
     actions,
     route,
   };
+  console.log("Clarification output:", {
+    ...out,
+    actions: out.actions.map((a) => a.name),
+  });
+  return out;
 }

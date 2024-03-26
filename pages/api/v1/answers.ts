@@ -137,13 +137,6 @@ export default async function handler(req: NextRequest) {
 
     let org: OrgJoinIsPaidFinetunedModels | null = null;
     if (orgApiKey) {
-      // if (redis) {
-      //   const redisStored = await redis.get(`org-${orgApiKey}`);
-      //   if (redisStored) {
-      //     org = redisStored as OrgJoinIsPaidFinetunedModels;
-      //   }
-      // }
-      // if (!org) {
       const authRes = await serviceLevelSupabase
         .from("organizations")
         .select(
@@ -151,14 +144,7 @@ export default async function handler(req: NextRequest) {
         )
         .eq("api_key", orgApiKey);
       if (authRes.error) throw new Error(authRes.error.message);
-      // Set org in Redis for 30 minutes
-      // redis?.setex(
-      //   `org-${orgApiKey}`,
-      //   60 * 30,
-      //   JSON.stringify(authRes.data?.[0]),
-      // );
       org = authRes.data?.[0] ?? null;
-      // }
     }
     if (!org) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
@@ -240,15 +226,19 @@ export default async function handler(req: NextRequest) {
     const convMutexKey = `conversation_mutex-${requestData.conversation_id}`;
     if (requestData.conversation_id && redis) {
       const convIdInUse = await redis.get(convMutexKey);
+      console.log(`Conversation mutex ${convIdInUse} for key ${convMutexKey}`);
       if (convIdInUse) {
+        console.log("Conversation ID in use");
         return new Response(
           JSON.stringify({
             error:
               "A response for this conversation is already being generated - clear chat in this window and try again",
           }),
+          { status: 500, headers },
         );
       } else {
-        void redis.setex(convMutexKey, 5, true);
+        console.log("Setting conversation mutex key");
+        void redis.setex(convMutexKey, 20, true);
       }
     }
 
@@ -275,42 +265,28 @@ export default async function handler(req: NextRequest) {
         `Conversation ID provided: ${requestData.conversation_id}. Fetching previous messages`,
       );
       conversationId = requestData.conversation_id;
-      if (redis) {
-        const redisStored = await redis.get(
-          `chat_messages_${org.id}_${requestData.conversation_id}`,
+      const convResp = await supabase
+        .from("chat_messages")
+        .select()
+        .eq("conversation_id", requestData.conversation_id)
+        .eq("org_id", org.id)
+        .order("conversation_index", { ascending: true });
+
+      if (convResp.error) throw new Error(convResp.error.message);
+      const conversation = convResp.data.map(DBChatMessageToGPT);
+
+      if (!conversation) {
+        return new Response(
+          JSON.stringify({
+            error: `Conversation with ID=${requestData.conversation_id} not found`,
+          }),
+          { status: 404, headers },
         );
-        if (redisStored) {
-          ({ previousMessages, language } = redisStored as {
-            previousMessages: GPTMessageInclSummary[];
-            language: string;
-          });
-        }
       }
-      if (!previousMessages) {
-        const convResp = await supabase
-          .from("chat_messages")
-          .select()
-          .eq("conversation_id", requestData.conversation_id)
-          .eq("org_id", org.id)
-          .order("conversation_index", { ascending: true });
-
-        if (convResp.error) throw new Error(convResp.error.message);
-        const conversation = convResp.data.map(DBChatMessageToGPT);
-
-        if (!conversation) {
-          return new Response(
-            JSON.stringify({
-              error: `Conversation with ID=${requestData.conversation_id} not found`,
-            }),
-            { status: 404, headers },
-          );
-        }
-        previousMessages = conversation;
-        // If the language is set for any message in the conversation, use that
-        language = convResp.data.find((m) => !!m.language)?.language ?? null;
-      }
+      previousMessages = conversation;
+      // If the language is set for any message in the conversation, use that
+      language = convResp.data.find((m) => !!m.language)?.language ?? null;
     } else {
-      // TODO: Move to the end
       console.log(`No conversation ID provided. Creating new conversation`);
       const convoInsertRes = await supabase
         .from("conversations")
@@ -506,6 +482,20 @@ export default async function handler(req: NextRequest) {
               currentHost,
             );
         if (redis && requestData.conversation_id) await redis.del(convMutexKey);
+        // If any of the last message's LLM-derived values are set, update it in the DB
+        const userMessage = allMessages[previousMessages.length - 1];
+        if (
+          userMessage.role === "user" &&
+          (userMessage.chat_summary ||
+            userMessage.chosen_actions ||
+            userMessage.chosen_actions)
+        ) {
+          await supabase
+            .from("chat_messages")
+            .update(userMessage)
+            .eq("conversation_id", conversationId)
+            .eq("conversation_index", previousMessages.length - 1);
+        }
         await supabase.from("chat_messages").insert(
           allMessages.slice(previousMessages.length).map((m, idx) => {
             if (m.role === "function" && m.content.length > 10000) {
@@ -520,47 +510,6 @@ export default async function handler(req: NextRequest) {
             };
           }),
         );
-        // Set previous messages in Redis for 30 minutes
-        redis?.setex(
-          `chat_messages_${org!.id}_${conversationId}`,
-          60 * 30,
-          JSON.stringify({
-            previousMessages: allMessages.map((m) => {
-              if (m.role === "function" && m.content.length > 10000) {
-                m.content = ApiResponseCutText;
-              }
-              return m;
-            }),
-            language,
-          }),
-        );
-
-        if (
-          process.env.CONTEXT_API_KEY &&
-          process.env.USE_CONTEXT_ON &&
-          org!.id === Number(process.env.USE_CONTEXT_ON)
-        ) {
-          await fetch("https://api.context.ai/api/v1/log/conversation/upsert", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.CONTEXT_API_KEY}`,
-            },
-            body: JSON.stringify({
-              conversation: {
-                messages: allMessages
-                  .map((m, idx) => {
-                    return {
-                      role: m.role,
-                      message: m.content,
-                    };
-                  })
-                  // Function messages aren't supported by Context yet
-                  .filter((m) => m.role !== "function"),
-              },
-            }),
-          });
-        }
 
         const todaysDate = new Date().toISOString().split("T")[0];
         const { data, error } = await supabase
@@ -570,7 +519,7 @@ export default async function handler(req: NextRequest) {
           .eq("date", todaysDate);
         if (error) throw new Error(error.message);
         if (data.length > 0) {
-          const { error } = await supabase
+          const { error } = await serviceLevelSupabase
             .from("usage")
             .update({
               usage: cost + data[0].usage,
@@ -581,11 +530,13 @@ export default async function handler(req: NextRequest) {
             .eq("id", data[0].id);
           if (error) throw new Error(error.message);
         } else {
-          const { error: error2 } = await supabase.from("usage").insert({
-            org_id: org!.id,
-            usage: cost,
-            num_user_queries: isPlayground ? 0 : numUserQueries,
-          });
+          const { error: error2 } = await serviceLevelSupabase
+            .from("usage")
+            .insert({
+              org_id: org!.id,
+              usage: cost,
+              num_user_queries: isPlayground ? 0 : numUserQueries,
+            });
           if (error2) throw new Error(error2.message);
         }
         controller.close();
