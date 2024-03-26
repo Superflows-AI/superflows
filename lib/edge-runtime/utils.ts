@@ -59,14 +59,15 @@ export function MessageInclSummaryToGPT(
   message: GPTMessageInclSummary,
 ): ChatGPTMessage {
   const out = {
-    ...message,
+    role: message.role,
     content:
       "summary" in message
         ? message?.summary ?? message.content
         : message.content,
+    name: "name" in message ? message.name : undefined,
   };
-  if ("summary" in out) delete out.summary;
-  return out;
+  if (out.role !== "function") delete out.name;
+  return out as ChatGPTMessage;
 }
 
 export function removeOldestFunctionCalls(
