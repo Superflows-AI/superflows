@@ -25,6 +25,8 @@ export type GPTMessageInclSummary =
       role: "user";
       content: string;
       chat_summary?: string;
+      chosen_actions?: string[];
+      chosen_route?: string;
     }
   | FunctionMessageInclSummary;
 
