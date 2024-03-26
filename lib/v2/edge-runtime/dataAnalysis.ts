@@ -87,7 +87,6 @@ export async function runDataAnalysis(
   dbData: { conversationId: number; index: number },
   userDescription: string,
   cache: LlmResponseCache,
-  thoughts: string[],
   streamInfo: (step: StreamingStepInput) => void,
   userApiKey?: string,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
@@ -110,6 +109,7 @@ export async function runDataAnalysis(
     if (parsedCode !== null) {
       if ("error" in parsedCode) return parsedCode;
       console.info("Parsed LLM response from cache:", parsedCode.code);
+      streamInfo({ role: "loading", content: "Executing code" });
       // Send code to supabase edge function to execute
       const res = await supabase.functions.invoke("execute-code-2", {
         body: JSON.stringify({
