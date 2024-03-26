@@ -73,7 +73,7 @@ export async function Dottie( // Dottie talks to docs
   previousMessages: ChatGPTMessage[],
   language: string | null,
 ): Promise<{
-  nonSystemMessages: ChatGPTMessage[];
+  nonSystemMessages: GPTMessageInclSummary[];
   cost: number;
   numUserQueries: number;
 }> {
@@ -88,7 +88,7 @@ export async function Dottie( // Dottie talks to docs
   );
 
   const model = org.model;
-  const nonSystemMessages = [...previousMessages];
+  const chatHistory = [...previousMessages];
   const maxConvLength = model === "gpt-4-0613" ? 20 : 10;
   let cost = 0;
 
@@ -98,9 +98,9 @@ export async function Dottie( // Dottie talks to docs
   try {
     // To stop going over the context limit: only remember the last 'maxConvLength' messages
     let recentMessages = [
-      ...nonSystemMessages.slice(
-        Math.max(0, nonSystemMessages.length - maxConvLength),
-      ),
+      ...chatHistory
+        .slice(Math.max(0, chatHistory.length - maxConvLength))
+        .map(MessageInclSummaryToGPT),
     ];
 
     // If function response too old, remove oldest documentation chunks
@@ -141,7 +141,7 @@ export async function Dottie( // Dottie talks to docs
     } as Extract<GPTMessageInclSummary, { role: "function" }>;
 
     recentMessages.push(docMessage);
-    nonSystemMessages.push(docMessage);
+    chatHistory.push(docMessage);
     // Copy to not mutate the original
     docMessage = { ...docMessage };
     // Add doc links
@@ -189,7 +189,7 @@ export async function Dottie( // Dottie talks to docs
         role: "error",
         content: "Call to Language Model API failed",
       });
-      return { nonSystemMessages, cost, numUserQueries: 0 };
+      return { nonSystemMessages: chatHistory, cost, numUserQueries: 0 };
     }
 
     // Stream response chunk by chunk
@@ -208,15 +208,15 @@ export async function Dottie( // Dottie talks to docs
     cost += outCost;
 
     // Add assistant message to nonSystemMessages
-    nonSystemMessages.push(newMessage);
-    return { nonSystemMessages, cost, numUserQueries: 1 };
+    chatHistory.push(newMessage);
+    return { nonSystemMessages: chatHistory, cost, numUserQueries: 1 };
   } catch (e) {
     console.error(e?.toString() ?? "Internal server error");
     streamInfo({
       role: "error",
       content: e?.toString() ?? "Internal server error",
     });
-    return { nonSystemMessages, cost, numUserQueries: 1 };
+    return { nonSystemMessages: chatHistory, cost, numUserQueries: 1 };
   }
 }
 
