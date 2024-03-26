@@ -63,12 +63,14 @@ export interface Database {
           {
             foreignKeyName: "action_groups_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "action_tags_api_id_fkey";
             columns: ["api_id"];
+            isOneToOne: false;
             referencedRelation: "apis";
             referencedColumns: ["id"];
           },
@@ -142,18 +144,21 @@ export interface Database {
           {
             foreignKeyName: "actions_action_group_fkey";
             columns: ["tag"];
+            isOneToOne: false;
             referencedRelation: "action_tags";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "actions_api_id_fkey";
             columns: ["api_id"];
+            isOneToOne: false;
             referencedRelation: "apis";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "actions_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -161,32 +166,38 @@ export interface Database {
       };
       analytics_code_snippets: {
         Row: {
+          chosen_actions: string[] | null;
           conversation_id: number;
           conversation_index: number;
           created_at: string;
           fresh: boolean;
           id: string;
           instruction_message: string;
+          is_bertie: boolean;
           org_id: number;
           output: string;
         };
         Insert: {
+          chosen_actions?: string[] | null;
           conversation_id: number;
           conversation_index: number;
           created_at?: string;
           fresh?: boolean;
           id?: string;
           instruction_message?: string;
+          is_bertie?: boolean;
           org_id: number;
           output: string;
         };
         Update: {
+          chosen_actions?: string[] | null;
           conversation_id?: number;
           conversation_index?: number;
           created_at?: string;
           fresh?: boolean;
           id?: string;
           instruction_message?: string;
+          is_bertie?: boolean;
           org_id?: number;
           output?: string;
         };
@@ -194,12 +205,14 @@ export interface Database {
           {
             foreignKeyName: "analytics_code_snippets_conversation_id_fkey";
             columns: ["conversation_id"];
+            isOneToOne: false;
             referencedRelation: "conversations";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "analytics_code_snippets_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -240,6 +253,7 @@ export interface Database {
           {
             foreignKeyName: "apis_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -247,6 +261,9 @@ export interface Database {
       };
       chat_messages: {
         Row: {
+          chat_summary: string;
+          chosen_actions: string[] | null;
+          chosen_route: string | null;
           content: string;
           conversation_id: number;
           conversation_index: number;
@@ -260,6 +277,9 @@ export interface Database {
           summary: string | null;
         };
         Insert: {
+          chat_summary?: string;
+          chosen_actions?: string[] | null;
+          chosen_route?: string | null;
           content: string;
           conversation_id: number;
           conversation_index: number;
@@ -273,6 +293,9 @@ export interface Database {
           summary?: string | null;
         };
         Update: {
+          chat_summary?: string;
+          chosen_actions?: string[] | null;
+          chosen_route?: string | null;
           content?: string;
           conversation_id?: number;
           conversation_index?: number;
@@ -289,12 +312,14 @@ export interface Database {
           {
             foreignKeyName: "chat_messages_conversation_id_fkey";
             columns: ["conversation_id"];
+            isOneToOne: false;
             referencedRelation: "conversations";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "chat_messages_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -320,6 +345,7 @@ export interface Database {
           {
             foreignKeyName: "conversations_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -363,6 +389,7 @@ export interface Database {
           {
             foreignKeyName: "doc_chunks_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -400,6 +427,7 @@ export interface Database {
           {
             foreignKeyName: "feedback_conversation_id_fkey";
             columns: ["conversation_id"];
+            isOneToOne: false;
             referencedRelation: "conversations";
             referencedColumns: ["id"];
           },
@@ -428,6 +456,7 @@ export interface Database {
           {
             foreignKeyName: "finetuned_models_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -459,6 +488,7 @@ export interface Database {
           {
             foreignKeyName: "fixed_headers_api_id_fkey";
             columns: ["api_id"];
+            isOneToOne: false;
             referencedRelation: "apis";
             referencedColumns: ["id"];
           },
@@ -496,12 +526,14 @@ export interface Database {
           {
             foreignKeyName: "follow_ups_conversation_id_fkey";
             columns: ["conversation_id"];
+            isOneToOne: false;
             referencedRelation: "conversations";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "follow_ups_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -527,6 +559,7 @@ export interface Database {
           {
             foreignKeyName: "is_paid_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -606,12 +639,14 @@ export interface Database {
           {
             foreignKeyName: "profiles_id_fkey";
             columns: ["id"];
+            isOneToOne: true;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "profiles_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -643,6 +678,7 @@ export interface Database {
           {
             foreignKeyName: "usage_org_id_fkey";
             columns: ["org_id"];
+            isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
@@ -735,6 +771,7 @@ export interface Database {
           {
             foreignKeyName: "buckets_owner_fkey";
             columns: ["owner"];
+            isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },
@@ -802,6 +839,7 @@ export interface Database {
           {
             foreignKeyName: "objects_bucketId_fkey";
             columns: ["bucket_id"];
+            isOneToOne: false;
             referencedRelation: "buckets";
             referencedColumns: ["id"];
           },
@@ -875,3 +913,83 @@ export interface Database {
     };
   };
 }
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+      Database["public"]["Views"])
+  ? (Database["public"]["Tables"] &
+      Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : never;
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : never;
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : never;
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+  ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+  : never;
