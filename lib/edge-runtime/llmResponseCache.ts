@@ -10,11 +10,13 @@ export class LlmResponseCache {
   private analyticsMessages:
     | { instruction_message: string; output: string }[]
     | null;
+  private orgId: number;
 
   constructor() {
     this.matchConvId = null;
     this.messages = [];
     this.analyticsMessages = null;
+    this.orgId = -1;
   }
 
   async initialize(
@@ -23,6 +25,7 @@ export class LlmResponseCache {
     conversationIndex: number,
     supabase: SupabaseClient<Database>,
   ): Promise<void> {
+    this.orgId = orgId;
     const { data: matchingConvData, error: matchConvError } = await supabase
       .from("chat_messages")
       .select("conversation_id")
@@ -43,7 +46,9 @@ export class LlmResponseCache {
       // Get chat messages for all matching conversations
       const { data: matchingChatData, error: chatError } = await supabase
         .from("chat_messages")
-        .select("role,content,name,summary,conversation_index,conversation_id")
+        .select(
+          "role,content,name,summary,conversation_index,conversation_id,chosen_actions,chosen_route,chat_summary",
+        )
         .eq("org_id", orgId)
         .in(
           "conversation_id",
@@ -228,5 +233,64 @@ export class LlmResponseCache {
       });
     if (error) console.error(error.message);
     return followUpData?.[0]?.follow_up_text ?? "";
+  }
+
+  checkChatHistoryCache(chatHistory: GPTMessageInclSummary[]): null | string {
+    if (!this.isHit()) return null;
+    if (this.messages.length < chatHistory.length) return null;
+    const messOut = this.messages[chatHistory.length - 1];
+    if (messOut.role !== "user") return null;
+    console.log(
+      `Chat history cache match found: ${messOut.chat_summary ?? null}`,
+    );
+    return messOut.chat_summary ?? null;
+  }
+  async checkPreprocessingCache(
+    chatHistory: GPTMessageInclSummary[],
+    chatSummary: string,
+    supabase: SupabaseClient<Database>,
+  ): Promise<null | {
+    chosen_actions: string[] | null;
+    chosen_route: string | null;
+  }> {
+    // In cache already
+    if (this.isHit() && this.messages.length >= chatHistory.length) {
+      const messOut = this.messages[chatHistory.length - 1];
+      if (
+        messOut.role !== "user" ||
+        !(messOut.chosen_actions && messOut.chosen_route)
+      )
+        return null;
+      console.log(
+        "Preprocessing match found in cache\n" +
+          `chosen_actions: ${messOut.chosen_actions}\n` +
+          `chosen_route: ${messOut.chosen_route}`,
+      );
+      return {
+        chosen_actions: messOut.chosen_actions,
+        chosen_route: messOut.chosen_route,
+      };
+    } else {
+      // Use userRequest to find a user message with same chat_summary
+      const supaRes = await supabase
+        .from("chat_messages")
+        .select("chosen_actions,chosen_route")
+        .match({
+          org_id: this.orgId,
+          role: "user",
+          chat_summary: chatSummary,
+          fresh: true,
+        })
+        .neq("chosen_actions", null);
+      if (supaRes.error) {
+        console.error(supaRes.error.message);
+        return null;
+      }
+      console.log(
+        "Preprocessing match found in DB:",
+        supaRes.data?.[0] ?? null,
+      );
+      return supaRes.data?.[0] ?? null;
+    }
   }
 }
