@@ -240,9 +240,8 @@ export class LlmResponseCache {
     if (this.messages.length < chatHistory.length) return null;
     const messOut = this.messages[chatHistory.length - 1];
     if (messOut.role !== "user") return null;
-    console.log(
-      `Chat history cache match found: ${messOut.chat_summary ?? null}`,
-    );
+    if (messOut.chat_summary)
+      console.log(`Chat history cache match: ${messOut.chat_summary}`);
     return messOut.chat_summary ?? null;
   }
   async checkPreprocessingCache(
@@ -286,11 +285,14 @@ export class LlmResponseCache {
         console.error(supaRes.error.message);
         return null;
       }
-      console.log(
-        "Preprocessing match found in DB:",
-        supaRes.data?.[0] ?? null,
-      );
-      return supaRes.data?.[0] ?? null;
+      const out = supaRes.data?.[0] ?? null;
+      if (out)
+        console.log(
+          "Preprocessing match found in DB\n" +
+            `chosen_actions: ${out.chosen_actions}\n` +
+            `chosen_route: ${out.chosen_route}`,
+        );
+      return out;
     }
   }
 }
