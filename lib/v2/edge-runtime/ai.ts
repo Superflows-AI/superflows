@@ -32,7 +32,6 @@ import {
 import { streamLLMResponse } from "../../queryLLM";
 import { MAX_TOKENS_OUT } from "../../consts";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
-import { filterActions } from "./filterActions";
 import {
   streamResponseToUser,
   updatePastAssistantMessage,
@@ -162,7 +161,8 @@ export async function Bertie( // Bertie will eat you for breakfast
     userRequest = reqData.user_input;
   } else {
     userRequest =
-      cachedChatHistory || (await summariseChatHistory(chatHistory, language));
+      cachedChatHistory ||
+      (await summariseChatHistory(chatHistory, language, org.id));
   }
   // If the summary is different from the user message, add it to the chatHistory
   // (for storage in DB later)

@@ -24,6 +24,7 @@ import {
   shouldTerminateDataAnalysisStreaming,
 } from "../prompts/dataAnalysis";
 import { streamWithEarlyTermination } from "./utils";
+import log from "../../coflow";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -187,6 +188,14 @@ export async function runDataAnalysis(
             await new Promise((resolve) => setTimeout(resolve, 25000));
             return { error: "Stream failed" };
           }
+          void log(
+            [
+              ...dataAnalysisPrompt,
+              { role: "assistant", content: streamedOut },
+            ],
+            i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
+            org.id,
+          );
           parallelLlmResponse = streamedOut;
           if (promiseFinished)
             return { error: "Another promise settled first" };
