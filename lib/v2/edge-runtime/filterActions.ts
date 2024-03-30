@@ -6,6 +6,7 @@ import {
 import { ActionPlusApiInfo } from "../../types";
 import { exponentialRetryWrapper, snakeToCamel } from "../../utils";
 import { getLLMResponse } from "../../queryLLM";
+import log from "../../coflow";
 
 const defaultFilterParams = {
   temperature: 0.9,
@@ -16,7 +17,7 @@ const defaultFilterParams = {
 export async function filterActions(
   userRequest: string,
   actions: ActionPlusApiInfo[],
-  orgName: string,
+  org: { name: string; id: number },
   model: string,
 ): Promise<{ thoughts: string[]; actions: ActionPlusApiInfo[] }> {
   const actionFilterPrompt = actionFilteringPrompt({
@@ -26,7 +27,7 @@ export async function filterActions(
       (a) =>
         `${snakeToCamel(a.name)}: ${a.filtering_description || a.description}`,
     ),
-    orgName,
+    orgName: org.name,
   });
   console.log(actionFilterPrompt[0].content);
   // Run the filtering prompt in an ensemble of 3
@@ -50,6 +51,11 @@ export async function filterActions(
           );
           console.log(`LLM ${i} output #2:`, out);
         }
+        void log(
+          [...actionFilterPrompt, { role: "assistant", content: out }],
+          model,
+          org.id,
+        );
         return parseActionFilteringOutput(
           out,
           actions.map((a) => snakeToCamel(a.name)),
