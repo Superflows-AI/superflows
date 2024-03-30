@@ -282,6 +282,24 @@ export default async function handler(req: NextRequest) {
           }),
           { status: 404, headers },
         );
+      } else if (
+        // Check last 5 messages for infinite retry loops
+        convResp.data
+          .filter((m) => m.role === "user")
+          .slice(-5)
+          .reduce(
+            (acc, m) =>
+              acc +
+              Number(m.role === "user" && m.content === requestData.user_input),
+            0,
+          ) >= 5
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: `Retrying the same message 6 times is not allowed, to stop infinite retry loops. Please try a different message.`,
+          }),
+          { status: 404, headers },
+        );
       }
       previousMessages = conversation;
       // If the language is set for any message in the conversation, use that
