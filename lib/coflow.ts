@@ -20,7 +20,8 @@ export default async function log(
     body: JSON.stringify({
       api_key: process.env.COFLOW_API_KEY,
       llm_used: model,
-      openai_messages: chatHistory,
+      openai_messages: chatHistory.slice(0, -1),
+      llm_response: chatHistory[chatHistory.length - 1],
     }),
   });
 }
