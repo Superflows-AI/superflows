@@ -121,13 +121,12 @@ export function replacePlaceholdersDuringStreaming(
   // Check if there's a full match: if so, replace the variable with the value
   // Note: we get a full match even if the number hasn't finished outputting (e.g.
   // URL1 is output, but the next chunk is a 0 to make it URL10)
-  const fullPlaceholderMatch = /((URL|ID)[1-9][0-9]*|FUNCTIONS?) /g.exec(
-    content,
-  );
+  const fullPlaceholderMatch =
+    /(?:((?:URL|ID)[1-9][0-9]*)\b|(FUNCTIONS?) )/g.exec(content);
   if (fullPlaceholderMatch !== null) {
-    console.log("Full match:", fullPlaceholderMatch);
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
-    const matchedString = fullPlaceholderMatch[1];
+    const matchedString = fullPlaceholderMatch[1] ?? fullPlaceholderMatch[2];
+    console.log("Full match with string:", matchedString);
     if (matchedString in placeholderToOriginalMap) {
       content = content.replaceAll(
         matchedString,
