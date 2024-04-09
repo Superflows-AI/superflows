@@ -31,6 +31,9 @@ export default function ComboBox(props: {
 
   const [filteredItems, setFilteredItems] = React.useState(props.options);
   useEffect(() => {
+    setFilteredItems(props.options);
+  }, [props.options]);
+  useEffect(() => {
     setFilteredItems(
       query === ""
         ? props.options
