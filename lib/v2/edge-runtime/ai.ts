@@ -152,7 +152,7 @@ export async function Bertie( // Bertie will eat you for breakfast
     chatHistory.length - 1,
     supabase,
   );
-  const cachedChatHistory = chatMessageCache.checkChatHistoryCache(chatHistory);
+  const cachedChatHistory = chatMessageCache.checkChatSummaryCache(chatHistory);
 
   // If there are multiple messages in the chat history, we summarise the chat history into a single user
   //  request - this makes future prompts have a _much_ easier time understanding the user's request
@@ -204,6 +204,20 @@ export async function Bertie( // Bertie will eat you for breakfast
   }
   chatHistory[chatHistory.length - 1] = userMessage;
   if (preprocessOut.route === "DOCS") {
+    const docsMessages = chatMessageCache.checkDocsCache(chatHistory);
+    if (docsMessages) {
+      console.log("Docs Messages found:", docsMessages);
+      docsMessages.forEach((m) => {
+        // @ts-ignore
+        streamInfo(m);
+        chatHistory.push(m);
+      });
+      return {
+        nonSystemMessages: chatHistory,
+        cost: totalCost,
+        numUserQueries,
+      };
+    }
     return Dottie(
       controller,
       reqData,
