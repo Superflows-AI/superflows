@@ -280,7 +280,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `Conversation with ID=${requestData.conversation_id} not found`,
           }),
-          { status: 404, headers },
+          { status: 400, headers },
         );
       } else if (
         // Check last 5 messages for infinite retry loops
@@ -298,7 +298,7 @@ export default async function handler(req: NextRequest) {
           JSON.stringify({
             error: `Retrying the same message 6 times is not allowed, to stop infinite retry loops. Please try a different message.`,
           }),
-          { status: 404, headers },
+          { status: 400, headers },
         );
       }
       previousMessages = conversation;
@@ -451,7 +451,7 @@ export default async function handler(req: NextRequest) {
           error:
             "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
         }),
-        { status: 404, headers },
+        { status: 400, headers },
       );
     }
     activeActions.forEach((action) => {
@@ -502,15 +502,17 @@ export default async function handler(req: NextRequest) {
         if (redis && requestData.conversation_id) await redis.del(convMutexKey);
         // If any of the last message's LLM-derived values are set, update it in the DB
         const userMessage = allMessages[previousMessages.length - 1];
-        if (
-          userMessage.role === "user" &&
-          (userMessage.chat_summary ||
-            userMessage.chosen_actions ||
-            userMessage.chosen_actions)
-        ) {
+        if (userMessage.role === "user") {
           await supabase
             .from("chat_messages")
-            .update(userMessage)
+            .update({
+              ...userMessage,
+              // Set to user input if no previous messages
+              chat_summary:
+                previousMessages.length === 1
+                  ? requestData.user_input
+                  : userMessage.chat_summary,
+            })
             .eq("conversation_id", conversationId)
             .eq("conversation_index", previousMessages.length - 1);
         }
