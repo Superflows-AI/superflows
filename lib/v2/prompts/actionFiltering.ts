@@ -1,16 +1,23 @@
 import { ChatGPTMessage } from "../../models";
+import { searchDocsActionName } from "../../builtinActions";
+import { snakeToCamel } from "../../utils";
 
 export function actionFilteringPrompt(args: {
   userRequest: string;
   actionDescriptions: string[];
   orgName: string;
 }): ChatGPTMessage[] {
+  const containsDocs = args.actionDescriptions.some((a) =>
+    a.includes(snakeToCamel(searchDocsActionName)),
+  );
   return [
     {
       role: "system",
       content: `You are ${
         args.orgName || "a"
-      } chatbot AI. Your task is to select functions that can be used to answer a user's request. A developer will use these to write code to answer the user's request
+      } chatbot AI. Your task is to select functions that can be used to answer a user's request. A developer will use these to write code to answer the user's request${
+        !containsDocs ? "" : " or write the answer based on the relevant docs"
+      }
 
 Below are all ${
         args.actionDescriptions.length
@@ -23,7 +30,11 @@ RULES:
 1. Select the functions needed to fulfill the user's request by writing them as a list under 'Selected functions'. Leave it empty if none are relevant or the user's request isn't possible. If the user's request is unclear, also leave it empty.
 2. NEVER write code or pseudocode
 3. STOP WRITING after the selected functions list
-4. Respond in the following format (Thoughts as numbered list):
+4. ${
+        containsDocs
+          ? ""
+          : `CONSIDER whether ${searchDocsActionName} is relevant\n5. `
+      }Respond in the following format (Thoughts as numbered list):
 \`\`\`
 Thoughts:
 1. Think step-by-step how to use the functions to answer the user's request
