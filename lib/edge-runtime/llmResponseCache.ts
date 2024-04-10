@@ -346,13 +346,15 @@ export class LlmResponseCache {
           role: "user",
           chat_summary: chatSummary,
           fresh: true,
-        })
-        .neq("chosen_actions", null);
+        });
       if (supaRes.error) {
         console.error(supaRes.error.message);
         return null;
       }
-      const out = supaRes.data?.[0] ?? null;
+      const out =
+        supaRes.data?.find(
+          (item) => item.chosen_route && item.chosen_actions,
+        ) ?? null;
       if (out)
         console.log(
           "Preprocessing match found in DB\n" +
