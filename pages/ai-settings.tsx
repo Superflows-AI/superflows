@@ -7,7 +7,6 @@ import SelectBox, { SelectBoxOption } from "../components/selectBox";
 import { Database } from "../lib/database.types";
 import { pageGetServerSideProps } from "../components/getServerSideProps";
 import { AutoGrowingTextArea } from "../components/autoGrowingTextarea";
-import Toggle from "../components/toggle";
 
 export default function App() {
   return (
@@ -157,8 +156,6 @@ function Dashboard() {
   const [chatInstructions, setChatInstructions] = React.useState<string>(
     profile?.organizations?.chatbot_instructions ?? "",
   );
-  const [analyticsEnabled, setAnalyticsEnabled] =
-    React.useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-gray-800">
