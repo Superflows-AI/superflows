@@ -1,7 +1,10 @@
 import { SupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../database.types";
 import { GPTMessageInclSummary } from "../models";
-import { dataAnalysisActionName } from "../builtinActions";
+import {
+  dataAnalysisActionName,
+  searchDocsActionName,
+} from "../builtinActions";
 import _ from "lodash";
 
 export class LlmResponseCache {
@@ -43,6 +46,7 @@ export class LlmResponseCache {
     if (matchConvError) console.error(matchConvError.message);
 
     if (matchingConvData && matchingConvData?.length > 1) {
+      console.log("Main hit", matchingConvData.slice(1));
       // Get chat messages for all matching conversations
       const { data: matchingChatData, error: chatError } = await supabase
         .from("chat_messages")
@@ -85,6 +89,49 @@ export class LlmResponseCache {
           }
         }
       }
+    } else {
+      // Fallback to checking if the same query has been given as the chat summary
+      const { data: matchingConvIds, error: matchConvError } = await supabase
+        .from("chat_messages")
+        .select("conversation_id, conversation_index")
+        .match({
+          role: "user",
+          org_id: orgId,
+          chat_summary: userMessage,
+          fresh: true,
+        })
+        .order("conversation_id", { ascending: false })
+        .limit(2);
+      if (matchConvError) console.error(matchConvError.message);
+      if (!matchingConvIds || matchingConvIds.length <= 1) {
+        console.log("No match, returning");
+        return;
+      }
+      const convId = matchingConvIds[1].conversation_id;
+      const matchedConvIndex = matchingConvIds[1].conversation_index;
+
+      const { data: matchingChatData, error: chatError } = await supabase
+        .from("chat_messages")
+        .select(
+          "role,content,name,summary,conversation_index,conversation_id,chosen_actions,chosen_route,chat_summary",
+        )
+        .eq("org_id", orgId)
+        .eq("conversation_id", convId);
+      if (chatError) console.error(chatError.message);
+
+      if (matchingChatData && matchingChatData.length > 1) {
+        this.matchConvId = convId;
+        // We use length of the messages to compare with the current conversation
+        this.messages = [
+          // Add these to the start of the conversation to ensure it matches the length of the current conversation
+          ...new Array(conversationIndex).fill({ role: "user", content: "" }),
+          ...matchingChatData.slice(matchedConvIndex),
+        ] as GPTMessageInclSummary[];
+        console.log(
+          "Found matching conversation through chat_summary search:",
+          this.messages,
+        );
+      }
     }
   }
   isHit(): boolean {
@@ -123,6 +170,26 @@ export class LlmResponseCache {
         return false;
       }
     });
+  }
+
+  checkDocsCache(
+    chatHistory: GPTMessageInclSummary[],
+  ): GPTMessageInclSummary[] | null {
+    const chatLength = chatHistory.length;
+    if (!this.isHit() || chatLength + 1 >= this.messages.length) return null;
+    console.log("Docs output match found - returning cached messages");
+    const matchedMessages = [
+      this.messages[chatLength],
+      this.messages[chatLength + 1],
+    ];
+    if (
+      matchedMessages[0].role !== "function" ||
+      matchedMessages[0].name !== searchDocsActionName ||
+      matchedMessages[1].role !== "assistant"
+    ) {
+      return null;
+    }
+    return matchedMessages;
   }
 
   checkChatCache(chatHistory: GPTMessageInclSummary[]): string {
@@ -235,13 +302,13 @@ export class LlmResponseCache {
     return followUpData?.[0]?.follow_up_text ?? "";
   }
 
-  checkChatHistoryCache(chatHistory: GPTMessageInclSummary[]): null | string {
+  checkChatSummaryCache(chatHistory: GPTMessageInclSummary[]): null | string {
     if (!this.isHit()) return null;
     if (this.messages.length < chatHistory.length) return null;
     const messOut = this.messages[chatHistory.length - 1];
     if (messOut.role !== "user") return null;
     if (messOut.chat_summary)
-      console.log(`Chat history cache match: ${messOut.chat_summary}`);
+      console.log(`Chat summary cache match: ${messOut.chat_summary}`);
     return messOut.chat_summary ?? null;
   }
   async checkPreprocessingCache(
