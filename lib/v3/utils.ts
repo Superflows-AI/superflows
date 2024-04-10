@@ -1,45 +1,33 @@
-export function ISOMonthsToReadable(dates: string[]): string {
-  // Sort by date
-  dates.sort();
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-  // Create mapping for month names
-  const monthNames: { [key: number]: string } = {
-    1: "January",
-    2: "February",
-    3: "March",
-    4: "April",
-    5: "May",
-    6: "June",
-    7: "July",
-    8: "August",
-    9: "September",
-    10: "October",
-    11: "November",
-    12: "December",
-  };
+export function convertIsoToHumanReadable(dateStr: string): string {
+  let date = new Date(dateStr);
 
-  let formattedDates: string[] = [];
+  let day = date.getDate();
+  let monthIndex = date.getMonth();
+  let year = date.getFullYear();
 
-  for (let i = 0; i < dates.length; i++) {
-    const date = dates[i];
-    let [year, month] = date.split("-").map(Number);
-
-    if (
-      i + 1 === dates.length ||
-      dates[i + 1].split("-").map(Number)[0] !== year
-    ) {
-      // If the current year is the last one, add month and year
-      formattedDates.push(`${monthNames[month]} ${year}`);
-    } else {
-      // If the current year is the same as the next one, just add month
-      formattedDates.push(`${monthNames[month]}`);
-    }
+  let suffix = "th";
+  if ([1, 21, 31].includes(day)) {
+    suffix = "st";
+  } else if ([2, 22].includes(day)) {
+    suffix = "nd";
+  } else if ([3, 23].includes(day)) {
+    suffix = "rd";
   }
 
-  // Return as a formatted string, joining by 'and' if there's more than one item
-  return formattedDates.length > 1
-    ? `${formattedDates.slice(0, -1).join(", ")} and ${
-        formattedDates[formattedDates.length - 1]
-      }`
-    : formattedDates[0];
+  return `${day}${suffix} ${monthNames[monthIndex]} ${year}`;
 }
