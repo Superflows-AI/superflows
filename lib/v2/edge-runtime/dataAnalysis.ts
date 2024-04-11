@@ -25,6 +25,7 @@ import {
 } from "../prompts/dataAnalysis";
 import { streamWithEarlyTermination } from "./utils";
 import log from "../../coflow";
+import { sendFunLoadingMessages } from "../../funLoadingMessages";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -83,7 +84,11 @@ export async function runDataAnalysis(
   filteredActions: ActionPlusApiInfo[],
   org: Pick<
     Organization,
-    "id" | "name" | "description" | "chatbot_instructions"
+    | "id"
+    | "name"
+    | "description"
+    | "chatbot_instructions"
+    | "fun_loading_messages"
   >,
   dbData: { conversationId: number; index: number },
   userDescription: string,
@@ -91,7 +96,13 @@ export async function runDataAnalysis(
   streamInfo: (step: StreamingStepInput) => void,
   userApiKey?: string,
 ): Promise<ExecuteCode2Item[] | { error: string } | null> {
-  streamInfo({ role: "loading", content: "Performing data analysis" });
+  if (!org.fun_loading_messages) {
+    streamInfo({ role: "loading", content: "Performing data analysis" });
+  }
+  // Either sends fun loading messages or does nothing
+  let slowFnWrapper = org.fun_loading_messages
+    ? sendFunLoadingMessages
+    : (p: Promise<any>) => p;
   let llmResponse = await cache.checkBertieAnalyticsCache(
     instruction,
     filteredActions.map((a) => a.name),
@@ -110,16 +121,20 @@ export async function runDataAnalysis(
     if (parsedCode !== null) {
       if ("error" in parsedCode) return parsedCode;
       console.info("Parsed LLM response from cache:", parsedCode.code);
-      streamInfo({ role: "loading", content: "Executing code" });
+      if (!org.fun_loading_messages)
+        streamInfo({ role: "loading", content: "Executing code" });
       // Send code to supabase edge function to execute
-      const res = await supabase.functions.invoke("execute-code-2", {
-        body: JSON.stringify({
-          actionsPlusApi: filteredActions,
-          org,
-          code: parsedCode.code,
-          userApiKey,
+      const res = await slowFnWrapper(
+        supabase.functions.invoke("execute-code-2", {
+          body: JSON.stringify({
+            actionsPlusApi: filteredActions,
+            org,
+            code: parsedCode.code,
+            userApiKey,
+          }),
         }),
-      });
+        streamInfo,
+      );
 
       if (!res.error) {
         const returnedData = res.data as ExecuteCode2Item[] | null;
@@ -157,143 +172,149 @@ export async function runDataAnalysis(
     JSON.stringify(dataAnalysisPrompt),
   );
   var promiseFinished = false;
-  const promiseOut = await Promise.race([
-    // Data analysis
-    ...[1, 2].map(
-      async (
-        i,
-      ): Promise<
-        | { graphData: ExecuteCode2Item[]; llmResponse: string }
-        | { error: string }
-      > => {
-        let parallelGraphData: ExecuteCode2Item[] | null = null,
-          nLoops = 0;
-        let parallelLlmResponse = "";
-        // Retry if it fails once
-        while (parallelGraphData === null && nLoops < 2) {
-          nLoops += 1;
-          const streamedOut = await streamWithEarlyTermination(
-            dataAnalysisPrompt,
-            {
-              ...GPTDataAnalysisLLMParams,
-              temperature: nLoops === 0 ? 0.1 : 0.8,
-            },
-            i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
-            shouldTerminateDataAnalysisStreaming,
-            () => {}, // Don't stream as of yet - we want to for debugging purposes
-            i === 1 ? "GPT data analysis" : "Opus data analysis",
-          );
-          if (streamedOut === null) {
-            // If it fails, wait 25 seconds (so the other LLM can finish) and then return an error
-            await new Promise((resolve) => setTimeout(resolve, 25000));
-            return { error: "Stream failed" };
-          }
-          void log(
-            [
-              ...dataAnalysisPrompt,
-              { role: "assistant", content: streamedOut },
-            ],
-            i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
-            org.id,
-          );
-          parallelLlmResponse = streamedOut;
-          if (promiseFinished)
-            return { error: "Another promise settled first" };
-
-          // Parse the result
-          let parsedCode = parseOpusOrGPTDataAnalysis(
-            parallelLlmResponse,
-            filteredActions,
-          );
-          if (parsedCode === null) {
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
-          }
-          if ("error" in parsedCode) return parsedCode;
-          if (promiseFinished)
-            return { error: "Another promise settled first" };
-          streamInfo({ role: "loading", content: "Executing code" });
-          console.info(
-            `${i === 1 ? "GPT" : "Opus"} parsed code:`,
-            parsedCode.code,
-          );
-
-          // Send code to supabase edge function to execute
-          const res = await supabase.functions.invoke("execute-code-2", {
-            body: JSON.stringify({
-              actionsPlusApi: filteredActions,
-              org,
-              code: parsedCode.code,
-              userApiKey,
-            }),
-          });
-          if (promiseFinished)
-            return { error: "Another promise settled first" };
-
-          if (res.error) {
-            console.error(
-              `Error executing generated code for conversation ${dbData.conversationId}: ${res.error}`,
+  const promiseOut:
+    | { graphData: ExecuteCode2Item[]; llmResponse: string }
+    | { error: string } = await slowFnWrapper(
+    Promise.race([
+      // Data analysis
+      ...[1, 2].map(
+        async (
+          i,
+        ): Promise<
+          | { graphData: ExecuteCode2Item[]; llmResponse: string }
+          | { error: string }
+        > => {
+          let parallelGraphData: ExecuteCode2Item[] | null = null,
+            nLoops = 0;
+          let parallelLlmResponse = "";
+          // Retry if it fails once
+          while (parallelGraphData === null && nLoops < 2) {
+            nLoops += 1;
+            const streamedOut = await streamWithEarlyTermination(
+              dataAnalysisPrompt,
+              {
+                ...GPTDataAnalysisLLMParams,
+                temperature: nLoops === 0 ? 0.1 : 0.8,
+              },
+              i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
+              shouldTerminateDataAnalysisStreaming,
+              () => {}, // Don't stream as of yet - we want to for debugging purposes
+              i === 1 ? "GPT data analysis" : "Opus data analysis",
             );
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
-          }
-          if (!Array.isArray(res.data)) {
-            console.error(
-              `ERROR: Invalid output from code-gen for conversation ${
-                dbData.conversationId
-              }: ${JSON.stringify(res.data, undefined, 2)}`,
+            if (streamedOut === null) {
+              // If it fails, wait 25 seconds (so the other LLM can finish) and then return an error
+              await new Promise((resolve) => setTimeout(resolve, 25000));
+              return { error: "Stream failed" };
+            }
+            void log(
+              [
+                ...dataAnalysisPrompt,
+                { role: "assistant", content: streamedOut },
+              ],
+              i === 1 ? "gpt-4" : "anthropic/claude-3-opus-20240229",
+              org.id,
             );
-            streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
-            continue;
-          }
+            parallelLlmResponse = streamedOut;
+            if (promiseFinished)
+              return { error: "Another promise settled first" };
 
-          const returnedData = res.data as ExecuteCode2Item[] | null;
-          const codeOk = checkCodeExecutionOutput(
-            returnedData,
-            dbData.conversationId,
-            nLoops,
-          );
-          if (!codeOk.isValid) {
-            if (codeOk.retry) {
+            // Parse the result
+            let parsedCode = parseOpusOrGPTDataAnalysis(
+              parallelLlmResponse,
+              filteredActions,
+            );
+            if (parsedCode === null) {
               streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
               continue;
-            } else {
-              return {
-                error: returnedData?.find(
-                  (m) =>
-                    m.type === "error" &&
-                    m.args.message.includes('"status": 4'),
-                  // @ts-ignore
-                )!.args.message,
-              };
             }
-          }
-          // For type-safety (doesn't ever get called)
-          if (returnedData === null) continue;
-
-          parallelGraphData = returnedData;
-        }
-        if (!promiseFinished) {
-          if (parallelGraphData === null) {
-            console.error(
-              `Failed to execute generated code for conversation ${dbData.conversationId} after 2 attempts`,
+            if ("error" in parsedCode) return parsedCode;
+            if (promiseFinished)
+              return { error: "Another promise settled first" };
+            if (!org.fun_loading_messages)
+              streamInfo({ role: "loading", content: "Executing code" });
+            console.info(
+              `${i === 1 ? "GPT" : "Opus"} parsed code:`,
+              parsedCode.code,
             );
-            return { error: "Failed to execute code" };
+
+            // Send code to supabase edge function to execute
+            const res = await supabase.functions.invoke("execute-code-2", {
+              body: JSON.stringify({
+                actionsPlusApi: filteredActions,
+                org,
+                code: parsedCode.code,
+                userApiKey,
+              }),
+            });
+            if (promiseFinished)
+              return { error: "Another promise settled first" };
+
+            if (res.error) {
+              console.error(
+                `Error executing generated code for conversation ${dbData.conversationId}: ${res.error}`,
+              );
+              streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+              continue;
+            }
+            if (!Array.isArray(res.data)) {
+              console.error(
+                `ERROR: Invalid output from code-gen for conversation ${
+                  dbData.conversationId
+                }: ${JSON.stringify(res.data, undefined, 2)}`,
+              );
+              streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+              continue;
+            }
+
+            const returnedData = res.data as ExecuteCode2Item[] | null;
+            const codeOk = checkCodeExecutionOutput(
+              returnedData,
+              dbData.conversationId,
+              nLoops,
+            );
+            if (!codeOk.isValid) {
+              if (codeOk.retry) {
+                streamInfo(nLoops <= 1 ? madeAMistake : anotherMistake);
+                continue;
+              } else {
+                return {
+                  error: returnedData?.find(
+                    (m) =>
+                      m.type === "error" &&
+                      m.args.message.includes('"status": 4'),
+                    // @ts-ignore
+                  )!.args.message,
+                };
+              }
+            }
+            // For type-safety (doesn't ever get called)
+            if (returnedData === null) continue;
+
+            parallelGraphData = returnedData;
           }
-          console.log(`GPT code-gen run ${i} succeeded`);
-          promiseFinished = true;
+          if (!promiseFinished) {
+            if (parallelGraphData === null) {
+              console.error(
+                `Failed to execute generated code for conversation ${dbData.conversationId} after 2 attempts`,
+              );
+              return { error: "Failed to execute code" };
+            }
+            console.log(`GPT code-gen run ${i} succeeded`);
+            promiseFinished = true;
+            return {
+              graphData: parallelGraphData,
+              llmResponse: parallelLlmResponse,
+            };
+          }
           return {
-            graphData: parallelGraphData,
-            llmResponse: parallelLlmResponse,
+            error:
+              "Another promise settled first - this should never be in the logs",
           };
-        }
-        return {
-          error:
-            "Another promise settled first - this should never be in the logs",
-        };
-      },
-    ),
-  ]);
+        },
+      ),
+    ]),
+    streamInfo,
+  );
   promiseFinished = true;
   if ("error" in promiseOut) return promiseOut;
   const graphData = promiseOut.graphData;
@@ -440,7 +461,9 @@ export function checkCodeExecutionOutput(
   }
   // If only calls, return false - no plots or logs (an answer might be written in a log)
   const plotOrLog =
-    returnedData.filter((m) => ["log", "plot"].includes(m.type)).length > 0;
+    returnedData.filter(
+      (m) => m.type === "log" || (m.type === "plot" && checkPlotData(m.args)),
+    ).length > 0;
   return { isValid: plotOrLog, retry: !plotOrLog };
 }
 
@@ -480,9 +503,20 @@ export function convertToGraphData(
 
   // Sometimes the AI will write a for loop and put the plot() call in the loop, leading to multiple plots which were
   // meant to be 1, each with 1 data point. We combine these out here
-  let plotItems = executeCodeResponse.filter(
-    (g) => g.type === "plot",
-  ) as Extract<ExecuteCode2Item, { type: "plot" }>[];
+  let plotItems = executeCodeResponse
+    .filter((g) => g.type === "plot")
+    // Convert other graph types to bar
+    .map((g) => {
+      if (!["line", "bar", "table"].includes(g.args.type))
+        return {
+          ...g,
+          type: "bar",
+        };
+      return g;
+    }) as {
+    type: "plot";
+    args: BertieGraphData;
+  }[];
 
   const originalDataLengths = plotItems.map((g) => g.args.data.length);
   plotItems = plotItems
@@ -520,9 +554,33 @@ export function convertToGraphData(
   return [functionMessage, ...plotMessages];
 }
 
-export function formatPlotData(
-  plotMessage: Extract<ExecuteCode2Item, { type: "plot" }>,
-): GraphMessage {
+function checkPlotData(data: any): boolean {
+  // data must be an object and not an array
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    console.log("checkPlotData: Data is not an object", data);
+    return false;
+  }
+  if (!["title", "data", "type"].every((keyName) => keyName in data)) {
+    console.log("checkPlotData: Data does not have title, data and type", data);
+    return false;
+  }
+  if (
+    !Array.isArray(data.data) ||
+    data.data.some(
+      (item: any) =>
+        item === null || typeof item !== "object" || Array.isArray(item),
+    )
+  ) {
+    console.log("checkPlotData: Data.data is not an array of objects", data);
+    return false;
+  }
+  return true;
+}
+
+export function formatPlotData(plotMessage: {
+  type: "plot";
+  args: BertieGraphData;
+}): GraphMessage {
   let graphData = plotMessage.args;
   if (graphData.type !== "table") {
     graphData.data = ensureXandYinData(graphData);

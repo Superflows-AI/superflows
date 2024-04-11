@@ -1,0 +1,1 @@
+alter table "public"."organizations" add column "fun_loading_messages" boolean not null default false;
