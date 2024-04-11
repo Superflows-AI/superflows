@@ -573,6 +573,7 @@ export interface Database {
           chatbot_instructions: string;
           created_at: string | null;
           description: string;
+          fun_loading_messages: boolean;
           id: number;
           join_link_id: string | null;
           language: string;
@@ -587,6 +588,7 @@ export interface Database {
           chatbot_instructions?: string;
           created_at?: string | null;
           description?: string;
+          fun_loading_messages?: boolean;
           id?: number;
           join_link_id?: string | null;
           language?: string;
@@ -601,6 +603,7 @@ export interface Database {
           chatbot_instructions?: string;
           created_at?: string | null;
           description?: string;
+          fun_loading_messages?: boolean;
           id?: number;
           join_link_id?: string | null;
           language?: string;

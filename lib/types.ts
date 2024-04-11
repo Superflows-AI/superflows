@@ -77,7 +77,7 @@ export type ExecuteCode2Item =
     }
   | {
       type: "plot";
-      args: BertieGraphData;
+      args: any;
     }
   | {
       type: "call";

@@ -60,6 +60,7 @@ import {
 import { LLMPreProcess, PreProcessOutType, Route } from "./clarification";
 import { summariseChatHistory } from "./summariseChatHistory";
 import { getSearchDocsAction } from "../../builtinActions";
+import { sendFunLoadingMessages } from "../../funLoadingMessages";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -605,9 +606,16 @@ export async function Bertie( // Bertie will eat you for breakfast
 
               // Call user's API here
               let out;
-              streamInfo({ role: "loading", content: "Calling API" });
               try {
-                out = await makeHttpRequest(url, requestOptions, currentHost);
+                if (org.fun_loading_messages) {
+                  out = await sendFunLoadingMessages(
+                    makeHttpRequest(url, requestOptions, currentHost),
+                    streamInfo,
+                  );
+                } else {
+                  streamInfo({ role: "loading", content: "Calling API" });
+                  out = await makeHttpRequest(url, requestOptions, currentHost);
+                }
                 errorMakingAPICall = errorMakingAPICall || out.isError;
                 out = processAPIoutput(out.output, chosenAction);
               } catch (e) {
@@ -800,7 +808,11 @@ async function runCodeGen(
   actions: ActionPlusApiInfo[],
   org: Pick<
     Organization,
-    "id" | "name" | "description" | "chatbot_instructions"
+    | "id"
+    | "name"
+    | "description"
+    | "chatbot_instructions"
+    | "fun_loading_messages"
   >,
   dbData: { conversationId: number; index: number },
   userDescription: string,
