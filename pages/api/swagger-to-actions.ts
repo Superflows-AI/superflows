@@ -76,7 +76,7 @@ export default async function handler(
   if (!session) return res.status(401).json({ message: "Unauthorized" });
   const profileRes = await supabase
     .from("profiles")
-    .select("org_id")
+    .select("org_id, organizations(bertie_enabled)")
     .eq("id", session?.user.id)
     .single();
 
@@ -283,18 +283,20 @@ export default async function handler(
     }
     actionIds = actionIds.concat(actionInsertResp.data.map((a) => a.id));
   }
-  // Generate filtering descriptions for <40 of the actions
-  void fetch(req.headers.origin + "/api/write-action-descriptions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      org_id: orgId,
-      action_ids: actionIds,
-    }),
-  });
+  if (profileRes.data.organizations!.bertie_enabled) {
+    // Generate filtering descriptions for <40 of the actions
+    void fetch(req.headers.origin + "/api/write-action-descriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SERVICE_LEVEL_KEY_SUPABASE}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        org_id: orgId,
+        action_ids: actionIds,
+      }),
+    });
+  }
 
   res.status(200).send({ success: true });
 }
