@@ -191,7 +191,10 @@ export default function getMessages(
   userCopilotMessages: ChatGPTMessage[],
   actions: Action[],
   userDescription: string | undefined,
-  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
+  orgInfo: Pick<
+    Organization,
+    "name" | "description" | "chatbot_instructions" | "enable_data_analysis"
+  >,
   language: string | null,
   includeIdLine: boolean,
 ): ChatGPTMessage[] {
@@ -286,7 +289,10 @@ export function getIntroText(orgInfo: { name: string; description: string }) {
 
 function systemPromptWithActions(
   userDescriptionSection: string,
-  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
+  orgInfo: Pick<
+    Organization,
+    "name" | "description" | "chatbot_instructions" | "enable_data_analysis"
+  >,
   numberedActions: string,
   language: string | null,
   includeIdUrlLine: boolean,
@@ -316,9 +322,11 @@ To use the output from a previous command in a later command, stop outputting co
 Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
 
 Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses
-
-If a function response has been 'cut as it is too large', YOU MUST call ${dataAnalysisActionName}. UNDER NO CIRCUMSTANCES answer the user's question - you have no data.
-
+${
+  orgInfo.enable_data_analysis
+    ? `\nIf a function response has been 'cut as it is too large', YOU MUST call ${dataAnalysisActionName}. UNDER NO CIRCUMSTANCES answer the user's question - you have no data.\n`
+    : ""
+}
 Think and talk to the user in ${language ?? "the same language they write in"}${
       language !== "English"
         ? ". This should ONLY affect the Reasoning & Tell user outputs. NOT the commands. And DO NOT translate the keywords: Reasoning, Plan, Tell user or Commands."
