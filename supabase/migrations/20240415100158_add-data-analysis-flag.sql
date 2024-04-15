@@ -1,0 +1,1 @@
+alter table "public"."organizations" add column "enable_data_analysis" boolean not null default true;

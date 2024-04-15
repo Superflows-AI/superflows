@@ -280,7 +280,7 @@ export async function Angela( // Good ol' Angela
     actions.unshift(getSearchDocsAction(org, currentHost));
   }
   // Add analytics action if enabled
-  actions.unshift(dataAnalysisAction(org));
+  if (org.enable_data_analysis) actions.unshift(dataAnalysisAction(org));
 
   if (actions.length > 5 && model.includes("3.5")) {
     actions = await filterActions(
