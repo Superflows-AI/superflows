@@ -97,6 +97,8 @@ export default function ViewSystemPromptModal(props: {
                       "<ORG DESCRIPTION>",
                     chatbot_instructions:
                       profile?.organizations?.chatbot_instructions ?? "",
+                    enable_data_analysis:
+                      profile?.organizations?.enable_data_analysis ?? false,
                   },
                   "English",
                   false,
