@@ -87,9 +87,9 @@ export async function Dottie( // Dottie talks to docs
     language,
   );
 
-  const model = org.model;
+  const model = "gpt-3.5-turbo-0125";
   const chatHistory = [...previousMessages];
-  const maxConvLength = model === "gpt-4-0613" ? 20 : 10;
+  const maxConvLength = 10;
   let cost = 0;
 
   // Const controlling how much context to include
