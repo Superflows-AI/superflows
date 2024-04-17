@@ -5,6 +5,7 @@ import {
 } from "../../../../lib/v2/edge-runtime/dataAnalysis";
 import { ExecuteCode2Item } from "../../../../lib/types";
 import { dataAnalysisActionName } from "../../../../lib/v2/builtinActions";
+import { stripBasicTypescriptTypes } from "../../../../lib/v2/prompts/dataAnalysis";
 
 describe("convertToGraphData", () => {
   const logMess1 = {
@@ -699,5 +700,48 @@ describe("checkCodeExecutionOutput", () => {
         1,
       ),
     ).toEqual({ isValid: false, retry: true });
+  });
+});
+
+describe("stripBasicTypescriptTypes", () => {
+  it("Basic types", () => {
+    const out = stripBasicTypescriptTypes(
+      `let a: string = "hello";
+let b: number = 1;`,
+    );
+    expect(out).toEqual(`let a = "hello";
+let b = 1;`);
+  });
+  it("Types in function definition", () => {
+    const out = stripBasicTypescriptTypes(
+      `function greet(name: string): string {
+    return "Hello, " + name;
+}`,
+    );
+    expect(out).toEqual(`function greet(name) {
+    return "Hello, " + name;
+}`);
+  });
+  it("Implicit function definition", () => {
+    const out = stripBasicTypescriptTypes(
+      `[1,2,3,4].map((m: string): string => {
+    return "Hello, " + m;
+})`,
+    );
+    expect(out).toEqual(`[1,2,3,4].map((m) => {
+    return "Hello, " + m;
+})`);
+  });
+  it("Interface definition", () => {
+    const out = stripBasicTypescriptTypes(
+      `interface Person {
+name: string;
+}`,
+    );
+    expect(out).toEqual(``);
+  });
+  it("Type definition", () => {
+    const out = stripBasicTypescriptTypes(`type Person  = string;`);
+    expect(out).toEqual(``);
   });
 });
