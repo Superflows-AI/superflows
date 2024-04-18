@@ -396,13 +396,19 @@ export function hideMostRecentFunctionOutputs(
 export async function getSessionFromCookie(
   req: NextRequest,
   res?: NextResponse,
-): Promise<Session | null> {
+): Promise<
+  | {
+      session: Session | null;
+      supabase: SupabaseClient<Database>;
+    }
+  | { session: null; supabase: null }
+> {
   const cookie = req.headers.get("cookie");
-  if (!cookie) return null;
+  if (!cookie) return { session: null, supabase: null };
   res = res || NextResponse.next();
-  const authSupa = createMiddlewareSupabaseClient({ req, res });
+  const supabase = createMiddlewareSupabaseClient<Database>({ req, res });
   const {
     data: { session },
-  } = await authSupa.auth.getSession();
-  return session;
+  } = await supabase.auth.getSession();
+  return { session, supabase };
 }

@@ -42,7 +42,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
       { status: 405, headers },
     );
   }
-  const session = await getSessionFromCookie(req);
+  const { session } = await getSessionFromCookie(req);
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
