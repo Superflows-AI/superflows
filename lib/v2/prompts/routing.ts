@@ -36,7 +36,7 @@ ${args.actions
 CRITERIA
 """
 CODE
-Writes code to call Acme CRM's API by calling FUNCTIONS
+Writes code to call ${args.org.name}'s API by calling FUNCTIONS
 It CAN'T search by name - in this case, use DIRECT instead
 Use when:
 - performing calculations, aggregating & slicing data and plotting outputs returned from FUNCTIONS (examples: "Plot the top 5 products by profitability in the past 6 months" or "Which warehouse has the highest total value of stock?")
@@ -52,7 +52,7 @@ ${
   args.org.chat_to_docs_enabled
     ? `
 DOCS
-Searches Acme CRM's documentation
+Searches ${args.org.name}'s documentation
 Use when:
 - asked how-to questions
 - asked questions about how the system works
