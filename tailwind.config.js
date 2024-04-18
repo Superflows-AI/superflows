@@ -9,6 +9,7 @@ module.exports = {
     extend: {
         colors: {
             gray: {
+                750: "#2B3545",
                 850: "#171F2E"
             }
         },
@@ -16,9 +17,11 @@ module.exports = {
           4: "1rem",
         },
         width: {
+          4.5: "1.125rem",
           18: "4.5rem",
           68: "17rem",
           120: "30rem",
+          150: "37.5rem",
           200: "50rem",
         },
         maxWidth: {
@@ -36,6 +39,7 @@ module.exports = {
           40: '10rem',
         },
         height: {
+          4.5: "1.125rem",
           15: '3.75rem',
           120: "30rem",
         },
