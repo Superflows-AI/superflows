@@ -255,13 +255,19 @@ export function explainPlotChatPrompt(
     }with helpful replies.
 ${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
-
-EXAMPLE:
+${
+  graphCut
+    ? `\nEXAMPLE:
 """
 ### Function:
+Logs from code execution and API calls for instruct_coder:
+getTop10Products()
+The top product is DEMO_152 with projected revenue of $97,254 in the next 12 months
+
+### Function:
 {"type":"${
-      isTable ? "table" : "bar"
-    }","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+        isTable ? "table" : "bar"
+      }","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
 
 ### Assistant:
 Reasoning:
@@ -270,31 +276,38 @@ Reasoning:
 
 Tell user:
 Above is a ${graphOrTable} displaying the top 10 products by revenue over the past 6 months.${
-      graphOrTable === "graph"
-        ? "\n\nThe x axis shows the product name, while the y axis is the revenue in $."
-        : ""
-    }
-"""
+        graphOrTable === "graph"
+          ? "\n\nThe x axis shows the product name, while the y axis is the revenue in $."
+          : ""
+      }
+The top product is DEMO_152 with projected revenue of $97,254 in the next 12 months.
+"""\n`
+    : ""
+}
 
 RULES:
 1. ${
       graphCut
         ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
-        : `If the ${graphOrTable} doesn't exactly answer the question the user asked, use the ${graphOrTable} and log messages from the coder to help answer the question for the user - they user can't see the coder's log messages.`
+        : `Answer the user's question. Explain with data from the ${graphOrTable} and log messages from the coder.`
     }
-2. DO NOT repeat the ${graphOrTable} as a markdown image/table. The user can see the ${graphOrTable} already.
-3. DO NOT repeat the contents of the ${graphOrTable} in full. Summarise it as concisely as you can - the user can ask follow-ups if they need more information. 
-4. ${languageLine(language, "'Reasoning' or 'Tell user'")}
-5. Your reply should follow the format below (you MUST include both reasoning and tell user):
-\`\`\`
+2. DO NOT repeat the ${graphOrTable} data in full or as a markdown image/table
+3. ALWAYS explain what the ${graphOrTable} shows
+4. Include non function-call information from logs, if it helps answer the user's question 
+5. ${languageLine(language, "'Reasoning' or 'Tell user'")}
+6. Your reply should follow the format below (you MUST include both reasoning and tell user):
+"""
 Reasoning:
-1. Think step-by-step. Does the data array contain the text 'cut for brevity' for any ${graphOrTable}s?
-2. If the data array is empty, this may mean that there's no data
-3. Consider the API calls made by the coder (look at the logs) - would these make sense if there's no data?
+1. Think step-by-step
+2. ${
+      graphCut
+        ? `consider how to explain the ${graphOrTable} since the data has been cut`
+        : `consider what the ${graphOrTable} shows\n3. think about where the data comes from`
+    }
 
 Tell user:
-What you want you tell the user to answer their request.
-\`\`\``,
+Answer the user's request without repeating the ${graphOrTable}
+"""`,
   };
 }
 
