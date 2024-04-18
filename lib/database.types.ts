@@ -259,6 +259,223 @@ export type Database = {
           },
         ];
       };
+      approval_answer_groups: {
+        Row: {
+          id: string;
+          name: string;
+          org_id: number;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          org_id: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_verified_answer_groups_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_answer_messages: {
+        Row: {
+          answer_id: string;
+          created_at: string;
+          generated_output: Json[];
+          id: string;
+          message_idx: number;
+          message_type: Database["public"]["Enums"]["verified_message_types"];
+          org_id: number;
+          raw_text: string;
+        };
+        Insert: {
+          answer_id: string;
+          created_at?: string;
+          generated_output?: Json[];
+          id?: string;
+          message_idx?: number;
+          message_type: Database["public"]["Enums"]["verified_message_types"];
+          org_id: number;
+          raw_text?: string;
+        };
+        Update: {
+          answer_id?: string;
+          created_at?: string;
+          generated_output?: Json[];
+          id?: string;
+          message_idx?: number;
+          message_type?: Database["public"]["Enums"]["verified_message_types"];
+          org_id?: number;
+          raw_text?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_verified_answer_messages_answer_id_fkey";
+            columns: ["answer_id"];
+            isOneToOne: false;
+            referencedRelation: "approval_answers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "public_verified_answer_messages_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_answers: {
+        Row: {
+          approved: boolean;
+          created_at: string;
+          description: string;
+          fnName: string;
+          generation_failed: boolean;
+          group_id: string;
+          id: string;
+          is_generating: boolean;
+          org_id: number;
+        };
+        Insert: {
+          approved?: boolean;
+          created_at?: string;
+          description?: string;
+          fnName?: string;
+          generation_failed?: boolean;
+          group_id: string;
+          id?: string;
+          is_generating?: boolean;
+          org_id: number;
+        };
+        Update: {
+          approved?: boolean;
+          created_at?: string;
+          description?: string;
+          fnName?: string;
+          generation_failed?: boolean;
+          group_id?: string;
+          id?: string;
+          is_generating?: boolean;
+          org_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_verified_answers_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "verified_answers_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "approval_answer_groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_questions: {
+        Row: {
+          answer_id: string;
+          created_at: string | null;
+          embedded_text: string;
+          embedding: number[];
+          id: string;
+          org_id: number;
+          primary_question: boolean;
+          text: string;
+          user_added: boolean;
+        };
+        Insert: {
+          answer_id: string;
+          created_at?: string | null;
+          embedded_text?: string;
+          embedding?: number[];
+          id?: string;
+          org_id: number;
+          primary_question?: boolean;
+          text?: string;
+          user_added?: boolean;
+        };
+        Update: {
+          answer_id?: string;
+          created_at?: string | null;
+          embedded_text?: string;
+          embedding?: number[];
+          id?: string;
+          org_id?: number;
+          primary_question?: boolean;
+          text?: string;
+          user_added?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_verified_questions_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "verified_questions_answer_id_fkey";
+            columns: ["answer_id"];
+            isOneToOne: false;
+            referencedRelation: "approval_answers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_variables: {
+        Row: {
+          consts: string[];
+          default: Json;
+          description: string;
+          id: string;
+          name: string;
+          org_id: number;
+          type: string;
+          typeName: string;
+        };
+        Insert: {
+          consts?: string[];
+          default?: Json;
+          description?: string;
+          id?: string;
+          name?: string;
+          org_id: number;
+          type?: string;
+          typeName?: string;
+        };
+        Update: {
+          consts?: string[];
+          default?: Json;
+          description?: string;
+          id?: string;
+          name?: string;
+          org_id?: number;
+          type?: string;
+          typeName?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_verified_variables_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       chat_messages: {
         Row: {
           chat_summary: string;
@@ -574,6 +791,7 @@ export type Database = {
           created_at: string | null;
           description: string;
           enable_data_analysis: boolean;
+          fallback_to_bertie: boolean;
           fun_loading_messages: boolean;
           id: number;
           join_link_id: string | null;
@@ -581,6 +799,7 @@ export type Database = {
           model: string;
           name: string;
           sanitize_urls_first: boolean;
+          yond_cassius: boolean;
         };
         Insert: {
           api_key?: string;
@@ -590,6 +809,7 @@ export type Database = {
           created_at?: string | null;
           description?: string;
           enable_data_analysis?: boolean;
+          fallback_to_bertie?: boolean;
           fun_loading_messages?: boolean;
           id?: number;
           join_link_id?: string | null;
@@ -597,6 +817,7 @@ export type Database = {
           model?: string;
           name?: string;
           sanitize_urls_first?: boolean;
+          yond_cassius?: boolean;
         };
         Update: {
           api_key?: string;
@@ -606,6 +827,7 @@ export type Database = {
           created_at?: string | null;
           description?: string;
           enable_data_analysis?: boolean;
+          fallback_to_bertie?: boolean;
           fun_loading_messages?: boolean;
           id?: number;
           join_link_id?: string | null;
@@ -613,6 +835,7 @@ export type Database = {
           model?: string;
           name?: string;
           sanitize_urls_first?: boolean;
+          yond_cassius?: boolean;
         };
         Relationships: [];
       };
@@ -729,9 +952,52 @@ export type Database = {
           section_title: string;
         }[];
       };
+      search_approved_answers_with_group_ranking: {
+        Args: {
+          query_embedding: number[];
+          similarity_threshold: number;
+          match_count: number;
+        };
+        Returns: {
+          answer_id: string;
+          text: string;
+          mean_similarity: number;
+        }[];
+      };
+      search_verified_answers: {
+        Args: {
+          query_embedding: number[];
+          similarity_threshold: number;
+          match_count: number;
+        };
+        Returns: {
+          id: string;
+          text: string;
+          similarity: number;
+        }[];
+      };
+      search_verified_answers_with_group_uuid: {
+        Args: {
+          query_embedding: number[];
+          _group_uuid: string;
+        };
+        Returns: {
+          id: string;
+          text: string;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
-      [_ in never]: never;
+      verified_message_types:
+        | "user"
+        | "routing"
+        | "filtering"
+        | "code"
+        | "text"
+        | "function"
+        | "suggestions"
+        | "error";
     };
     CompositeTypes: {
       [_ in never]: never;
