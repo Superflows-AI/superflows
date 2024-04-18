@@ -57,6 +57,26 @@ export type OrgJoinIsPaidFinetunedModelsFrontend = OrgJoinIsPaid & {
 export type HeadersInsert =
   Database["public"]["Tables"]["fixed_headers"]["Insert"];
 
+export type ApprovalQuestion =
+  Database["public"]["Tables"]["approval_questions"]["Row"];
+
+export type ApprovalAnswer =
+  Database["public"]["Tables"]["approval_answers"]["Row"];
+
+export type ApprovalAnswerMessage =
+  Database["public"]["Tables"]["approval_answer_messages"]["Row"];
+
+export type ApprovalVariable =
+  Database["public"]["Tables"]["approval_variables"]["Row"];
+
+export type ApprovalAnswerData = Pick<
+  ApprovalAnswer,
+  "approved" | "generation_failed" | "is_generating"
+> & {
+  approval_questions: Pick<ApprovalQuestion, "text" | "primary_question">[];
+  approval_answer_messages: ApprovalAnswerMessage[];
+};
+
 export interface BertieGraphData {
   title: string | number;
   type: "line" | "bar" | "table";
