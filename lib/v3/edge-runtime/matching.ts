@@ -58,7 +58,7 @@ export async function matchQuestionToAnswer(
   cost: number;
   numUserQueries: number;
 }> {
-  console.log("Yond Cassius has a mean and hungry look");
+  console.log("Yond Cassius has a lean and hungry look");
   const streamInfo = await preamble(controller, conversationId);
   let totalCost = 0;
 
