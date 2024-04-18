@@ -26,6 +26,7 @@ import {
   HeaderRow,
   OrgJoinIsPaidFinetunedModels,
 } from "../../../lib/types";
+import { matchQuestionToAnswer } from "../../../lib/v3/edge-runtime/matching";
 
 export const config = {
   runtime: "edge",
@@ -140,7 +141,7 @@ export default async function handler(req: NextRequest) {
       const authRes = await serviceLevelSupabase
         .from("organizations")
         .select(
-          "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled,fun_loading_messages,enable_data_analysis, is_paid(is_premium), finetuned_models(openai_name)",
+          "id,name,api_key,description,model,sanitize_urls_first,language,chat_to_docs_enabled,chatbot_instructions,bertie_enabled,fun_loading_messages,enable_data_analysis,yond_cassius,fallback_to_bertie, is_paid(is_premium), finetuned_models(openai_name)",
         )
         .eq("api_key", orgApiKey);
       if (authRes.error) throw new Error(authRes.error.message);
@@ -475,7 +476,12 @@ export default async function handler(req: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         // Ask Angela or Dottie for the answer
-        const aiToUse = org!.bertie_enabled ? Bertie : Angela;
+        const aiToUse = org!.yond_cassius
+          ? matchQuestionToAnswer
+          : org!.bertie_enabled
+          ? Bertie
+          : Angela;
+        const startTime = Date.now();
         const {
           nonSystemMessages: allMessages,
           cost,
@@ -499,6 +505,7 @@ export default async function handler(req: NextRequest) {
               language,
               currentHost,
             );
+        console.log(`Total generation time: ${Date.now() - startTime}ms`);
         if (redis && requestData.conversation_id) await redis.del(convMutexKey);
         // If any of the last message's LLM-derived values are set, update it in the DB
         const userMessage = allMessages[previousMessages.length - 1];
