@@ -229,13 +229,49 @@ export function parseGeneratedCode(
   return { code };
 }
 
-export function stripBasicTypescriptTypes(jsCodeString: string): string {
-  // Remove type definitions like `: string`, `: number`, `: any` etc.
-  jsCodeString = jsCodeString.replace(/:\s*\w*(?=\s*=\s*)/g, "");
+export function stripBasicTypescriptTypes(
+  jsCodeString: string,
+  definedTypeNames?: string[],
+): string {
+  /** Remove type definitions like `: string`, `: number`, `: any` etc. **/
+  definedTypeNames = definedTypeNames ?? [];
 
   // Remove interface definitions
+  const interfaces = jsCodeString.match(
+    /(?:export )?interface\s+(\w+)\s*\{[^}]+}/g,
+  );
+  if (interfaces) {
+    definedTypeNames.push(
+      // ...interfaces.map((i) => i.match(/(?:export )?interface\s+(\w+)/)[1]),
+      ...interfaces.map((i) => i.match(/(?:export )?interface\s+(\w+)/)![1]),
+    );
+  }
   jsCodeString = jsCodeString.replace(
-    /(export )?interface\s+\w+\s*\{[^}]+\}/g,
+    /(?:export )?interface\s+(\w+)\s*\{[^}]+}/g,
+    "",
+  );
+
+  // Remove type definitions
+  const types = jsCodeString.match(/(?:export )?type\s*(\w+)\s*=\s*\w+;?/g);
+  if (types) {
+    definedTypeNames.push(
+      // ...types.map((i) => i.match(/(?:export )?type\s*(\w+)\s*=\s*\w+;?/)[1]),
+      ...types.map((i) => i.match(/(?:export )?type\s*(\w+)\s*=\s*\w+;?/)![1]),
+    );
+  }
+  jsCodeString = jsCodeString.replace(/(export )?type\s*\w+\s*=\s*\w+;?/g, "");
+
+  jsCodeString = jsCodeString.replace(
+    new RegExp(
+      `: (${
+        definedTypeNames.length > 0
+          ? definedTypeNames
+              .map((t) => t.replace(/([\[|(){])/g, "\\$1") + "\\b")
+              .join("|") + "|"
+          : ""
+      }any\[]|string\[]|number\[]|null\[]|boolean\[]|object\[]|any|string|number|null|boolean|object|Record<string,\s*(any|string|number|null|boolean|object)>)(\[])?`,
+      "g",
+    ),
     "",
   );
 

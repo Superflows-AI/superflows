@@ -241,7 +241,7 @@ updateDealsValueBy25Percent("Ava");`;
       { name: "update_deal" },
     ]);
     expect(out).toStrictEqual({
-      code: `async function updateDealsValueBy25Percent(rep: string) {
+      code: `async function updateDealsValueBy25Percent(rep) {
   try {
 
     const deals = await searchDeals({ rep: rep });
@@ -735,7 +735,7 @@ updateDeals();`;
   return new Date();
 }
 
-function multiplyBy25Percent(num: number) {
+function multiplyBy25Percent(num) {
   return num * 1.25;
 }
 
