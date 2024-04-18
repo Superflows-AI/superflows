@@ -46,8 +46,8 @@ export async function getLLMResponse(
   const response = await Promise.race([
     fetch(url, options),
     (async () => {
-      // Time out after 45s
-      await new Promise((resolve) => setTimeout(resolve, 45000));
+      // Time out after 90s
+      await new Promise((resolve) => setTimeout(resolve, 90000));
       return new Response(
         JSON.stringify({ error: { message: "Timed out!" } }),
         {
@@ -368,6 +368,7 @@ export function getSecondaryModel(mainModel: string): string {
 
 export async function queryEmbedding(
   textToEmbed: string | string[],
+  model: string = "text-embedding-ada-002",
 ): Promise<number[][]> {
   const response = await fetch("https://api.openai.com/v1/embeddings", {
     method: "POST",
@@ -376,7 +377,7 @@ export async function queryEmbedding(
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "text-embedding-ada-002",
+      model,
       input: textToEmbed,
     }),
   });
