@@ -389,3 +389,8 @@ to authenticated
 using ((auth.uid() IN ( SELECT profiles.id
    FROM profiles
   WHERE (profiles.org_id = approval_variables.org_id))));
+
+
+alter table "public"."usage" drop constraint "usage_org_id_fkey";
+alter table "public"."usage" add constraint "public_usage_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE not valid;
+alter table "public"."usage" validate constraint "public_usage_org_id_fkey";
