@@ -5,8 +5,6 @@ import {
   Organization,
 } from "../../types";
 import { Database } from "../../database.types";
-import { exponentialRetryWrapper } from "../../utils";
-import { getLLMResponse } from "../../queryLLM";
 import { FunctionMessage } from "../../models";
 import {
   GraphMessage,
@@ -554,7 +552,7 @@ export function convertToGraphData(
   return [functionMessage, ...plotMessages];
 }
 
-function checkPlotData(data: any): boolean {
+export function checkPlotData(data: any): boolean {
   // data must be an object and not an array
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     console.log("checkPlotData: Data is not an object", data);

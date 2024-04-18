@@ -613,3 +613,17 @@ export function capitaliseFirstLetter(text: string): string {
     return m.toUpperCase();
   });
 }
+
+export function reformatFromFuse<Obj>(
+  data: { item: Obj; refIndex: number; score?: number }[],
+): Obj[] {
+  return data.map((item) => {
+    return { ...item.item };
+  });
+}
+
+export function logPrompt(prompt: ChatGPTMessage[]): void {
+  console.log(
+    prompt.map((p) => `${p.role.toUpperCase()}\n${p.content}`).join("\n\n"),
+  );
+}

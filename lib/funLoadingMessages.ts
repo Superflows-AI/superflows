@@ -1,6 +1,6 @@
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
-const funLoadingMessages = [
+export const funLoadingMessages = [
   "Forming figures fairly fast",
   "Chiseling out charts",
   "Assembling amazing analytics",

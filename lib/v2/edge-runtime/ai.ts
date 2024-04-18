@@ -83,13 +83,17 @@ const completionOptions: ChatGPTParams = {
 
 const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
 
-function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]): {
+export function hideLongGraphOutputs(
+  chatGptPrompt: ChatGPTMessage[],
+  fnNames?: string[],
+): {
   chatGptPrompt: ChatGPTMessage[];
   graphDataHidden: boolean;
 } {
+  const names = fnNames ?? [dataAnalysisActionName];
   let graphDataHidden = false;
   const out = chatGptPrompt.map((m) => {
-    if (m.role === "function" && m.name === dataAnalysisActionName) {
+    if (m.role === "function" && names.includes(m.name)) {
       if (
         // No newlines in our minified JSONs
         !m.content.includes("\n") &&
@@ -105,6 +109,9 @@ function hideLongGraphOutputs(chatGptPrompt: ChatGPTMessage[]): {
           "<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>";
         graphDataHidden = true;
         m.content = JSON.stringify(graphData);
+      } else if (getTokenCount([m]) > 500) {
+        // Hiding logs
+        m.content = "<cut for brevity - DO NOT pretend to know the logs>";
       }
     }
     return m;
@@ -784,7 +791,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   return { nonSystemMessages: chatHistory, cost: totalCost, numUserQueries };
 }
 
-async function preamble(
+export async function preamble(
   controller: ReadableStreamDefaultController,
   conversationId: number,
 ) {
