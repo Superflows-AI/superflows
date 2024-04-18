@@ -124,7 +124,6 @@ CREATE UNIQUE INDEX verified_answers_pkey ON public.approval_questions USING btr
 CREATE UNIQUE INDEX verified_groups_pkey ON public.approval_answers USING btree (id);
 CREATE UNIQUE INDEX verified_question_groups_pkey ON public.approval_answer_groups USING btree (id);
 CREATE UNIQUE INDEX verified_variables_pkey ON public.approval_variables USING btree (id);
-CREATE UNIQUE INDEX unique_approval_answer_fnname_per_org ON public.approval_answers USING btree (org_id, "fnName");
 
 alter table "public"."approval_answer_groups" add constraint "verified_question_groups_pkey" PRIMARY KEY using index "verified_question_groups_pkey";
 alter table "public"."approval_answer_groups" add constraint "public_verified_answer_groups_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
@@ -142,7 +141,6 @@ alter table "public"."approval_answers" add constraint "public_verified_answers_
 alter table "public"."approval_answers" validate constraint "public_verified_answers_org_id_fkey";
 alter table "public"."approval_answers" add constraint "verified_answers_group_id_fkey" FOREIGN KEY (group_id) REFERENCES approval_answer_groups(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
 alter table "public"."approval_answers" validate constraint "verified_answers_group_id_fkey";
-alter table "public"."approval_answers" add constraint "unique_approval_answer_fnname_per_org" UNIQUE using index "unique_approval_answer_fnname_per_org";
 
 alter table "public"."approval_questions" add constraint "verified_answers_pkey" PRIMARY KEY using index "verified_answers_pkey";
 alter table "public"."approval_questions" add constraint "public_verified_questions_org_id_fkey" FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
