@@ -108,7 +108,6 @@ export function checkCodeExecutionOutput(
 
 export function convertToGraphData(
   executeCodeResponse: ExecuteCode2Item[],
-  // ): (GraphMessage | FunctionMessage | ErrorMessage | AssistantMessage)[] {
 ): (GraphMessage | FunctionMessage | ErrorMessage)[] {
   if (executeCodeResponse.length === 0) {
     throw new Error("No logs, errors or API calls from code execution");
@@ -130,22 +129,6 @@ export function convertToGraphData(
         )
         .join("\n"),
   };
-  // If you want log messages shown to users
-  // let functionMessage: FunctionMessage = {
-  //   role: "function",
-  //   name: "logs",
-  //   content:
-  //     `Logs from code execution:\n` +
-  //     executeCodeResponse
-  //       .filter((m) => m.type === "call")
-  //       .map(
-  //         (m) =>
-  //           `${m.args.name}(${Object.entries(m.args.params)
-  //             .map(([key, value]) => `${key}=${value}`)
-  //             .join(", ")})`,
-  //       )
-  //       .join("\n"),
-  // };
 
   const errorMessages: ErrorMessage[] = executeCodeResponse
     .filter((m) => m.type === "error")
@@ -204,15 +187,5 @@ export function convertToGraphData(
         : "\nCode executed successfully";
   }
 
-  // const assistantMessage: AssistantMessage = {
-  //   role: "assistant",
-  //   content: executeCodeResponse
-  //     .filter((m) => m.type === "log")
-  //     .map((m) => `${m.args.message}`)
-  //     .slice(0, 5)
-  //     .join("\n"),
-  // };
-
-  // return [functionMessage, ...errorMessages, ...plotMessages, assistantMessage];
   return [functionMessage, ...errorMessages, ...plotMessages];
 }
