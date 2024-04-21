@@ -79,7 +79,7 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
         let { data: allQuestionsFromDB, error } = await supabase
           .from("approval_questions")
           .select(
-            "text, approval_answers(id,group_id,approved,is_generating,generation_failed,approval_answer_groups(name))",
+            "text, approval_answers(id,group_id,approved,is_generating,generation_failed,approval_answer_groups(name),approval_answer_messages(id))",
           )
           .match({ primary_question: true, org_id: profile.org_id });
         if (error) throw new Error(error.message);
@@ -193,28 +193,92 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
                 {showQuestionGroup &&
                   showQuestionGroup[questionGroup.id] &&
                   questionGroup.questions.map((item, i) => (
-                    <Link
-                      key={i}
-                      href={`/approval/${item.approval_answers.id}`}
-                      className={classNames(
-                        "text-little flex items-center justify-between px-2.5 py-1 text-gray-200 border-b border-b-gray-500 hover:bg-gray-750",
-                        i % 2 === 0 ? "" : "",
-                        i === 0 && "border-t border-t-gray-500",
-                      )}
-                    >
-                      <QuestionText questionText={item.text} />
-                      <div className={"flex flex-row gap-x-2"}>
-                        {item.approval_answers.generation_failed ? (
-                          <XCircleIcon className="h-5 w-5 text-red-500" />
-                        ) : item.approval_answers.approved ? (
-                          <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                        ) : item.approval_answers.is_generating ? (
-                          <LoadingSpinner classes={"h-5 w-5 text-gray-400"} />
-                        ) : (
-                          <p className="text-xs text-gray-400">Ready</p>
+                    <div key={i} className="relative">
+                      <Link
+                        href={`/approval/${item.approval_answers.id}`}
+                        className={classNames(
+                          "text-little flex items-center justify-between px-2.5 py-1 text-gray-200 border-b border-b-gray-500 hover:bg-gray-750",
+                          i % 2 === 0 ? "" : "",
+                          i === 0 && "border-t border-t-gray-500",
                         )}
-                      </div>
-                    </Link>
+                      >
+                        <QuestionText questionText={item.text} />
+                        <div className={"flex flex-row pl-12"}>
+                          {item.approval_answers.generation_failed ? (
+                            <XCircleIcon className="h-5 w-5 text-red-500" />
+                          ) : item.approval_answers.is_generating ? (
+                            <LoadingSpinner classes={"h-5 w-5 text-gray-400"} />
+                          ) : item.approval_answers.approval_answer_messages
+                              .length === 0 ? undefined : item.approval_answers
+                              .approved ? (
+                            <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <p className="text-xs text-gray-400">Ready</p>
+                          )}
+                        </div>
+                      </Link>
+                      {item.approval_answers.approval_answer_messages.length ===
+                        0 &&
+                        !item.approval_answers.is_generating && (
+                          <button
+                            className="absolute right-1 inset-y-2 my-auto bg-gray-800 text-gray-300 text-xs py-0.5 px-0.5 rounded border border-gray-500 hover:bg-gray-700 hover:border-gray-400"
+                            onClick={async (e) => {
+                              // Update the question to be generating
+                              setGroupsOfQuestions((prev) => {
+                                const newGroups = JSON.parse(
+                                  JSON.stringify(prev),
+                                );
+                                const groupIdx = newGroups.findIndex(
+                                  (g: any) => g.id === questionGroup.id,
+                                );
+                                newGroups[groupIdx].questions[i] = {
+                                  ...item,
+                                  approval_answers: {
+                                    ...item.approval_answers,
+                                    is_generating: true,
+                                  },
+                                };
+                                return newGroups;
+                              });
+                              // Grab API key from localstorage
+                              const userApiKey =
+                                localStorage.getItem("userApiKey");
+                              if (!userApiKey) {
+                                // TODO: Handle this much better
+                                console.error("No userApiKey in localstorage!");
+                                return;
+                              }
+                              // Generate the answer
+                              const res = await fetch(
+                                "/api/v3/generate-answer-offline",
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    answer_id: item.approval_answers.id,
+                                    user_api_key: userApiKey,
+                                  }),
+                                },
+                              );
+                              if (!res.ok) {
+                                try {
+                                  const resJson = await res.json();
+                                  console.error("ERROR:", resJson);
+                                } catch (e) {
+                                  console.error(
+                                    `ERROR: ${res.status} ${res.statusText}`,
+                                  );
+                                }
+                                return;
+                              }
+                            }}
+                          >
+                            Generate
+                          </button>
+                        )}
+                    </div>
                   ))}
 
                 {/*<div*/}
