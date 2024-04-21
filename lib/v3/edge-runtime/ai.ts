@@ -12,12 +12,7 @@ import {
   ExecuteCode2Item,
   OrgJoinIsPaidFinetunedModels,
 } from "../../types";
-import {
-  exponentialRetryWrapper,
-  logPrompt,
-  openAiCost,
-  snakeToCamel,
-} from "../../utils";
+import { exponentialRetryWrapper, logPrompt, snakeToCamel } from "../../utils";
 import { MAX_TOKENS_OUT } from "../../consts";
 import { createClient } from "@supabase/supabase-js";
 import { Database, Json } from "../../database.types";
