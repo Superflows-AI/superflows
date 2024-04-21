@@ -139,13 +139,6 @@ export default async function handler(req: NextRequest) {
         }),
         { status: 403, headers },
       );
-    } else if (!org.yond_cassius) {
-      return new Response(
-        JSON.stringify({
-          error: "Approval not enabled, so this feature is not available",
-        }),
-        { status: 403, headers },
-      );
     }
 
     // Validate that the request body is of the correct format
