@@ -304,9 +304,9 @@ export async function matchQuestionToAnswer(
         }
       } else if (m.message_type === "text") {
         // Regenerate text manually
-        let nonSystemMessages: ChatGPTMessage[] = chatHistory.slice(
-          Math.max(0, chatHistory.length - 7),
-        );
+        let nonSystemMessages: ChatGPTMessage[] = chatHistory
+          .slice(Math.max(0, chatHistory.length - 7))
+          .map(MessageInclSummaryToGPT);
         let graphCut: boolean;
         ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
           hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
