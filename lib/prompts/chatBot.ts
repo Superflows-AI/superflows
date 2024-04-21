@@ -289,10 +289,7 @@ export function getIntroText(orgInfo: { name: string; description: string }) {
 
 function systemPromptWithActions(
   userDescriptionSection: string,
-  orgInfo: Pick<
-    Organization,
-    "name" | "description" | "chatbot_instructions" | "enable_data_analysis"
-  >,
+  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   numberedActions: string,
   language: string | null,
   includeIdUrlLine: boolean,
@@ -302,50 +299,45 @@ function systemPromptWithActions(
     content: `${getIntroText(orgInfo)} Your purpose is to assist users ${
       orgInfo.name ? `in ${orgInfo.name} ` : ""
     }via function calls
-${orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""}
-Seek user assistance when necessary or more information is required
-
-Avoid directing users, instead complete tasks by outputting "Commands"
-${userDescriptionSection}
+${
+  orgInfo.chatbot_instructions ? `\n${orgInfo.chatbot_instructions}\n` : ""
+}${userDescriptionSection}
 Today's date is ${new Date().toISOString().split("T")[0]}
 
-You MUST exclusively use the functions listed below in the "commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
+You MUST exclusively use the functions listed below in the "Commands" output. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
 These are formatted with {{NAME}}: {{DESCRIPTION}}. PARAMETERS: {{PARAMETERS}}. Each parameter is formatted like: "- {{NAME}} ({{DATATYPE}}: [{{POSSIBLE_VALUES}}]): {{DESCRIPTION}}. {{"REQUIRED" if parameter required}}"
-${numberedActions}
+\`\`\`
+${numberedActions}\`\`\`
 ${
   includeIdUrlLine
-    ? "\nIDs and URLs from function calls have been replaced by variables IDX or URLY (where X and Y are numbers). These variables are filled in with the real values, so use IDX or URLY as you would use the URLs and IDs they represent\n"
+    ? "\nIDs and URLs from function calls have been replaced by variables IDX or URLY (where X and Y are numbers). Use IDX or URLY as you would use the URLs and IDs they represent\n"
     : ""
 }
-To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
-
-Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
-
-Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses
-${
-  orgInfo.enable_data_analysis
-    ? `\nIf a function response has been 'cut as it is too large', YOU MUST call ${dataAnalysisActionName}. UNDER NO CIRCUMSTANCES answer the user's question - you have no data.\n`
-    : ""
-}
-Think and talk to the user in ${language ?? "the same language they write in"}${
+RULES:
+1. Seek user assistance when necessary or more information is required
+2. Avoid directing users, instead complete tasks by outputting "Commands"
+3. To use the output from a previous command in a later command, stop outputting commands - don't output the later command. If you output a command, you will be prompted again once it returns
+4. Aim to complete the task in the smallest number of steps possible. Be extremely concise in your responses 
+5. Don't copy the function outputs in full when explaining to the user, instead summarise it as concisely as you can - the user can ask follow-ups if they need more information
+6. Think and talk to the user in ${
+      language ?? "the same language they write in"
+    }${
       language !== "English"
-        ? ". This should ONLY affect the Reasoning & Tell user outputs. NOT the commands. And DO NOT translate the keywords: Reasoning, Plan, Tell user or Commands."
+        ? ". This should ONLY affect the 'Tell user' output. NOT the reasoning or commands. And DO NOT translate the keywords: Reasoning, Tell user or Commands."
         : ""
     }
-
-Think step-by-step. Respond in the format below. Start with your reasoning, your plan, anything to tell the user, then any commands (you can call multiple, separate with a newline). Each section is optional - only output it if you need to. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
-
-Reasoning: reason about how to achieve the user's request. Be concise. The user sees your reasoning as your 'thoughts'
-
-Plan:
-- short bulleted
-- list that conveys
-- long-term plan
+7. Respond in the format below. Start with your reasoning (a numbered list), anything to tell the user, then any commands (you can call multiple, separate with a newline). Each section is optional - only output it if you need to. THIS IS VERY IMPORTANT! DO NOT FORGET THIS!
+\`\`\`
+Reasoning:
+1. Think step-by-step about how to achieve the user's request
+2. Does this require plotting, calculations or looping through data? If so, use ${dataAnalysisActionName}
+3. This is only for your benefit - it is hidden from the user 
 
 Tell user: tell the user something. If you need to ask the user a question, do so here.
 
 Commands:
 FUNCTION_1(PARAM_1=VALUE_1, PARAM_2=VALUE_2, ...)
-FUNCTION_2(PARAM_3=VALUE_3 ...)`,
+FUNCTION_2(PARAM_3=VALUE_3 ...)
+\`\`\``,
   };
 }

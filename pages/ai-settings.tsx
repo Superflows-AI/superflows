@@ -28,9 +28,14 @@ let allLLMsBase: SelectBoxOption[] = [
     description: "Speed: 2.5/3 | Accuracy: 2/3",
   },
   {
-    id: "gpt-4-0613",
+    id: "gpt-4",
     name: "GPT-4",
-    description: "Speed: 1/3 | Accuracy: 3/3",
+    description: "Speed: 2/3 | Accuracy: 3/3",
+  },
+  {
+    id: "gpt-4-turbo",
+    name: "GPT-4 Turbo",
+    description: "Speed: 2.5/3 | Accuracy: 2.5/3",
   },
   {
     id: "gpt-3.5-turbo-0125",

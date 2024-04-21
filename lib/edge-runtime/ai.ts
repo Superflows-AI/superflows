@@ -253,7 +253,7 @@ export async function Angela( // Good ol' Angela
   let nonSystemMessages = [...previousMessages];
   const model = org.model;
   // GPT4 can deal with longer context window better
-  const maxConvLength = model === "gpt-4-0613" ? 20 : 14;
+  const maxConvLength = model === "gpt-4" ? 9 : 5;
   let mostRecentParsedOutput = {
     reasoning: "",
     plan: "",
