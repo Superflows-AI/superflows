@@ -111,6 +111,7 @@ export function openAiCost(
         : model.includes("gpt-3.5")
         ? 0.0005
         : 0.03;
+      break;
     case "out": {
       costPerThousand = model.startsWith("ft:gpt-3.5-turbo-0613")
         ? 0.006
