@@ -63,8 +63,8 @@ function convertIsoToHumanReadable(dateStr: ISODate): string`
 
 /**
 Plots data for the user.
-Users can toggle to view data in a table.
-DO NOT call plot() more than two times
+Users can toggle line or bar charts to view data in a table.
+DO NOT call plot() more than twice
 BE CAREFUL: you cannot plot multiple lines on one chart - only 1 line per line chart 
 **/
 function plot(title: string,
@@ -90,8 +90,8 @@ ${Array.from(new Set(types.map((t) => t.typeDef))).join("\n")}
 5. Use await NOT .then()
 6. DO NOT call async functions in a loop, UNLESS wrapped by Promise.all() or the loop is short (5 or fewer)
 7. If the user's request is impossible, throw new Error("<write message>")
-8. Use console.log() for individual figures (e.g. total over plotted time period) or to explain what data was used to generate a plot
-9. DO NOT console.log() lots of text. DO NOT repeat plot data
+8. Use console.log() for individual numbers (e.g. total summed over plotted time period)
+9. DO NOT console.log() plot data or lots of text
 ${
   args.org.chatbot_instructions
     ? [
@@ -107,15 +107,19 @@ ${
 <format>
 <plan>
 1. Think step-by-step: consider what the most helpful possible answer would include
-2. break down the function into smaller parts
+2. break down the function
 3. consider which <functions></functions> you will use
-4. think about how you will set parameters you call them with
-5. consider how to handle errors
-6. consider what to console.log() - briefly explain what the plots show. DO NOT repeat plot data
+4. think carefully about setting parameters in calls to <functions></functions>
+5. consider whether you'll need to filter or postprocess data once you've retrieved it
+5. consider how to handle edge cases e.g. array of length 0 vs 1 vs many 
+6. consider what to console.log() - explain the high-level approach taken and how figures were calculated. DO NOT repeat plot data
 </plan>
 <code>
 async function helpAnswer(${types.map((m) => `${m.name}`).join(", ")}) {
 // Write code here...
+
+// Explain code, example:
+// console.log("The average X by month was calculated by filtering out all Y values, grouping X's by month and calculating the average for each month")
 }
 </code>
 </format>`,
