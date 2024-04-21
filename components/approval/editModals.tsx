@@ -339,17 +339,20 @@ export function EditCodeModal(props: {
       open={props.open}
       setOpen={props.setOpen}
       classNames={classNames(
-        showFunctions ? "sm:my-2 lg:w-screen" : "sm:my-2 max-w-5xl",
+        showFunctions ? "lg:w-screen" : "max-w-5xl",
+        "sm:my-2 lg:my-2",
       )}
     >
-      <div className="w-full flex flex-col">
+      <div className="relative w-full flex flex-col">
         <div
-          className={"flex flex-row gap-x-2 text-gray-300 place-items-center"}
+          className={
+            "mb-2 flex flex-row gap-x-2 text-gray-300 place-items-center w-fit"
+          }
         >
           <CodeBracketIcon className={"h-6 w-6"} />
           <h1 className="text-lg text-gray-300">Edit Code</h1>
         </div>
-        <div className="flex w-ful justify-center mb-0.5 text-gray-300">
+        <div className="absolute top-0 inset-x-32 flex justify-center mb-0.5 text-lg text-gray-300">
           <QuestionText
             questionText={props.answer.approval_questions[0]?.text}
           />
@@ -403,10 +406,9 @@ export function EditCodeModal(props: {
         <div className="grid grid-cols-2 gap-x-2">
           {showFunctions && (
             <div className="text-little text-gray-300">
-              Functions:
               <div
                 className={classNames(
-                  "rounded-md bg-gray-850 px-3 py-2 font-mono text-sm h-[500px] overflow-y-auto text-gray-200",
+                  "rounded-md bg-gray-700 px-3 py-2 font-mono text-sm h-[500px] overflow-y-auto text-gray-100",
                   !softWrap
                     ? "overflow-x-auto whitespace-pre"
                     : "whitespace-pre-line",
@@ -421,22 +423,11 @@ export function EditCodeModal(props: {
             </div>
           )}
           <div
-            className={classNames(showFunctions ? "" : "col-span-2", "w-full")}
+            className={classNames(
+              showFunctions ? "" : "col-span-2",
+              "w-full relative",
+            )}
           >
-            <div className="w-full flex justify-between">
-              <p className={"text-little text-gray-200"}>Code:</p>
-              <button
-                onClick={() => setSoftWrap(!softWrap)}
-                className={classNames(
-                  softWrap
-                    ? "bg-gray-850 hover:bg-gray-900"
-                    : "bg-gray-750 hover:bg-gray-700",
-                  "rounded p-0.5 border border-gray-600 mb-0.5",
-                )}
-              >
-                <Bars3BottomLeftIcon className="h-4 w-4 text-gray-500" />
-              </button>
-            </div>
             <AutoGrowingTextArea
               className={classNames(
                 "rounded font-mono text-sm w-full",
@@ -452,6 +443,17 @@ export function EditCodeModal(props: {
                 );
               }}
             />
+            <button
+              onClick={() => setSoftWrap(!softWrap)}
+              className={classNames(
+                softWrap
+                  ? "bg-gray-100 hover:bg-gray-200"
+                  : "bg-gray-200 hover:bg-gray-300",
+                "absolute top-1 right-5 rounded p-0.5 border border-gray-300 mb-0.5",
+              )}
+            >
+              <Bars3BottomLeftIcon className="h-4 w-4 text-gray-500" />
+            </button>
           </div>
         </div>
         {shownError && (

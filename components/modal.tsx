@@ -48,7 +48,7 @@ export default function Modal(props: {
                 )}
               >
                 <button
-                  className="absolute top-2.5 right-2.5 bg-transparent"
+                  className="z-10 absolute top-2.5 right-2.5 bg-transparent"
                   onClick={() => props.setOpen(false)}
                 >
                   <XMarkIcon className="h-8 w-8 text-gray-300 rounded-md hover:bg-gray-900 p-1 transition" />
