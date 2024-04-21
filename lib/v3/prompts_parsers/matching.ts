@@ -49,6 +49,12 @@ export function getMatchingPromptv3(args: {
         .flat(),
     ),
   );
+  // If variables include fromDate (means a duration is involved), include today's date
+  if (variableNamesToInclude.includes("fromDate")) {
+    constsToInclude.push(
+      `const today: ISODate = "${new Date().toISOString().split("T")[0]}"`,
+    );
+  }
   console.log("Consts to include", constsToInclude);
   // const examples = [
   //   ...(noVariables ? examplesNoVariables : examplesWithVariables),
@@ -228,15 +234,26 @@ export function parseMatchingOutput(
       .replace(/'/g, '"')
       // Replace any consts with their values
       .replace(/"\w+?":\s*([^"]+?)[},]/g, (m, val) => {
-        const matchingConsts = variables
-          .map((v) =>
-            v.consts.map((c) => ({
-              name: c.slice(6).split(":")[0],
-              value: c.split(";")[0].split("=")[1],
-            })),
-          )
-          .flat()
-          .filter((c) => c.name === val);
+        const matchingConsts: { name: string; value: string }[] = (
+          variables
+            .map((v) =>
+              v.consts.map((c) => {
+                const match = c.match(
+                  /(?:const|let|var) (\w+)\s*(?::\s*\w+\s*)?=\s*(.*?)(;$|$)/,
+                );
+                if (!match) {
+                  console.error("Incorrectly formatted constant string:", c);
+                  return null;
+                }
+                return {
+                  name: match[1],
+                  value: match[2],
+                };
+              }),
+            )
+            .flat()
+            .filter(Boolean) as { name: string; value: string }[]
+        ).filter((c) => c.name === val);
         console.log("Matching consts", matchingConsts);
         if (matchingConsts.length === 0 || matchingConsts.length > 1) {
           return m;
