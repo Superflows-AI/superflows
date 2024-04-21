@@ -21,7 +21,12 @@ import {
   removeOldestFunctionCalls,
   sortObjectToArray,
 } from "./utils";
-import { exponentialRetryWrapper, getTokenCount, openAiCost } from "../utils";
+import {
+  exponentialRetryWrapper,
+  getTokenCount,
+  logPrompt,
+  openAiCost,
+} from "../utils";
 import { getLLMResponse, streamLLMResponse } from "../queryLLM";
 import { MAX_TOKENS_OUT } from "../consts";
 import { FunctionCall, parseOutput } from "@superflows/chat-ui-react";
@@ -359,6 +364,7 @@ export async function Angela( // Good ol' Angela
 
         const promptInputCost = openAiCost(chatGptPrompt, "in", model);
         console.log("GPT input cost:", promptInputCost);
+        logPrompt(chatGptPrompt.slice(1));
         totalCost += promptInputCost;
 
         const res = await exponentialRetryWrapper(
