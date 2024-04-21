@@ -65,4 +65,34 @@ describe("parseMatchingOutput", () => {
       tellUser: "",
     });
   });
+  it("Real world, no type in const defn", () => {
+    const text = `<thinking>
+1. The user is requesting to list all products across categories A, B, C, D, and E.
+2. This is a single request.
+3. The function listProductsByCategory can achieve this by passing in all categories.
+4. The parameter categoryList should be set to the allCategories constant, which contains all category names.
+</thinking>
+
+<functionCall>listProductsByCategory({categoryList: allCategories}`;
+    const variables = [
+      {
+        id: "1",
+        name: "categoryList",
+        type: "string",
+        typeName: "string",
+        default: '["A", "B", "C"]',
+        consts: ['const allCategories = ["A","B","C","D","E"];'],
+        description: "List of categories",
+        org_id: 1,
+      },
+    ];
+    const out = parseMatchingOutput(text, variables);
+    expect(out).toEqual({
+      functionName: "listProductsByCategory",
+      variables: {
+        categoryList: ["A", "B", "C", "D", "E"],
+      },
+      tellUser: "",
+    });
+  });
 });
