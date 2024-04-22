@@ -957,7 +957,7 @@ export type Database = {
           query_embedding: number[];
           similarity_threshold: number;
           match_count: number;
-          org_id: number;
+          _org_id: number;
         };
         Returns: {
           answer_id: string;

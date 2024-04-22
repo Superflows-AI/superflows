@@ -100,7 +100,7 @@ export async function matchQuestionToAnswer(
       query_embedding: embedding,
       similarity_threshold: -1,
       match_count: 6,
-      org_id: org.id,
+      _org_id: org.id,
     },
   );
   if (error) throw new Error("ERROR: " + error.message);
