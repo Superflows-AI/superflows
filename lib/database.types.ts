@@ -905,7 +905,7 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "usage_org_id_fkey";
+            foreignKeyName: "public_usage_org_id_fkey";
             columns: ["org_id"];
             isOneToOne: false;
             referencedRelation: "organizations";
@@ -957,34 +957,12 @@ export type Database = {
           query_embedding: number[];
           similarity_threshold: number;
           match_count: number;
+          org_id: number;
         };
         Returns: {
           answer_id: string;
           text: string;
           mean_similarity: number;
-        }[];
-      };
-      search_verified_answers: {
-        Args: {
-          query_embedding: number[];
-          similarity_threshold: number;
-          match_count: number;
-        };
-        Returns: {
-          id: string;
-          text: string;
-          similarity: number;
-        }[];
-      };
-      search_verified_answers_with_group_uuid: {
-        Args: {
-          query_embedding: number[];
-          _group_uuid: string;
-        };
-        Returns: {
-          id: string;
-          text: string;
-          similarity: number;
         }[];
       };
     };
