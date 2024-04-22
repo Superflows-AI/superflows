@@ -193,17 +193,17 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
                 {showQuestionGroup &&
                   showQuestionGroup[questionGroup.id] &&
                   questionGroup.questions.map((item, i) => (
-                    <div key={i} className="relative">
+                    <div key={i} className="relative group">
                       <Link
                         href={`/approval/${item.approval_answers.id}`}
                         className={classNames(
-                          "text-little flex items-center justify-between px-2.5 py-1 text-gray-200 border-b border-b-gray-500 hover:bg-gray-750",
+                          "text-little flex items-center justify-between px-2.5 py-1 text-gray-200 border-b border-b-gray-500 group-hover:bg-gray-750",
                           i % 2 === 0 ? "" : "",
                           i === 0 && "border-t border-t-gray-500",
                         )}
                       >
                         <QuestionText questionText={item.text} />
-                        <div className={"flex flex-row pl-12"}>
+                        <div className={"flex flex-row pl-10"}>
                           {item.approval_answers.generation_failed ? (
                             <XCircleIcon className="h-5 w-5 text-red-500" />
                           ) : item.approval_answers.is_generating ? (
@@ -220,63 +220,67 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
                       {item.approval_answers.approval_answer_messages.length ===
                         0 &&
                         !item.approval_answers.is_generating && (
-                          <button
-                            className="absolute right-1 inset-y-2 my-auto bg-gray-800 text-gray-300 text-xs py-0.5 px-0.5 rounded border border-gray-500 hover:bg-gray-700 hover:border-gray-400"
-                            onClick={async (e) => {
-                              // Update the question to be generating
-                              setGroupsOfQuestions((prev) => {
-                                const newGroups = JSON.parse(
-                                  JSON.stringify(prev),
-                                );
-                                const groupIdx = newGroups.findIndex(
-                                  (g: any) => g.id === questionGroup.id,
-                                );
-                                newGroups[groupIdx].questions[i] = {
-                                  ...item,
-                                  approval_answers: {
-                                    ...item.approval_answers,
-                                    is_generating: true,
-                                  },
-                                };
-                                return newGroups;
-                              });
-                              // Grab API key from localstorage
-                              const userApiKey =
-                                localStorage.getItem("userApiKey");
-                              if (!userApiKey) {
-                                // TODO: Handle this much better
-                                console.error("No userApiKey in localstorage!");
-                                return;
-                              }
-                              // Generate the answer
-                              const res = await fetch(
-                                "/api/v3/generate-answer-offline",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    answer_id: item.approval_answers.id,
-                                    user_api_key: userApiKey,
-                                  }),
-                                },
-                              );
-                              if (!res.ok) {
-                                try {
-                                  const resJson = await res.json();
-                                  console.error("ERROR:", resJson);
-                                } catch (e) {
-                                  console.error(
-                                    `ERROR: ${res.status} ${res.statusText}`,
+                          <div className="flex place-items-center absolute right-1 inset-y-2 my-auto bg-gray-800 group-hover:bg-gray-750">
+                            <button
+                              className=" text-gray-300 text-xs py-0.5 px-1 rounded border border-gray-500 hover:bg-gray-700 hover:border-gray-400"
+                              onClick={async (e) => {
+                                // Update the question to be generating
+                                setGroupsOfQuestions((prev) => {
+                                  const newGroups = JSON.parse(
+                                    JSON.stringify(prev),
                                   );
+                                  const groupIdx = newGroups.findIndex(
+                                    (g: any) => g.id === questionGroup.id,
+                                  );
+                                  newGroups[groupIdx].questions[i] = {
+                                    ...item,
+                                    approval_answers: {
+                                      ...item.approval_answers,
+                                      is_generating: true,
+                                    },
+                                  };
+                                  return newGroups;
+                                });
+                                // Grab API key from localstorage
+                                const userApiKey =
+                                  localStorage.getItem("userApiKey");
+                                if (!userApiKey) {
+                                  // TODO: Handle this much better
+                                  console.error(
+                                    "No userApiKey in localstorage!",
+                                  );
+                                  return;
                                 }
-                                return;
-                              }
-                            }}
-                          >
-                            Generate
-                          </button>
+                                // Generate the answer
+                                const res = await fetch(
+                                  "/api/v3/generate-answer-offline",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      answer_id: item.approval_answers.id,
+                                      user_api_key: userApiKey,
+                                    }),
+                                  },
+                                );
+                                if (!res.ok) {
+                                  try {
+                                    const resJson = await res.json();
+                                    console.error("ERROR:", resJson);
+                                  } catch (e) {
+                                    console.error(
+                                      `ERROR: ${res.status} ${res.statusText}`,
+                                    );
+                                  }
+                                  return;
+                                }
+                              }}
+                            >
+                              Generate
+                            </button>
+                          </div>
                         )}
                     </div>
                   ))}
