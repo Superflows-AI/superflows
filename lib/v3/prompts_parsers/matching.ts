@@ -45,7 +45,10 @@ export function getMatchingPromptv3(args: {
   const constsToInclude = Array.from(
     new Set(
       variableNamesToInclude
-        .map((v) => args.variables.find((t) => t.name === v)!.consts)
+        .map(
+          (variableName) =>
+            args.variables.find((t) => t.name === variableName)!.consts,
+        )
         .flat(),
     ),
   );
@@ -55,11 +58,6 @@ export function getMatchingPromptv3(args: {
       `const today: ISODate = "${new Date().toISOString().split("T")[0]}"`,
     );
   }
-  console.log("Consts to include", constsToInclude);
-  // const examples = [
-  //   ...(noVariables ? examplesNoVariables : examplesWithVariables),
-  // ];
-  // if (variableNamesToInclude.includes("months")) examples.push(monthsExample);
 
   console.log("Matches", args.matches);
   return [
@@ -91,8 +89,7 @@ ${facts.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 <thinking>
 1. Think step-by-step: what is the user requesting
 2. Has the user made multiple requests? Answer the first one you can answer
-3. Do any of the <functions></functions> achieve this?
-4. Consider parameter values
+3. Do any of the <functions></functions> achieve this, considering that parameter values must be set?
 </thinking>
 <functionCall>None|function1({param1: "value1", param2: "value2", ...})</functionCall>
 <tellUser>If functionCall is None, tell the user their request isn't within your capabilities</tellUser>

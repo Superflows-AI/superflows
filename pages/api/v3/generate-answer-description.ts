@@ -293,6 +293,7 @@ export default async function handler(req: NextRequest) {
         similarity_threshold: -1,
         // Really 6 since the best match to this answer is itself
         match_count: 7,
+        org_id: org.id,
       },
     );
     if (error) {
