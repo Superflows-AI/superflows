@@ -125,6 +125,7 @@ export function VerifyQuestionScreen(props: {
   const regenAnswer = useCallback(
     async (startFrom: number) => {
       /** Regenerate answer, streaming new messages in as they are generated. **/
+      setLoading(true);
       // Empty DB of messages which aren't needed any more
       const ids = allMessageData
         .filter(
@@ -153,7 +154,6 @@ export function VerifyQuestionScreen(props: {
       );
       setMessages(messagesToViz);
       setAllMessageData(messagesData);
-      setLoading(true);
 
       let responseJson: { error: string };
       const res = await fetch("/api/v3/generate-answer-offline", {
