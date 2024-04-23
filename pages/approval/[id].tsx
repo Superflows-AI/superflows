@@ -35,23 +35,20 @@ export default function App(props: {
   };
 }) {
   const { profile } = useProfile();
+  if (!profile) return <LoadingPage />;
   return (
     <>
       <Headers />
       <div className="min-h-screen bg-gray-800">
         <Navbar current={""} />
         <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto pb-10">
-          {!profile ? (
-            <LoadingPage />
-          ) : (
-            <div className="flex justify-between w-full">
-              <LeftHandSearchSidebar
-                answerId={props.data.id}
-                group_id={props.data.group_id}
-              />
-              <VerifyQuestionScreen {...props} />
-            </div>
-          )}
+          <div className="flex justify-between w-full">
+            <LeftHandSearchSidebar
+              answerId={props.data.id}
+              group_id={props.data.group_id}
+            />
+            <VerifyQuestionScreen {...props} />
+          </div>
         </div>
       </div>
     </>
