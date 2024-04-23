@@ -99,7 +99,8 @@ export async function matchQuestionToAnswer(
     {
       query_embedding: embedding,
       similarity_threshold: -1,
-      match_count: 6,
+      // Now using Opus, 8 is ok
+      match_count: 8,
       _org_id: org.id,
     },
   );
