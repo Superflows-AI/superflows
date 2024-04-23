@@ -94,6 +94,7 @@ function Dashboard() {
     },
     [fuse],
   );
+  if (!profile) return <LoadingPage />;
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -103,180 +104,173 @@ function Dashboard() {
       {/*  setGroupId={setAddActionGroupId}*/}
       {/*/>*/}
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-6xl pb-10 px-4 sm:px-6 lg:px-8">
-        {!profile ? (
-          <LoadingPage />
-        ) : (
-          <div className="mt-4 mb-2">
-            <div className="w-full flex px-32 mb-4">
-              <input
-                className="w-full bg-gray-50 text-little rounded mx-10 py-1.5"
-                value={searchText}
-                placeholder={"Search for a question"}
-                onChange={(e) => onSearchChange(e.target.value)}
-              />
-            </div>
-            <div className="h-[calc(100vh-10rem)] overflow-auto">
-              {groupsOfQuestions.map((questionGroup, idx) => (
-                <div
-                  key={idx}
-                  className={classNames(
-                    "mb-3",
-                    showQuestionGroup &&
-                      !showQuestionGroup[questionGroup.id] &&
-                      "border-b border-b-gray-500",
-                  )}
-                >
-                  <div className="w-full flex flex-row justify-between">
-                    <div className="flex flex-row gap-x-2 place-items-center">
-                      <h2 className="ml-4 pt-3 mb-1.5 text-xl text-gray-200">
-                        {questionGroup.name}
-                      </h2>
-                      <button
-                        className="pt-2 w-fit ml-auto text-gray-400"
-                        onClick={() =>
-                          setShowQuestionGroup({
-                            ...showQuestionGroup,
-                            [questionGroup.id]:
-                              !showQuestionGroup![questionGroup.id],
-                          })
-                        }
-                      >
-                        <ChevronDownIcon
-                          className={classNames(
-                            "h-5 w-5 text-gray-400 transition",
-                            showQuestionGroup &&
-                              !showQuestionGroup[questionGroup.id] &&
-                              "rotate-90",
-                          )}
-                        />
-                      </button>
-                    </div>
-
-                    {showQuestionGroup &&
-                      showQuestionGroup[questionGroup.id] && (
-                        <div
-                          className={
-                            "flex place-items-end py-1 pr-1 text-sm text-gray-400"
-                          }
-                        >
-                          Approved
-                        </div>
-                      )}
-                  </div>
-                  {showQuestionGroup &&
-                    showQuestionGroup[questionGroup.id] &&
-                    questionGroup.questions.map((item, i) => (
-                      <div key={i} className="relative">
-                        <Link
-                          href={`/approval/${item.approval_answers.id}`}
-                          className={classNames(
-                            "border-x border-x-gray-500 flex items-center justify-between px-4 py-1 bg-gray-850 text-gray-200 border-b border-b-gray-500 hover:bg-gray-800",
-                            i % 2 === 0 ? "" : "",
-                            i === 0 && "border-t border-t-gray-500",
-                          )}
-                        >
-                          <QuestionText questionText={item.text} />
-                          <div className={"flex flex-row gap-x-6"}>
-                            {item.approval_answers.generation_failed ? (
-                              <XCircleIcon
-                                className={"h-5 w-5 text-red-400 mr-2"}
-                              />
-                            ) : item.approval_answers.is_generating ? (
-                              <LoadingSpinner
-                                classes={"h-5 w-5 text-gray-400 mr-2"}
-                              />
-                            ) : item.approval_answers.approval_answer_messages
-                                .length === 0 ? undefined : item
-                                .approval_answers.approved ? (
-                              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                            ) : (
-                              <p className="text-xs text-gray-200">Ready</p>
-                            )}
-                          </div>
-                        </Link>
-                        {item.approval_answers.approval_answer_messages
-                          .length === 0 &&
-                          !item.approval_answers.is_generating && (
-                            <button
-                              className="absolute right-1 top-1.5 text-gray-300 text-xs py-0.5 px-1.5 rounded border border-gray-500 bg-blue-800 hover:bg-blue-700 hover:border-gray-400"
-                              onClick={async (e) => {
-                                // Update the question to be generating
-                                setGroupsOfQuestions((prev) => {
-                                  const newGroups = JSON.parse(
-                                    JSON.stringify(prev),
-                                  );
-                                  const groupIdx = newGroups.findIndex(
-                                    (g: any) => g.id === questionGroup.id,
-                                  );
-                                  newGroups[groupIdx].questions[i] = {
-                                    ...item,
-                                    approval_answers: {
-                                      ...item.approval_answers,
-                                      is_generating: true,
-                                    },
-                                  };
-                                  return newGroups;
-                                });
-                                // Grab API key from localstorage
-                                const userApiKey =
-                                  localStorage.getItem("userApiKey");
-                                if (!userApiKey) {
-                                  // TODO: Handle this much better
-                                  console.error(
-                                    "No userApiKey in localstorage!",
-                                  );
-                                  return;
-                                }
-                                // Generate the answer
-                                const res = await fetch(
-                                  "/api/v3/generate-answer-offline",
-                                  {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                      answer_id: item.approval_answers.id,
-                                      user_api_key: userApiKey,
-                                    }),
-                                  },
-                                );
-                                if (!res.ok) {
-                                  try {
-                                    const resJson = await res.json();
-                                    console.error("ERROR:", resJson);
-                                  } catch (e) {
-                                    console.error(
-                                      `ERROR: ${res.status} ${res.statusText}`,
-                                    );
-                                  }
-                                  return;
-                                }
-                              }}
-                            >
-                              Generate
-                            </button>
-                          )}
-                      </div>
-                    ))}
-
-                  {/*<div*/}
-                  {/*  className={*/}
-                  {/*    "border-x border-x-gray-500 flex items-center justify-between bg-gray-750 hover:bg-gray-700 text-gray-200 border-b border-b-gray-500"*/}
-                  {/*  }*/}
-                  {/*>*/}
-                  {/*  <button*/}
-                  {/*    className="w-full flex place-items-center justify-center px-4 py-1"*/}
-                  {/*    onClick={() => setAddActionGroupId(questionGroup.id)}*/}
-                  {/*  >*/}
-                  {/*    <PlusIcon className={"h-5 w-5 text-gray-400"} />*/}
-                  {/*  </button>*/}
-                  {/*</div>*/}
-                </div>
-              ))}
-            </div>
+        <div className="mt-4 mb-2">
+          <div className="w-full flex px-32 mb-4">
+            <input
+              className="w-full bg-gray-50 text-little rounded mx-10 py-1.5"
+              value={searchText}
+              placeholder={"Search for a question"}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
           </div>
-        )}
+          <div className="h-[calc(100vh-10rem)] overflow-auto">
+            {groupsOfQuestions.map((questionGroup, idx) => (
+              <div
+                key={idx}
+                className={classNames(
+                  "mb-3",
+                  showQuestionGroup &&
+                    !showQuestionGroup[questionGroup.id] &&
+                    "border-b border-b-gray-500",
+                )}
+              >
+                <div className="w-full flex flex-row justify-between">
+                  <div className="flex flex-row gap-x-2 place-items-center">
+                    <h2 className="ml-4 pt-3 mb-1.5 text-xl text-gray-200">
+                      {questionGroup.name}
+                    </h2>
+                    <button
+                      className="pt-2 w-fit ml-auto text-gray-400"
+                      onClick={() =>
+                        setShowQuestionGroup({
+                          ...showQuestionGroup,
+                          [questionGroup.id]:
+                            !showQuestionGroup![questionGroup.id],
+                        })
+                      }
+                    >
+                      <ChevronDownIcon
+                        className={classNames(
+                          "h-5 w-5 text-gray-400 transition",
+                          showQuestionGroup &&
+                            !showQuestionGroup[questionGroup.id] &&
+                            "rotate-90",
+                        )}
+                      />
+                    </button>
+                  </div>
+
+                  {showQuestionGroup && showQuestionGroup[questionGroup.id] && (
+                    <div
+                      className={
+                        "flex place-items-end py-1 pr-1 text-sm text-gray-400"
+                      }
+                    >
+                      Approved
+                    </div>
+                  )}
+                </div>
+                {showQuestionGroup &&
+                  showQuestionGroup[questionGroup.id] &&
+                  questionGroup.questions.map((item, i) => (
+                    <div key={i} className="relative">
+                      <Link
+                        href={`/approval/${item.approval_answers.id}`}
+                        className={classNames(
+                          "border-x border-x-gray-500 flex items-center justify-between px-4 py-1 bg-gray-850 text-gray-200 border-b border-b-gray-500 hover:bg-gray-800",
+                          i % 2 === 0 ? "" : "",
+                          i === 0 && "border-t border-t-gray-500",
+                        )}
+                      >
+                        <QuestionText questionText={item.text} />
+                        <div className={"flex flex-row gap-x-6"}>
+                          {item.approval_answers.generation_failed ? (
+                            <XCircleIcon
+                              className={"h-5 w-5 text-red-400 mr-2"}
+                            />
+                          ) : item.approval_answers.is_generating ? (
+                            <LoadingSpinner
+                              classes={"h-5 w-5 text-gray-400 mr-2"}
+                            />
+                          ) : item.approval_answers.approval_answer_messages
+                              .length === 0 ? undefined : item.approval_answers
+                              .approved ? (
+                            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                          ) : (
+                            <p className="text-xs text-gray-200">Ready</p>
+                          )}
+                        </div>
+                      </Link>
+                      {item.approval_answers.approval_answer_messages.length ===
+                        0 &&
+                        !item.approval_answers.is_generating && (
+                          <button
+                            className="absolute right-1 top-1.5 text-gray-300 text-xs py-0.5 px-1.5 rounded border border-gray-500 bg-blue-800 hover:bg-blue-700 hover:border-gray-400"
+                            onClick={async (e) => {
+                              // Update the question to be generating
+                              setGroupsOfQuestions((prev) => {
+                                const newGroups = JSON.parse(
+                                  JSON.stringify(prev),
+                                );
+                                const groupIdx = newGroups.findIndex(
+                                  (g: any) => g.id === questionGroup.id,
+                                );
+                                newGroups[groupIdx].questions[i] = {
+                                  ...item,
+                                  approval_answers: {
+                                    ...item.approval_answers,
+                                    is_generating: true,
+                                  },
+                                };
+                                return newGroups;
+                              });
+                              // Grab API key from localstorage
+                              const userApiKey =
+                                localStorage.getItem("userApiKey");
+                              if (!userApiKey) {
+                                // TODO: Handle this much better
+                                console.error("No userApiKey in localstorage!");
+                                return;
+                              }
+                              // Generate the answer
+                              const res = await fetch(
+                                "/api/v3/generate-answer-offline",
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    answer_id: item.approval_answers.id,
+                                    user_api_key: userApiKey,
+                                  }),
+                                },
+                              );
+                              if (!res.ok) {
+                                try {
+                                  const resJson = await res.json();
+                                  console.error("ERROR:", resJson);
+                                } catch (e) {
+                                  console.error(
+                                    `ERROR: ${res.status} ${res.statusText}`,
+                                  );
+                                }
+                                return;
+                              }
+                            }}
+                          >
+                            Generate
+                          </button>
+                        )}
+                    </div>
+                  ))}
+
+                {/*<div*/}
+                {/*  className={*/}
+                {/*    "border-x border-x-gray-500 flex items-center justify-between bg-gray-750 hover:bg-gray-700 text-gray-200 border-b border-b-gray-500"*/}
+                {/*  }*/}
+                {/*>*/}
+                {/*  <button*/}
+                {/*    className="w-full flex place-items-center justify-center px-4 py-1"*/}
+                {/*    onClick={() => setAddActionGroupId(questionGroup.id)}*/}
+                {/*  >*/}
+                {/*    <PlusIcon className={"h-5 w-5 text-gray-400"} />*/}
+                {/*  </button>*/}
+                {/*</div>*/}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
