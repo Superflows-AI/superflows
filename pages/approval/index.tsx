@@ -198,7 +198,7 @@ function Dashboard() {
                           .length === 0 &&
                           !item.approval_answers.is_generating && (
                             <button
-                              className="absolute right-1 top-1.5 text-gray-300 text-xs py-0.5 px-1.5 rounded border border-gray-500 hover:bg-gray-700 hover:border-gray-400"
+                              className="absolute right-1 top-1.5 text-gray-300 text-xs py-0.5 px-1.5 rounded border border-gray-500 bg-blue-800 hover:bg-blue-700 hover:border-gray-400"
                               onClick={async (e) => {
                                 // Update the question to be generating
                                 setGroupsOfQuestions((prev) => {
