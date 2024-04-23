@@ -270,13 +270,13 @@ aVariableNameThatMustNotBeRepeated
   } catch (e) {
     console.error = originalErr;
     console.warn("Error executing code", e);
-    const stackTrace = formatError(e, code);
     return new Response(
       JSON.stringify([
+        // Include previous output messages in output for debugging purposes
         ...builtinFunctionCalls,
         {
           type: "error",
-          args: { message: stackTrace },
+          args: { message: formatError(e, code) },
         },
       ]),
       {
