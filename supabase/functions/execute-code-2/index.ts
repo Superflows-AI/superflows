@@ -4,6 +4,7 @@ import { Ratelimit } from "https://cdn.skypack.dev/@upstash/ratelimit@latest";
 import { Timeout } from "https://deno.land/x/timeout/mod.ts";
 import {
   exponentialRetryWrapper,
+  formatError,
   formatString,
   snakeToCamel,
 } from "./utils.ts";
@@ -92,6 +93,12 @@ Deno.serve(async (req) => {
   // This adds a debugging number to the console.info() calls so it's
   // clear which are from which request
   const ranNum = Math.floor(Math.random() * 1000);
+  const originalDebug = console.debug;
+  console.debug = function () {
+    const args = Array.prototype.slice.call(arguments);
+    args.unshift(`${ranNum}:`);
+    originalDebug.apply(console, args);
+  };
   const originalInfo = console.info;
   console.info = function () {
     const args = Array.prototype.slice.call(arguments);
@@ -172,8 +179,8 @@ Deno.serve(async (req) => {
             throw new Error(JSON.stringify(out.output, undefined, 2));
           }
           const processed = processAPIoutput(out.output, action);
-          console.info(
-            `API response (${camelName}):`,
+          console.debug(
+            `${camelName} API response:`,
             Array.isArray(processed)
               ? // API responses can be very long
                 JSON.stringify(processed.slice(0, 2), undefined, 2).slice(
@@ -225,7 +232,7 @@ return builtinFunctionCalls;
 const aVariableNameThatMustNotBeRepeated = doNotWriteAnotherFunctionCalledThis();
 aVariableNameThatMustNotBeRepeated
 `;
-  console.info("Code\n" + code);
+  console.debug("Code\n" + code);
 
   // Last line must be builtinFunctionCalls since this is what's output and we ask the LLM to include it
   let result;
@@ -248,9 +255,8 @@ aVariableNameThatMustNotBeRepeated
   try {
     // Run code, await result
     result = eval(code);
-    // result = await result;
-    // Timeout if the code takes >25s to run
-    result = await Timeout.race([result], 25000);
+    // Timeout if the code takes >30s to run
+    result = await Timeout.race([result], 30000);
 
     // Reset console functions
     console.log = originalLog;
@@ -264,11 +270,13 @@ aVariableNameThatMustNotBeRepeated
   } catch (e) {
     console.error = originalErr;
     console.warn("Error executing code", e);
+    const stackTrace = formatError(e, code);
     return new Response(
       JSON.stringify([
+        ...builtinFunctionCalls,
         {
           type: "error",
-          args: { message: "" + e },
+          args: { message: stackTrace },
         },
       ]),
       {

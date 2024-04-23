@@ -36,7 +36,7 @@ export function getMatchingPromptv3(args: {
   ];
   if (!noVariables) {
     facts.push(
-      "<variables></variables> define the variables used in <functions></functions> using TypeScript",
+      "<types></types> define the TypeScript types used in <functions></functions>",
     );
   }
   if (args.userDescription) {
@@ -100,7 +100,7 @@ ${
   noVariables
     ? ""
     : `
-<variables>
+<types>
 ${Array.from(
   new Set(
     variableNamesToInclude.map((v) =>
@@ -108,7 +108,7 @@ ${Array.from(
     ),
   ),
 ).join("\n")}
-</variables>${
+</types>${
         constsToInclude.length > 0
           ? `
 

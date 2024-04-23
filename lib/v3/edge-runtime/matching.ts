@@ -170,7 +170,7 @@ export async function matchQuestionToAnswer(
           "</tellUser",
         ],
       },
-      "anthropic/claude-3-sonnet-20240229",
+      "anthropic/claude-3-opus-20240229",
       () => {
         return completeOutput.includes("</tellUser");
       },
@@ -264,10 +264,12 @@ export async function matchQuestionToAnswer(
         });
         if (res.error) {
           streamInfo({
-            role: "error",
+            role: "function",
+            name: "error",
             content: "Failed to execute code" + res.error.toString(),
           });
-          throw new Error("Failed to execute code", res.error);
+          console.error("Failed to execute code", res.error);
+          continue;
         }
         const returnedData = res.data as ExecuteCode2Item[] | null;
         console.log(
@@ -282,7 +284,8 @@ export async function matchQuestionToAnswer(
         if (!codeOk.isValid) {
           console.error("Error from generated code:", codeOk.error);
           void streamInfo({
-            role: "error",
+            role: "function",
+            name: "error",
             content: codeOk.error,
           });
         }

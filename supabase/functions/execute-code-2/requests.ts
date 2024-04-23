@@ -113,7 +113,6 @@ export function constructHttpRequest({
     const actionParameters = action.parameters as unknown as ParameterObject[];
 
     for (const param of actionParameters) {
-      console.info(`processing param: ${JSON.stringify(param)}`);
       // Check for case of required parameter that has enum with 1 value
       const schema = param.schema as SchemaObject;
       if (param.required && schema.enum && schema.enum.length === 1) {
@@ -122,7 +121,7 @@ export function constructHttpRequest({
       }
 
       if (!parameters[param.name]) {
-        console.info("Parameter not provided:" + param.name);
+        console.debug("Parameter not provided:" + param.name);
         continue;
       }
 

@@ -561,7 +561,7 @@ export function VerifyQuestionScreen(props: {
                 "w-1/2 transition text-gray-200 py-2",
                 loading ||
                   answer.approved ||
-                  allMessageData.some((m) => m.message_type === "error")
+                  messages.some((m) => m.role === "error")
                   ? "bg-gray-700 cursor-not-allowed"
                   : "bg-green-800 hover:bg-green-700",
               )}
@@ -569,7 +569,7 @@ export function VerifyQuestionScreen(props: {
                 if (
                   loading ||
                   answer.approved ||
-                  allMessageData.some((m) => m.message_type === "error")
+                  messages.some((m) => m.role === "error")
                 )
                   return;
 
