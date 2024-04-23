@@ -54,9 +54,11 @@ export function getMatchingPromptv3(args: {
   );
   // If variables include fromDate (means a duration is involved), include today's date
   if (variableNamesToInclude.includes("fromDate")) {
-    constsToInclude.push(
-      `const today: ISODate = "${new Date().toISOString().split("T")[0]}"`,
-    );
+    const todayString = `const today: ISODate = "${
+      new Date().toISOString().split("T")[0]
+    }";`;
+    args.variables.find((t) => t.name === "fromDate")!.consts.push(todayString);
+    constsToInclude.push(todayString);
   }
 
   console.log("Matches", args.matches);
