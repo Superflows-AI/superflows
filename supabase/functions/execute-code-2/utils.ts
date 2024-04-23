@@ -1,3 +1,5 @@
+import { type } from "node:os";
+
 export async function exponentialRetryWrapper<Args extends Array<any>, Output>(
   func: (...args: Args) => Promise<Output>,
   args: Args,
@@ -197,28 +199,63 @@ export function formatString() {
     }
     return String(args[0]);
   }
-  let str = args[0];
+  let firstArg = args[0];
   let i = 1;
-  let formatted = str.replace(/%([a-z%])/g, function (x: string) {
-    if (i < args.length) {
-      switch (x) {
-        case "%s":
-          return String(args[i++]);
-        case "%d":
-          return Number(args[i++]);
-        case "%j":
-          return JSON.stringify(args[i++]);
-        case "%%":
-          return "%";
-        default:
-          return x;
+  let formatted = "";
+  if (typeof firstArg === "string") {
+    firstArg.replace(/%([a-z%])/g, function (x: string) {
+      if (i < args.length) {
+        switch (x) {
+          case "%s":
+            return String(args[i++]);
+          case "%d":
+            return Number(args[i++]);
+          case "%j":
+            return JSON.stringify(args[i++]);
+          case "%%":
+            return "%";
+          default:
+            return x;
+        }
+      } else {
+        return x;
       }
-    } else {
-      return x;
-    }
-  });
+    });
+  } else {
+    formatted = JSON.stringify(firstArg);
+  }
   for (; i < args.length; i++) {
     formatted += JSON.stringify(args[i]);
   }
   return formatted;
+}
+
+export function formatError(e: any, code: string) {
+  let stackTrace =
+    "" + (typeof e === "object" && e !== null && "stack" in e ? e.stack : "");
+  let irrelevantStackIdx = stackTrace
+    .split("\n")
+    .findIndex((line) => line.includes("doNotWriteAnotherFunctionCalledThis"));
+  if (irrelevantStackIdx === -1) {
+    irrelevantStackIdx = stackTrace
+      .split("\n")
+      .findIndex((line) => line.includes("execute-code-2"));
+  }
+  return stackTrace
+    .split("\n")
+    .slice(0, irrelevantStackIdx)
+    .map((line) =>
+      line.replace(
+        /eval at <anonymous>.*<anonymous>:(\d{1,3}):(\d{1,4})/g,
+        (_, lineNumStr, charNumStr) => {
+          const errLineNum = parseInt(lineNumStr);
+          const aiCodeStartLineNum =
+            code
+              .split("\n")
+              .findIndex((line) => line === "// AI code starts below") + 1;
+          return `line ${errLineNum - aiCodeStartLineNum}, char ${charNumStr}`;
+        },
+      ),
+    )
+    .join("\n");
 }

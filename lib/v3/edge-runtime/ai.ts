@@ -391,7 +391,7 @@ export async function Cassius(
         console.log("Returned data", returnedData);
         const codeOk = checkCodeExecutionOutput(returnedData);
         if (!codeOk.isValid) {
-          console.error("Error from generated code:", codeOk.error);
+          console.warn("Error from generated code:", codeOk.error);
           // Retry code generation from scratch once if not 4XX & code generated
           if (
             shouldRetry &&
@@ -414,12 +414,6 @@ export async function Cassius(
               false,
             );
           }
-          void streamInfo({
-            role: "error",
-            content: codeOk.error,
-          });
-          await addNewMessageToDB(codeOk.error, "error");
-          return false;
         }
         if (returnedData !== null) {
           const graphDataArr = convertToGraphData(returnedData);
