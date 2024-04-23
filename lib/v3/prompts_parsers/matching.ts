@@ -29,7 +29,7 @@ export function getMatchingPromptv3(args: {
   const noVariables = variableNamesToInclude.length === 0;
   let facts = [
     args.org.description,
-    ...args.org.chatbot_instructions.split("\n"),
+    ...args.org.chatbot_instructions.split("\n").filter(Boolean),
     // "The system recommends actions for products: discount, monitor, advertise, check, or display. When asked for such recommendations, use these actions",
     // "The AI that answers requests can generate plots or tables. As a result, direct requests for a 'list' or 'table' should be regarded as equivalent, and direct requests for a plot should match general questions about the data (since a plot will likely be generated)",
     // "A user asks a 'how many' question, it matches a 'list' question in the <request></request>, but not the other way around (user asks for a list, <request></request> asks for a count)",
