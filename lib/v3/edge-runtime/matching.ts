@@ -6,6 +6,8 @@ import {
 } from "../../models";
 import {
   ActionPlusApiInfo,
+  ApprovalAnswerMessage,
+  ApprovalVariable,
   ExecuteCode2Item,
   OrgJoinIsPaidFinetunedModels,
 } from "../../types";
@@ -34,6 +36,10 @@ import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { chatToDocsPrompt } from "../../prompts/chatBot";
 import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
 import { funLoadingMessages } from "../../funLoadingMessages";
+import {
+  StreamingStep,
+  StreamingStepInput,
+} from "@superflows/chat-ui-react/dist/src/lib/types";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -62,15 +68,75 @@ export async function matchQuestionToAnswer(
   const streamInfo = await preamble(controller, conversationId);
   let totalCost = 0;
 
-  // The cache is to check for past identical convos and use them instead of calling the LLM
-  let chatMessageCache = new LlmResponseCache();
-  await chatMessageCache.initialize(
-    reqData.user_input,
-    org.id,
-    chatHistory.length - 1,
-    supabase,
-  );
-  const cachedChatHistory = chatMessageCache.checkChatSummaryCache(chatHistory);
+  // Check approval_messages cache
+  const { data: approvalQuestionMatch, error: approvalQErr } = await supabase
+    .from("approval_questions")
+    .select("answer_id, approval_answers!inner(id)")
+    .match({
+      embedded_text: reqData.user_input,
+      org_id: org.id,
+      "approval_answers.approved": true,
+    });
+  if (approvalQErr) throw new Error(approvalQErr.message);
+
+  // Perfect match of an approved question
+  if (approvalQuestionMatch && approvalQuestionMatch.length > 0) {
+    console.log(
+      `There's a match with answer id: ${approvalQuestionMatch[0].answer_id}`,
+    );
+    const userMessage = chatHistory[chatHistory.length - 1];
+    if (userMessage.role === "user")
+      userMessage.chat_summary = reqData.user_input;
+
+    const answerId = approvalQuestionMatch[0].answer_id;
+    const { data: approvalAnswer, error: approvalAnswerErr } = await supabase
+      .from("approval_answers")
+      .select(
+        "fnName,description,approval_answer_messages(raw_text,message_type,message_idx)",
+      )
+      .eq("id", answerId)
+      .single();
+    if (approvalAnswerErr) throw new Error(approvalAnswerErr.message);
+    if (!approvalAnswer) throw new Error("No answer found with id " + answerId);
+
+    const { data: variables, error: variableError } = await supabase
+      .from("approval_variables")
+      .select("*")
+      .eq("org_id", org.id);
+    if (variableError) throw new Error(variableError.message);
+
+    const userAnswerMsg = approvalAnswer.approval_answer_messages.find(
+      (m) => m.message_type === "user",
+    );
+    let vars: Record<string, any> = {};
+    if (userAnswerMsg) {
+      try {
+        vars = JSON.parse(userAnswerMsg.raw_text);
+      } catch (e) {}
+    }
+
+    await executeMessages(
+      approvalAnswer.approval_answer_messages.sort(
+        (a, b) => a.message_idx - b.message_idx,
+      ),
+      actions,
+      org,
+      streamInfo,
+      chatHistory,
+      reqData,
+      variables.map((v) => ({
+        ...v,
+        default: vars[v.name] ?? v.default,
+      })),
+      language,
+    );
+    return {
+      nonSystemMessages: [...chatHistory],
+      cost: totalCost,
+      numUserQueries: 1,
+    };
+  }
+  console.log("There's NOT a match!");
 
   // If there are multiple messages in the chat history, we summarise the chat history into a single user
   //  request - this makes future prompts have a _much_ easier time understanding the user's request
@@ -78,6 +144,16 @@ export async function matchQuestionToAnswer(
   if (chatHistory.length === 1) {
     userRequest = reqData.user_input;
   } else {
+    // The cache is to check for past identical convos and use them instead of calling the LLM
+    let chatMessageCache = new LlmResponseCache();
+    await chatMessageCache.initialize(
+      reqData.user_input,
+      org.id,
+      chatHistory.length - 1,
+      supabase,
+    );
+    const cachedChatHistory =
+      chatMessageCache.checkChatSummaryCache(chatHistory);
     userRequest =
       cachedChatHistory ||
       (await summariseChatHistory(chatHistory, language, org.id));
@@ -192,14 +268,15 @@ export async function matchQuestionToAnswer(
   if (!finalLlmOut) {
     throw new Error("Matching LLM ran out of retries");
   }
-  const parsed = parseMatchingOutput(finalLlmOut, variables);
-  if (parsed?.functionName) {
+  const parsedMatchingOut = parseMatchingOutput(finalLlmOut, variables);
+
+  if (parsedMatchingOut?.functionName) {
     // Get messages from approval_answer_messages and use them to generate the answer, filling in variables
     const chosenMatch = fnNameData.find(
-      (m) => m.fnName === parsed.functionName,
+      (m) => m.fnName === parsedMatchingOut.functionName,
     );
     if (!chosenMatch) {
-      throw new Error("No match found for " + parsed.functionName);
+      throw new Error("No match found for " + parsedMatchingOut.functionName);
     }
     const { data: messages, error: messagesError } = await supabase
       .from("approval_answer_messages")
@@ -209,160 +286,187 @@ export async function matchQuestionToAnswer(
     if (messagesError) throw new Error(messagesError.message);
     if (!messages) throw new Error("No messages found for " + chosenMatch.id);
 
-    let filteredActions: ActionPlusApiInfo[] = [],
-      codeMessages: FunctionMessage[] = [],
-      route: "DOCS" | "CODE" | undefined = undefined;
-    for (const m of messages) {
-      if (m.message_type === "routing") {
-        const parsedRoutingOut = parseRoutingOutputv3(m.raw_text);
-        route = parsedRoutingOut?.choice;
-      } else if (m.message_type === "filtering") {
-        const parsedFOut = parseFilteringOutputv3(
-          m.raw_text,
-          actions.map((a) => snakeToCamel(a.name)),
-        );
-        filteredActions = actions.filter((a) =>
-          parsedFOut.selectedFunctions.includes(snakeToCamel(a.name)),
-        );
-      } else if (m.message_type === "function") {
-        const relevantDocs = await getRelevantDocChunks(
-          m.raw_text,
-          org.id,
-          3,
-          supabase,
-        );
-        let docSearchGPTMessage = {
-          role: "function",
-          content: relevantDocs.text,
-          name: "search_docs",
-          urls: relevantDocs.urls,
-        } as Extract<GPTMessageInclSummary, { role: "function" }>;
-        streamInfo(docSearchGPTMessage);
-        chatHistory.push(docSearchGPTMessage);
-      } else if (m.message_type === "code") {
-        console.log("Generating code output");
-        const parsedCode = parseCodeGenv3(m.raw_text);
-        streamInfo({
-          role: "loading",
-          content:
-            funLoadingMessages[
-              Math.floor(Math.random() * funLoadingMessages.length)
-            ],
-        });
-        const res = await supabase.functions.invoke("execute-code-2", {
-          body: JSON.stringify({
-            actionsPlusApi: filteredActions,
-            org,
-            code: convertWrittenCodeToExecutable(
-              parsedCode.code,
-              variables.map((v) => ({
-                ...v,
-                default: (parsed.variables ?? {})[v.name] ?? v.default,
-              })),
-            ),
-            userApiKey: reqData.user_api_key,
-          }),
-        });
-        if (res.error) {
-          streamInfo({
-            role: "function",
-            name: "error",
-            content: "Failed to execute code" + res.error.toString(),
-          });
-          console.error("Failed to execute code", res.error);
-          continue;
-        }
-        const returnedData = res.data as ExecuteCode2Item[] | null;
-        console.log(
-          "Returned data",
-          returnedData
-            ? returnedData.map((m) =>
-                JSON.stringify(m, undefined, 2).slice(0, 100),
-              )
-            : null,
-        );
-        const codeOk = checkCodeExecutionOutput(returnedData);
-        if (!codeOk.isValid) {
-          console.error("Error from generated code:", codeOk.error);
-          void streamInfo({
-            role: "function",
-            name: "error",
-            content: codeOk.error,
-          });
-        }
-        if (returnedData !== null) {
-          const graphDataArr = convertToGraphData(returnedData);
-          graphDataArr.map(streamInfo);
-          codeMessages = graphDataArr.map(
-            (m) =>
-              ({
-                role: "function",
-                name: m.role === "graph" ? "plot" : "logs",
-                content:
-                  typeof m.content === "string"
-                    ? m.content
-                    : JSON.stringify(m.content),
-              } as FunctionMessage),
-          );
-          console.log("Concatenating code messages", codeMessages);
-          chatHistory = chatHistory.concat(codeMessages);
-        }
-      } else if (m.message_type === "text") {
-        // Regenerate text manually
-        let nonSystemMessages: ChatGPTMessage[] = chatHistory
-          .slice(Math.max(0, chatHistory.length - 7))
-          .map(MessageInclSummaryToGPT);
-        let graphCut: boolean;
-        ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
-          hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
-        let prompt: ChatGPTMessage[];
-        if (route === "CODE") {
-          prompt = getMessages(
-            nonSystemMessages,
-            [],
-            reqData.user_description,
-            org,
-            language,
-            false,
-            graphCut,
-          );
-        } else {
-          prompt = [
-            chatToDocsPrompt(reqData.user_description, org, false, language),
-            ...nonSystemMessages.map(MessageInclSummaryToGPT),
-          ];
-        }
-        logPrompt(prompt);
-        let streamedText = "";
-        let completeOutput = await streamWithEarlyTermination(
-          prompt,
-          {
-            max_tokens: MAX_TOKENS_OUT,
-            temperature: 0.2,
-          },
-          "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
-          () => false,
-          (rawOutput: string) => {
-            streamInfo({
-              role: "assistant",
-              content: rawOutput.replace(streamedText, ""),
-            });
-            streamedText = rawOutput;
-          },
-          "Explanation message",
-        );
-        if (completeOutput) {
-          chatHistory.push({ role: "assistant", content: completeOutput });
-        }
-      }
-    }
+    await executeMessages(
+      messages,
+      actions,
+      org,
+      streamInfo,
+      chatHistory,
+      reqData,
+      variables.map((v) => ({
+        ...v,
+        default: (parsedMatchingOut.variables ?? {})[v.name] ?? v.default,
+      })),
+      language,
+    );
   } else {
     // No function name, presumably there is a tellUser message
-    chatHistory.push({ role: "assistant", content: parsed?.tellUser ?? "" });
+    chatHistory.push({
+      role: "assistant",
+      content: parsedMatchingOut?.tellUser ?? "",
+    });
   }
   return {
     nonSystemMessages: [...chatHistory],
     cost: totalCost,
     numUserQueries: 1,
   };
+}
+
+async function executeMessages(
+  messages: Pick<
+    ApprovalAnswerMessage,
+    "raw_text" | "message_idx" | "message_type"
+  >[],
+  actions: ActionPlusApiInfo[],
+  org: OrgJoinIsPaidFinetunedModels,
+  streamInfo: (step: StreamingStepInput) => void,
+  chatHistory: GPTMessageInclSummary[],
+  reqData: AnswersType,
+  variables: ApprovalVariable[],
+  language: string | null,
+) {
+  let filteredActions: ActionPlusApiInfo[] = [],
+    codeMessages: FunctionMessage[] = [],
+    route: "DOCS" | "CODE" | undefined = undefined;
+  for (const m of messages) {
+    if (m.message_type === "routing") {
+      const parsedRoutingOut = parseRoutingOutputv3(m.raw_text);
+      route = parsedRoutingOut?.choice;
+    } else if (m.message_type === "filtering") {
+      const parsedFOut = parseFilteringOutputv3(
+        m.raw_text,
+        actions.map((a) => snakeToCamel(a.name)),
+      );
+      filteredActions = actions.filter((a) =>
+        parsedFOut.selectedFunctions.includes(snakeToCamel(a.name)),
+      );
+    } else if (m.message_type === "function") {
+      const relevantDocs = await getRelevantDocChunks(
+        m.raw_text,
+        org.id,
+        3,
+        supabase,
+      );
+      let docSearchGPTMessage = {
+        role: "function",
+        content: relevantDocs.text,
+        name: "search_docs",
+        urls: relevantDocs.urls,
+      } as Extract<GPTMessageInclSummary, { role: "function" }>;
+      streamInfo(docSearchGPTMessage);
+      chatHistory.push(docSearchGPTMessage);
+    } else if (m.message_type === "code") {
+      console.log("Generating code output");
+      const parsedCode = parseCodeGenv3(m.raw_text);
+      streamInfo({
+        role: "loading",
+        content:
+          funLoadingMessages[
+            Math.floor(Math.random() * funLoadingMessages.length)
+          ],
+      });
+      const res = await supabase.functions.invoke("execute-code-2", {
+        body: JSON.stringify({
+          actionsPlusApi: filteredActions,
+          org,
+          code: convertWrittenCodeToExecutable(parsedCode.code, variables),
+          userApiKey: reqData.user_api_key,
+        }),
+      });
+      if (res.error) {
+        streamInfo({
+          role: "function",
+          name: "error",
+          content: "Failed to execute code" + res.error.toString(),
+        });
+        console.error("Failed to execute code", res.error);
+        continue;
+      }
+      const returnedData = res.data as ExecuteCode2Item[] | null;
+      console.log(
+        "Returned data",
+        returnedData
+          ? returnedData.map((m) =>
+              JSON.stringify(m, undefined, 2).slice(0, 100),
+            )
+          : null,
+      );
+      const codeOk = checkCodeExecutionOutput(returnedData);
+      if (!codeOk.isValid) {
+        console.error("Error from generated code:", codeOk.error);
+      }
+      if (returnedData !== null) {
+        const graphDataArr = convertToGraphData(returnedData);
+        // Stream the graph data, converting errors to non-red messages in frontend
+        graphDataArr.map((m) =>
+          streamInfo(
+            m.role === "error"
+              ? { role: "function", content: m.content, name: "ERROR" }
+              : m,
+          ),
+        );
+        codeMessages = graphDataArr.map(
+          (m) =>
+            ({
+              role: "function",
+              name: m.role === "graph" ? "plot" : "logs",
+              content:
+                typeof m.content === "string"
+                  ? m.content
+                  : JSON.stringify(m.content),
+            } as FunctionMessage),
+        );
+        console.log("Concatenating code messages", codeMessages);
+        chatHistory = chatHistory.concat(codeMessages);
+      }
+    } else if (m.message_type === "text") {
+      // Regenerate text manually
+      let nonSystemMessages: ChatGPTMessage[] = chatHistory
+        .slice(Math.max(0, chatHistory.length - 7))
+        .map(MessageInclSummaryToGPT);
+      let graphCut: boolean;
+      ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
+        hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
+      let prompt: ChatGPTMessage[];
+      if (route === "CODE") {
+        prompt = getMessages(
+          nonSystemMessages,
+          [],
+          reqData.user_description,
+          org,
+          language,
+          false,
+          graphCut,
+        );
+      } else {
+        prompt = [
+          chatToDocsPrompt(reqData.user_description, org, false, language),
+          ...nonSystemMessages.map(MessageInclSummaryToGPT),
+        ];
+      }
+      logPrompt(prompt);
+      let streamedText = "";
+      let completeOutput = await streamWithEarlyTermination(
+        prompt,
+        {
+          max_tokens: MAX_TOKENS_OUT,
+          temperature: 0.2,
+        },
+        "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
+        () => false,
+        (rawOutput: string) => {
+          streamInfo({
+            role: "assistant",
+            content: rawOutput.replace(streamedText, ""),
+          });
+          streamedText = rawOutput;
+        },
+        "Explanation message",
+      );
+      if (completeOutput) {
+        chatHistory.push({ role: "assistant", content: completeOutput });
+      }
+    }
+  }
 }
