@@ -332,6 +332,14 @@ export function EditCodeModal(props: {
   useEffect(() => {
     setShowPlan(false);
   }, [props.open]);
+  useEffect(() => {
+    const error = props.messageData.generated_output.find(
+      // @ts-ignore
+      (m) => m.role === "error",
+    );
+    // @ts-ignore
+    setShownError(error?.content ?? null);
+  }, [props.messageData]);
   console.log(props.answer.approval_questions);
 
   return (
@@ -457,7 +465,7 @@ export function EditCodeModal(props: {
           </div>
         </div>
         {shownError && (
-          <div className="bg-red-200 py-1 px-3 text-red-800 border border-red-400 rounded-md my-2">
+          <div className="bg-red-200 py-1 px-3 text-red-800 border border-red-400 rounded-md my-1">
             {shownError}
           </div>
         )}
