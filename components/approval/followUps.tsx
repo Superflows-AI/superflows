@@ -33,14 +33,16 @@ export default function FollowUpSuggestions(props: {
             : "flex-col",
         )}
       >
-        {props.followUpSuggestions.map((text) => (
-          <div
-            key={text}
-            className="text-left px-2 py-1 rounded-md shrink-0 border bg-white text-sm text-gray-800 transition shadow"
-          >
-            {text}
-          </div>
-        ))}
+        {props.followUpSuggestions.map((text, i) =>
+          text ? (
+            <div
+              key={i}
+              className="text-left px-2 py-1 rounded-md shrink-0 border bg-white text-sm text-gray-800 transition shadow"
+            >
+              {text}
+            </div>
+          ) : undefined,
+        )}
       </div>
     </button>
   );
@@ -66,6 +68,10 @@ export function EditFollowUpsModal(props: {
     >
       <div className="w-full flex-col mb-4">
         <h1 className="text-xl text-gray-300">Edit Suggested Follow-Ups</h1>
+        <p className="text-sm text-gray-400">
+          Don&apos;t include names, IDs or other data that is specific to some
+          customers, but won&apos;t be relevant to others.
+        </p>
       </div>
       {localSuggestionText ? (
         <div className="flex flex-col gap-y-2">
