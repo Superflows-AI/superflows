@@ -10,6 +10,7 @@ import {
   EyeIcon,
   InformationCircleIcon,
   PencilSquareIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleIconSolid } from "@heroicons/react/24/solid";
 import classNames from "classnames";
@@ -814,6 +815,46 @@ export function VerifyQuestionScreen(props: {
                 );
               }
             })}
+        {allMessageData && (
+          <div className="p-2 border-t border-t-gray-700">
+            <h2 className="text-base text-gray-300 mb-2">Follow Ups</h2>
+            <div className="flex flex-row gap-x-2 mt-2">
+              <button
+                className="flex gap-x-1 place-items-center text-gray-400 text-little px-1.5 py-1 border border-transparent transition hover:border-gray-600 rounded hover:text-gray-300"
+                onClick={async () => {
+                  if (loading) return;
+                  setEditFollowUpsModalText(
+                    followUps?.suggestions ?? ["", "", ""],
+                  );
+                  if (!followUps?.suggestions) {
+                    const { data: followUpMsg, error: followUpsErr } =
+                      await supabase
+                        .from("approval_answer_messages")
+                        .insert({
+                          answer_id: props.data.id,
+                          message_idx: allMessageData.length,
+                          message_type: "suggestions",
+                          raw_text: "- \n- \n- ",
+                          org_id: profile?.org_id!,
+                          generated_output: [],
+                        })
+                        .select()
+                        .single();
+                    if (followUpsErr) throw new Error(followUpsErr.message);
+                    setFollowups({ ...followUpMsg, suggestions: ["", "", ""] });
+                  }
+                }}
+              >
+                {followUps ? (
+                  <PencilSquareIcon className={"h-5 w-5"} />
+                ) : (
+                  <PlusIcon className={"h-5 w-5"} />
+                )}
+                {followUps ? "Edit" : "Add"}
+              </button>
+            </div>
+          </div>
+        )}
         {answer.approved && (
           <div className="mt-6 mx-6 py-2 px-3 rounded-md text-lg border border-gray-500 font-medium flex flex-col place-items-center text-gray-800 bg-gray-100">
             Approved
