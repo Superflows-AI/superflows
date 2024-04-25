@@ -11,6 +11,7 @@ import {
   InformationCircleIcon,
   PencilSquareIcon,
   PlusIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleIconSolid } from "@heroicons/react/24/solid";
 import classNames from "classnames";
@@ -856,10 +857,26 @@ export function VerifyQuestionScreen(props: {
           </div>
         )}
         {answer.approved && (
-          <div className="mt-6 mx-6 py-2 px-3 rounded-md text-lg border border-gray-500 font-medium flex flex-col place-items-center text-gray-800 bg-gray-100">
-            Approved
-            <CheckCircleIconSolid className="h-7 w-7 text-green-500" />
-          </div>
+          <button
+            className="group mt-6 mx-6 py-2 px-3 rounded-md text-lg border border-gray-500 font-medium flex flex-col place-items-center text-gray-800 bg-gray-100 hover:bg-gray-300 transition"
+            onClick={async () => {
+              setAnswer((prev) => ({ ...prev, approved: false }));
+              const { error } = await supabase
+                .from("approval_answers")
+                .update({ approved: false })
+                .match({ id: props.data.id });
+              if (error) throw new Error(error.message);
+            }}
+          >
+            <div className="group-hover:hidden flex flex-col place-items-center">
+              Approved
+              <CheckCircleIconSolid className="h-7 w-7 text-green-500" />
+            </div>
+            <div className="hidden group-hover:flex flex-col place-items-center">
+              Unapprove
+              <XCircleIcon className="h-7 w-7 text-red-500" />
+            </div>
+          </button>
         )}
       </div>
     </>
