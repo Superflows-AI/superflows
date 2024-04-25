@@ -17,12 +17,13 @@ import FollowUpSuggestions, { EditFollowUpsModal } from "./followUps";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { parseFilteringOutputv3 } from "../../lib/v3/prompts_parsers/filtering";
 import { parseRoutingOutputv3 } from "../../lib/v3/prompts_parsers/routing";
-import { Action } from "../../lib/types";
+import { Action, ApprovalVariable } from "../../lib/types";
 import { snakeToCamel } from "../../lib/utils";
 import {
   EditCodeModal,
   EditFilteringModal,
   EditRouteModal,
+  EditUserMessageModal,
 } from "./editModals";
 import {
   AssistantMessage,
@@ -67,10 +68,11 @@ export function VerifyQuestionScreen(props: {
     ...props.data,
     approval_questions: [],
   });
+  const [allVariables, setAllVariables] = useState<ApprovalVariable[]>([]);
   const [allActions, setAllActions] = useState<Action[] | null>(null);
   const [thoughtsVisible, setThoughtsVisible] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<
-    "code" | "filtering" | "routing" | null
+    "code" | "filtering" | "routing" | "user" | null
   >(null);
   const [userApiKey, setUserApiKey] = useState(() => {
     // Grab API key from localstorage
@@ -119,6 +121,13 @@ export function VerifyQuestionScreen(props: {
         .match({ org_id: profile!.org_id!, active: true });
       if (allActionError) throw new Error(allActionError.message);
       setAllActions(allActionData);
+
+      const { data: answerVariableData, error: variableError } = await supabase
+        .from("approval_variables")
+        .select("*")
+        .match({ org_id: profile!.org_id! });
+      if (variableError) throw new Error(variableError.message);
+      setAllVariables(answerVariableData);
     })();
   }, [profile, router.query.id]);
 
@@ -394,6 +403,43 @@ export function VerifyQuestionScreen(props: {
               );
             }}
           />
+          {allMessageData.find((m) => m.message_type === "user")?.raw_text !==
+            "{}" && (
+            <EditUserMessageModal
+              open={showModal === "user"}
+              close={() => setShowModal(null)}
+              userMessage={allMessageData.find(
+                (m) => m.message_type === "user",
+              )}
+              variables={allVariables}
+              answer={answer}
+              setUserMessage={async (message: Record<string, any>) => {
+                const primaryQuestion = answer.approval_questions.find(
+                  (q) => q.primary_question,
+                );
+                if (!primaryQuestion)
+                  throw new Error("No primary question found");
+                const userIdx = messages.findIndex((m) => m.role === "user");
+                messages[userIdx].content = getUserMessageText(
+                  primaryQuestion.text,
+                  message,
+                );
+                // Just the user message
+                setMessages([messages[userIdx]]);
+                const codeIdx = allMessageData.findIndex(
+                  (m) => m.message_type === "code",
+                );
+                const { error: updateErr } = await supabase
+                  .from("approval_answer_messages")
+                  .update({ generated_output: [] })
+                  .eq("id", allMessageData[codeIdx].id);
+                if (updateErr) throw new Error(updateErr.message);
+
+                setShowModal(null);
+                await regenAnswer(codeIdx + 1);
+              }}
+            />
+          )}
         </>
       )}
       {!!messages.length && followUps && (
@@ -452,6 +498,46 @@ export function VerifyQuestionScreen(props: {
         </div>
         <div className="pt-16 flex-1 bg-white px-4 w-full flex flex-col place-items-center overflow-x-hidden overflow-y-auto mb-16">
           {messages.map((m, idx) => {
+            if (m.role === "user") {
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    const userMessage = allMessageData.find(
+                      (msg) => msg.message_type === "user",
+                    );
+                    if (!userMessage) return;
+                    if (userMessage.raw_text !== "{}") setShowModal("user");
+                  }}
+                  className={classNames(
+                    "group relative flex flex-col w-full place-items-start",
+                    allMessageData.find((msg) => msg.message_type === "user")
+                      ?.raw_text === "{}" && "cursor-default",
+                  )}
+                >
+                  <div className="my-2 py-3 mx-1.5 flex flex-col place-items-start w-full border-y border-gray-200 first:border-t-0">
+                    <p className="mb-1 px-1.5 text-gray-900 font-medium text-base">
+                      User
+                    </p>
+                    <div className="px-2 mt-1 text-little text-gray-900 whitespace-pre-wrap">
+                      {m.content}
+                    </div>
+                  </div>
+                  <div
+                    className={classNames(
+                      "invisible bg-white absolute bottom-1.5 right-0 p-1 border-l border-y group-active:border-l-gray-300 group-active:border-b-gray-300 shadow",
+                      allMessageData.find((msg) => msg.message_type === "user")
+                        ?.raw_text !== "{}" && "group-hover:visible",
+                    )}
+                  >
+                    <div className="flex gap-x-1 text-left px-2 text-little text-gray-700 group-active:text-gray-800">
+                      <PencilSquareIcon className="h-5 w-5" />
+                      Edit
+                    </div>
+                  </div>
+                </button>
+              );
+            }
             return (
               <SuperflowsChatItem
                 key={idx}

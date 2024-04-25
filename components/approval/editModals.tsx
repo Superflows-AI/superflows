@@ -2,12 +2,18 @@ import React, { useEffect, useState } from "react";
 import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 import Modal from "../modal";
 import { parseCodeGenv3 } from "../../lib/v3/prompts_parsers/codeGen";
-import { Action, ApprovalAnswer, ApprovalAnswerMessage } from "../../lib/types";
+import {
+  Action,
+  ApprovalAnswer,
+  ApprovalAnswerMessage,
+  ApprovalVariable,
+} from "../../lib/types";
 import {
   Bars3BottomLeftIcon,
   CodeBracketIcon,
   EyeIcon,
   EyeSlashIcon,
+  QuestionMarkCircleIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { parseRoutingOutputv3 } from "../../lib/v3/prompts_parsers/routing";
@@ -340,7 +346,6 @@ export function EditCodeModal(props: {
     // @ts-ignore
     setShownError(error?.content ?? null);
   }, [props.messageData]);
-  console.log(props.answer.approval_questions);
 
   return (
     <Modal
@@ -511,6 +516,164 @@ ${localCode}
           </button>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+export function EditUserMessageModal(props: {
+  open: boolean;
+  close: () => void;
+  userMessage: UIMessageData | undefined;
+  answer: UIAnswerType;
+  variables: ApprovalVariable[];
+  setUserMessage: (message: Record<string, any>) => void;
+}) {
+  const supabase = useSupabaseClient<Database>();
+  const [localVariables, setLocalVariables] = useState<Record<string, any>>({});
+  const [isValid, setIsValid] = useState<boolean[]>([]);
+  useEffect(() => {
+    try {
+      const parsedVariables = JSON.parse(props.userMessage?.raw_text ?? "{}");
+      setLocalVariables(parsedVariables);
+      setIsValid(Object.keys(parsedVariables).map(() => true));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [props.userMessage]);
+  return (
+    <Modal
+      open={Boolean(props.open)}
+      setOpen={() => props.close()}
+      classNames={"max-w-3xl overflow-visible"}
+    >
+      <div className="w-full flex-col mb-4">
+        <h1 className="text-xl text-gray-300">Edit Parameters Values</h1>
+      </div>
+      {Object.keys(localVariables).length > 0 ? (
+        <div className="flex flex-col">
+          {Object.entries(localVariables).map(([key, val], idx) => {
+            const relevantVariable = props.variables.find(
+              (v) => v.name === key,
+            );
+            if (!relevantVariable) return null;
+            return (
+              <div
+                key={idx}
+                className="relative grid grid-cols-6 gap-x-2 border-t first:border-t-0 border-t-gray-600 py-1.5"
+              >
+                <div className="col-span-2 flex place-items-center h-full">
+                  <p className={"text-lg text-gray-300 align-text-bottom"}>
+                    {key}
+                  </p>
+                  <div className="relative">
+                    <QuestionMarkCircleIcon
+                      className={
+                        "ml-3 h-6 w-6 peer text-gray-400 hover:bg-gray-700 transition p-0.5 rounded-full"
+                      }
+                    />
+                    <div className="popup w-64 top-0 left-10 text-gray-300">
+                      <div className="text-gray-100">
+                        {relevantVariable.description}
+                      </div>
+                      Default:{" "}
+                      {relevantVariable.type.endsWith("[]")
+                        ? JSON.stringify(relevantVariable.default)
+                        : (relevantVariable.default as
+                            | string
+                            | boolean
+                            | number)}
+                    </div>
+                  </div>
+                </div>
+                <input
+                  className={classNames(
+                    "w-full flex-1 col-span-4",
+                    !isValid[idx] && "border-red-500 focus:border-red-600",
+                  )}
+                  type={relevantVariable.type === "number" ? "number" : "text"}
+                  value={typeof val !== "string" ? JSON.stringify(val) : val}
+                  onChange={(e) => {
+                    const isJson = relevantVariable.type.endsWith("[]");
+                    if (isJson) {
+                      const newIsValid = [...isValid];
+                      try {
+                        const parsed = JSON.parse(e.target.value);
+                        if (!Array.isArray(parsed)) throw new Error();
+                        newIsValid[idx] = true;
+                      } catch (e) {
+                        newIsValid[idx] = false;
+                      }
+                      setIsValid(newIsValid);
+                    }
+                    setLocalVariables((prev) => ({
+                      ...prev,
+                      [key]:
+                        relevantVariable.type === "number"
+                          ? Number(e.target.value)
+                          : e.target.value,
+                    }));
+                  }}
+                />
+                {!isValid[idx] && (
+                  <div
+                    className={"absolute top-4 right-2 text-sm text-red-600"}
+                  >
+                    Invalid array
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div className={"flex flex-row justify-end gap-x-2 mt-2"}>
+            <button
+              className={"bg-gray-500 rounded px-2 py-1 text-gray-50"}
+              onClick={() => props.close()}
+            >
+              Cancel
+            </button>
+            <button
+              className={classNames(
+                "rounded px-2 py-1 text-gray-50",
+                props.userMessage?.raw_text ===
+                  JSON.stringify(localVariables) || isValid.some((v) => !v)
+                  ? "cursor-not-allowed bg-gray-700"
+                  : "bg-green-600",
+              )}
+              onClick={async () => {
+                if (!props.userMessage || isValid.some((v) => !v)) return;
+                const varsToSave = Object.assign(
+                  {},
+                  ...Object.entries(localVariables).map(([key, val]) => {
+                    if (
+                      props.variables
+                        .find((v) => v.name === key)
+                        ?.type.endsWith("[]")
+                    ) {
+                      return { [key]: JSON.parse(val) };
+                    } else {
+                      return { [key]: val };
+                    }
+                  }),
+                );
+                const { error } = await supabase
+                  .from("approval_answer_messages")
+                  .update({
+                    raw_text: JSON.stringify(varsToSave, undefined, 2),
+                  })
+                  .match({ id: props.userMessage.id });
+                if (error) throw new Error(error.message);
+                props.setUserMessage(localVariables);
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center place-items-center">
+          <LoadingSpinner classes={"h-12 w-12 text-gray-400"} />
+        </div>
+      )}
     </Modal>
   );
 }
