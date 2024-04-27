@@ -13,6 +13,7 @@ import {
 } from "../../../lib/types";
 import { z } from "zod";
 import { Cassius } from "../../../lib/v3/edge-runtime/ai";
+import { Session } from "@supabase/auth-helpers-react";
 
 export const config = {
   runtime: "edge",
@@ -94,13 +95,53 @@ export default async function handler(req: NextRequest) {
         { status: 405, headers },
       );
     }
-
-    const { session } = await getSessionFromCookie(req);
-    if (!session) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+    // Validate that the request body is of the correct format
+    const requestData = await req.json();
+    if (
+      !isValidBody<GenerateAnswerOfflineType>(
+        requestData,
+        GenerateAnswerOfflineZod,
+      )
+    ) {
+      return new Response(JSON.stringify({ message: "Invalid request body" }), {
+        status: 400,
         headers,
       });
+    }
+    console.log("Req body", requestData);
+
+    let { session } = await getSessionFromCookie(req);
+    if (!session) {
+      const authToken = req.headers.get("Authorization");
+      if (
+        authToken &&
+        // If the user is authenticated with the service level key, allow access
+        authToken.includes(process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "")
+      ) {
+        const answerData = await serviceLevelSupabase
+          .from("approval_answers")
+          .select("org_id, organizations(*, profiles(id))")
+          .eq("id", requestData.answer_id)
+          .single();
+        if (answerData.error) throw new Error(answerData.error.message);
+        if (
+          !answerData.data.organizations ||
+          !answerData.data.organizations.profiles
+        ) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers,
+          });
+        }
+        session = {
+          user: { id: answerData.data.organizations!.profiles[0].id },
+        } as Session;
+      } else {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers,
+        });
+      }
     }
 
     // Check that the user hasn't surpassed the production rate limit (protects DB query below)
@@ -140,21 +181,6 @@ export default async function handler(req: NextRequest) {
         { status: 403, headers },
       );
     }
-
-    // Validate that the request body is of the correct format
-    const requestData = await req.json();
-    if (
-      !isValidBody<GenerateAnswerOfflineType>(
-        requestData,
-        GenerateAnswerOfflineZod,
-      )
-    ) {
-      return new Response(JSON.stringify({ message: "Invalid request body" }), {
-        status: 400,
-        headers,
-      });
-    }
-    console.log("Req body", requestData);
 
     // All approval info
     const { data: approvalAnswersDataArr, error: approvalAnswersError } =
