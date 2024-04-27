@@ -295,6 +295,23 @@ export default async function handler(req: NextRequest) {
       )}`,
     );
 
+    // Sort out suggestions message_idx to ensure it won't clash with new messages yet to be added
+    if (
+      approvalAnswersData.approval_answer_messages.find(
+        (m) => m.message_type === "suggestions",
+      )
+    ) {
+      console.log("Updating message_idx for suggestions message");
+      const { error: messageIdxErr } = await serviceLevelSupabase
+        .from("approval_answer_messages")
+        .update({ message_idx: 5 })
+        .eq("answer_id", requestData.answer_id)
+        .eq("message_type", "suggestions");
+      if (messageIdxErr) {
+        throw new Error(messageIdxErr.message);
+      }
+    }
+
     const readableStream = new ReadableStream({
       async start(controller) {
         const success = await Cassius(
