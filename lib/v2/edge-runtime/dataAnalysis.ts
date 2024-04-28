@@ -590,7 +590,11 @@ export function formatPlotData(plotMessage: {
         if (!isNaN(num)) {
           item.y = num;
         }
-      } else if (typeof item.y === "object" && !Array.isArray(item.y)) {
+      } else if (
+        typeof item.y === "object" &&
+        !Array.isArray(item.y) &&
+        item.y !== null
+      ) {
         // Find the first number in the object and use that as y
         const key = Object.keys(item.y).find(
           (k) => !isNaN(item.y[k]) && item.y[k] !== null,
