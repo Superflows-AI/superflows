@@ -606,6 +606,17 @@ export function VerifyQuestionScreen(props: {
             <button
               className="mb-3 mt-2 border rounded-md px-3 py-1 flex flex-row gap-x-1 place-items-center text-lg hover:bg-purple-100"
               onClick={async () => {
+                // If there was an error, we should sort this out
+                const codeMessage = allMessageData.find(
+                  (m) => m.message_type === "code",
+                );
+                if (codeMessage) {
+                  const { error: updateCodeErr } = await supabase
+                    .from("approval_answer_messages")
+                    .update({ generated_output: [] })
+                    .eq("id", codeMessage.id);
+                  if (updateCodeErr) throw new Error(updateCodeErr.message);
+                }
                 // Regenerate answer using new code
                 await regenAnswer(allMessageData.length + 1);
               }}

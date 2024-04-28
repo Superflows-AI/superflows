@@ -380,11 +380,15 @@ export async function Cassius(
           }),
         });
         if (res.error) {
+          await addNewMessageToDB(
+            "Failed to execute code: " + res.error.toString(),
+            "error",
+          );
           streamInfo({
             role: "error",
             content: "Failed to execute code" + res.error.toString(),
           });
-          console.error("Failed to execute code", res.error);
+          console.error("Failed to execute code", res.error.toString());
           return false;
         }
         const returnedData = res.data as ExecuteCode2Item[] | null;
