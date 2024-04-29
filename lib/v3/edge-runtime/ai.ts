@@ -1,9 +1,5 @@
 import { Redis } from "@upstash/redis/nodejs";
-import {
-  ChatGPTMessage,
-  ChatGPTParams,
-  GPTMessageInclSummary,
-} from "../../models";
+import { ChatGPTMessage, GPTMessageInclSummary } from "../../models";
 import {
   ActionPlusApiInfo,
   ApprovalAnswerData,
@@ -21,11 +17,7 @@ import {
   routingLLMParams,
   routingPromptv3,
 } from "../prompts_parsers/routing";
-import {
-  actionFilteringPrompt,
-  filteringLLMParams,
-  parseFilteringOutputv3,
-} from "../prompts_parsers/filtering";
+import { parseFilteringOutputv3 } from "../prompts_parsers/filtering";
 import {
   codeGenLLMParams,
   convertWrittenCodeToExecutable,
@@ -36,13 +28,10 @@ import getMessages from "../../v2/prompts/chatBot";
 import { getUserMessageText } from "../utils";
 import { hideLongGraphOutputs } from "../../v2/edge-runtime/ai";
 import { streamWithEarlyTermination } from "../../v2/edge-runtime/utils";
-import { getLLMResponse, streamLLMResponse } from "../../queryLLM";
+import { getLLMResponse } from "../../queryLLM";
 import { checkCodeExecutionOutput, convertToGraphData } from "./dataAnalysis";
 import { filterActions } from "../../v2/edge-runtime/filterActions";
-import {
-  MessageInclSummaryToGPT,
-  removeOldestFunctionCalls,
-} from "../../edge-runtime/utils";
+import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
 import { hallucinateDocsSystemPrompt } from "../../prompts/hallucinateDocs";
 import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { sanitizeMessages } from "../../edge-runtime/apiResponseSimplification";
@@ -430,6 +419,13 @@ export async function Cassius(
                 ? m.content
                 : JSON.stringify(m.content),
           }));
+          if (!codeOk.isValid) {
+            generated_output.push({
+              role: "error",
+              name: "error", // For TS reasons
+              content: codeOk.error,
+            });
+          }
           codeMessage.generated_output = generated_output;
           const { error: insertCodeMessageErr } = await supabase
             .from("approval_answer_messages")
