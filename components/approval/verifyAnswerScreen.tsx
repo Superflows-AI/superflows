@@ -836,7 +836,9 @@ export function VerifyQuestionScreen(props: {
                 onClick={async () => {
                   if (loading) return;
                   setEditFollowUpsModalText(
-                    followUps?.suggestions ?? ["", "", ""],
+                    followUps?.suggestions && followUps?.suggestions.length > 0
+                      ? followUps.suggestions
+                      : ["", "", ""],
                   );
                   if (!followUps?.suggestions) {
                     const { data: followUpMsg, error: followUpsErr } =
