@@ -610,7 +610,11 @@ export function formatPlotData(plotMessage: {
   return {
     role: "graph",
     content: {
-      type: graphData.data.length === 1 ? "value" : graphData.type,
+      type:
+        // Can have tables with only 1 data point
+        graphData.data.length === 1 && graphData.type !== "table"
+          ? "value"
+          : graphData.type,
       // TODO: Fix below typing issues by making the functions type safe
       // @ts-ignore
       data: graphData.data,
