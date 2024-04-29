@@ -175,8 +175,8 @@ export async function matchQuestionToAnswer(
     {
       query_embedding: embedding,
       similarity_threshold: -1,
-      // Now using Opus, 8 is ok
-      match_count: 8,
+      // Now using Opus, 12 is (hopefully) ok
+      match_count: 12,
       _org_id: org.id,
     },
   );
