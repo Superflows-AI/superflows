@@ -219,7 +219,7 @@ export default async function handler(req: NextRequest) {
     ) {
       return new Response(
         JSON.stringify({
-          error: "No questions associated with this answer id",
+          error: `No questions associated with answer id ${requestData.answer_id}`,
         }),
         { status: 400, headers },
       );
