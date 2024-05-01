@@ -8,7 +8,7 @@ type ParsedResponse = {
   description: string;
 };
 
-export function fnNameDescriptionGenerationPrompt(args: {
+export function codeFnNameDescriptionGenerationPrompt(args: {
   userRequest: string;
   code: string;
   filteredActions: Action[];
@@ -49,8 +49,6 @@ export function fnNameDescriptionGenerationPrompt(args: {
   let facts = [
     args.org.description,
     "The user's code may call functions defined in <functions></functions>",
-    "Products and units are not the same - a product is identified by an SKU (stock-keeping unit) and there can be multiple units for each product",
-    "The system recommends actions for products: discount, monitor, advertise, check, or display. When asked for such recommendations, use these actions",
   ];
   return [
     {
@@ -130,6 +128,67 @@ ${varObjs.map(
 
 ${code}
 \`\`\``,
+    },
+    {
+      role: "assistant",
+      content: "<description>",
+    },
+  ];
+}
+
+export function docsFnNameDescriptionGenerationPrompt(args: {
+  userRequest: string;
+  docsMessage: string;
+  org: Pick<Organization, "name" | "description">;
+  similarFnNames: string[];
+}): ChatGPTMessage[] {
+  // function docsFnNameDescriptionGenerationPrompt(args) {
+  return [
+    {
+      role: "system",
+      content: `You are a helpful assistant in ${
+        args.org.name || "a software package"
+      }. Your task is to write a concise function name and description for a function that returns the section of ${
+        args.org.name || "software"
+      } documentation that is relevant to the question being asked.
+
+<facts>
+1. ${args.org.description}
+</facts>
+
+<rules>
+1. Write a unique and highly accurate <functionName></functionName> for the JS function
+2. BE CONCISE in the description
+3. Make sure the name is specific enough to differentiate this function from other functions that search the documentation
+4. ${
+        args.similarFnNames.length > 0
+          ? `AVOID naming the function any name in <namesToAvoid></namesToAvoid>\n5. Use camelCase for the function name
+6. Respond in the format given in <format></format> tags`
+          : "Use camelCase for the function name\n5. Respond in the format given in <format></format> tags"
+      }
+</rules>
+
+<format>
+<description>Concise function description</description>
+<functionName>exampleFunctionName</functionName>
+</format>${
+        args.similarFnNames.length > 0
+          ? `
+
+<namesToAvoid>
+${args.similarFnNames.map((n) => ` - ${n}`).join("\n")}
+</namesToAvoid>`
+          : ""
+      }`,
+    },
+    {
+      role: "user",
+      content: `Answering question: ${args.userRequest}
+
+Relevant documentation returned by function:
+"""
+${args.docsMessage}
+"""`,
     },
     {
       role: "assistant",
