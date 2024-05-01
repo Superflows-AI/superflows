@@ -43,7 +43,7 @@ RULES:
   };
 }
 
-function getChatHistoryText(chatHistory: ChatGPTMessage[]): {
+export function getChatHistoryText(chatHistory: ChatGPTMessage[]): {
   pastConversation: string;
   numPastMessagesIncluded: number;
 } {
