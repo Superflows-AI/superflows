@@ -10,7 +10,8 @@ import {
 import { Action, OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
 import { z } from "zod";
 import {
-  fnNameDescriptionGenerationPrompt,
+  codeFnNameDescriptionGenerationPrompt,
+  docsFnNameDescriptionGenerationPrompt,
   parseFnNameDescriptionOut,
 } from "../../../lib/v3/prompts_parsers/descriptionGeneration";
 import {
@@ -21,6 +22,8 @@ import {
 import { parseFilteringOutputv3 } from "../../../lib/v3/prompts_parsers/filtering";
 import { parseCodeGenv3 } from "../../../lib/v3/prompts_parsers/codeGen";
 import { getLLMResponse } from "../../../lib/queryLLM";
+import { Session } from "@supabase/auth-helpers-react";
+import { ChatGPTMessage } from "../../../lib/models";
 
 export const config = {
   runtime: "edge",
@@ -100,12 +103,55 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    const { session, supabase } = await getSessionFromCookie(req);
-    if (!session) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+    // Validate that the request body is of the correct format
+    const requestData = await req.json();
+    if (
+      !isValidBody<GenerateAnswerOfflineType>(
+        requestData,
+        GenerateDescriptionZod,
+      )
+    ) {
+      return new Response(JSON.stringify({ message: "Invalid request body" }), {
+        status: 400,
         headers,
       });
+    }
+    console.log("Req body", requestData);
+
+    let supabase = serviceLevelSupabase;
+    let { session, supabase: localSupabase } = await getSessionFromCookie(req);
+    if (localSupabase) supabase = localSupabase;
+    if (!session) {
+      const authToken = req.headers.get("Authorization");
+      if (
+        authToken &&
+        // If the user is authenticated with the service level key, allow access
+        authToken.includes(process.env.SERVICE_LEVEL_KEY_SUPABASE ?? "")
+      ) {
+        const answerData = await serviceLevelSupabase
+          .from("approval_answers")
+          .select("org_id, organizations(*, profiles(id))")
+          .eq("id", requestData.answer_id)
+          .single();
+        if (answerData.error) throw new Error(answerData.error.message);
+        if (
+          !answerData.data.organizations ||
+          !answerData.data.organizations.profiles
+        ) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers,
+          });
+        }
+        session = {
+          user: { id: answerData.data.organizations!.profiles[0].id },
+        } as Session;
+      } else {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers,
+        });
+      }
     }
 
     // Check that the user hasn't surpassed the production rate limit (protects DB query below)
@@ -145,21 +191,6 @@ export default async function handler(req: NextRequest) {
         { status: 403, headers },
       );
     }
-
-    // Validate that the request body is of the correct format
-    const requestData = await req.json();
-    if (
-      !isValidBody<GenerateAnswerOfflineType>(
-        requestData,
-        GenerateDescriptionZod,
-      )
-    ) {
-      return new Response(JSON.stringify({ message: "Invalid request body" }), {
-        status: 400,
-        headers,
-      });
-    }
-    console.log("Req body", requestData);
 
     // All approval info
     const { data: approvalAnswersDataArr, error: approvalAnswersError } =
@@ -204,33 +235,7 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    // Get all variable info
-    const { data: approvalVariableData, error: approvalVariableError } =
-      await serviceLevelSupabase
-        .from("approval_variables")
-        .select("*")
-        .eq("org_id", org.id);
-    if (approvalVariableError) throw new Error(approvalVariableError.message);
-
-    // Get actions
-    const { data: activeActions, error: actionErr } = await serviceLevelSupabase
-      .from("actions")
-      .select("*")
-      .match({ active: true, org_id: org.id });
-    if (actionErr) throw new Error(actionErr.message);
-
-    if (
-      !activeActions ||
-      (activeActions.length === 0 && !org.chat_to_docs_enabled)
-    ) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
-        }),
-        { status: 400, headers },
-      );
-    }
+    // Get similar function names used in both docs and code answers
     let primaryQ = approvalAnswersData.approval_questions.find(
       (q) => q.primary_question,
     );
@@ -243,48 +248,6 @@ export default async function handler(req: NextRequest) {
       .eq("id", primaryQ.id)
       .single();
     if (embeddingErr) throw new Error(embeddingErr.message);
-
-    const codeMessage = approvalAnswersData.approval_answer_messages.find(
-      (m) => m.message_type === "code",
-    );
-    if (!codeMessage) {
-      return new Response(
-        JSON.stringify({
-          error: "No code message associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    if (approvalAnswersData.approval_questions.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: "No questions associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    const filteringMessage = approvalAnswersData.approval_answer_messages.find(
-      (m) => m.message_type === "filtering",
-    );
-    if (!filteringMessage) {
-      return new Response(
-        JSON.stringify({
-          error: "No filtering message associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    const filteredActions = parseFilteringOutputv3(
-      filteringMessage.raw_text,
-      activeActions.map((a) => snakeToCamel(a.name)),
-    )
-      .selectedFunctions.filter((fn) =>
-        // Only include functions actually used in the code
-        parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
-      )
-      .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
-      .filter(Boolean) as Action[];
-
     // Get similar function names
     let { data: matches, error } = await supabase.rpc(
       "search_approved_answers_with_group_ranking",
@@ -319,20 +282,124 @@ export default async function handler(req: NextRequest) {
       if (matchesFnNamesError) {
         throw new Error(matchesFnNamesError.message);
       }
-      similarFnNames = matchesFnNames.map((m) => m.fnName);
+      similarFnNames = matchesFnNames.map((m) => m.fnName).filter(Boolean);
     }
     console.log("Similar function names", similarFnNames);
-    const prompt = fnNameDescriptionGenerationPrompt({
-      userRequest: primaryQ.text,
-      org: org,
-      code: codeMessage.raw_text,
-      filteredActions,
-      variables: approvalVariableData,
-      similarFnNames,
-    });
+
+    // If it's a docs answer, go a different path
+    const isDocs = approvalAnswersData.approval_answer_messages.some(
+      (q) =>
+        // Poorly named for this purpose, but function messages are only used by docs answers
+        q.message_type === "function",
+    );
+
+    let prompt: ChatGPTMessage[]; // Used when paths below rejoin
+    if (isDocs) {
+      const docsCall = approvalAnswersData.approval_answer_messages.find(
+        (q) => q.message_type === "function",
+      );
+      if (!docsCall) {
+        throw new Error("No docs call despite there being one earlier");
+      } else if (
+        // Absurd check to make TS happy
+        docsCall.generated_output === null ||
+        docsCall.generated_output.length === 0 ||
+        typeof docsCall.generated_output[0] !== "object" ||
+        docsCall.generated_output[0] === null ||
+        !("content" in docsCall.generated_output[0]) ||
+        !docsCall.generated_output[0].content
+      ) {
+        throw new Error("No generated output for docs call");
+      }
+      prompt = docsFnNameDescriptionGenerationPrompt({
+        userRequest: primaryQ.text,
+        org: org,
+        docsMessage: docsCall.generated_output[0]!.content.toString(),
+        similarFnNames,
+      });
+    } else {
+      // Get all variable info
+      const { data: approvalVariableData, error: approvalVariableError } =
+        await serviceLevelSupabase
+          .from("approval_variables")
+          .select("*")
+          .eq("org_id", org.id);
+      if (approvalVariableError) throw new Error(approvalVariableError.message);
+
+      // Get actions
+      const { data: activeActions, error: actionErr } =
+        await serviceLevelSupabase
+          .from("actions")
+          .select("*")
+          .match({ active: true, org_id: org.id });
+      if (actionErr) throw new Error(actionErr.message);
+
+      if (
+        !activeActions ||
+        (activeActions.length === 0 && !org.chat_to_docs_enabled)
+      ) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
+          }),
+          { status: 400, headers },
+        );
+      }
+
+      const codeMessage = approvalAnswersData.approval_answer_messages.find(
+        (m) => m.message_type === "code",
+      );
+      if (!codeMessage) {
+        return new Response(
+          JSON.stringify({
+            error: "No code message associated with this answer id",
+          }),
+          { status: 400, headers },
+        );
+      }
+      if (approvalAnswersData.approval_questions.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: "No questions associated with this answer id",
+          }),
+          { status: 400, headers },
+        );
+      }
+      const filteringMessage =
+        approvalAnswersData.approval_answer_messages.find(
+          (m) => m.message_type === "filtering",
+        );
+      if (!filteringMessage) {
+        return new Response(
+          JSON.stringify({
+            error: "No filtering message associated with this answer id",
+          }),
+          { status: 400, headers },
+        );
+      }
+      const filteredActions = parseFilteringOutputv3(
+        filteringMessage.raw_text,
+        activeActions.map((a) => snakeToCamel(a.name)),
+      )
+        .selectedFunctions.filter((fn) =>
+          // Only include functions actually used in the code
+          parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
+        )
+        .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
+        .filter(Boolean) as Action[];
+
+      prompt = codeFnNameDescriptionGenerationPrompt({
+        userRequest: primaryQ.text,
+        org: org,
+        code: codeMessage.raw_text,
+        filteredActions,
+        variables: approvalVariableData,
+        similarFnNames,
+      });
+    }
 
     logPrompt(prompt);
-
     const llmResponse = await exponentialRetryWrapper(
       getLLMResponse,
       [
