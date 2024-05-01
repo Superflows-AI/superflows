@@ -115,7 +115,7 @@ export async function matchQuestionToAnswer(
       } catch (e) {}
     }
 
-    await executeMessages(
+    chatHistory = await executeMessages(
       approvalAnswer.approval_answer_messages.sort(
         (a, b) => a.message_idx - b.message_idx,
       ),
@@ -286,7 +286,7 @@ export async function matchQuestionToAnswer(
     if (messagesError) throw new Error(messagesError.message);
     if (!messages) throw new Error("No messages found for " + chosenMatch.id);
 
-    await executeMessages(
+    chatHistory = await executeMessages(
       messages,
       actions,
       org,
@@ -325,7 +325,7 @@ async function executeMessages(
   reqData: AnswersType,
   variables: ApprovalVariable[],
   language: string | null,
-) {
+): Promise<GPTMessageInclSummary[]> {
   let filteredActions: ActionPlusApiInfo[] = [],
     codeMessages: FunctionMessage[] = [],
     route: "DOCS" | "CODE" | undefined = undefined;
@@ -469,4 +469,5 @@ async function executeMessages(
       }
     }
   }
+  return chatHistory;
 }
