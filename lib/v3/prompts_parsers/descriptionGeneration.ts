@@ -142,7 +142,6 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
   org: Pick<Organization, "name" | "description">;
   similarFnNames: string[];
 }): ChatGPTMessage[] {
-  // function docsFnNameDescriptionGenerationPrompt(args) {
   return [
     {
       role: "system",
