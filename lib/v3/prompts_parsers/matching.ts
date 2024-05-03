@@ -185,7 +185,7 @@ export function parseMatchingOutput(
   text: string,
   variables: ApprovalVariable[],
 ): ParsedResponse {
-  const tellUserMatch = text.match(/<tellUser>([\s\S]*?)<\/tellUser>/);
+  const tellUserMatch = text.match(/<tellUser>([\s\S]*)/);
   const tellUser = tellUserMatch ? tellUserMatch[1] : "";
 
   const isFunctionCall = Boolean(text.match(/<functionCall>/));

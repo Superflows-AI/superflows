@@ -95,4 +95,22 @@ describe("parseMatchingOutput", () => {
       tellUser: "",
     });
   });
+  it("Real world, tell user", () => {
+    const textOut = `<thinking>
+1. The user is requesting a poem about EazyStock
+2. The user has only made one request
+3. None of the provided functions can generate a poem about EazyStock. The functions are for analyzing inventory data and generating charts/tables, not for creative writing tasks.
+</thinking>
+
+<functionCall>None</functionCall>
+
+<tellUser>I apologize, but I am not able to write a poem about EazyStock. My capabilities are focused on analyzing inventory data and generating visualizations to provide insights. Creative writing tasks like poetry are outside of my current skill set. Please let me know if there are any inventory-related questions I can assist with though!`;
+    const out = parseMatchingOutput(textOut, []);
+    expect(out).toEqual({
+      functionName: "",
+      variables: null,
+      tellUser:
+        "I apologize, but I am not able to write a poem about EazyStock. My capabilities are focused on analyzing inventory data and generating visualizations to provide insights. Creative writing tasks like poetry are outside of my current skill set. Please let me know if there are any inventory-related questions I can assist with though!",
+    });
+  });
 });

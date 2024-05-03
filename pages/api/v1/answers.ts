@@ -475,7 +475,7 @@ export default async function handler(req: NextRequest) {
 
     const readableStream = new ReadableStream({
       async start(controller) {
-        // Ask Angela or Dottie for the answer
+        // Ask Angela, Bertie or Dottie for the answer, or check Cassius' answers, who thinks too much
         const aiToUse = org!.yond_cassius
           ? matchQuestionToAnswer
           : org!.bertie_enabled
@@ -492,7 +492,7 @@ export default async function handler(req: NextRequest) {
               requestData,
               org!,
               conversationId,
-              previousMessages,
+              [...previousMessages],
               language,
             )
           : await aiToUse(
@@ -501,7 +501,7 @@ export default async function handler(req: NextRequest) {
               activeActions,
               org!,
               conversationId,
-              previousMessages,
+              [...previousMessages],
               language,
               currentHost,
             );
