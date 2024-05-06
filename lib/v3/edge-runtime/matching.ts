@@ -20,6 +20,7 @@ import { exponentialRetryWrapper, logPrompt, snakeToCamel } from "../../utils";
 import { queryEmbedding } from "../../queryLLM";
 import {
   getMatchingPromptv3,
+  MatchingParsedResponse,
   parseMatchingOutput,
 } from "../prompts_parsers/matching";
 import { streamWithEarlyTermination } from "../../v2/edge-runtime/utils";
@@ -36,10 +37,7 @@ import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { chatToDocsPrompt } from "../../prompts/chatBot";
 import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
 import { funLoadingMessages } from "../../funLoadingMessages";
-import {
-  StreamingStep,
-  StreamingStepInput,
-} from "@superflows/chat-ui-react/dist/src/lib/types";
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -231,14 +229,19 @@ export async function matchQuestionToAnswer(
   logPrompt(matchingPrompt);
   let completeOutput = "",
     nothingStreamed = true,
-    finalLlmOut: string | null = null,
-    numRetries = 0;
-  while (!finalLlmOut && numRetries < 2) {
+    numRetries = 0,
+    parsedMatchingOut: MatchingParsedResponse | null = null,
+    chosenMatch = null,
+    invalidOutput = false;
+
+  // No valid function chosen or tell user message and retries not maxed out
+  while (!chosenMatch && !parsedMatchingOut?.tellUser && numRetries < 2) {
     numRetries += 1;
-    finalLlmOut = await streamWithEarlyTermination(
+    const llmOut = await streamWithEarlyTermination(
       matchingPrompt,
       {
-        temperature: 0,
+        // Set temperature on retry
+        temperature: !invalidOutput ? 0 : 0.75,
         max_tokens: 500,
         stop: [
           ")</functionCall>",
@@ -269,21 +272,42 @@ export async function matchQuestionToAnswer(
       "Matching",
       matchingPrompt[matchingPrompt.length - 1].content,
     );
-  }
-  console.log("LLM out:", finalLlmOut);
-  if (!finalLlmOut) {
-    throw new Error("Matching LLM ran out of retries");
-  }
-  const parsedMatchingOut = parseMatchingOutput(finalLlmOut, variables);
-
-  if (parsedMatchingOut?.functionName) {
-    // Get messages from approval_answer_messages and use them to generate the answer, filling in variables
-    const chosenMatch = fnNameData.find(
-      (m) => m.fnName === parsedMatchingOut.functionName,
-    );
-    if (!chosenMatch) {
-      throw new Error("No match found for " + parsedMatchingOut.functionName);
+    console.log("LLM out:", llmOut);
+    if (llmOut) {
+      parsedMatchingOut = parseMatchingOutput(llmOut, variables);
+      if (parsedMatchingOut?.functionName) {
+        // Get messages from approval_answer_messages and use them to generate the answer, filling in variables
+        chosenMatch = fnNameData.find(
+          (m) => m.fnName === parsedMatchingOut!.functionName,
+        );
+        if (!chosenMatch) {
+          console.warn(
+            `No match found for ${parsedMatchingOut.functionName} on try ${numRetries}`,
+          );
+          // Reset since no match
+          invalidOutput = true;
+          parsedMatchingOut = null;
+          chosenMatch = null;
+        }
+      }
     }
+  }
+  // If no function name or tellUser message, we ran out of retries
+  if (!chosenMatch && !parsedMatchingOut?.tellUser) {
+    console.error("Matching LLM ran out of retries");
+    streamInfo({
+      role: "assistant",
+      content:
+        "I'm sorry, but the AI is currently facing difficulties.\n\nPlease try again later.",
+    });
+    return {
+      nonSystemMessages: [...chatHistory],
+      cost: 0,
+      numUserQueries: 0,
+    };
+  }
+
+  if (chosenMatch) {
     const { data: messages, error: messagesError } = await supabase
       .from("approval_answer_messages")
       .select("raw_text,message_idx,message_type")
@@ -301,15 +325,15 @@ export async function matchQuestionToAnswer(
       reqData,
       variables.map((v) => ({
         ...v,
-        default: (parsedMatchingOut.variables ?? {})[v.name] ?? v.default,
+        default: (parsedMatchingOut!.variables ?? {})[v.name] ?? v.default,
       })),
       language,
     );
   } else {
-    // No function name, presumably there is a tellUser message
+    // No function name, there must be a tellUser message
     chatHistory.push({
       role: "assistant",
-      content: parsedMatchingOut?.tellUser ?? "",
+      content: parsedMatchingOut!.tellUser,
     });
   }
   return {
