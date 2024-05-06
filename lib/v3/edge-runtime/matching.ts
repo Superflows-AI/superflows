@@ -230,6 +230,7 @@ export async function matchQuestionToAnswer(
   });
   logPrompt(matchingPrompt);
   let completeOutput = "",
+    nothingStreamed = true,
     finalLlmOut: string | null = null,
     numRetries = 0;
   while (!finalLlmOut && numRetries < 2) {
@@ -253,10 +254,15 @@ export async function matchQuestionToAnswer(
       },
       async (rawOutput: string) => {
         if (completeOutput.includes("<tellUser>")) {
+          const newContent = rawOutput.replace(completeOutput, "");
           streamInfo({
             role: "assistant",
-            content: rawOutput.replace(completeOutput, ""),
+            content:
+              nothingStreamed && newContent.startsWith("\n")
+                ? newContent.slice(1)
+                : newContent,
           });
+          nothingStreamed = false;
         }
         completeOutput = rawOutput;
       },
