@@ -254,8 +254,8 @@ aVariableNameThatMustNotBeRepeated
   try {
     // Run code, await result
     result = eval(code);
-    // Timeout if the code takes >30s to run
-    result = await Timeout.race([result], 30000);
+    // Timeout if the code takes >45s to run
+    result = await Timeout.race([result], 45000);
 
     // Reset console functions
     console.log = originalLog;
