@@ -174,7 +174,7 @@ function ${match.fnName}(`;
 //   return sentence;
 // }
 
-type ParsedResponse = {
+export type MatchingParsedResponse = {
   functionName: string;
   variables: Record<string, any> | null;
   tellUser: string;
@@ -184,7 +184,7 @@ type ParsedResponse = {
 export function parseMatchingOutput(
   text: string,
   variables: ApprovalVariable[],
-): ParsedResponse {
+): MatchingParsedResponse {
   const tellUserMatch = text.match(/<tellUser>([\s\S]*)/);
   const tellUser = tellUserMatch ? tellUserMatch[1] : "";
 
