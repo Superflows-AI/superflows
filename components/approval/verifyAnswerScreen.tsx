@@ -5,10 +5,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SuperflowsChatItem } from "@superflows/chat-ui-react";
 import { useProfile } from "../contextManagers/profile";
 import {
-  CheckCircleIcon,
   CodeBracketIcon,
   EyeIcon,
   InformationCircleIcon,
+  KeyIcon,
   PencilSquareIcon,
   PlusIcon,
   XCircleIcon,
@@ -22,6 +22,7 @@ import { parseRoutingOutputv3 } from "../../lib/v3/prompts_parsers/routing";
 import { Action, ApprovalVariable } from "../../lib/types";
 import { snakeToCamel } from "../../lib/utils";
 import {
+  EditAPIKeyModal,
   EditCodeModal,
   EditFilteringModal,
   EditRouteModal,
@@ -74,7 +75,7 @@ export function VerifyQuestionScreen(props: {
   const [allActions, setAllActions] = useState<Action[] | null>(null);
   const [thoughtsVisible, setThoughtsVisible] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<
-    "code" | "filtering" | "routing" | "user" | null
+    "code" | "filtering" | "routing" | "user" | "api-key" | null
   >(null);
   const [userApiKey, setUserApiKey] = useState(() => {
     // Grab API key from localstorage
@@ -376,6 +377,12 @@ export function VerifyQuestionScreen(props: {
               }}
             />
           )}
+          <EditAPIKeyModal
+            open={showModal === "api-key"}
+            setOpen={() => setShowModal(null)}
+            apiKey={userApiKey ?? ""}
+            setApiKey={setUserApiKey}
+          />
           <EditRouteModal
             open={showModal === "routing"}
             setOpen={() => setShowModal(null)}
@@ -814,13 +821,20 @@ export function VerifyQuestionScreen(props: {
                     className="p-2 border-t border-t-gray-700"
                   >
                     <h2 className="text-base text-gray-300 mb-2">Code</h2>
-                    <div className="flex flex-row gap-x-2 mt-2">
+                    <div className="flex flex-row w-full justify-start gap-x-2 mt-2">
                       <button
                         className="flex gap-x-1 place-items-center text-gray-400 text-little px-1.5 py-1 border border-transparent transition hover:border-gray-600 rounded hover:text-gray-300"
                         onClick={() => setShowModal("code")}
                       >
                         <CodeBracketIcon className="h-5 w-5" />
                         View & Edit
+                      </button>
+                      <button
+                        className="flex gap-x-1 place-items-center text-gray-400 text-little px-1.5 py-1 border border-transparent transition hover:border-gray-600 rounded hover:text-gray-300"
+                        onClick={() => setShowModal("api-key")}
+                      >
+                        <KeyIcon className="h-5 w-5" />
+                        {userApiKey ? "Edit" : "Add"} API Key
                       </button>
                     </div>
                   </div>

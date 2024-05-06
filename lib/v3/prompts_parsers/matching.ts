@@ -198,7 +198,6 @@ export function parseMatchingOutput(
   }
   const noFunctionCallClose = !Boolean(text.match(/<\/functionCall>/));
   if (isFunctionCall && noFunctionCallClose) {
-    console.log("NO close");
     const fnText = text
       .split(/<functionCall>/)[1]
       // Remove any comments
