@@ -158,12 +158,13 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
 <rules>
 1. Write a unique and highly accurate <functionName></functionName> for the JS function
 2. BE CONCISE in the description
-3. Make sure the name is specific enough to differentiate this function from other functions that search the documentation
-4. ${
+3. NEVER use vague names or descriptions common to all functions that search the docs. Example: getRelevantDocs would be a poor name
+4. DO NOT describe and write a function name of what the docs say - rather the function that returns the docs
+5. ${
         args.similarFnNames.length > 0
-          ? `AVOID naming the function any name in <namesToAvoid></namesToAvoid>\n5. Use camelCase for the function name
-6. Respond in the format given in <format></format> tags`
-          : "Use camelCase for the function name\n5. Respond in the format given in <format></format> tags"
+          ? `AVOID naming the function any name in <namesToAvoid></namesToAvoid>\n6. Use camelCase for the function name
+7. Respond in the format given in <format></format> tags`
+          : "Use camelCase for the function name\n6. Respond in the format given in <format></format> tags"
       }
 </rules>
 
@@ -200,12 +201,12 @@ export function parseFnNameDescriptionOut(text: string): ParsedResponse {
   const functionNameMatch = text.match(
     /<functionName>([\s\S]*?)<\/functionName>/,
   );
-  const functionName = functionNameMatch ? functionNameMatch[1] : "";
+  const functionName = functionNameMatch ? functionNameMatch[1].trim() : "";
 
   const descriptionMatch = text.match(/<description>([\s\S]*?)<\/description>/);
 
   return {
     functionName,
-    description: descriptionMatch ? descriptionMatch[1] : "",
+    description: descriptionMatch ? descriptionMatch[1].trim() : "",
   };
 }
