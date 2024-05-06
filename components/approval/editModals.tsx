@@ -2,12 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AutoGrowingTextArea } from "../autoGrowingTextarea";
 import Modal from "../modal";
 import { parseCodeGenv3 } from "../../lib/v3/prompts_parsers/codeGen";
-import {
-  Action,
-  ApprovalAnswer,
-  ApprovalAnswerMessage,
-  ApprovalVariable,
-} from "../../lib/types";
+import { Action, ApprovalVariable } from "../../lib/types";
 import {
   Bars3BottomLeftIcon,
   CodeBracketIcon,
@@ -674,6 +669,64 @@ export function EditUserMessageModal(props: {
           <LoadingSpinner classes={"h-12 w-12 text-gray-400"} />
         </div>
       )}
+    </Modal>
+  );
+}
+
+export function EditAPIKeyModal(props: {
+  open: boolean;
+  setOpen: () => void;
+  apiKey: string;
+  setApiKey: (apiKey: string) => void;
+}) {
+  const [localValue, setLocalValue] = useState(props.apiKey);
+  return (
+    <Modal open={props.open} setOpen={props.setOpen} classNames="max-w-xl">
+      <div className="w-full flex flex-col">
+        <div
+          className={
+            "flex flex-row gap-x-2 text-gray-300 place-items-center mb-2"
+          }
+        >
+          <CodeBracketIcon className={"h-6 w-6"} />
+          <h1 className="text-lg text-gray-300">Edit API Key</h1>
+        </div>
+        <p className="text-sm text-gray-400 mb-3">
+          API key used to access your API.
+        </p>
+        <input
+          className="rounded-md"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+        />
+        <p className="w-full text-center text-sm text-gray-400 mt-1">
+          This is never stored in our database.
+        </p>
+        <div className={"flex flex-row justify-end gap-x-2 mt-6"}>
+          <button
+            className={"bg-gray-500 rounded px-2 py-1 text-gray-50"}
+            onClick={props.setOpen}
+          >
+            Cancel
+          </button>
+          <button
+            className={classNames(
+              props.apiKey !== localValue
+                ? "bg-green-600"
+                : "bg-gray-600 cursor-not-allowed",
+              "rounded px-2 py-1 text-gray-50",
+            )}
+            onClick={() => {
+              if (props.apiKey === localValue) return;
+              localStorage.setItem("userApiKey", localValue);
+              props.setApiKey(localValue);
+              props.setOpen();
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 }
