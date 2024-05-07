@@ -510,7 +510,7 @@ export default async function handler(req: NextRequest) {
         // If any of the last message's LLM-derived values are set, update it in the DB
         const userMessage = allMessages[previousMessages.length - 1];
         if (userMessage.role === "user") {
-          await supabase
+          const { error: updateChatMessageErr } = await supabase
             .from("chat_messages")
             .update({
               ...userMessage,
@@ -522,21 +522,27 @@ export default async function handler(req: NextRequest) {
             })
             .eq("conversation_id", conversationId)
             .eq("conversation_index", previousMessages.length - 1);
+          if (updateChatMessageErr)
+            throw new Error(updateChatMessageErr.message);
         }
-        await supabase.from("chat_messages").insert(
-          allMessages.slice(previousMessages.length).map((m, idx) => {
-            if (m.role === "function" && m.content.length > 10000) {
-              m.content = ApiResponseCutText;
-            }
-            return {
-              ...m,
-              org_id: org!.id,
-              conversation_id: conversationId,
-              conversation_index: previousMessages.length + idx,
-              language,
-            };
-          }),
-        );
+        const { error: chatMessageInsertErr } = await supabase
+          .from("chat_messages")
+          .insert(
+            allMessages.slice(previousMessages.length).map((m, idx) => {
+              if (m.role === "function" && m.content.length > 10000) {
+                m.content = ApiResponseCutText;
+              }
+              if ("urls" in m) delete m.urls;
+              return {
+                ...m,
+                org_id: org!.id,
+                conversation_id: conversationId,
+                conversation_index: previousMessages.length + idx,
+                language,
+              };
+            }),
+          );
+        if (chatMessageInsertErr) throw new Error(chatMessageInsertErr.message);
 
         const todaysDate = new Date().toISOString().split("T")[0];
         const { data, error } = await supabase

@@ -476,26 +476,30 @@ async function executeMessages(
         ];
       }
       logPrompt(prompt);
-      let streamedText = "";
-      let completeOutput = await streamWithEarlyTermination(
-        prompt,
-        {
-          max_tokens: MAX_TOKENS_OUT,
-          temperature: 0.2,
-        },
-        "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
-        () => false,
-        (rawOutput: string) => {
-          streamInfo({
-            role: "assistant",
-            content: rawOutput.replace(streamedText, ""),
-          });
-          streamedText = rawOutput;
-        },
-        "Explanation message",
-      );
-      if (completeOutput) {
-        chatHistory.push({ role: "assistant", content: completeOutput });
+      let streamedText = "",
+        retryCount = 0;
+      while (!streamedText && retryCount < 3) {
+        retryCount++;
+        let completeOutput = await streamWithEarlyTermination(
+          prompt,
+          {
+            max_tokens: MAX_TOKENS_OUT,
+            temperature: 0.2,
+          },
+          "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
+          () => false,
+          (rawOutput: string) => {
+            streamInfo({
+              role: "assistant",
+              content: rawOutput.replace(streamedText, ""),
+            });
+            streamedText = rawOutput;
+          },
+          "Explanation message",
+        );
+        if (streamedText && completeOutput) {
+          chatHistory.push({ role: "assistant", content: completeOutput });
+        }
       }
     }
   }

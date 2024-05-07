@@ -248,10 +248,9 @@ RULES:
         ? `You have expert knowledge in ${orgInfo.name}'s domain. Use this to help the user. However, i`
         : "I"
     }f there's nothing relevant in the docs for answering a question, tell the user that this isn't mentioned in the docs. 
-5. Be extremely concise in your response
-6.${
+5. Be extremely concise in your response${
       includeIdUrlLine
-        ? "\nURLs have been replaced by variables URLX (where X is a number). These variables are filled in with the real values before being shown to the user, so use URLX as you would use the URL it represents\n"
+        ? "\n6. URLs have been replaced by variables URLX (where X is a number). These variables are filled in with the real values before being shown to the user, so use URLX as you would use the URL it represents"
         : ""
     }`,
   };
