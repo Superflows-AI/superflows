@@ -154,7 +154,7 @@ export async function matchQuestionToAnswer(
       chatMessageCache.checkChatSummaryCache(chatHistory);
     userRequest =
       cachedChatHistory ||
-      (await summariseChatHistory(chatHistory, language, org.id));
+      (await summariseChatHistory(chatHistory, language, org));
   }
   const userMessage = chatHistory[chatHistory.length - 1];
   // For type-safety: it's always a user message

@@ -170,7 +170,7 @@ export async function Bertie( // Bertie will eat you for breakfast
   } else {
     userRequest =
       cachedChatHistory ||
-      (await summariseChatHistory(chatHistory, language, org.id));
+      (await summariseChatHistory(chatHistory, language, org));
   }
   // If the summary is different from the user message, add it to the chatHistory
   // (for storage in DB later)

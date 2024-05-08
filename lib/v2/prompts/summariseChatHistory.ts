@@ -9,6 +9,7 @@ export const summariseChatHistoryLLMParams = {
 
 export function chatHistorySummaryPrompt(
   chatHistory: ChatGPTMessage[],
+  org: { name: string; description: string },
   language: string | null,
 ): {
   prompt: ChatGPTMessage[];
@@ -22,7 +23,9 @@ export function chatHistorySummaryPrompt(
       {
         role: "system",
         content: `Condense the user's most recent unanswered request. This should include relevant information they've given from the PAST_CONVERSATION. The instruction you write alone is passed to an AI that will carry it out, with no other context.
-
+${org.name ? `\nYou're embedded in ${org.name}. ` : ""}${
+          org.description ?? ""
+        }${org.name || org.description ? "\n" : ""}
 EXAMPLE 1:
 """
 Past conversation:
