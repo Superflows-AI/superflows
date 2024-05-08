@@ -14,8 +14,8 @@ export function parseTellUser(output: string): string {
     return textAfterTellUser.split(/^\S+(\s\S+)?:\s?/m)[0].trim();
   }
 
-  // Otherwise, return an empty string
-  return "";
+  // Otherwise, return the output
+  return output;
 }
 
 export function getActionFilteringDescriptions(
