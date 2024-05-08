@@ -173,8 +173,8 @@ export async function matchQuestionToAnswer(
     {
       query_embedding: embedding,
       similarity_threshold: -1,
-      // Now using Opus, 12 is (hopefully) ok
-      match_count: 12,
+      // Now using Opus, 10 is (hopefully) ok
+      match_count: 10,
       _org_id: org.id,
     },
   );

@@ -75,9 +75,9 @@ ${facts.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 
 <rules>
 1. You MUST either call 1 function or tell the user their request isn't within your capabilities
-2. In <functionCall></functionCall>, ONLY call functions in <function></function> - DO NOT write other JavaScript
+2. In <functionCall></functionCall>, ONLY call 1 function in <functions></functions> - DO NOT write other JavaScript
 3. DO NOT write arbitrary JS code in <functionCall></functionCall>. Only use JS format
-4. DO NOT call a function if you aren't CERTAIN it will answer the user's request
+4. DO NOT call a function if you aren't certain it will answer the user's request
 5. If the user has multiple requests - answer the FIRST one that you can answer
 6. Respond in the format given in <format></format> tags
 7. If a function is called, an AI will summarize the response and provide the user with the answer${
@@ -91,7 +91,8 @@ ${facts.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 <thinking>
 1. Think step-by-step: what is the user requesting
 2. Has the user made multiple requests? Answer the first one you can answer
-3. Do any of the <functions></functions> achieve this, considering that parameter values must be set?
+3. Do any of the <functions></functions> achieve this
+4. Consider possible parameter values to answer the user's request
 </thinking>
 <functionCall>None|function1({param1: "value1", param2: "value2", ...})</functionCall>
 <tellUser>If functionCall is None, tell the user their request isn't within your capabilities</tellUser>
