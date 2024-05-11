@@ -23,7 +23,7 @@ describe("summariseChatHistory", () => {
     ]);
     expect(historyText).toEqual({
       pastConversation:
-        "User (oldest): I want to book a flight to Paris\n\nAssistant: Sure, when would you like to go?\n\nUser (most recent): Next week",
+        "User (oldest): I want to book a flight to Paris\n\nAssistant (most recent): Sure, when would you like to go?",
       numPastMessagesIncluded: 3,
     });
   });
