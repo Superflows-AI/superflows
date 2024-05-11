@@ -164,7 +164,7 @@ export async function LLMPreProcess(args: {
         "Thoughts:\n1. ",
         {
           FUNCTIONS: "operations",
-          FUNCTION: "operation",
+          "FUNCTION ": "operation ",
         },
       );
       if (rawOutput === null) {

@@ -121,12 +121,21 @@ export function replacePlaceholdersDuringStreaming(
   // Check if there's a full match: if so, replace the variable with the value
   // Note: we get a full match even if the number hasn't finished outputting (e.g.
   // URL1 is output, but the next chunk is a 0 to make it URL10)
+  const placeholderKeys = Object.keys(placeholderToOriginalMap)
+    // Got to order with keys which are subsets of others last (e.g. URL11 before URL1)
+    .sort((a, b) => (a.includes(b) ? 1 : -1));
+
   const fullPlaceholderMatch =
-    /(?:((?:URL|ID)[1-9][0-9]*)\b|(FUNCTIONS?) )/g.exec(content);
+    // /(?:((?:URL|ID)[1-9][0-9]*)\b|(FUNCTIONS?) )/g.exec(content);
+    new RegExp(`(${placeholderKeys.join("|")})`).exec(content);
   if (fullPlaceholderMatch !== null) {
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
-    const matchedString = fullPlaceholderMatch[1] ?? fullPlaceholderMatch[2];
-    console.log("Full match with string:", matchedString);
+    const matchedString = fullPlaceholderMatch[1];
+    console.log(
+      "Full match with string:",
+      matchedString,
+      placeholderToOriginalMap[matchedString],
+    );
     if (matchedString in placeholderToOriginalMap) {
       content = content.replaceAll(
         matchedString,
@@ -140,12 +149,24 @@ export function replacePlaceholdersDuringStreaming(
 
   // ID7 takes up 2 tokens "ID" and "7", so we need to check if there's a partial
   // match with the first half (which ends immediately after the ID/URL)
-  const partialPlaceholderMatch = /(UR?L?|ID?|FUNCTION)$/g.exec(content);
-  if (partialPlaceholderMatch !== null) {
+  const partialMatch = endsWithPartialMatch(content, placeholderKeys);
+  if (partialMatch) {
+    console.log("Partial match with string:", content);
     placeholderBuffer = content;
     content = "";
   }
   return { content, placeholderBuffer };
+}
+
+function endsWithPartialMatch(str: string, candidates: string[]): boolean {
+  return candidates.some((candidate) => {
+    for (let i = 0; i < candidate.length; i++) {
+      if (str.endsWith(candidate.substring(0, i + 1))) {
+        return true;
+      }
+    }
+    return false;
+  });
 }
 
 export function stripExampleFunctions(rawOutput: string): string {
