@@ -66,8 +66,6 @@ export async function streamWithEarlyTermination(
         content = content.trimStart();
         first = false;
       }
-      // Raw output is the actual output from the LLM!
-      rawOutput += content;
 
       if (usingPlaceholderMap) {
         // Replace variables with their real values so URL1 is replaced by the actual URL
@@ -77,6 +75,7 @@ export async function streamWithEarlyTermination(
           placeholderToOriginalMap,
         ));
       }
+      rawOutput += content;
 
       if (content) {
         handleStreamingToUser(rawOutput);
