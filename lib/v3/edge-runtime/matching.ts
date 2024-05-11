@@ -38,6 +38,11 @@ import { chatToDocsPrompt } from "../../prompts/chatBot";
 import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
 import { funLoadingMessages } from "../../funLoadingMessages";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
+import {
+  explainPlotChatPrompt,
+  EXPLANATION_MODEL,
+  explanationParams,
+} from "../prompts_parsers/explanation";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -134,7 +139,6 @@ export async function matchQuestionToAnswer(
       numUserQueries: 1,
     };
   }
-  console.log("There's NOT a match!");
 
   // If there are multiple messages in the chat history, we summarise the chat history into a single user
   //  request - this makes future prompts have a _much_ easier time understanding the user's request
@@ -460,10 +464,9 @@ async function executeMessages(
         hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
       let prompt: ChatGPTMessage[];
       if (route === "CODE") {
-        prompt = getMessages(
+        prompt = explainPlotChatPrompt(
           nonSystemMessages,
-          [],
-          reqData.user_description,
+          reqData.user_description ?? "",
           org,
           language,
           false,
@@ -482,11 +485,10 @@ async function executeMessages(
         retryCount++;
         let completeOutput = await streamWithEarlyTermination(
           prompt,
-          {
-            max_tokens: MAX_TOKENS_OUT,
-            temperature: 0.2,
-          },
-          "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
+          explanationParams,
+          route === "DOCS"
+            ? "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY"
+            : EXPLANATION_MODEL,
           () => false,
           (rawOutput: string) => {
             streamInfo({
@@ -496,6 +498,13 @@ async function executeMessages(
             streamedText = rawOutput;
           },
           "Explanation message",
+          route === "DOCS"
+            ? ""
+            : `Reasoning:${prompt[prompt.length - 1].content.replace(
+                "<thinking>",
+                "",
+              )}`,
+          { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
         if (streamedText && completeOutput) {
           chatHistory.push({ role: "assistant", content: completeOutput });
