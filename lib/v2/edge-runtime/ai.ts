@@ -110,12 +110,25 @@ export function hideLongGraphOutputs(
         // Got to be long otherwise no point
         getTokenCount([m]) > 500
       ) {
-        const graphData = JSON.parse(m.content) as GraphData;
-        // @ts-ignore
-        graphData.data =
-          "<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this graph>";
-        graphDataHidden = true;
-        m.content = JSON.stringify(graphData);
+        try {
+          const graphData = JSON.parse(m.content);
+          const arrayLength = graphData.data.length;
+          const graphOrTable = graphData.type === "table" ? "table" : "graph";
+          let dataStr = "";
+          if (getTokenCount(JSON.stringify(graphData.data.slice(0, 3))) > 300) {
+            dataStr = `[${JSON.stringify(graphData.data[0])},`;
+          } else {
+            dataStr = `[${graphData.data
+              .slice(0, 3)
+              .map(JSON.stringify)
+              .join(",")},`;
+          }
+          delete graphData.data;
+          m.content = JSON.stringify(graphData);
+          dataStr += `<further elements cut for brevity (total length: ${arrayLength}) - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>]`;
+          m.content = m.content.slice(0, -1) + ',"data":' + dataStr + "}";
+          graphDataHidden = true;
+        } catch (e) {}
       } else if (getTokenCount([m]) > 500) {
         // Hiding logs
         m.content = "<cut for brevity - DO NOT pretend to know the logs>";
@@ -294,7 +307,6 @@ export async function Bertie( // Bertie will eat you for breakfast
       reqData.user_description ?? "",
       org,
       language,
-      Object.entries(originalToPlaceholderMap).length > 0,
       graphDataHidden,
     );
 
@@ -756,7 +768,6 @@ export async function Bertie( // Bertie will eat you for breakfast
           reqData.user_description ?? "",
           org,
           language,
-          Object.entries(originalToPlaceholderMap).length > 0,
           graphDataHidden,
         );
 

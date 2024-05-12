@@ -480,7 +480,6 @@ export async function Cassius(
           "",
           org,
           null,
-          false,
           graphCut,
         );
         logPrompt(prompt);
