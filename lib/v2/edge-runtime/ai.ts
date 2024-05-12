@@ -49,10 +49,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../database.types";
 import { convertToGraphData, runDataAnalysis } from "./dataAnalysis";
 import { dataAnalysisActionName, dataAnalysisAction } from "../builtinActions";
-import {
-  GraphData,
-  StreamingStepInput,
-} from "@superflows/chat-ui-react/dist/src/lib/types";
+import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 import { LlmResponseCache } from "../../edge-runtime/llmResponseCache";
 import {
   Dottie,

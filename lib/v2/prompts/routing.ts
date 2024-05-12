@@ -8,7 +8,12 @@ export const routingLLMParams = {
 
 export function routingPrompt(args: {
   userRequest: string;
-  org: { name: string; description: string; chat_to_docs_enabled: boolean };
+  org: {
+    name: string;
+    description: string;
+    chat_to_docs_enabled: boolean;
+    bertie_disable_direct: boolean;
+  };
   actions: { name: string; filtering_description: string }[];
   userDescription?: string;
   isAnthropic?: boolean; // Support non-Anthropic for fallbacks (future feature not yet built)
@@ -18,8 +23,10 @@ export function routingPrompt(args: {
       role: "system",
       content: `You are ${
         args.org.name
-      } AI. Your task is to select the most relevant AI subsystem to use (from DIRECT${
-        args.org.chat_to_docs_enabled ? ", DOCS" : ""
+      } AI. Your task is to select the most relevant AI subsystem to use (from ${
+        args.org.bertie_disable_direct ? "" : `DIRECT`
+      }${
+        args.org.chat_to_docs_enabled ? " and DOCS" : ""
       } and CODE)  to answer a user request. Assume that the user's request is possible.
 ${args.org.description ? "\n" + args.org.description + "\n" : ""}${
         args.userDescription
@@ -36,21 +43,28 @@ ${args.actions
 CRITERIA
 """
 CODE
-Writes code to call ${args.org.name}'s API by calling FUNCTIONS
-It CAN'T search by name - in this case, use DIRECT instead
+Writes code to call ${args.org.name}'s API by calling FUNCTIONS${
+        args.org.bertie_disable_direct
+          ? ""
+          : `\nIt CAN'T search by name - in this case, use DIRECT instead`
+      }
 Use when:
 - performing calculations, aggregating & slicing data and plotting outputs returned from FUNCTIONS (examples: "Plot the top 5 products by profitability in the past 6 months" or "Which warehouse has the highest total value of stock?")
 - performing batch edits/adds (example: "Make all the summer products inactive" when there's a update_product function)
-
+${
+  args.org.bertie_disable_direct
+    ? `
 DIRECT
 Calls FUNCTIONS 1-by-1. Can run CODE as a subroutine, but it is slower
 Use when:
 - searching by name (example: "How much is the Alpine Redwoods property worth?")
 - retrieving or editing <5 datapoints (example: "Update XYZ product's price to $20")
 - retrieving already aggregated data from FUNCTIONS (example: "What's the total value of stock in the warehouse?")
-${
-  args.org.chat_to_docs_enabled
-    ? `
+`
+    : ""
+}${
+        args.org.chat_to_docs_enabled
+          ? `
 DOCS
 Searches ${args.org.name}'s documentation
 Use when:
@@ -58,13 +72,13 @@ Use when:
 - asked questions about how the system works
 - asked what terminology means
 `
-    : ""
-}"""
+          : ""
+      }"""
 
 RULES:
-1. Select from CODE${
-        args.org.chat_to_docs_enabled ? ", DOCS" : ""
-      } or DIRECT following the CRITERIA and output after "Choice:"
+1. Select from CODE${args.org.chat_to_docs_enabled ? "or DOCS" : ""}${
+        args.org.bertie_disable_direct ? "" : ` or DIRECT`
+      } following the CRITERIA and output after "Choice:"
 2. Follow the format below - include Thoughts (as a numbered list) and Choice:
 """
 Thoughts:
@@ -75,11 +89,15 @@ Thoughts:
           : "break down the user's request into steps"
       }
 3. specifically name EVERY SINGLE function and variable you will use
-4. consider if the user's request requires searching by name - use DIRECT if so
+4. consider if the user's request requires searching by name${
+        args.org.bertie_disable_direct ? "" : ` - use DIRECT if so`
+      }
 5. compare the user's request with CRITERIA
 6. state your choice
 
-Choice: ${args.org.chat_to_docs_enabled ? "DOCS/" : ""}DIRECT/CODE
+Choice: ${args.org.chat_to_docs_enabled ? "DOCS/" : ""}${
+        args.org.bertie_disable_direct ? "" : "DIRECT/"
+      }CODE
 """`,
     },
   ];

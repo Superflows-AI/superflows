@@ -54,7 +54,12 @@ export async function LLMPreProcess(args: {
   actions: ActionPlusApiInfo[];
   org: Pick<
     Organization,
-    "id" | "name" | "description" | "chat_to_docs_enabled" | "api_key"
+    | "id"
+    | "name"
+    | "description"
+    | "chat_to_docs_enabled"
+    | "api_key"
+    | "bertie_disable_direct"
   >;
   userDescription: string;
   conversationId: number;
@@ -179,6 +184,9 @@ export async function LLMPreProcess(args: {
     })(),
     // Run routing - should the request go to DOCS, DIRECT, or CODE?
     (async (): Promise<Route | { error: string }> => {
+      if (!args.org.chat_to_docs_enabled && args.org.bertie_disable_direct) {
+        return "CODE";
+      }
       const prompt = routingPrompt({
         ...args,
         actions: args.actions.filter((a) => a.name !== searchDocsActionName),
@@ -189,11 +197,8 @@ export async function LLMPreProcess(args: {
         prompt,
         routingLLMParams,
         routingModel,
-        (rawOutput: string) => {
-          return (
-            isPossible === false || parseRoutingOutput(rawOutput, true) !== null
-          );
-        },
+        (rawOutput: string) =>
+          isPossible === false || parseRoutingOutput(rawOutput, true) !== null,
         () => {},
         "Routing",
         "Thoughts:\n1. ",

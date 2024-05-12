@@ -785,6 +785,7 @@ export type Database = {
       organizations: {
         Row: {
           api_key: string;
+          bertie_disable_direct: boolean;
           bertie_enabled: boolean;
           chat_to_docs_enabled: boolean;
           chatbot_instructions: string;
@@ -803,6 +804,7 @@ export type Database = {
         };
         Insert: {
           api_key?: string;
+          bertie_disable_direct?: boolean;
           bertie_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
@@ -821,6 +823,7 @@ export type Database = {
         };
         Update: {
           api_key?: string;
+          bertie_disable_direct?: boolean;
           bertie_enabled?: boolean;
           chat_to_docs_enabled?: boolean;
           chatbot_instructions?: string;
