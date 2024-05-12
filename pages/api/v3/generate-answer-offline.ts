@@ -169,7 +169,7 @@ export default async function handler(req: NextRequest) {
     if (authRes.error) throw new Error(authRes.error.message);
     const org: Omit<
       OrgJoinIsPaidFinetunedModels,
-      "fun_loading_messages" | "enable_data_analysis"
+      "fun_loading_messages" | "enable_data_analysis" | "bertie_disable_direct"
     > & {
       profiles: { id: string }[];
     } = authRes.data ?? null;
