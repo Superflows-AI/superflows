@@ -7,8 +7,6 @@ import {
 } from "../../edge-runtime/utils";
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../builtinActions";
-import _ from "lodash";
-import { explainPlotChatPrompt } from "../../v3/prompts_parsers/explanation";
 
 export function formatDescription(
   description: string | undefined | null,

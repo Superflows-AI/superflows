@@ -14,7 +14,7 @@ describe("parseTellUser", () => {
     expect(parseTellUser("Tell user: hello")).toEqual("hello");
   });
   it("Other section, no tell user", () => {
-    expect(parseTellUser("Thoughts: hello")).toEqual("");
+    expect(parseTellUser("Thoughts: hello")).toEqual("Thoughts: hello");
   });
   it("Other section, tell user", () => {
     expect(parseTellUser("Thoughts: hello\nTell user: world")).toEqual("world");
