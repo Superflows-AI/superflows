@@ -1,6 +1,7 @@
 import { Organization } from "../../types";
 import { ChatGPTMessage } from "../../models";
 import { findLastIndex } from "lodash";
+import { GraphData } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 export const EXPLANATION_MODEL = "anthropic/claude-3-haiku-20240307";
 
@@ -16,11 +17,19 @@ export function explainPlotChatPrompt(
   org: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
   graphCut: boolean,
-  isTable: boolean,
 ): ChatGPTMessage[] {
-  const lt = "<";
-
-  const graphOrTable = isTable ? "table" : "graph";
+  if (chatHistory.length === 0) {
+    throw new Error("Chat history must not be empty");
+  }
+  const mostRecentMessage = chatHistory[chatHistory.length - 1];
+  // Null when neither graph nor table
+  let graphOrTable: "graph" | "table" | null = null;
+  if (mostRecentMessage.role === "function") {
+    try {
+      const graphData = JSON.parse(mostRecentMessage.content) as GraphData;
+      graphOrTable = graphData.type === "table" ? "table" : "graph";
+    } catch (e) {}
+  }
   chatHistory = chatHistory.slice(
     Math.max(
       0,
@@ -34,7 +43,11 @@ export function explainPlotChatPrompt(
       role: "system",
       content: `You are ${
         org.name
-      } AI. You help answer user questions. Your task is to write text to complement the ${graphOrTable} to help the user understand the data better. Follow all the RULES.
+      } AI. You help answer user questions. Your task is ${
+        graphOrTable ? `to write text to complement the ${graphOrTable} ` : ""
+      }to help the user${
+        graphOrTable ? ` understand the data better` : ""
+      }. Follow all the <rules></rules>
 
 <facts>
 1. ${org.description}
@@ -52,8 +65,8 @@ The top product is DEMO_152 with projected revenue of $97,254 in the next 12 mon
 
 ### FUNCTION:
 {"type":"${
-        isTable ? "table" : "bar"
-      }","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
+        graphOrTable === "graph" ? "bar" : "table"
+      }","data":"<cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
 
 ### Assistant:
 <thinking>
@@ -86,11 +99,17 @@ The top product is DEMO_152 with projected revenue of $97,254 in the next 12 mon
 }
 <rules>
 1. ${
-        graphCut
+        graphOrTable === null
+          ? "Answer the user's question"
+          : graphCut
           ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
           : `Answer the user's question. What you write accompanies the ${graphOrTable}`
       }
-2. DO NOT repeat the ${graphOrTable} contents in a list or in text. THIS IS VERY IMPORTANT. DO NOT FORGET THIS.
+2. ${
+        graphOrTable
+          ? `DO NOT repeat the ${graphOrTable} contents in a list or in text. THIS IS VERY IMPORTANT. DO NOT FORGET THIS.`
+          : "Repeat all information in the logs that answers the user's question - the user cannot see the logs"
+      }
 3. BE CONCISE
 4. Write the contents of <tellUser></tellUser> in ${
         language ?? "the same language as the user"
@@ -100,32 +119,47 @@ ${instructions.length + 5}. Your reply must follow the <format></format>
 
 <format>
 <thinking>
-1. Think step-by-step: which rules apply? 
-2. what has the user asked?
-3. ${
-        graphCut
-          ? `how is it best to explain the ${graphOrTable} since the data has been cut?`
-          : `what does the ${graphOrTable} show?`
+1. Think step-by-step: which rules apply?
+2. what has the user asked?${
+        graphOrTable
+          ? `\n3. ${
+              graphCut
+                ? `how is it best to explain the ${graphOrTable} since the data has been cut?`
+                : `what does the ${graphOrTable} show?`
+            }
+4. which key information should be given to the user as a summary (not entire ${graphOrTable})?`
+          : ""
       }
-4. which key information should be given to the user as a summary (not entire ${graphOrTable})?
 </thinking>
 <tellUser>
 ${
   language && language === "Spanish"
-    ? `Responda la solicitud del usuario sin repetir ${
-        graphOrTable === "graph" ? "el gráfico" : "la tabla"
-      } en su totalidad
-
-Explique cómo se generó ${
-        graphOrTable === "graph" ? "el gráfico" : "la tabla"
-      } (no mencione las funciones por su nombre) y cómo se calcularon los números basándose en los registros`
-    : `Answer the user's request without repeating the ${graphOrTable} in full${
-        language && language !== "English" ? ` (in ${language})` : ""
+    ? `Responda la solicitud del usuario${
+        graphOrTable
+          ? ` sin repetir ${
+              graphOrTable === "graph" ? "el gráfico" : "la tabla"
+            } en su totalidad`
+          : ""
       }
 
-Explain how the ${graphOrTable} was generated (don't mention functions by name) and how numbers were calculated based on the logs${
-        language && language !== "English" ? ` (in ${language})` : ""
+Explique cómo se ${
+        graphOrTable
+          ? `generó ${
+              graphOrTable === "graph" ? "el gráfico" : "la tabla"
+            } (no mencione las funciones por su nombre) y cómo se calcularon los números basándose en los registros`
+          : "calcularon los números en función de los registros y no mencione las funciones por su nombre."
       }`
+    : `Answer the user's request${
+        graphOrTable ? ` without repeating the ${graphOrTable} in full` : ""
+      }${language && language !== "English" ? ` (in ${language})` : ""}
+
+Explain how ${
+        graphOrTable
+          ? `the ${graphOrTable} was generated (don't mention functions by name) and how `
+          : ""
+      }numbers were calculated based on the logs${
+        graphOrTable ? "" : " and don't mention functions by name"
+      }${language && language !== "English" ? ` (in ${language})` : ""}`
 }
 </tellUser>
 </format>`,
@@ -154,10 +188,14 @@ Explain how the ${graphOrTable} was generated (don't mention functions by name) 
       .filter(Boolean) as ChatGPTMessage[]),
     {
       role: "assistant",
-      content: `<thinking>\n1. Which rules apply? I must not list the table's contents. ${
+      content: `<thinking>\n1. Which rules apply? ${
+        graphOrTable
+          ? `I must not list the ${graphOrTable}'s contents.`
+          : "I must answer the user's question, including all useful information from the logs."
+      }${
         !language || language === "English"
           ? ""
-          : `And also I must write the <tellUser></tellUser> section in ${language}`
+          : ` And also I must write the <tellUser></tellUser> section in ${language}`
       }\n2. What has the user asked? The user has asked`,
     },
   ];
