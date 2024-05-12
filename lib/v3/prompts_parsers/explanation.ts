@@ -134,16 +134,23 @@ Explain how the ${graphOrTable} was generated (don't mention functions by name) 
     ...(chatHistory
       .map((m, idx) => {
         if (m.role === "function") return null;
+        const out = [m];
+        if (m.role === "assistant") {
+          out.push({ role: "user", content: "" });
+        }
         let localIdx = idx + 1;
         while (
           localIdx < chatHistory.length &&
           chatHistory[localIdx].role === "function"
         ) {
-          m.content += `\n\n### FUNCTION:\n${chatHistory[localIdx].content}`;
+          out[
+            out.length - 1
+          ].content += `\n\n### FUNCTION:\n${chatHistory[localIdx].content}`;
           localIdx++;
         }
-        return m;
+        return out;
       })
+      .flat()
       .filter(Boolean) as ChatGPTMessage[]),
     {
       role: "assistant",

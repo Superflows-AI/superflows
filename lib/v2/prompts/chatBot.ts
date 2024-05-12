@@ -8,7 +8,7 @@ import {
 import { isChoiceRequired } from "../../actionUtils";
 import { dataAnalysisActionName } from "../builtinActions";
 import _ from "lodash";
-import { languageLine, parseTellUser } from "./utils";
+import { explainPlotChatPrompt } from "../../v3/prompts_parsers/explanation";
 
 export function formatDescription(
   description: string | undefined | null,
@@ -199,116 +199,25 @@ export default function getMessages(
   orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
   includeIdLine: boolean,
-  graphCut: boolean,
 ): ChatGPTMessage[] {
   const userDescriptionSection = userDescription
     ? `\nUser description: ${userDescription}\n`
     : "";
 
-  if (actions.length > 0) {
-    return [
-      systemPromptWithActions(
-        userDescriptionSection,
-        orgInfo,
-        getActionDescriptions(actions),
-        language,
-        includeIdLine,
-        userCopilotMessages,
-      ),
-      ...userCopilotMessages,
-    ];
+  if (actions.length === 0) {
+    throw new Error("No actions provided to getMessages");
   }
-  const lastUserIdx = _.findLastIndex(
-    userCopilotMessages,
-    (m) => m.role === "user",
-  );
   return [
-    explainPlotChatPrompt(
+    systemPromptWithActions(
       userDescriptionSection,
       orgInfo,
+      getActionDescriptions(actions),
       language,
-      graphCut,
-      Boolean(
-        _.findLast(
-          userCopilotMessages,
-          (m) => m.role === "function",
-        )!.content.match(/"type":\s?"table",/),
-      ),
+      includeIdLine,
+      userCopilotMessages,
     ),
-    ...userCopilotMessages.slice(lastUserIdx),
+    ...userCopilotMessages,
   ];
-}
-
-export function explainPlotChatPrompt(
-  userDescriptionSection: string,
-  orgInfo: Pick<Organization, "name" | "description" | "chatbot_instructions">,
-  language: string | null,
-  graphCut: boolean,
-  isTable: boolean,
-): ChatGPTMessage {
-  const lt = "<";
-  const graphOrTable = isTable ? "table" : "graph";
-  return {
-    role: "system",
-    content: `${getIntroText(orgInfo)}. Your purpose is to assist users ${
-      orgInfo.name ? `in ${orgInfo.name} ` : ""
-    }with helpful replies.
-${userDescriptionSection}
-Today's date is ${new Date().toISOString().split("T")[0]}
-${
-  graphCut
-    ? `\nEXAMPLE:
-"""
-### Function:
-Logs from code execution and API calls for instruct_coder:
-getTop10Products()
-The top product is DEMO_152 with projected revenue of $97,254 in the next 12 months
-
-### Function:
-{"type":"${
-        isTable ? "table" : "bar"
-      }","data":"${lt}cut for brevity - DO NOT pretend to know the data, instead tell the user to look at this ${graphOrTable}>","xLabel":"Product name","yLabel":"Revenue ($)","graphTitle":"Top 10 products by revenue over the past 6 months"}
-
-### Assistant:
-Reasoning:
-1. The data has been cut for brevity
-2. As a result, I should inform the user that they should look at the ${graphOrTable} above
-
-Tell user:
-Above is a ${graphOrTable} displaying the top 10 products by revenue over the past 6 months.${
-        graphOrTable === "graph"
-          ? "\n\nThe x axis shows the product name, while the y axis is the revenue in $."
-          : ""
-      }
-The top product is DEMO_152 with projected revenue of $97,254 in the next 12 months.
-"""\n`
-    : ""
-}
-
-RULES:
-1. ${
-      graphCut
-        ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
-        : `Answer the user's question. Explain with data from the ${graphOrTable} and log messages from the coder.`
-    }
-2. DO NOT repeat the ${graphOrTable} data in full or as a markdown image/table
-3. ALWAYS explain what the ${graphOrTable} shows
-4. Include non function-call information from logs, if it helps answer the user's question 
-5. ${languageLine(language, "'Reasoning' or 'Tell user'")}
-6. Your reply should follow the format below (you MUST include both reasoning and tell user):
-"""
-Reasoning:
-1. Think step-by-step
-2. ${
-      graphCut
-        ? `consider how to explain the ${graphOrTable} since the data has been cut`
-        : `consider what the ${graphOrTable} shows\n3. think about where the data comes from`
-    }
-
-Tell user:
-Answer the user's request without repeating the ${graphOrTable}
-"""`,
-  };
 }
 
 export function getIntroText(orgInfo: { name: string; description: string }) {

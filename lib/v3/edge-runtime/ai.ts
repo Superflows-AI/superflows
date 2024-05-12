@@ -24,7 +24,6 @@ import {
   getCodeGenPromptv3,
   parseCodeGenv3,
 } from "../prompts_parsers/codeGen";
-import getMessages from "../../v2/prompts/chatBot";
 import { getUserMessageText } from "../utils";
 import { hideLongGraphOutputs } from "../../v2/edge-runtime/ai";
 import { streamWithEarlyTermination } from "../../v2/edge-runtime/utils";
@@ -36,6 +35,10 @@ import { hallucinateDocsSystemPrompt } from "../../prompts/hallucinateDocs";
 import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { sanitizeMessages } from "../../edge-runtime/apiResponseSimplification";
 import { chatToDocsPrompt } from "../../prompts/chatBot";
+import {
+  explainPlotChatPrompt,
+  EXPLANATION_MODEL,
+} from "../prompts_parsers/explanation";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -132,7 +135,6 @@ export async function Cassius(
     //       iii. run the code - DONE
     //       iv. generate the text explaining the output - DONE
     //  TODO: 4. Generate suggestions if not present
-    //  TODO: 5. Generate name & description of the answer
 
     // Generate the user's request if not present
     let userRequest: ApprovalAnswerMessage | undefined = pastMessages.find(
@@ -473,10 +475,9 @@ export async function Cassius(
         let graphCut: boolean;
         ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
           hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
-        const prompt = getMessages(
+        const prompt = explainPlotChatPrompt(
           nonSystemMessages,
-          [],
-          undefined,
+          "",
           org,
           null,
           false,
@@ -489,11 +490,13 @@ export async function Cassius(
             max_tokens: MAX_TOKENS_OUT,
             temperature: 0.5,
           },
-          "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
-          // "gpt-4-turbo-2024-04-09",
+          EXPLANATION_MODEL,
           () => false,
           () => {},
           "Explanation message",
+          "Reasoning:\n" +
+            prompt[prompt.length - 1].content.replace("<thinking>", ""),
+          { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
         explanationMessage = await addNewMessageToDB(
           completeOutput ?? "Failed to generate explanation",

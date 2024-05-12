@@ -27,6 +27,7 @@ import {
 import {
   exponentialRetryWrapper,
   getTokenCount,
+  logPrompt,
   openAiCost,
 } from "../../utils";
 import { streamLLMResponse } from "../../queryLLM";
@@ -61,6 +62,12 @@ import { LLMPreProcess, PreProcessOutType, Route } from "./clarification";
 import { summariseChatHistory } from "./summariseChatHistory";
 import { getSearchDocsAction } from "../../builtinActions";
 import { sendFunLoadingMessages } from "../../funLoadingMessages";
+import {
+  explainPlotChatPrompt,
+  EXPLANATION_MODEL,
+  explanationParams,
+} from "../../v3/prompts_parsers/explanation";
+import { streamWithEarlyTermination } from "./utils";
 
 let redis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -282,10 +289,9 @@ export async function Bertie( // Bertie will eat you for breakfast
     ({ chatGptPrompt: cleanedMessages, graphDataHidden } =
       hideLongGraphOutputs(cleanedMessages));
 
-    let chatGptPrompt: ChatGPTMessage[] = getMessages(
+    let chatGptPrompt: ChatGPTMessage[] = explainPlotChatPrompt(
       cleanedMessages,
-      [], // Explanation message
-      reqData.user_description,
+      reqData.user_description ?? "",
       org,
       language,
       Object.entries(originalToPlaceholderMap).length > 0,
@@ -335,34 +341,38 @@ export async function Bertie( // Bertie will eat you for breakfast
       console.log("GPT input cost:", promptInputCost);
       totalCost += promptInputCost;
 
-      const res = await exponentialRetryWrapper(
-        streamLLMResponse,
-        [chatGptPrompt, completionOptions, model],
-        3,
-      );
-      if (res === null || "message" in res) {
-        console.error(
-          `Language Model API call failed for conversation with id: ${conversationId}. The error was: ${JSON.stringify(
-            res,
+      let streamedText = "",
+        retryCount = 0;
+      while (!streamedText && retryCount < 3) {
+        retryCount++;
+        let completeOutput = await streamWithEarlyTermination(
+          chatGptPrompt,
+          explanationParams,
+          EXPLANATION_MODEL,
+          () => false,
+          (rawOutput: string) => {
+            streamInfo({
+              role: "assistant",
+              content: rawOutput.replace(streamedText, ""),
+            });
+            streamedText = rawOutput;
+          },
+          "Explanation message",
+          `Reasoning:${chatGptPrompt[chatGptPrompt.length - 1].content.replace(
+            "<thinking>",
+            "",
           )}`,
+          { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
-        streamInfo({
-          role: "error",
-          content: "Call to Language Model API failed",
-        });
-        return {
-          nonSystemMessages: chatHistory,
-          cost: totalCost,
-          numUserQueries: 1,
-        };
+        if (streamedText && completeOutput) {
+          chatHistory.push({ role: "assistant", content: completeOutput });
+        }
       }
-
-      // Stream response chunk by chunk
-      rawOutput = await streamResponseToUser(
-        res,
-        streamInfo,
-        originalToPlaceholderMap,
-      );
+      return {
+        nonSystemMessages: chatHistory,
+        cost: totalCost,
+        numUserQueries: 1,
+      };
     }
 
     const newMessage = {
@@ -382,8 +392,6 @@ export async function Bertie( // Bertie will eat you for breakfast
     };
   }
   // Otherwise, we continue with the normal chatbot process
-  let codeGenCalled = false;
-
   // Add analytics action if enabled
   actions.unshift(dataAnalysisAction(org));
 
@@ -418,12 +426,11 @@ export async function Bertie( // Bertie will eat you for breakfast
 
       let chatGptPrompt: ChatGPTMessage[] = getMessages(
         cleanedMessages,
-        codeGenCalled ? [] : actions,
+        actions,
         reqData.user_description,
         org,
         language,
         Object.entries(originalToPlaceholderMap).length > 0,
-        graphDataHidden,
       );
 
       // If over context limit, remove oldest function calls
@@ -738,11 +745,79 @@ export async function Bertie( // Bertie will eat you for breakfast
           streamInfo,
           reqData.user_api_key,
         );
-        // Make last message an explanation-only message
-        codeGenCalled = true;
-        model = FASTMODEL;
-
         chatHistory = chatHistory.concat(outMessages);
+        // Make last message an explanation-only message
+        // Hide very long graph outputs
+        ({ chatGptPrompt: cleanedMessages, graphDataHidden } =
+          hideLongGraphOutputs(cleanedMessages));
+
+        let chatGptPrompt: ChatGPTMessage[] = explainPlotChatPrompt(
+          cleanedMessages,
+          reqData.user_description ?? "",
+          org,
+          language,
+          Object.entries(originalToPlaceholderMap).length > 0,
+          graphDataHidden,
+        );
+
+        // If over context limit, remove oldest function calls
+        chatGptPrompt = removeOldestFunctionCalls(
+          [...chatGptPrompt],
+          model === "gpt-4-0613" ? "4" : "3",
+        );
+        logPrompt(chatGptPrompt);
+
+        // If still over the context limit tell the user to remove actions
+        const tokenCount = getTokenCount(chatGptPrompt);
+        const maxTokens = 10000;
+
+        if (tokenCount >= maxTokens - MAX_TOKENS_OUT) {
+          console.error(
+            `Cannot call LLM API for conversation with id: ${conversationId}. Context limit reached`,
+          );
+          return {
+            nonSystemMessages: chatHistory,
+            cost: totalCost,
+            numUserQueries,
+          };
+        }
+
+        const promptInputCost = openAiCost(chatGptPrompt, "in", model);
+        console.log("GPT input cost:", promptInputCost);
+        totalCost += promptInputCost;
+
+        let streamedText = "",
+          retryCount = 0;
+        while (!streamedText && retryCount < 3) {
+          retryCount++;
+          let completeOutput = await streamWithEarlyTermination(
+            chatGptPrompt,
+            explanationParams,
+            EXPLANATION_MODEL,
+            () => false,
+            (rawOutput: string) => {
+              streamInfo({
+                role: "assistant",
+                content: rawOutput.replace(streamedText, ""),
+              });
+              streamedText = rawOutput;
+            },
+            "Explanation message",
+            `Reasoning:${chatGptPrompt[
+              chatGptPrompt.length - 1
+            ].content.replace("<thinking>", "")}`,
+            { "</thinking>": "", "<tellUser>": "Tell user:\n" },
+          );
+          if (streamedText && completeOutput) {
+            chatHistory.push({ role: "assistant", content: completeOutput });
+          }
+        }
+        return {
+          nonSystemMessages: chatHistory,
+          cost: totalCost,
+          numUserQueries: 1,
+        };
+
         // No need to stream data analysis errors to the user
       } else if (dataAnalysisAction) {
         if (anyNeedCorrection) {
