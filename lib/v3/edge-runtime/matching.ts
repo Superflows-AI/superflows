@@ -30,8 +30,6 @@ import {
 } from "../prompts_parsers/codeGen";
 import { checkCodeExecutionOutput, convertToGraphData } from "./dataAnalysis";
 import { parseFilteringOutputv3 } from "../prompts_parsers/filtering";
-import getMessages from "../../v2/prompts/chatBot";
-import { MAX_TOKENS_OUT } from "../../consts";
 import { parseRoutingOutputv3 } from "../prompts_parsers/routing";
 import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { chatToDocsPrompt } from "../../prompts/chatBot";

@@ -128,10 +128,10 @@ export function replacePlaceholdersDuringStreaming(
   const fullPlaceholderMatch =
     // /(?:((?:URL|ID)[1-9][0-9]*)\b|(FUNCTIONS?) )/g.exec(content);
     new RegExp(`(${placeholderKeys.join("|")})`).exec(content);
-  if (fullPlaceholderMatch !== null) {
+  if (fullPlaceholderMatch !== null && fullPlaceholderMatch[1]) {
     // Full match - e.g. URL6 or ID2. Time to replace it with the actual value
     const matchedString = fullPlaceholderMatch[1];
-    console.log(
+    console.debug(
       "Full match with string:",
       matchedString,
       placeholderToOriginalMap[matchedString],
@@ -151,7 +151,7 @@ export function replacePlaceholdersDuringStreaming(
   // match with the first half (which ends immediately after the ID/URL)
   const partialMatch = endsWithPartialMatch(content, placeholderKeys);
   if (partialMatch) {
-    console.log("Partial match with string:", content);
+    console.debug("Partial match with string:", content);
     placeholderBuffer = content;
     content = "";
   }
