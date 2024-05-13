@@ -398,13 +398,31 @@ async function executeMessages(
             Math.floor(Math.random() * funLoadingMessages.length)
           ],
       });
+      const executableCode = convertWrittenCodeToExecutable(
+        parsedCode.code,
+        variables,
+      );
+      if (typeof executableCode === "object") {
+        streamInfo({
+          role: "function",
+          name: "error",
+          content: executableCode.error,
+        });
+        console.error("Error in code parsing:", executableCode.error);
+        continue;
+      }
       const res = await supabase.functions.invoke("execute-code-2", {
         body: JSON.stringify({
           actionsPlusApi: filteredActions,
           org,
-          code: convertWrittenCodeToExecutable(parsedCode.code, variables),
+          code: executableCode,
           userApiKey: reqData.user_api_key,
         }),
+      });
+      // Stream code to frontend for debugging purposes
+      streamInfo({
+        role: "debug",
+        content: `Executing code:\n\`\`\`\n${executableCode}\n\`\`\``,
       });
       if (res.error) {
         streamInfo({
@@ -429,6 +447,16 @@ async function executeMessages(
         console.error("Error from generated code:", codeOk.error);
       }
       if (returnedData !== null) {
+        // Stream API calls
+        returnedData
+          .filter((m) => m.type === "call-human-format")
+          .map((m) =>
+            streamInfo({
+              role: "debug",
+              // @ts-ignore
+              content: m.args.message,
+            }),
+          );
         const graphDataArr = convertToGraphData(returnedData);
         // Stream the graph data, converting errors to non-red messages in frontend
         graphDataArr.map((m) =>

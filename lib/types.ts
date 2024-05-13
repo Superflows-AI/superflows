@@ -92,7 +92,7 @@ export interface BertieGraphData {
 
 export type ExecuteCode2Item =
   | {
-      type: "log" | "error";
+      type: "log" | "error" | "call-human-format";
       args: { message: string };
     }
   | {

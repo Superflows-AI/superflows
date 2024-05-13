@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
   }
 
   const builtinFunctionCalls: {
-    type: "plot" | "log" | "error" | "call";
+    type: "plot" | "log" | "error" | "call" | "call-human-format";
     args: object;
   }[] = [];
 
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
       const camelName = snakeToCamel(action.name);
       return {
         [camelName]: async (params: Record<string, unknown>) => {
-          const { url, requestOptions } = constructHttpRequest({
+          const { url, requestOptions, logMessage } = constructHttpRequest({
             action,
             parameters: params,
             organization: requestData.org,
@@ -167,6 +167,10 @@ Deno.serve(async (req) => {
           builtinFunctionCalls.push({
             type: "call",
             args: { name: camelName, params },
+          });
+          builtinFunctionCalls.push({
+            type: "call-human-format",
+            args: { message: logMessage },
           });
           if (out.isError) {
             throw new Error(

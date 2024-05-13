@@ -150,6 +150,17 @@ export async function runDataAnalysis(
             true,
             filteredActions.map((a) => a.name),
           );
+          // Send to frontend for debugging purposes
+          const parsedCode = parseOpusOrGPTDataAnalysis(
+            llmResponse,
+            filteredActions,
+          );
+          if (parsedCode && "code" in parsedCode) {
+            streamInfo({
+              role: "debug",
+              content: `Code executed:\n\`\`\`\n${parsedCode.code}\n\`\`\``,
+            });
+          }
           return returnedData;
         }
       }
@@ -348,6 +359,7 @@ export async function runDataAnalysis(
       true,
       filteredActions.map((a) => a.name),
     );
+    // Send to frontend for debugging purposes
     const parsedCode = parseOpusOrGPTDataAnalysis(
       promiseOut.llmResponse,
       filteredActions,
@@ -355,7 +367,7 @@ export async function runDataAnalysis(
     if (parsedCode && "code" in parsedCode) {
       streamInfo({
         role: "debug",
-        content: parsedCode.code,
+        content: "Code executed:\n" + parsedCode.code,
       });
     }
   }

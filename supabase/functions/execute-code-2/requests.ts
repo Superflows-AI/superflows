@@ -5,7 +5,6 @@ import {
 } from "https://deno.land/x/openapi@0.1.0/mod.ts";
 import { fillNoChoiceRequiredParams } from "./actionUtils.ts";
 import {
-  deduplicateArray,
   exponentialRetryWrapper,
   filterKeys,
   getJsonMIMEType,
@@ -47,7 +46,7 @@ export function constructHttpRequest({
     id: number;
   };
   userApiKey?: string;
-}): { url: string; requestOptions: RequestInit } {
+}): { url: string; requestOptions: RequestInit; logMessage: string } {
   /** Constructs an HTTP request from an action and parameters
    *
    * @param action - The action to construct the request from
@@ -179,7 +178,7 @@ export function constructHttpRequest({
   }
   console.info(logMessage);
 
-  return { url, requestOptions };
+  return { url, requestOptions, logMessage };
 }
 
 export function endpointUrlFromAction(action: {
