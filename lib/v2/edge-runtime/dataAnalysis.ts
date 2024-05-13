@@ -348,6 +348,16 @@ export async function runDataAnalysis(
       true,
       filteredActions.map((a) => a.name),
     );
+    const parsedCode = parseOpusOrGPTDataAnalysis(
+      promiseOut.llmResponse,
+      filteredActions,
+    );
+    if (parsedCode && "code" in parsedCode) {
+      streamInfo({
+        role: "debug",
+        content: parsedCode.code,
+      });
+    }
   }
   return graphData;
 }
@@ -542,7 +552,10 @@ export function convertToGraphData(
 
   // We add a line saying "Plot generated successfully" to the bottom of the function message
   // if there are no log messages and no error messages
-  if (executeCodeResponse.filter((m) => m.type === "log").length === 0) {
+  if (
+    executeCodeResponse.filter((m) => m.type === "log").length === 0 &&
+    errorMessages.length === 0
+  ) {
     functionMessage.content +=
       plotMessages.length > 0
         ? "\nPlot generated successfully"
