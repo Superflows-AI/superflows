@@ -25,10 +25,11 @@ export function explainPlotChatPrompt(
   // Null when neither graph nor table
   let graphOrTable: "graph" | "table" | null = null;
   if (mostRecentMessage.role === "function") {
-    try {
-      const graphData = JSON.parse(mostRecentMessage.content) as GraphData;
-      graphOrTable = graphData.type === "table" ? "table" : "graph";
-    } catch (e) {}
+    graphOrTable = mostRecentMessage.content.includes('"type":"table"')
+      ? "table"
+      : mostRecentMessage.content.includes('"type":"')
+      ? "graph"
+      : null;
   }
   chatHistory = chatHistory.slice(
     Math.max(
