@@ -10,6 +10,7 @@ import {
 } from "../../models";
 import {
   ActionPlusApiInfo,
+  ExecuteCode2Item,
   Organization,
   OrgJoinIsPaidFinetunedModels,
 } from "../../types";
@@ -938,6 +939,16 @@ async function runCodeGen(
     streamInfo(fnMsg);
     return [fnMsg];
   } else {
+    // Stream API calls
+    graphData
+      .filter((m) => m.type === "call-human-format")
+      .map((m) =>
+        streamInfo({
+          role: "debug",
+          // @ts-ignore
+          content: m.args.message,
+        }),
+      );
     const graphDataArr = convertToGraphData(graphData);
     graphDataArr.map(streamInfo);
     return graphDataArr.map((m) => ({

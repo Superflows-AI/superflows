@@ -201,22 +201,22 @@ export function formatString() {
   let i = 1;
   let formatted = "";
   if (typeof firstArg === "string") {
-    firstArg.replace(/%([a-z%])/g, function (x: string) {
+    firstArg.replace(/%([a-z%])/g, (substring: string): string => {
       if (i < args.length) {
-        switch (x) {
+        switch (substring) {
           case "%s":
             return String(args[i++]);
           case "%d":
-            return Number(args[i++]);
+            return String(Number(args[i++]));
           case "%j":
             return JSON.stringify(args[i++]);
           case "%%":
             return "%";
           default:
-            return x;
+            return substring;
         }
       } else {
-        return x;
+        return substring;
       }
     });
   } else {
