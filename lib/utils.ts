@@ -628,3 +628,17 @@ export function logPrompt(prompt: ChatGPTMessage[]): void {
     prompt.map((p) => `${p.role.toUpperCase()}\n${p.content}`).join("\n\n"),
   );
 }
+
+export function range(start: number, end?: number): number[] {
+  /** Identical to basic usage of the Python range() function **/
+  if (typeof end === "undefined") {
+    end = start;
+    start = 0;
+  }
+
+  if (start >= end) {
+    return [];
+  }
+
+  return Array.from({ length: end - start }, (_, i) => i + start);
+}
