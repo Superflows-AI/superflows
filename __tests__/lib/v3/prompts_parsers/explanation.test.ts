@@ -8,14 +8,16 @@ const USERMESSAGE = {
 describe("explainPlotChatPrompt", () => {
   it("table, English", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "plot",
-          content: JSON.stringify({ type: "table", data: [] }),
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "table", data: [] }),
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -67,14 +69,16 @@ Explain how the table was generated (don't mention functions by name) and how nu
   });
   it("logs only, English", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "logs",
-          content: "These are some logs",
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -124,14 +128,16 @@ Explain how numbers were calculated based on the logs and don't mention function
   });
   it("chart, English", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "plot",
-          content: JSON.stringify({ type: "line", data: [] }),
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -184,14 +190,16 @@ Explain how the graph was generated (don't mention functions by name) and how nu
   // Spanish
   it("table, Spanish", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "plot",
-          content: JSON.stringify({ type: "table", data: [] }),
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "table", data: [] }),
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -243,14 +251,16 @@ Explique cómo se generó la tabla (no mencione las funciones por su nombre) y c
   });
   it("logs only, Spanish", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "logs",
-          content: "These are some logs",
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -300,14 +310,16 @@ Explique cómo se calcularon los números en función de los registros y no menc
   });
   it("chart, Spanish", () => {
     const prompt = explainPlotChatPrompt(
-      [
-        USERMESSAGE,
-        {
-          role: "function",
-          name: "plot",
-          content: JSON.stringify({ type: "line", data: [] }),
-        },
-      ],
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+        ]),
+      ),
       "",
       {
         name: "org",
@@ -355,6 +367,77 @@ Explique cómo se generó el gráfico (no mencione las funciones por su nombre) 
       content: `<thinking>
 1. Which rules apply? I must not list the graph's contents. And also I must write the <tellUser></tellUser> section in Spanish
 2. What has the user asked? The user has asked`,
+    });
+  });
+  it("user function function message history", () => {
+    const prompt = explainPlotChatPrompt(
+      JSON.parse(
+        JSON.stringify([
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+        ]),
+      ),
+      "",
+      {
+        name: "org",
+        description: "description",
+        chatbot_instructions: "instructions",
+      },
+      "Spanish",
+      false,
+    );
+    expect(prompt).toHaveLength(3);
+    expect(prompt[1]).toEqual({
+      role: "user",
+      content:
+        'Plot the data\n\n### FUNCTION:\nThese are some logs\n\n### FUNCTION:\n{"type":"line","data":[]}',
+    });
+  });
+  it("fn,user,fn,fn message history", () => {
+    const prompt = explainPlotChatPrompt(
+      JSON.parse(
+        JSON.stringify([
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+          USERMESSAGE,
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+        ]),
+      ),
+      "",
+      {
+        name: "org",
+        description: "description",
+        chatbot_instructions: "instructions",
+      },
+      "Spanish",
+      false,
+    );
+    expect(prompt).toHaveLength(3);
+    expect(prompt[1]).toEqual({
+      role: "user",
+      content:
+        'Plot the data\n\n### FUNCTION:\nThese are some logs\n\n### FUNCTION:\n{"type":"line","data":[]}',
     });
   });
 });
