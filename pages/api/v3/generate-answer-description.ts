@@ -7,16 +7,26 @@ import {
   getSessionFromCookie,
   isValidBody,
 } from "../../../lib/edge-runtime/utils";
-import { Action, OrgJoinIsPaidFinetunedModels } from "../../../lib/types";
+import {
+  Action,
+  ApprovalAnswer,
+  ApprovalAnswerMessage,
+  ApprovalQuestion,
+  Organization,
+  OrgJoinIsPaidFinetunedModels,
+} from "../../../lib/types";
 import { z } from "zod";
 import {
   codeFnNameDescriptionGenerationPrompt,
   docsFnNameDescriptionGenerationPrompt,
+  ParsedResponse,
   parseFnNameDescriptionOut,
+  SimilarFunction,
 } from "../../../lib/v3/prompts_parsers/descriptionGeneration";
 import {
   exponentialRetryWrapper,
   logPrompt,
+  range,
   snakeToCamel,
 } from "../../../lib/utils";
 import { parseFilteringOutputv3 } from "../../../lib/v3/prompts_parsers/filtering";
@@ -263,7 +273,7 @@ export default async function handler(req: NextRequest) {
       throw new Error("ERROR: " + error.message);
     }
     // Cut the gap from top to 0.2 max
-    let similarFnNames: string[] = [];
+    let similarFunctions: SimilarFunction[] = [];
     if (matches) {
       matches = matches
         // Remove the current answer
@@ -274,7 +284,7 @@ export default async function handler(req: NextRequest) {
       const { data: matchesFnNames, error: matchesFnNamesError } =
         await supabase
           .from("approval_answers")
-          .select("fnName")
+          .select("fnName, description")
           .in(
             "id",
             matches.map((m) => m.answer_id),
@@ -282,9 +292,12 @@ export default async function handler(req: NextRequest) {
       if (matchesFnNamesError) {
         throw new Error(matchesFnNamesError.message);
       }
-      similarFnNames = matchesFnNames.map((m) => m.fnName).filter(Boolean);
+      similarFunctions = matchesFnNames.filter(Boolean);
     }
-    console.log("Similar function names", similarFnNames);
+    console.log(
+      "Similar function names",
+      similarFunctions.map((m) => m.fnName),
+    );
 
     // If it's a docs answer, go a different path
     const isDocs = approvalAnswersData.approval_answer_messages.some(
@@ -293,129 +306,64 @@ export default async function handler(req: NextRequest) {
         q.message_type === "function",
     );
 
-    let prompt: ChatGPTMessage[]; // Used when paths below rejoin
-    if (isDocs) {
-      const docsCall = approvalAnswersData.approval_answer_messages.find(
-        (q) => q.message_type === "function",
+    // Try 3 times to generate a unique function name - failing this, add a number to the end
+    let parsedOut: ParsedResponse | null = null,
+      runCount = 0,
+      complete = false;
+    while (runCount < 3 && !complete) {
+      runCount++;
+      const output = await generateFnNameAndDescription(
+        isDocs,
+        approvalAnswersData,
+        primaryQ,
+        org,
+        similarFunctions,
       );
-      if (!docsCall) {
-        throw new Error("No docs call despite there being one earlier");
-      } else if (
-        // Absurd check to make TS happy
-        docsCall.generated_output === null ||
-        docsCall.generated_output.length === 0 ||
-        typeof docsCall.generated_output[0] !== "object" ||
-        docsCall.generated_output[0] === null ||
-        !("content" in docsCall.generated_output[0]) ||
-        !docsCall.generated_output[0].content
-      ) {
-        throw new Error("No generated output for docs call");
-      }
-      prompt = docsFnNameDescriptionGenerationPrompt({
-        userRequest: primaryQ.text,
-        org: org,
-        docsMessage: docsCall.generated_output[0]!.content.toString(),
-        similarFnNames,
-      });
-    } else {
-      // Get all variable info
-      const { data: approvalVariableData, error: approvalVariableError } =
-        await serviceLevelSupabase
-          .from("approval_variables")
-          .select("*")
-          .eq("org_id", org.id);
-      if (approvalVariableError) throw new Error(approvalVariableError.message);
+      if (!("functionName" in output)) return output;
+      parsedOut = output;
 
-      // Get actions
-      const { data: activeActions, error: actionErr } =
-        await serviceLevelSupabase
-          .from("actions")
-          .select("*")
-          .match({ active: true, org_id: org.id });
-      if (actionErr) throw new Error(actionErr.message);
-
-      if (
-        !activeActions ||
-        (activeActions.length === 0 && !org.chat_to_docs_enabled)
-      ) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
-          }),
-          { status: 400, headers },
-        );
-      }
-
-      const codeMessage = approvalAnswersData.approval_answer_messages.find(
-        (m) => m.message_type === "code",
-      );
-      if (!codeMessage) {
-        return new Response(
-          JSON.stringify({
-            error: "No code message associated with this answer id",
-          }),
-          { status: 400, headers },
-        );
-      }
-      if (approvalAnswersData.approval_questions.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: "No questions associated with this answer id",
-          }),
-          { status: 400, headers },
-        );
-      }
-      const filteringMessage =
-        approvalAnswersData.approval_answer_messages.find(
-          (m) => m.message_type === "filtering",
-        );
-      if (!filteringMessage) {
-        return new Response(
-          JSON.stringify({
-            error: "No filtering message associated with this answer id",
-          }),
-          { status: 400, headers },
-        );
-      }
-      const filteredActions = parseFilteringOutputv3(
-        filteringMessage.raw_text,
-        activeActions.map((a) => snakeToCamel(a.name)),
-      )
-        .selectedFunctions.filter((fn) =>
-          // Only include functions actually used in the code
-          parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
-        )
-        .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
-        .filter(Boolean) as Action[];
-
-      prompt = codeFnNameDescriptionGenerationPrompt({
-        userRequest: primaryQ.text,
-        org: org,
-        code: codeMessage.raw_text,
-        filteredActions,
-        variables: approvalVariableData,
-        similarFnNames,
-      });
+      // Check if clashes with a fnName already in the DB
+      const { data: existingAnswer, error: existingAnswerError } =
+        await supabase
+          .from("approval_answers")
+          .select("fnName, description")
+          .eq("fnName", parsedOut.functionName);
+      if (existingAnswerError) throw new Error(existingAnswerError.message);
+      if (existingAnswer.length > 0) {
+        console.warn(`Name clash: ${parsedOut.functionName} already exists`);
+        // Add to similar functions so next prompt it will know not to use this name again
+        similarFunctions.unshift(existingAnswer[0]);
+      } else complete = true;
     }
-
-    logPrompt(prompt);
-    const llmResponse = await exponentialRetryWrapper(
-      getLLMResponse,
-      [
-        prompt,
-        { temperature: 0.4, max_tokens: 200, stop: ["</functionName"] },
-        "anthropic/claude-3-opus-20240229",
-      ],
-      3,
-    );
-    const parsedOut = parseFnNameDescriptionOut(
-      `<description>${llmResponse}</functionName>`,
-    );
-
-    console.log(
-      `LLM Response:\n${llmResponse}\n\nParsed: ${JSON.stringify(parsedOut)}`,
-    );
+    if (parsedOut === null) {
+      throw new Error("Failed to generate function name and description");
+    }
+    if (!complete) {
+      // Look for fnNames with 2-9 appended on the end
+      const { data: existingAnswer, error: existingAnswerError } =
+        await supabase
+          .from("approval_answers")
+          .select("fnName, description")
+          .in(
+            "fnName",
+            range(2, 10).map((n) => parsedOut!.functionName + n),
+          );
+      if (existingAnswerError) throw new Error(existingAnswerError.message);
+      // If no matches, append 2 - otherwise increment the highest number match + 1 (extremely rare)
+      if (existingAnswer.length === 0) {
+        parsedOut.functionName += "2";
+      } else {
+        const sortedExistingAnswers = existingAnswer.sort((a, b) =>
+          a.fnName > b.fnName ? 1 : -1,
+        );
+        const lastNumber = parseInt(
+          sortedExistingAnswers[sortedExistingAnswers.length - 1].fnName.slice(
+            -1,
+          ),
+        );
+        parsedOut.functionName += (lastNumber + 1).toString();
+      }
+    }
 
     // Store in DB
     const { error: updateErr } = await supabase
@@ -446,4 +394,146 @@ export default async function handler(req: NextRequest) {
       { status: 500, headers },
     );
   }
+}
+
+async function generateFnNameAndDescription(
+  isDocs: boolean,
+  approvalAnswersData: Pick<
+    ApprovalAnswer,
+    "approved" | "generation_failed" | "is_generating"
+  > & {
+    approval_questions: Pick<
+      ApprovalQuestion,
+      "id" | "primary_question" | "text"
+    >[];
+    approval_answer_messages: ApprovalAnswerMessage[];
+  },
+  primaryQ: Pick<ApprovalQuestion, "id" | "primary_question" | "text">,
+  org: Pick<
+    Organization,
+    "id" | "name" | "description" | "chat_to_docs_enabled"
+  >,
+  similarFunctions: SimilarFunction[],
+): Promise<ParsedResponse | Response> {
+  let prompt: ChatGPTMessage[]; // Used when paths below rejoin
+  if (isDocs) {
+    const docsCall = approvalAnswersData.approval_answer_messages.find(
+      (q) => q.message_type === "function",
+    );
+    if (!docsCall) {
+      throw new Error("No docs call despite there being one earlier");
+    } else if (
+      // Absurd check to make TS happy
+      docsCall.generated_output === null ||
+      docsCall.generated_output.length === 0 ||
+      typeof docsCall.generated_output[0] !== "object" ||
+      docsCall.generated_output[0] === null ||
+      !("content" in docsCall.generated_output[0]) ||
+      !docsCall.generated_output[0].content
+    ) {
+      throw new Error("No generated output for docs call");
+    }
+    prompt = docsFnNameDescriptionGenerationPrompt({
+      userRequest: primaryQ.text,
+      org: org,
+      docsMessage: docsCall.generated_output[0]!.content.toString(),
+      similarFnNames: similarFunctions,
+    });
+  } else {
+    // Get all variable info
+    const { data: approvalVariableData, error: approvalVariableError } =
+      await serviceLevelSupabase
+        .from("approval_variables")
+        .select("*")
+        .eq("org_id", org.id);
+    if (approvalVariableError) throw new Error(approvalVariableError.message);
+
+    // Get actions
+    const { data: activeActions, error: actionErr } = await serviceLevelSupabase
+      .from("actions")
+      .select("*")
+      .match({ active: true, org_id: org.id });
+    if (actionErr) throw new Error(actionErr.message);
+
+    if (
+      !activeActions ||
+      (activeActions.length === 0 && !org.chat_to_docs_enabled)
+    ) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
+        }),
+        { status: 400, headers },
+      );
+    }
+
+    const codeMessage = approvalAnswersData.approval_answer_messages.find(
+      (m) => m.message_type === "code",
+    );
+    if (!codeMessage) {
+      return new Response(
+        JSON.stringify({
+          error: "No code message associated with this answer id",
+        }),
+        { status: 400, headers },
+      );
+    }
+    if (approvalAnswersData.approval_questions.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: "No questions associated with this answer id",
+        }),
+        { status: 400, headers },
+      );
+    }
+    const filteringMessage = approvalAnswersData.approval_answer_messages.find(
+      (m) => m.message_type === "filtering",
+    );
+    if (!filteringMessage) {
+      return new Response(
+        JSON.stringify({
+          error: "No filtering message associated with this answer id",
+        }),
+        { status: 400, headers },
+      );
+    }
+    const filteredActions = parseFilteringOutputv3(
+      filteringMessage.raw_text,
+      activeActions.map((a) => snakeToCamel(a.name)),
+    )
+      .selectedFunctions.filter((fn) =>
+        // Only include functions actually used in the code
+        parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
+      )
+      .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
+      .filter(Boolean) as Action[];
+
+    prompt = codeFnNameDescriptionGenerationPrompt({
+      userRequest: primaryQ.text,
+      org: org,
+      code: codeMessage.raw_text,
+      filteredActions,
+      variables: approvalVariableData,
+      similarFnNames: similarFunctions,
+    });
+  }
+
+  logPrompt(prompt);
+  const llmResponse = await exponentialRetryWrapper(
+    getLLMResponse,
+    [
+      prompt,
+      { temperature: 0.4, max_tokens: 200, stop: ["</functionName"] },
+      "anthropic/claude-3-opus-20240229",
+    ],
+    3,
+  );
+  const parsedOut = parseFnNameDescriptionOut(
+    `<description>${llmResponse}</functionName>`,
+  );
+  console.log(
+    `LLM Response:\n${llmResponse}\n\nParsed: ${JSON.stringify(parsedOut)}`,
+  );
+  return parsedOut;
 }

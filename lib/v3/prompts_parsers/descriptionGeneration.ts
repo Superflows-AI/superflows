@@ -1,12 +1,19 @@
 import { parseCodeGenv3 } from "./codeGen";
-import { Action, ApprovalVariable, Organization } from "../../types";
+import {
+  Action,
+  ApprovalAnswer,
+  ApprovalVariable,
+  Organization,
+} from "../../types";
 import { ChatGPTMessage } from "../../models";
 import { getActionTSSignature } from "../../prompts/tsConversion";
 
-type ParsedResponse = {
+export type ParsedResponse = {
   functionName: string;
   description: string;
 };
+
+export type SimilarFunction = Pick<ApprovalAnswer, "fnName" | "description">;
 
 export function codeFnNameDescriptionGenerationPrompt(args: {
   userRequest: string;
@@ -14,7 +21,7 @@ export function codeFnNameDescriptionGenerationPrompt(args: {
   filteredActions: Action[];
   org: Pick<Organization, "name" | "description">;
   variables: ApprovalVariable[];
-  similarFnNames: string[];
+  similarFnNames: SimilarFunction[];
 }): ChatGPTMessage[] {
   const parsedCode = parseCodeGenv3(args.code);
   const variables = args.userRequest.match(/{(\w+)}/g) ?? [];
@@ -105,7 +112,7 @@ labels: {x:string,y:string} // Include axis units in brackets. Example: "Convers
           ? `
 
 <namesToAvoid>
-${args.similarFnNames.map((n) => ` - ${n}`).join("\n")}
+${args.similarFnNames.map((n) => `- ${n.fnName}: ${n.description}`).join("\n")}
 </namesToAvoid>`
           : ""
       }`,
@@ -140,7 +147,7 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
   userRequest: string;
   docsMessage: string;
   org: Pick<Organization, "name" | "description">;
-  similarFnNames: string[];
+  similarFnNames: SimilarFunction[];
 }): ChatGPTMessage[] {
   return [
     {
@@ -176,7 +183,7 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
           ? `
 
 <namesToAvoid>
-${args.similarFnNames.map((n) => ` - ${n}`).join("\n")}
+${args.similarFnNames.map((n) => `- ${n.fnName}: ${n.description}`).join("\n")}
 </namesToAvoid>`
           : ""
       }`,
