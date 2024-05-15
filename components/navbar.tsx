@@ -23,10 +23,9 @@ const navigation = [
   { name: "Actions", href: "/actions" },
   { name: "AI", href: "/ai-settings" },
   { name: "Project", href: "/project" },
-  { name: "API", href: "/api-settings" },
+  { name: "Analytics", href: "/analytics" },
   { name: "Usage", href: "/usage" },
   { name: "Chat to Docs", href: "/chat-to-docs" },
-  // { name: "Evaluation (coming soon)", href: "/team" },
 ];
 
 const onboardingSteps = [
