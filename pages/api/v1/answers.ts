@@ -12,6 +12,7 @@ import {
   DBChatMessageToGPT,
   getFreeTierUsage,
   getHost,
+  getSessionFromCookie,
   isValidBody,
 } from "../../../lib/edge-runtime/utils";
 import { getLanguage } from "../../../lib/language";
@@ -172,22 +173,12 @@ export default async function handler(req: NextRequest) {
       }
     }
 
-    let supabase = serviceLevelSupabase;
     // Check the cookie to see if the user is logged in via supabase (in playground) or not
     // This determines whether to increment usage or not
-    let isPlayground: boolean;
-    const cookie = req.headers.get("cookie");
-    if (cookie) {
-      const res = NextResponse.next();
-      const authSupa = createMiddlewareSupabaseClient({ req, res });
-      const {
-        data: { session },
-      } = await authSupa.auth.getSession();
-      isPlayground = !!(session && session.user);
-      if (isPlayground) supabase = authSupa;
-    } else {
-      isPlayground = false;
-    }
+    let supabase = serviceLevelSupabase;
+    let { session, supabase: sessionSupa } = await getSessionFromCookie(req);
+    const is_playground = !!(session && session.user);
+    if (sessionSupa) supabase = sessionSupa;
 
     // Check that the user hasn't surpassed the usage limit
     if (
@@ -309,7 +300,11 @@ export default async function handler(req: NextRequest) {
       console.log(`No conversation ID provided. Creating new conversation`);
       const convoInsertRes = await supabase
         .from("conversations")
-        .insert({ org_id: org.id })
+        .insert({
+          org_id: org.id,
+          is_playground,
+          profile_id: session?.user?.id ?? null,
+        })
         .select()
         .single();
       if (convoInsertRes.error) {
@@ -351,13 +346,6 @@ export default async function handler(req: NextRequest) {
     // Get the active actions from the DB which we can choose between
     // Below gets the action tags and actions that are active
     let actionsWithTags: ActionTagJoinApiAndHeaders[] | null = null;
-    // if (redis) {
-    //   const redisStored = await redis.get(`action_tags_${org.id}`);
-    //   if (redisStored) {
-    //     actionsWithTags = redisStored as ActionTagJoinApiAndHeaders[];
-    //   }
-    // }
-    // if (!actionsWithTags) {
     const actionTagResp = await supabase
       .from("action_tags")
       .select("*,actions!inner(*),apis(*, fixed_headers(*))")
@@ -365,13 +353,6 @@ export default async function handler(req: NextRequest) {
       .eq("actions.active", true);
     if (actionTagResp.error) throw new Error(actionTagResp.error.message);
     actionsWithTags = actionTagResp.data;
-    // Set action tags in Redis for 30 minutes
-    //   redis?.setex(
-    //     `action_tags_${org.id}`,
-    //     60 * 30,
-    //     JSON.stringify(actionsWithTags),
-    //   );
-    // }
 
     const currentHost = getHost(req);
 
@@ -556,7 +537,7 @@ export default async function handler(req: NextRequest) {
             .from("usage")
             .update({
               usage: cost + data[0].usage,
-              num_user_queries: isPlayground
+              num_user_queries: is_playground
                 ? data[0].num_user_queries
                 : data[0].num_user_queries + numUserQueries,
             })
@@ -568,7 +549,7 @@ export default async function handler(req: NextRequest) {
             .insert({
               org_id: org!.id,
               usage: cost,
-              num_user_queries: isPlayground ? 0 : numUserQueries,
+              num_user_queries: is_playground ? 0 : numUserQueries,
             });
           if (error2) throw new Error(error2.message);
         }
