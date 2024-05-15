@@ -546,17 +546,23 @@ export type Database = {
         Row: {
           created_at: string;
           id: number;
+          is_playground: boolean;
           org_id: number;
+          profile_id: string | null;
         };
         Insert: {
           created_at?: string;
           id?: number;
+          is_playground?: boolean;
           org_id: number;
+          profile_id?: string | null;
         };
         Update: {
           created_at?: string;
           id?: number;
+          is_playground?: boolean;
           org_id?: number;
+          profile_id?: string | null;
         };
         Relationships: [
           {
@@ -564,6 +570,13 @@ export type Database = {
             columns: ["org_id"];
             isOneToOne: false;
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "public_conversations_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
