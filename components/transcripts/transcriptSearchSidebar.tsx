@@ -11,10 +11,12 @@ import SelectBoxOptionDropdownWithCheckboxes, {
   SelectBoxWithDropdownOption,
 } from "../dropdown";
 import { DBChatMessage } from "../../lib/types";
-import Link from "next/link";
 import { LoadingSpinner } from "../loadingspinner";
+import { useRouter } from "next/router";
+import { classNames } from "../../lib/utils";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-type ConversationSidebarItem = Pick<
+export type ConversationSidebarItem = Pick<
   Database["public"]["Tables"]["conversations"]["Row"],
   "id" | "created_at" | "is_playground" | "profile_id"
 > & {
@@ -28,13 +30,18 @@ type ConversationSidebarItem = Pick<
   >[];
 };
 
-const PAGESIZE = 50;
+export const PAGESIZE = 50;
 
-export default function TranscriptSearchSidebar() {
+export default function TranscriptSearchSidebar(props: {
+  conversations: ConversationSidebarItem[] | null;
+  selectedTranscriptId: string | null;
+  setSelectedTranscriptId: (id: string) => void;
+}) {
+  const router = useRouter();
   const { profile } = useProfile();
   const supabase = useSupabaseClient<Database>();
   const [conversations, setConversations] = useState<ConversationSidebarItem[]>(
-    [],
+    props.conversations ?? [],
   );
   const [includePlaygroundItems, setIncludePlaygroundItems] = useState<
     SelectBoxWithDropdownOption[]
@@ -44,95 +51,59 @@ export default function TranscriptSearchSidebar() {
   >([]);
   const [totalFiltersSelected, setTotalFiltersSelected] = useState<number>(5);
   const [totalConversations, setTotalConversations] = useState<number>(0);
-  const [loadingMore, setLoadingMore] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [pageLoaded, setPageLoaded] = useState<boolean>(false);
 
+  const updateTotal = useCallback(async () => {
+    let count: number | null = null,
+      countError;
+    if (includeFeedbackItems[0].checked) {
+      ({ count, error: countError } = await supabase
+        .from("conversations")
+        .select("*", { count: "exact", head: true })
+        // Apply playground filters
+        .in(
+          "is_playground",
+          includePlaygroundItems
+            .filter((i) => i.checked)
+            .map((i) => i.name === "From Playground"),
+        ));
+    } else {
+      ({ count, error: countError } = await supabase
+        .from("conversations")
+        .select("*, feedback!inner(*)", { count: "exact", head: true })
+        // Apply playground filters
+        .in(
+          "is_playground",
+          includePlaygroundItems
+            .filter((i) => i.checked)
+            .map((i) => i.name === "From Playground"),
+        )
+        // Apply feedback filters
+        .in(
+          "feedback.feedback_positive",
+          includeFeedbackItems
+            .filter((i) => i.checked)
+            .map((i) => i.name === "Positive Feedback"),
+        ));
+    }
+    if (countError) throw new Error(countError.message);
+    if (count !== null) setTotalConversations(count);
+  }, [includeFeedbackItems, includePlaygroundItems]);
   const updateConversations = useCallback(
     async (addMore: boolean = false) => {
       setLoadingMore(true);
-      let data: ConversationSidebarItem[] | null = null,
-        error,
-        count: number | null = null,
-        countError;
-      // Include no feedback conversations
+      await updateTotal();
       const from = addMore ? conversations.length : 0;
       const to = addMore ? conversations.length + PAGESIZE : PAGESIZE;
-      if (includeFeedbackItems[0].checked) {
-        ({ data, error } = await supabase
-          .from("conversations")
-          .select(
-            "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback(feedback_positive)",
-          )
-          // Apply playground filters
-          .in(
-            "is_playground",
-            includePlaygroundItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "From Playground"),
-          )
-          .order("created_at", { ascending: false })
-          .order("conversation_index", {
-            ascending: true,
-            foreignTable: "chat_messages",
-          })
-          .eq("chat_messages.role", "user")
-          .range(from, to));
-        ({ count, error: countError } = await supabase
-          .from("conversations")
-          .select("*", { count: "exact", head: true })
-          // Apply playground filters
-          .in(
-            "is_playground",
-            includePlaygroundItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "From Playground"),
-          ));
-      } else {
-        ({ data, error } = await supabase
-          .from("conversations")
-          .select(
-            "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback!inner(feedback_positive)",
-          )
-          // Apply playground filters
-          .in(
-            "is_playground",
-            includePlaygroundItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "From Playground"),
-          )
-          // Apply feedback filters
-          .in(
-            "feedback.feedback_positive",
-            includeFeedbackItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "Positive Feedback"),
-          )
-          .order("created_at", { ascending: false })
-          .order("conversation_index", {
-            ascending: true,
-            foreignTable: "chat_messages",
-          })
-          .eq("chat_messages.role", "user")
-          .range(from, to));
-        ({ count, error: countError } = await supabase
-          .from("conversations")
-          .select("*, feedback!inner(*)", { count: "exact", head: true })
-          // Apply playground filters
-          .in(
-            "is_playground",
-            includePlaygroundItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "From Playground"),
-          )
-          // Apply feedback filters
-          .in(
-            "feedback.feedback_positive",
-            includeFeedbackItems
-              .filter((i) => i.checked)
-              .map((i) => i.name === "Positive Feedback"),
-          ));
-      }
-      if (error) throw new Error(error.message);
+      const data = await getConversations(
+        from,
+        to,
+        includeFeedbackItems,
+        includePlaygroundItems,
+        supabase,
+      );
+      console.log(data);
       if (data !== null) {
         setConversations((prev) =>
           [
@@ -150,8 +121,6 @@ export default function TranscriptSearchSidebar() {
           ].sort((a, b) => (b.created_at > a.created_at ? 1 : -1)),
         );
       }
-      if (countError) throw new Error(countError.message);
-      if (count !== null) setTotalConversations(count);
       setLoadingMore(false);
       setPageLoaded(true);
     },
@@ -234,28 +203,31 @@ export default function TranscriptSearchSidebar() {
       includePlaygroundItems.length > 0 &&
       includeFeedbackItems.length > 0
     ) {
-      setConversations((prev) =>
-        prev.filter((c) =>
-          applyConversationFilters(
-            c,
-            includePlaygroundItems,
-            includeFeedbackItems,
-          ),
+      setPageLoaded(true);
+      const filteredConversations = conversations.filter((c) =>
+        applyConversationFilters(
+          c,
+          includePlaygroundItems,
+          includeFeedbackItems,
         ),
       );
+      setConversations(filteredConversations);
+      void updateTotal();
       const currentFiltersSelected =
         includePlaygroundItems.filter((i) => i.checked).length +
         includeFeedbackItems.filter((i) => i.checked).length;
-      console.log(currentFiltersSelected, totalFiltersSelected);
-      if (!pageLoaded || currentFiltersSelected > totalFiltersSelected) {
-        updateConversations(false);
+      if (
+        currentFiltersSelected > totalFiltersSelected ||
+        filteredConversations.length < 10
+      ) {
+        void updateConversations(false);
       }
       setTotalFiltersSelected(currentFiltersSelected);
     }
   }, [includePlaygroundItems, includeFeedbackItems]);
 
   return (
-    <div className="w-120 border-r border-gray-700 h-[calc(100vh-4rem)] flex flex-col">
+    <div className="flex-none w-120 border-r border-gray-700 h-[calc(100vh-4rem)] flex flex-col">
       <div className="min-h-[calc(100vh-4rem)] relative w-full overflow-y-scroll px-4 flex flex-col">
         <div className="sticky inset-x-0 top-0 bg-gray-800 z-10">
           <div className="rounded-md border border-gray-600 mx-8 mb-6 mt-4">
@@ -274,12 +246,20 @@ export default function TranscriptSearchSidebar() {
               />
             </div>
           </div>
+          <div className="absolute bottom-1.5 right-5 text-xs text-gray-400">
+            Total: {totalConversations}
+          </div>
         </div>
         {conversations.map((conversation, idx) => (
-          <Link
+          <button
             key={idx}
-            href={`/analytics/${conversation.id}`}
-            className="rounded bg-gray-850 border border-gray-600 mb-1.5 py-2 px-4 hover:shadow hover:shadow-gray-500 transition"
+            className={classNames(
+              "text-left rounded border mb-1.5 py-2 px-4 hover:shadow hover:shadow-gray-500 transition",
+              props.selectedTranscriptId === conversation.id
+                ? "bg-gray-700 border-gray-500"
+                : "bg-gray-850 border-gray-600",
+            )}
+            onClick={async () => props.setSelectedTranscriptId(conversation.id)}
           >
             <div className="text-gray-200 font-normal">
               {conversation.chat_messages[0].content}
@@ -287,11 +267,18 @@ export default function TranscriptSearchSidebar() {
             <div className={"mt-2 flex flex-row justify-between w-full"}>
               <div className="inline text-sm text-gray-400">
                 {getMessageCountText(conversation.chat_messages)} •{" "}
-                {toDateString(new Date(conversation.created_at))}
+                {pageLoaded && toDateString(new Date(conversation.created_at))}
               </div>
               <div className="inline">
                 {conversation.is_playground && (
-                  <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-1 rounded-md">
+                  <span
+                    className={classNames(
+                      "text-xs text-gray-300 px-1.5 py-1 rounded-md",
+                      props.selectedTranscriptId === conversation.id
+                        ? "bg-gray-600"
+                        : "bg-gray-700",
+                    )}
+                  >
                     Playground
                   </span>
                 )}
@@ -300,7 +287,7 @@ export default function TranscriptSearchSidebar() {
                 )}
               </div>
             </div>
-          </Link>
+          </button>
         ))}
         {pageLoaded && conversations.length === 0 && (
           <div className="text-gray-300 text-center text-sm py-2">
@@ -337,12 +324,17 @@ function toDateString(date: Date): string {
     .toTimeString()
     .split(":")
     .slice(0, 2)
-    .join(":")}, ${date.toLocaleString(navigator.language, {
-    day: "numeric",
-    month: "short",
-    // TODO: Uncomment when 2025
-    // year: "2-digit",
-  })}`;
+    .join(":")}, ${date.toLocaleString(
+    // Below if-else hacks around the fact that this is called server-side, somehow
+    // !process.env.NODE_ENV ? navigator?.language : "es-CL",
+    navigator.language,
+    {
+      day: "numeric",
+      month: "short",
+      // TODO: Uncomment when 2025
+      // year: "2-digit",
+    },
+  )}`;
 }
 
 function FeedbackTags(props: {
@@ -403,4 +395,57 @@ function applyConversationFilters(
     validIsPlaygroundValues.includes(conversation.is_playground) &&
     matchesFeedbackFilters
   );
+}
+
+export async function getConversations(
+  from: number,
+  to: number,
+  includeFeedbackItems: SelectBoxWithDropdownOption[],
+  includePlaygroundItems: SelectBoxWithDropdownOption[],
+  supabase: SupabaseClient<Database>,
+): Promise<ConversationSidebarItem[] | null> {
+  let data: ConversationSidebarItem[] | null, error;
+  // Include no feedback conversations
+  if (includeFeedbackItems[0].checked) {
+    ({ data, error } = await supabase
+      .from("conversations")
+      .select(
+        "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback(feedback_positive)",
+      )
+      // Apply playground filters
+      .in(
+        "is_playground",
+        includePlaygroundItems
+          .filter((i) => i.checked)
+          .map((i) => i.name === "From Playground"),
+      )
+      .order("created_at", { ascending: false })
+      .eq("chat_messages.role", "user")
+      .range(from, to));
+  } else {
+    ({ data, error } = await supabase
+      .from("conversations")
+      .select(
+        "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback!inner(feedback_positive)",
+      )
+      // Apply playground filters
+      .in(
+        "is_playground",
+        includePlaygroundItems
+          .filter((i) => i.checked)
+          .map((i) => i.name === "From Playground"),
+      )
+      // Apply feedback filters
+      .in(
+        "feedback.feedback_positive",
+        includeFeedbackItems
+          .filter((i) => i.checked)
+          .map((i) => i.name === "Positive Feedback"),
+      )
+      .order("created_at", { ascending: false })
+      .eq("chat_messages.role", "user")
+      .range(from, to));
+  }
+  if (error) throw new Error(error.message);
+  return data;
 }

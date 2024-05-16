@@ -8,7 +8,6 @@ import {
   CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PlusIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { LoadingPage, LoadingSpinner } from "../../components/loadingspinner";
