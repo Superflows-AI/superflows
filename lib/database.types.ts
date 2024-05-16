@@ -179,7 +179,7 @@ export type Database = {
         };
         Insert: {
           chosen_actions?: string[] | null;
-          conversation_id: number;
+          conversation_id?: number;
           conversation_index: number;
           created_at?: string;
           fresh?: boolean;
@@ -490,7 +490,7 @@ export type Database = {
           language: string | null;
           name: string | null;
           org_id: number;
-          role: string;
+          role: Database["public"]["Enums"]["chat_message_roles"];
           summary: string | null;
         };
         Insert: {
@@ -498,7 +498,7 @@ export type Database = {
           chosen_actions?: string[] | null;
           chosen_route?: string | null;
           content: string;
-          conversation_id: number;
+          conversation_id?: number;
           conversation_index: number;
           created_at?: string;
           fresh?: boolean;
@@ -506,7 +506,7 @@ export type Database = {
           language?: string | null;
           name?: string | null;
           org_id: number;
-          role: string;
+          role: Database["public"]["Enums"]["chat_message_roles"];
           summary?: string | null;
         };
         Update: {
@@ -522,7 +522,7 @@ export type Database = {
           language?: string | null;
           name?: string | null;
           org_id?: number;
-          role?: string;
+          role?: Database["public"]["Enums"]["chat_message_roles"];
           summary?: string | null;
         };
         Relationships: [
@@ -636,7 +636,7 @@ export type Database = {
           system_prompt: string | null;
         };
         Insert: {
-          conversation_id: number;
+          conversation_id?: number;
           conversation_length_at_feedback: number;
           created_at?: string | null;
           feedback_positive: boolean;
@@ -735,7 +735,7 @@ export type Database = {
           org_id: number;
         };
         Insert: {
-          conversation_id: number;
+          conversation_id?: number;
           conversation_index: number;
           created_at?: string;
           follow_up_text: string;
@@ -983,6 +983,7 @@ export type Database = {
       };
     };
     Enums: {
+      chat_message_roles: "user" | "assistant" | "function" | "error";
       verified_message_types:
         | "user"
         | "routing"
