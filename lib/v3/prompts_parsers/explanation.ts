@@ -12,7 +12,7 @@ export const explanationParams = {
 };
 
 export function explainPlotChatPrompt(
-  chatHistory: { role: string; content: string; name?: string }[],
+  chatHistory: ChatGPTMessage[],
   userDescriptionSection: string,
   org: Pick<Organization, "name" | "description" | "chatbot_instructions">,
   language: string | null,
@@ -31,12 +31,6 @@ export function explainPlotChatPrompt(
       ? "graph"
       : null;
   }
-  chatHistory = chatHistory.slice(
-    Math.max(
-      0,
-      findLastIndex(chatHistory.slice(0, -3), (m) => m.role === "user"),
-    ),
-  );
 
   const instructions = org.chatbot_instructions.split("\n").filter(Boolean);
   return [
@@ -165,28 +159,7 @@ Explain how ${
 </tellUser>
 </format>`,
     },
-    // Combine function messages with the messages that precede them for Claude
-    ...(chatHistory
-      .map((m, idx) => {
-        if (m.role === "function") return null;
-        const out = [m];
-        if (m.role === "assistant") {
-          out.push({ role: "user", content: "" });
-        }
-        let localIdx = idx + 1;
-        while (
-          localIdx < chatHistory.length &&
-          chatHistory[localIdx].role === "function"
-        ) {
-          out[
-            out.length - 1
-          ].content += `\n\n### FUNCTION:\n${chatHistory[localIdx].content}`;
-          localIdx++;
-        }
-        return out;
-      })
-      .flat()
-      .filter(Boolean) as ChatGPTMessage[]),
+    ...formatChatHistoryToAnthropicFormat(chatHistory),
     {
       role: "assistant",
       content: `<thinking>\n1. Which rules apply? ${
@@ -200,4 +173,41 @@ Explain how ${
       }\n2. What has the user asked? The user has asked`,
     },
   ];
+}
+
+export function formatChatHistoryToAnthropicFormat(
+  chatHistory: ChatGPTMessage[],
+): ChatGPTMessage[] {
+  /** Claude is very fussy. It only accepts (user-assistant)*-user message roles.
+   * I.e. must alternate between user and assistant, starting with user and ending with user.
+   * So this reformats the history to follow this format **/
+  chatHistory = chatHistory.slice(
+    Math.max(
+      0,
+      findLastIndex(chatHistory.slice(0, -3), (m) => m.role === "user"),
+    ),
+  );
+  return chatHistory
+    .map((m, idx) => {
+      if (m.role === "function") return null;
+      const out = [m];
+      if (m.role === "assistant" && chatHistory[idx + 1]?.role !== "user") {
+        // This covers the DIRECT case (user-assistant-function)
+        out.push({ role: "user", content: "" });
+      }
+      let localIdx = idx + 1;
+      while (
+        localIdx < chatHistory.length &&
+        chatHistory[localIdx].role === "function"
+      ) {
+        // Combine function messages with the messages that precede them for Claude
+        out[
+          out.length - 1
+        ].content += `\n\n### FUNCTION:\n${chatHistory[localIdx].content}`;
+        localIdx++;
+      }
+      return out;
+    })
+    .flat()
+    .filter(Boolean) as ChatGPTMessage[];
 }

@@ -1,4 +1,7 @@
-import { explainPlotChatPrompt } from "../../../../lib/v3/prompts_parsers/explanation";
+import {
+  explainPlotChatPrompt,
+  formatChatHistoryToAnthropicFormat,
+} from "../../../../lib/v3/prompts_parsers/explanation";
 
 const USERMESSAGE = {
   role: "user",
@@ -369,8 +372,11 @@ Explique cómo se generó el gráfico (no mencione las funciones por su nombre) 
 2. What has the user asked? The user has asked`,
     });
   });
+});
+
+describe("formatChatHistoryToAnthropicFormat", () => {
   it("user function function message history", () => {
-    const prompt = explainPlotChatPrompt(
+    const prompt = formatChatHistoryToAnthropicFormat(
       JSON.parse(
         JSON.stringify([
           USERMESSAGE,
@@ -386,24 +392,16 @@ Explique cómo se generó el gráfico (no mencione las funciones por su nombre) 
           },
         ]),
       ),
-      "",
-      {
-        name: "org",
-        description: "description",
-        chatbot_instructions: "instructions",
-      },
-      "Spanish",
-      false,
     );
-    expect(prompt).toHaveLength(3);
-    expect(prompt[1]).toEqual({
+    expect(prompt).toHaveLength(1);
+    expect(prompt[0]).toEqual({
       role: "user",
       content:
         'Plot the data\n\n### FUNCTION:\nThese are some logs\n\n### FUNCTION:\n{"type":"line","data":[]}',
     });
   });
   it("fn,user,fn,fn message history", () => {
-    const prompt = explainPlotChatPrompt(
+    const prompt = formatChatHistoryToAnthropicFormat(
       JSON.parse(
         JSON.stringify([
           {
@@ -424,20 +422,108 @@ Explique cómo se generó el gráfico (no mencione las funciones por su nombre) 
           },
         ]),
       ),
-      "",
-      {
-        name: "org",
-        description: "description",
-        chatbot_instructions: "instructions",
-      },
-      "Spanish",
-      false,
     );
-    expect(prompt).toHaveLength(3);
-    expect(prompt[1]).toEqual({
+    expect(prompt).toHaveLength(1);
+    expect(prompt[0]).toEqual({
       role: "user",
       content:
         'Plot the data\n\n### FUNCTION:\nThese are some logs\n\n### FUNCTION:\n{"type":"line","data":[]}',
     });
+  });
+  it("real world message history", () => {
+    const prompt = formatChatHistoryToAnthropicFormat(
+      JSON.parse(
+        JSON.stringify([
+          { role: "user", content: "how many items are badger supplier for?" },
+          {
+            role: "function",
+            name: "logs",
+            content: "Logs and API calls from code execution",
+          },
+          {
+            role: "function",
+            name: "plot",
+            content: JSON.stringify({ type: "line", data: [] }),
+          },
+          { role: "user", content: "What are my suppliers?" },
+          {
+            role: "assistant",
+            content:
+              "I'm afraid I don't have a function available that can do that for you",
+          },
+          { role: "user", content: "How many suppliers do I have?" },
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+        ]),
+      ),
+    );
+    expect(prompt).toHaveLength(3);
+    expect(prompt).toEqual([
+      {
+        role: "user",
+        content: "What are my suppliers?",
+      },
+      {
+        role: "assistant",
+        content:
+          "I'm afraid I don't have a function available that can do that for you",
+      },
+      {
+        role: "user",
+        content:
+          "How many suppliers do I have?\n\n### FUNCTION:\nThese are some logs",
+      },
+    ]);
+  });
+  it("DIRECT message history", () => {
+    const prompt = formatChatHistoryToAnthropicFormat(
+      JSON.parse(
+        JSON.stringify([
+          { role: "user", content: "What are my suppliers?" },
+          {
+            role: "assistant",
+            content:
+              "I'm afraid I don't have a function available that can do that for you",
+          },
+          { role: "user", content: "How many suppliers do I have?" },
+          {
+            role: "assistant",
+            content: "Commands:\ncall_function()",
+          },
+          {
+            role: "function",
+            name: "logs",
+            content: "These are some logs",
+          },
+        ]),
+      ),
+    );
+    expect(prompt).toHaveLength(5);
+    expect(prompt).toEqual([
+      {
+        role: "user",
+        content: "What are my suppliers?",
+      },
+      {
+        role: "assistant",
+        content:
+          "I'm afraid I don't have a function available that can do that for you",
+      },
+      {
+        role: "user",
+        content: "How many suppliers do I have?",
+      },
+      {
+        role: "assistant",
+        content: "Commands:\ncall_function()",
+      },
+      {
+        role: "user",
+        content: "\n\n### FUNCTION:\nThese are some logs",
+      },
+    ]);
   });
 });
