@@ -20,7 +20,7 @@ export type ConversationSidebarItem = Pick<
   Database["public"]["Tables"]["conversations"]["Row"],
   "id" | "created_at" | "is_playground"
 > & {
-  chat_messages: Pick<DBChatMessage, "role" | "content">[];
+  chat_messages: Pick<DBChatMessage, "content">[];
   feedback: Pick<
     Database["public"]["Tables"]["feedback"]["Row"],
     "feedback_positive"
@@ -312,8 +312,7 @@ export default function TranscriptSearchSidebar(props: {
 function getMessageCountText(
   messages: ConversationSidebarItem["chat_messages"],
 ): string {
-  const userMessageCount = messages.filter((m) => m.role === "user").length;
-  return `${userMessageCount} user message${userMessageCount > 1 ? "s" : ""}`;
+  return `${messages.length} user message${messages.length > 1 ? "s" : ""}`;
 }
 
 function toDateString(date: Date): string {
@@ -401,41 +400,43 @@ export async function getConversations(
   includePlaygroundItems: SelectBoxWithDropdownOption[],
   supabase: SupabaseClient<Database>,
 ): Promise<ConversationSidebarItem[] | null> {
+  const includePlaygroundFilters = includePlaygroundItems
+    .filter((i) => i.checked)
+    .map((i) => i.name === "From Playground");
   let data: ConversationSidebarItem[] | null, error;
   // Include no feedback conversations
   if (includeFeedbackItems[0].checked) {
-    ({ data, error } = await supabase
-      .from("conversations")
-      .select(
-        "id,is_playground,created_at, chat_messages(role,content), feedback(feedback_positive)",
-      )
-      // Apply playground filters
-      .in(
-        "is_playground",
-        includePlaygroundItems
-          .filter((i) => i.checked)
-          .map((i) => i.name === "From Playground"),
-      )
-      .order("created_at", { ascending: false })
-      .order("conversation_index", {
-        ascending: true,
-        foreignTable: "chat_messages",
-      })
-      .eq("chat_messages.role", "user")
-      .range(from, to));
+    if (includePlaygroundFilters.length === 2) {
+      ({ data, error } = await supabase
+        .from("conversations")
+        .select(
+          "id,is_playground,created_at, chat_messages(content), feedback(feedback_positive)",
+        )
+        .order("created_at", { ascending: false })
+        .eq("chat_messages.role", "user")
+        .range(from, to));
+    } else if (includePlaygroundFilters.length === 1) {
+      ({ data, error } = await supabase
+        .from("conversations")
+        .select(
+          "id,is_playground,created_at, chat_messages(content), feedback(feedback_positive)",
+        )
+        // Apply playground filters
+        .eq("is_playground", includePlaygroundFilters[0])
+        .order("created_at", { ascending: false })
+        .eq("chat_messages.role", "user")
+        .range(from, to));
+    } else {
+      return [];
+    }
   } else {
     ({ data, error } = await supabase
       .from("conversations")
       .select(
-        "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback!inner(feedback_positive)",
+        "id,is_playground,created_at, chat_messages(role,content), feedback!inner(feedback_positive)",
       )
       // Apply playground filters
-      .in(
-        "is_playground",
-        includePlaygroundItems
-          .filter((i) => i.checked)
-          .map((i) => i.name === "From Playground"),
-      )
+      .in("is_playground", includePlaygroundFilters)
       // Apply feedback filters
       .in(
         "feedback.feedback_positive",
