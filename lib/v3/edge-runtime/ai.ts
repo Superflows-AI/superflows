@@ -38,6 +38,7 @@ import { chatToDocsPrompt } from "../../prompts/chatBot";
 import {
   explainPlotChatPrompt,
   EXPLANATION_MODEL,
+  explanationParams,
 } from "../prompts_parsers/explanation";
 
 let redis: Redis | null = null;
@@ -485,10 +486,7 @@ export async function Cassius(
         logPrompt(prompt);
         let completeOutput = await streamWithEarlyTermination(
           prompt,
-          {
-            max_tokens: MAX_TOKENS_OUT,
-            temperature: 0.5,
-          },
+          explanationParams,
           EXPLANATION_MODEL,
           () => false,
           () => {},
