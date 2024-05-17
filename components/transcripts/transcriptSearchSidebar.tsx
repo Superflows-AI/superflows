@@ -30,7 +30,7 @@ export type ConversationSidebarItem = Pick<
   >[];
 };
 
-export const PAGESIZE = 50;
+export const PAGESIZE = 20;
 
 export default function TranscriptSearchSidebar(props: {
   conversations: ConversationSidebarItem[] | null;
