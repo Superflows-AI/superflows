@@ -412,8 +412,13 @@ export async function getConversations(
         .select(
           "id,is_playground,created_at, chat_messages(content), feedback(feedback_positive)",
         )
-        .order("created_at", { ascending: false })
         .eq("chat_messages.role", "user")
+        // Order by id to get the most recent conversations
+        .order("id", { ascending: false })
+        .order("conversation_index", {
+          ascending: true,
+          foreignTable: "chat_messages",
+        })
         .range(from, to));
     } else if (includePlaygroundFilters.length === 1) {
       ({ data, error } = await supabase
@@ -423,8 +428,13 @@ export async function getConversations(
         )
         // Apply playground filters
         .eq("is_playground", includePlaygroundFilters[0])
-        .order("created_at", { ascending: false })
         .eq("chat_messages.role", "user")
+        // Order by id to get the most recent conversations
+        .order("id", { ascending: false })
+        .order("conversation_index", {
+          ascending: true,
+          foreignTable: "chat_messages",
+        })
         .range(from, to));
     } else {
       return [];
@@ -444,12 +454,12 @@ export async function getConversations(
           .filter((i) => i.checked)
           .map((i) => i.name === "Positive Feedback"),
       )
+      .eq("chat_messages.role", "user")
       .order("created_at", { ascending: false })
       .order("conversation_index", {
         ascending: true,
         foreignTable: "chat_messages",
       })
-      .eq("chat_messages.role", "user")
       .range(from, to));
   }
   if (error) throw new Error(error.message);

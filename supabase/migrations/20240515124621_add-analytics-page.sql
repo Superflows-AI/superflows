@@ -29,3 +29,8 @@ ALTER TABLE public.chat_messages RENAME COLUMN role_new TO role;
 alter table "public"."chat_messages" alter column "role" set not null;
 
 COMMIT;
+
+-- These indices are necessary to speed up the queries to get analytics page data
+CREATE INDEX idx_chat_messages_role ON chat_messages(role);
+CREATE INDEX idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+CREATE INDEX idx_feedback_conversation_id ON feedback(conversation_id);
