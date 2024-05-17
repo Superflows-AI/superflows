@@ -145,7 +145,7 @@ export default function TranscriptPage(props: TranscriptPageProps) {
           ) : (
             <div
               className={
-                "pt-4 min-h-[calc(100vh-4rem)] w-full px-8 lg:px-24 pb-8 overflow-y-auto flex flex-col bg-white overflow-x-hidden"
+                "pt-4 min-h-[calc(100vh-4rem)] w-full px-8 lg:px-24 pb-8 lg:pb-10 overflow-y-auto flex flex-col bg-white overflow-x-hidden"
               }
             >
               {conversation?.chat_messages &&
@@ -170,17 +170,33 @@ export default function TranscriptPage(props: TranscriptPageProps) {
                       ) {
                         try {
                           const newContent = JSON.parse(m.content);
+                          if (typeof newContent.data === "string") {
+                            throw new Error(
+                              "Data is a string when it should be an array",
+                            );
+                          }
+
                           // @ts-ignore
                           m.role = "graph";
                           m.content = newContent;
-                          console.log(newContent);
                         } catch (e) {
                           // Either cut for brevity or "instruct_coder" and logs
                           if (
                             m.name === "plot" ||
-                            !m.content.startsWith("Logs")
+                            (!m.content.startsWith("Logs") &&
+                              !m.content.startsWith("Failed to execute code"))
                           ) {
-                            return <div>CUT FOR BREVITY</div>;
+                            return (
+                              <div className={"w-full px-8"}>
+                                <div className="rounded-md border border-gray-200 bg-sky-50 px-6 pt-6 pb-12 mt-1">
+                                  Plot: User was shown a data-heavy plot
+                                  <p className="text-sm text-gray-500">
+                                    Very large plots aren&apos;t stored by
+                                    Superflows to avoid performance issues.
+                                  </p>
+                                </div>
+                              </div>
+                            );
                           }
                         }
                       }
