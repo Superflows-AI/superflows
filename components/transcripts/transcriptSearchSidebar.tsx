@@ -34,8 +34,8 @@ export const PAGESIZE = 50;
 
 export default function TranscriptSearchSidebar(props: {
   conversations: ConversationSidebarItem[] | null;
-  selectedTranscriptId: string | null;
-  setSelectedTranscriptId: (id: string) => void;
+  selectedTranscriptId: number | null;
+  setSelectedTranscriptId: (id: number) => void;
 }) {
   const router = useRouter();
   const { profile } = useProfile();

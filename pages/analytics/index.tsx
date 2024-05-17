@@ -40,7 +40,7 @@ type FullConversationItem = Pick<
 
 export type TranscriptPageProps = {
   conversations: ConversationSidebarItem[] | null;
-  conversationId: string | null;
+  conversationId: number | null;
 };
 
 export default function TranscriptPage(props: TranscriptPageProps) {
@@ -48,7 +48,7 @@ export default function TranscriptPage(props: TranscriptPageProps) {
   const supabase = useSupabaseClient<Database>();
   const { profile } = useProfile();
   const [selectedTranscriptId, setSelectedTranscriptId] = useState<
-    string | null
+    number | null
   >(props.conversationId ?? null);
   const [conversation, setConversation] = useState<FullConversationItem | null>(
     null,

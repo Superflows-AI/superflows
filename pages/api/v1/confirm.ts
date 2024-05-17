@@ -6,6 +6,7 @@ import {
   Action,
   ActionPlusApiInfo,
   Api,
+  DBChatMessage,
   HeaderRow,
   OrgJoinIsPaid,
 } from "../../../lib/types";
@@ -19,6 +20,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import {
   ChatGPTMessage,
   GPTMessageInclSummary,
+  NonSystemMessage,
   ToConfirm,
 } from "../../../lib/models";
 import { parseOutput } from "@superflows/chat-ui-react";
@@ -228,7 +230,7 @@ export default async function handler(req: NextRequest) {
           org_id: org.id,
           conversation_index: numPastMessages + 1,
         },
-      ]);
+      ] as DBChatMessage[]);
       if (cancelRes.error) throw new Error(cancelRes.error.message);
 
       return new Response(

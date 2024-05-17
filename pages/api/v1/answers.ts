@@ -320,7 +320,7 @@ export default async function handler(req: NextRequest) {
     }
 
     if (requestData.user_input) {
-      const newUserMessage: ChatGPTMessage = {
+      const newUserMessage: { role: "user"; content: string } = {
         role: "user",
         content: requestData.user_input,
       };
@@ -509,6 +509,8 @@ export default async function handler(req: NextRequest) {
         const { error: chatMessageInsertErr } = await supabase
           .from("chat_messages")
           .insert(
+            // TODO: Tighten types
+            // @ts-ignore
             allMessages.slice(previousMessages.length).map((m, idx) => {
               if (m.role === "function" && m.content.length > 10000) {
                 m.content = ApiResponseCutText;

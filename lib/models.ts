@@ -3,12 +3,19 @@ import { ActionPlusApiInfo } from "./types";
 import { FunctionCall } from "@superflows/chat-ui-react";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 
-export type ChatGPTMessage =
+export type NonSystemMessage =
   | {
-      role: "system" | "user" | "assistant";
+      role: "user" | "assistant";
       content: string;
     }
   | FunctionMessage;
+
+export type ChatGPTMessage =
+  | {
+      role: "system";
+      content: string;
+    }
+  | NonSystemMessage;
 
 export interface FunctionMessage {
   role: "function";
