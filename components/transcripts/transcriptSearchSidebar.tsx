@@ -41,7 +41,9 @@ export default function TranscriptSearchSidebar(props: {
   const { profile } = useProfile();
   const supabase = useSupabaseClient<Database>();
   const [conversations, setConversations] = useState<ConversationSidebarItem[]>(
-    props.conversations ?? [],
+    props.conversations?.filter(
+      (c) => c.chat_messages && c.chat_messages.length > 0,
+    ) ?? [],
   );
   const [includePlaygroundItems, setIncludePlaygroundItems] = useState<
     SelectBoxWithDropdownOption[]
@@ -55,8 +57,7 @@ export default function TranscriptSearchSidebar(props: {
   const [pageLoaded, setPageLoaded] = useState<boolean>(false);
 
   const updateTotal = useCallback(async () => {
-    let count: number | null = null,
-      countError;
+    let count: number | null, countError;
     if (includeFeedbackItems[0].checked) {
       ({ count, error: countError } = await supabase
         .from("conversations")
@@ -103,7 +104,6 @@ export default function TranscriptSearchSidebar(props: {
         includePlaygroundItems,
         supabase,
       );
-      console.log(data);
       if (data !== null) {
         setConversations((prev) =>
           [
@@ -420,6 +420,10 @@ export async function getConversations(
           .map((i) => i.name === "From Playground"),
       )
       .order("created_at", { ascending: false })
+      .order("conversation_index", {
+        ascending: true,
+        foreignTable: "chat_messages",
+      })
       .eq("chat_messages.role", "user")
       .range(from, to));
   } else {
@@ -443,6 +447,10 @@ export async function getConversations(
           .map((i) => i.name === "Positive Feedback"),
       )
       .order("created_at", { ascending: false })
+      .order("conversation_index", {
+        ascending: true,
+        foreignTable: "chat_messages",
+      })
       .eq("chat_messages.role", "user")
       .range(from, to));
   }

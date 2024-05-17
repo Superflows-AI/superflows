@@ -184,9 +184,9 @@ export async function matchQuestionToAnswer(
   if (matches === null) {
     throw new Error("ERROR: No matches found for " + userRequest);
   }
-  // Cut the gap from top to 0.2 max
+  // Cut the gap from top to 0.25 max
   matches = matches.filter(
-    (m: any) => matches![0].mean_similarity - m.mean_similarity <= 0.2,
+    (m: any) => matches![0].mean_similarity - m.mean_similarity <= 0.25,
   );
   // Get the function names and descriptions
   const { data: fnNameData, error: fnNameErr } = await supabase
