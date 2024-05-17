@@ -22,6 +22,9 @@ export type ActionTagJoinApiAndHeaders = ActionTagJoin & {
 export type DBChatMessage =
   Database["public"]["Tables"]["chat_messages"]["Row"];
 
+export type DBChatMessageInsert =
+  Database["public"]["Tables"]["chat_messages"]["Insert"];
+
 export type DocChunkInsert =
   Database["public"]["Tables"]["doc_chunks"]["Insert"];
 
