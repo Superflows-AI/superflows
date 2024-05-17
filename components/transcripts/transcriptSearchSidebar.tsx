@@ -18,12 +18,9 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export type ConversationSidebarItem = Pick<
   Database["public"]["Tables"]["conversations"]["Row"],
-  "id" | "created_at" | "is_playground" | "profile_id"
+  "id" | "created_at" | "is_playground"
 > & {
-  chat_messages: Pick<
-    DBChatMessage,
-    "role" | "content" | "created_at" | "language"
-  >[];
+  chat_messages: Pick<DBChatMessage, "role" | "content">[];
   feedback: Pick<
     Database["public"]["Tables"]["feedback"]["Row"],
     "feedback_positive"
@@ -410,7 +407,7 @@ export async function getConversations(
     ({ data, error } = await supabase
       .from("conversations")
       .select(
-        "id,is_playground,created_at,profile_id, chat_messages(role,content,created_at,language), feedback(feedback_positive)",
+        "id,is_playground,created_at, chat_messages(role,content), feedback(feedback_positive)",
       )
       // Apply playground filters
       .in(
