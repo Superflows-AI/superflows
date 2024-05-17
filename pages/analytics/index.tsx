@@ -59,6 +59,10 @@ export default function TranscriptPage(props: TranscriptPageProps) {
 
   useEffect(() => {
     if (selectedTranscriptId) {
+      if (Object.keys(router.query).length)
+        router.replace("/analytics", undefined, {
+          shallow: true,
+        });
       (async () => {
         const { data, error } = await supabase
           .from("conversations")
