@@ -184,7 +184,8 @@ export default function TranscriptPage(props: TranscriptPageProps) {
                           if (
                             m.name === "plot" ||
                             (!m.content.startsWith("Logs") &&
-                              !m.content.startsWith("Failed to execute code"))
+                              !m.content.startsWith("Failed to execute code") &&
+                              !m.content.toLowerCase().startsWith("error"))
                           ) {
                             return (
                               <div className={"w-full px-8"}>
