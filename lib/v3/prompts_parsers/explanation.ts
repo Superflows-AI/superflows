@@ -1,7 +1,6 @@
 import { Organization } from "../../types";
 import { ChatGPTMessage } from "../../models";
 import { findLastIndex } from "lodash";
-import { GraphData } from "@superflows/chat-ui-react/dist/src/lib/types";
 
 export const EXPLANATION_MODEL = "anthropic/claude-3-haiku-20240307";
 
