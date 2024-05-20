@@ -67,6 +67,9 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
     string,
     boolean
   > | null>(null);
+  const [questionGroups, setQuestionGroups] = useState<
+    { name: string; id: string }[]
+  >([]);
   const [fuse, setFuse] = useState<Fuse<any> | null>(null);
 
   useEffect(() => {
@@ -85,8 +88,14 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
         allQuestionsFromDB = allQuestionsFromDB.filter(
           (q) => q.approval_answers!.id !== props.answerId,
         );
+        const { data: questionGroupsFromDB, error: groupError } = await supabase
+          .from("approval_answer_groups")
+          .select("*")
+          .match({ org_id: profile.org_id });
+        if (groupError) throw new Error(groupError.message);
+        setQuestionGroups(questionGroupsFromDB);
         //@ts-ignore
-        const items = groupItems(allQuestionsFromDB);
+        const items = groupItems(allQuestionsFromDB, questionGroupsFromDB);
         setGroupsOfQuestions(
           // Order so the current group is top
           items.sort(
@@ -113,12 +122,12 @@ function LeftHandSearchSidebar(props: { answerId: string; group_id: string }) {
     (value: string) => {
       setSearchText(value);
       if (!value) {
-        setGroupsOfQuestions(groupItems(allQuestions));
+        setGroupsOfQuestions(groupItems(allQuestions, questionGroups));
         return;
       }
       if (fuse) {
         const searchedItems = reformatFromFuse(fuse.search(value));
-        setGroupsOfQuestions(groupItems(searchedItems));
+        setGroupsOfQuestions(groupItems(searchedItems, questionGroups));
       }
     },
     [fuse],

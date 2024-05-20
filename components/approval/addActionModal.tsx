@@ -10,8 +10,8 @@ import { LoadingSpinner } from "../loadingspinner";
 import { UIQuestionMessageData } from "../../pages/approval";
 
 export function AddActionModal(props: {
-  group_id: string;
-  setGroupId: (actionGroupId: string) => void;
+  group_id: string | null;
+  setGroupId: (actionGroupId: string | null) => void;
   groups: { name: string; id: string }[];
   setGroups: React.Dispatch<
     React.SetStateAction<
@@ -34,16 +34,20 @@ export function AddActionModal(props: {
     })();
   }, []);
   const [loading, setLoading] = useState<boolean>(false);
-  const [chosenGroupId, setChosenGroupId] = useState<string>("");
+  const [chosenGroupId, setChosenGroupId] = useState<string | null>(null);
   useEffect(() => {
-    if (props.group_id) setChosenGroupId(props.group_id);
+    if (props.group_id) {
+      setChosenGroupId(props.group_id);
+    }
+    setQuestionText("");
   }, [props.group_id]);
 
   return (
     <ClarifyCloseModal
-      open={Boolean(props.group_id)}
-      setOpen={() => props.setGroupId("")}
+      open={props.group_id !== null}
+      setOpen={() => props.setGroupId(null)}
       classNames={"max-w-4xl overflow-visible"}
+      shouldClarify={Boolean(questionText)}
     >
       <div className="w-full flex flex-col">
         <h1 className={"text-lg text-gray-200 mb-2"}>Add Question</h1>
@@ -70,17 +74,25 @@ export function AddActionModal(props: {
         <div className={"flex flex-row justify-end gap-x-2 mt-2"}>
           <button
             className={"bg-gray-500 rounded px-2 py-1 text-gray-50"}
-            onClick={() => props.setGroupId("")}
+            onClick={() => props.setGroupId(null)}
           >
             Cancel
           </button>
           <button
             className={classNames(
               "rounded px-2 py-1 text-gray-50",
-              loading ? "bg-gray-600" : "bg-green-600",
+              !questionText || loading || !chosenGroupId
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-green-600 cursor-pointer",
             )}
             onClick={async () => {
-              if (!profile?.org_id || loading) return;
+              if (
+                !profile?.org_id ||
+                loading ||
+                !chosenGroupId ||
+                !questionText
+              )
+                return;
               const validateOut = validateVariablesValid(
                 questionText,
                 variableData,
@@ -187,7 +199,7 @@ export function AddActionModal(props: {
                   return g;
                 }),
               );
-              props.setGroupId("");
+              props.setGroupId(null);
               setLoading(false);
 
               // Generate answer
@@ -237,4 +249,77 @@ export function validateVariablesValid(
       .filter((_, i) => !isValidArr[i])
       .join(", ")}`,
   };
+}
+
+export function AddGroupModal(props: {
+  open: boolean;
+  close: () => void;
+  setGroups: React.Dispatch<
+    React.SetStateAction<
+      { name: string; id: string; questions: UIQuestionMessageData[] }[]
+    >
+  >;
+}) {
+  const { profile } = useProfile();
+  const supabase = useSupabaseClient<Database>();
+  const [groupName, setGroupName] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <ClarifyCloseModal
+      open={props.open}
+      setOpen={props.close}
+      classNames={"max-w-xl overflow-visible"}
+      shouldClarify={Boolean(groupName)}
+    >
+      <div className="w-full flex flex-col">
+        <h1 className={"text-lg text-gray-200 mb-2"}>Add Question Group</h1>
+        <input
+          value={groupName}
+          onChange={(e) => setGroupName(e.target.value)}
+          className="rounded-md bg-gray-700 border-gray-400 text-gray-100 px-2 py-1 placeholder:text-gray-400"
+          placeholder={"E.g. Sales"}
+        />
+        {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
+
+        <div className={"flex flex-row justify-end gap-x-2 mt-2"}>
+          <button
+            className={"bg-gray-500 rounded px-2 py-1 text-gray-50"}
+            onClick={props.close}
+          >
+            Cancel
+          </button>
+          <button
+            className={classNames(
+              "rounded px-2 py-1 text-gray-50",
+              !groupName
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-green-600 cursor-pointer",
+            )}
+            onClick={async () => {
+              if (!profile?.org_id || !groupName) return;
+              const { error } = await supabase
+                .from("approval_answer_groups")
+                .insert({
+                  org_id: profile.org_id,
+                  name: groupName,
+                });
+              if (error) {
+                setError(`Failed to save group: ${error.message}`);
+                console.error(`Failed to save group: ${error.message}`);
+                return;
+              }
+              props.setGroups((prev) => [
+                { name: groupName, id: "", questions: [] },
+                ...prev,
+              ]);
+              props.close();
+            }}
+          >
+            Add Group
+          </button>
+        </div>
+      </div>
+    </ClarifyCloseModal>
+  );
 }

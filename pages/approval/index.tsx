@@ -22,7 +22,10 @@ import QuestionText from "../../components/approval/question";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import FlyoutMenu from "../../components/flyoutMenu";
 import WarningModal, { WarningModalData } from "../../components/warningModal";
-import { AddActionModal } from "../../components/approval/addActionModal";
+import {
+  AddActionModal,
+  AddGroupModal,
+} from "../../components/approval/addActionModal";
 
 export default function App() {
   return (
@@ -65,7 +68,11 @@ function Dashboard() {
     actionName: "Regenerate Answer",
   });
   const [fuse, setFuse] = useState<Fuse<any> | null>(null);
-  const [addActionGroupId, setAddActionGroupId] = useState<string>("");
+  const [addActionGroupId, setAddActionGroupId] = useState<string | null>(null);
+  const [showAddGroupModal, setShowAddGroupModal] = useState<boolean>(false);
+  const [questionGroups, setQuestionGroups] = useState<
+    { name: string; id: string }[]
+  >([]);
 
   useEffect(() => {
     if (profile) {
@@ -80,8 +87,14 @@ function Dashboard() {
         if (!allQuestionsFromDB) throw new Error("No questions found");
         if (allQuestionsFromDB.some((q) => q.approval_answers === null))
           throw new Error("Questions missing approval answers");
+        const { data: questionGroupsFromDB, error: groupError } = await supabase
+          .from("approval_answer_groups")
+          .select("*")
+          .match({ org_id: profile.org_id });
+        if (groupError) throw new Error(groupError.message);
+        setQuestionGroups(questionGroupsFromDB);
         // @ts-ignore
-        const items = groupItems(allQuestionsFromDB);
+        const items = groupItems(allQuestionsFromDB, questionGroupsFromDB);
         setGroupsOfQuestions(items);
         setShowQuestionGroup(
           Object.assign({}, ...items.map((v) => ({ [v.id]: true }))),
@@ -102,12 +115,12 @@ function Dashboard() {
     (value: string) => {
       setSearchText(value);
       if (!value) {
-        setGroupsOfQuestions(groupItems(allQuestions));
+        setGroupsOfQuestions(groupItems(allQuestions, questionGroups));
         return;
       }
       if (fuse) {
         const searchedItems = reformatFromFuse(fuse.search(value));
-        setGroupsOfQuestions(groupItems(searchedItems));
+        setGroupsOfQuestions(groupItems(searchedItems, questionGroups));
       }
     },
     [fuse],
@@ -123,16 +136,41 @@ function Dashboard() {
         groups={groupsOfQuestions}
         setGroups={setGroupsOfQuestions}
       />
+      <AddGroupModal
+        open={showAddGroupModal}
+        close={() => setShowAddGroupModal(false)}
+        setGroups={setGroupsOfQuestions}
+      />
       <WarningModal {...warningModalData} />
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-6xl pb-10 px-4 sm:px-6 lg:px-8">
-        <div className="mt-4 mb-2">
-          <div className="w-full flex px-32 mb-4">
-            <input
-              className="w-full bg-gray-50 text-little rounded mx-10 py-1.5"
-              value={searchText}
-              placeholder={"Search for a question"}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
+        <div className="mt-3 mb-3">
+          <div className="w-full flex flex-col mb-2">
+            <div className="px-32">
+              <input
+                className="w-full bg-gray-50 text-little rounded py-1"
+                value={searchText}
+                placeholder={"Search for a question"}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
+            <div className="mt-2 w-full flex flex-row justify-end gap-x-1.5 text-sm">
+              <button
+                className={
+                  "px-3 py-1 rounded-md bg-purple-700 text-gray-200 hover:bg-purple-600"
+                }
+                onClick={() => setAddActionGroupId("")}
+              >
+                Add question
+              </button>
+              <button
+                className={
+                  "px-3 py-1 rounded-md bg-gray-700 text-gray-200 hover:bg-gray-600"
+                }
+                onClick={() => setShowAddGroupModal(true)}
+              >
+                Add group
+              </button>
+            </div>
           </div>
           <div className="h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden">
             {groupsOfQuestions.map((questionGroup, idx) => (
@@ -171,7 +209,9 @@ function Dashboard() {
                     </button>
                   </div>
 
-                  {showQuestionGroup && showQuestionGroup[questionGroup.id] && (
+                  {showQuestionGroup &&
+                  showQuestionGroup[questionGroup.id] &&
+                  questionGroup.questions.length > 0 ? (
                     <div
                       className={
                         "flex place-items-end py-1 pr-1 text-sm text-gray-400 mr-10"
@@ -179,6 +219,25 @@ function Dashboard() {
                     >
                       Approved
                     </div>
+                  ) : (
+                    <button
+                      className="h-8 mr-2 px-2 py-1 rounded-md flex flex-row place-items-center gap-x-1 text-gray-400 text-sm hover:text-gray-300 hover:bg-gray-700"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("approval_answer_groups")
+                          .delete()
+                          .match({ id: questionGroup.id });
+                        if (error) throw new Error(error.message);
+                        setGroupsOfQuestions((prev) =>
+                          prev.filter((g) => g.id !== questionGroup.id),
+                        );
+                        setQuestionGroups((prev) =>
+                          prev.filter((g) => g.id !== questionGroup.id),
+                        );
+                      }}
+                    >
+                      <TrashIcon className={"h-4 w-4"} /> Delete
+                    </button>
                   )}
                 </div>
                 {showQuestionGroup &&
@@ -362,8 +421,10 @@ export type GroupedUIQuestionData = {
 
 export function groupItems(
   items: UIQuestionMessageData[],
+  variables: { id: string; name: string }[],
 ): GroupedUIQuestionData[] {
-  return items
+  /** TODO: This is absurd - instead of querying the database properly, we're doing this */
+  const out = items
     .filter(
       (item, idx) =>
         items.findIndex(
@@ -389,6 +450,15 @@ export function groupItems(
       ...group,
       questions: group.questions.sort((a, b) => scoreItem(a) - scoreItem(b)),
     }));
+  variables.forEach((variable) => {
+    if (out.find((group) => group.id === variable.id)) return;
+    out.push({
+      name: variable.name,
+      id: variable.id,
+      questions: [],
+    });
+  });
+  return out;
 }
 
 function scoreItem(item: any) {

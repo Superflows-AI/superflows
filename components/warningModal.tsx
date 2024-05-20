@@ -123,7 +123,9 @@ export default function WarningModal(props: WarningModalData) {
   );
 }
 
-export function ClarifyCloseModal(props: ModalProps) {
+export function ClarifyCloseModal(
+  props: ModalProps & { shouldClarify: boolean },
+) {
   const [clarify, setClarify] = useState(false);
 
   return (
@@ -131,11 +133,9 @@ export function ClarifyCloseModal(props: ModalProps) {
       <Modal
         {...{
           ...props,
-          setOpen: () => {
-            // Show the clarify modal
-            setClarify(true);
-            return;
-          },
+          // Show the clarify modal
+          setOpen: () =>
+            props.shouldClarify ? setClarify(true) : props.setOpen(false),
         }}
       >
         {props.children}
