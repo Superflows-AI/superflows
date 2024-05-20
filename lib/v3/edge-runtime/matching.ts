@@ -489,7 +489,7 @@ async function executeMessages(
       ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
         hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
       let prompt: ChatGPTMessage[];
-      if (route === "CODE") {
+      if (route === "CODE" || route === undefined) {
         prompt = explainPlotChatPrompt(
           nonSystemMessages,
           reqData.user_description ?? "",

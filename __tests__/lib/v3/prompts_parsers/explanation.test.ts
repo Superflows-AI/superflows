@@ -372,6 +372,48 @@ Explique cómo se generó el gráfico (no mencione las funciones por su nombre) 
 2. What has the user asked? The user has asked`,
     });
   });
+  it("user function function message history", () => {
+    const prompt = explainPlotChatPrompt(
+      JSON.parse(
+        JSON.stringify([
+          { role: "user", content: "Which guests have unanswered messages?" },
+          {
+            role: "function",
+            name: "logs",
+            content:
+              "Logs and API calls from code execution:\n" +
+              "getGuests(start=0, limit=2500)\n" +
+              "There are 2500 guests with unanswered messages, which is 43.60%",
+          },
+          {
+            role: "function",
+            name: "plot",
+            content:
+              '{"type":"table","xLabel":"Guest","yLabel":"Unanswered messages","graphTitle":"Guests with unanswered messages","data":[{"name":"Polina Zitrin","unanswered_messages":true},{"name":"Melissa Parrott","unanswered_messages":true},{"name":"Komoto Coastal Properties Llc","unanswered_messages":true},<further elements cut for brevity (total length: 1090) - DO NOT pretend to know the data, instead tell the user to look at this table>]}',
+          },
+        ]),
+      ),
+      "",
+      {
+        name: "org",
+        description: "description",
+        chatbot_instructions: "",
+      },
+      "English",
+      true,
+    );
+    expect(prompt).toHaveLength(3);
+    expect(prompt[0].role).toEqual("system");
+    expect(prompt[1].role).toEqual("user");
+    expect(prompt[2].role).toEqual("assistant");
+    expect(prompt[1]).toEqual({
+      role: "user",
+      content:
+        "Which guests have unanswered messages?\n\n### FUNCTION:\nLogs and API calls from code execution:\n" +
+        "getGuests(start=0, limit=2500)\n" +
+        'There are 2500 guests with unanswered messages, which is 43.60%\n\n### FUNCTION:\n{"type":"table","xLabel":"Guest","yLabel":"Unanswered messages","graphTitle":"Guests with unanswered messages","data":[{"name":"Polina Zitrin","unanswered_messages":true},{"name":"Melissa Parrott","unanswered_messages":true},{"name":"Komoto Coastal Properties Llc","unanswered_messages":true},<further elements cut for brevity (total length: 1090) - DO NOT pretend to know the data, instead tell the user to look at this table>]}',
+    });
+  });
 });
 
 describe("formatChatHistoryToAnthropicFormat", () => {
