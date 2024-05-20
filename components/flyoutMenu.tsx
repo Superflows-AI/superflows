@@ -45,7 +45,13 @@ export default function FlyoutMenu(props: {
             leaveFrom="opacity-100 translate-y-0"
             leaveTo="opacity-0 translate-y-1"
           >
-            <Popover.Panel className="absolute left-1/2 z-10 flex w-screen max-w-min -translate-x-1/2 px-4">
+            <Popover.Panel
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="absolute left-1/2 z-10 flex w-screen max-w-min -translate-x-1/2 px-4"
+            >
               <div
                 className={classNames(
                   "shrink rounded-xl bg-white py-3 px-1 text-sm font-semibold leading-6 text-gray-900 shadow-lg ring-1 ring-gray-900/5",
@@ -62,10 +68,7 @@ export default function FlyoutMenu(props: {
                     return (
                       <button
                         key={item.name}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          item.onClick();
-                        }}
+                        onClick={item.onClick}
                         className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row place-items-center gap-x-2 font-normal"
                       >
                         {item.Icon ?? ""}

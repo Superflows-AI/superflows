@@ -4,7 +4,12 @@ import Headers from "../../components/headers";
 import { useProfile } from "../../components/contextManagers/profile";
 import { pageGetServerSideProps } from "../../components/getServerSideProps";
 import classNames from "classnames";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  EllipsisHorizontalIcon,
+  TrashIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { LoadingPage, LoadingSpinner } from "../../components/loadingspinner";
 import Link from "next/link";
 import Fuse from "fuse.js";
@@ -14,6 +19,8 @@ import { Database } from "../../lib/database.types";
 import { ApprovalAnswer } from "../../lib/types";
 import QuestionText from "../../components/approval/question";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import FlyoutMenu from "../../components/flyoutMenu";
+import WarningModal, { WarningModalData } from "../../components/warningModal";
 
 export default function App() {
   return (
@@ -46,6 +53,15 @@ function Dashboard() {
     string,
     boolean
   > | null>(null);
+  const [warningModalData, setWarningModalData] = useState<WarningModalData>({
+    title: "",
+    description: "",
+    actionColour: "red",
+    open: false,
+    action: () => {},
+    setOpen: () => setWarningModalData((p) => ({ ...p, open: false })),
+    actionName: "Regenerate Answer",
+  });
   const [fuse, setFuse] = useState<Fuse<any> | null>(null);
   // const [addActionGroupId, setAddActionGroupId] = useState<string>("");
 
@@ -103,6 +119,7 @@ function Dashboard() {
       {/*  group_id={addActionGroupId}*/}
       {/*  setGroupId={setAddActionGroupId}*/}
       {/*/>*/}
+      <WarningModal {...warningModalData} />
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-6xl pb-10 px-4 sm:px-6 lg:px-8">
         <div className="mt-4 mb-2">
           <div className="w-full flex px-32 mb-4">
@@ -113,7 +130,7 @@ function Dashboard() {
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          <div className="h-[calc(100vh-10rem)] overflow-auto">
+          <div className="h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden">
             {groupsOfQuestions.map((questionGroup, idx) => (
               <div
                 key={idx}
@@ -153,7 +170,7 @@ function Dashboard() {
                   {showQuestionGroup && showQuestionGroup[questionGroup.id] && (
                     <div
                       className={
-                        "flex place-items-end py-1 pr-1 text-sm text-gray-400"
+                        "flex place-items-end py-1 pr-1 text-sm text-gray-400 mr-10"
                       }
                     >
                       Approved
@@ -173,7 +190,9 @@ function Dashboard() {
                         )}
                       >
                         <QuestionText questionText={item.text} />
-                        <div className={"flex flex-row gap-x-6"}>
+                        <div
+                          className={"flex flex-row place-items-center gap-x-4"}
+                        >
                           {item.approval_answers.generation_failed ? (
                             <XCircleIcon
                               className={"h-5 w-5 text-red-400 mr-2"}
@@ -189,6 +208,59 @@ function Dashboard() {
                           ) : (
                             <p className="text-xs text-gray-200">Ready</p>
                           )}
+                          <FlyoutMenu
+                            items={[
+                              {
+                                name: "Delete",
+                                Icon: <TrashIcon className="h-4 w-4" />,
+                                onClick: () => {
+                                  setWarningModalData((p) => ({
+                                    ...p,
+                                    title: "Delete Question",
+                                    description:
+                                      "Are you sure you want to delete this question? This can't be reversed",
+                                    actionColour: "red",
+                                    open: true,
+                                    action: async () => {
+                                      const { error } = await supabase
+                                        .from("approval_answers")
+                                        .delete()
+                                        .match({
+                                          id: item.approval_answers.id,
+                                        });
+                                      if (error) throw new Error(error.message);
+                                      setGroupsOfQuestions((prev) => {
+                                        const newGroups = JSON.parse(
+                                          JSON.stringify(prev),
+                                        );
+                                        const groupIdx = newGroups.findIndex(
+                                          (g: any) => g.id === questionGroup.id,
+                                        );
+                                        newGroups[groupIdx].questions =
+                                          newGroups[groupIdx].questions.filter(
+                                            (q: any) =>
+                                              q.approval_answers.id !==
+                                              item.approval_answers.id,
+                                          );
+                                        return newGroups;
+                                      });
+                                    },
+                                  }));
+                                },
+                              },
+                            ]}
+                            getClassName={() => "h-6"}
+                            buttonClassName={
+                              "h-6 w-6 hover:bg-gray-750 rounded-md border border-transparent hover:border-gray-500"
+                            }
+                            Icon={
+                              <EllipsisHorizontalIcon
+                                className="h-6 w-6 p-0.5"
+                                aria-hidden="true"
+                              />
+                            }
+                            popoverClassName={"mr-14"}
+                          />
                         </div>
                       </Link>
                       {item.approval_answers.approval_answer_messages.length ===
