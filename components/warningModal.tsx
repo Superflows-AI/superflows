@@ -3,7 +3,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
 
-export default function WarningModal(props: {
+export type WarningModalData = {
   title: string;
   description: string;
   action: () => void;
@@ -11,7 +11,9 @@ export default function WarningModal(props: {
   setOpen: (open: boolean) => void;
   actionName?: string;
   actionColour?: string;
-}) {
+};
+
+export default function WarningModal(props: WarningModalData) {
   const deleteButtonRef = useRef(null);
 
   // This is so that the title doesn't disappear when the modal is closed
