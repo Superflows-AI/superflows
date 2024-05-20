@@ -11,6 +11,7 @@ import {
   KeyIcon,
   PencilSquareIcon,
   PlusIcon,
+  TrashIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleIconSolid } from "@heroicons/react/24/solid";
@@ -41,7 +42,8 @@ import { getUserMessageText } from "../../lib/v3/utils";
 import { BoltIcon } from "@heroicons/react/24/solid";
 import Toggle from "../toggle";
 import { UIAnswerType, UIMessageData } from "./types";
-import WarningModal from "../warningModal";
+import WarningModal, { WarningModalData } from "../warningModal";
+import FlyoutMenu from "../flyoutMenu";
 
 export function VerifyQuestionScreen(props: {
   data: {
@@ -58,7 +60,15 @@ export function VerifyQuestionScreen(props: {
   const supabase = useSupabaseClient<Database>();
 
   const [questionText, setQuestionText] = useState<string | null>(null);
-  const [warningModalOpen, setWarningModalOpen] = useState<boolean>(false);
+  const [warningModalData, setWarningModalData] = useState<WarningModalData>({
+    title: "",
+    description: "",
+    actionColour: "red",
+    open: false,
+    action: () => {},
+    setOpen: () => setWarningModalData((p) => ({ ...p, open: false })),
+    actionName: "Regenerate Answer",
+  });
   const [messages, setMessages] = useState<StreamingStepInput[]>([]);
   const [allMessageData, setAllMessageData] = useState<UIMessageData[]>([]);
   const [followUps, setFollowups] = useState<
@@ -465,35 +475,66 @@ export function VerifyQuestionScreen(props: {
           }}
         />
       )}
-      <WarningModal
-        open={warningModalOpen}
-        setOpen={setWarningModalOpen}
-        title={"Are you sure you want to regenerate the answer?"}
-        description={
-          "This will overwrite the current generated answer with a new one. This action cannot be undone."
-        }
-        actionName={"Regenerate Answer"}
-        actionColour={"red"}
-        action={async () => regenAnswer(0)}
-      />
+      <WarningModal {...warningModalData} />
       <div className="bg-white relative h-[calc(100vh-4rem)] w-full flex flex-col place-items-center max-w-3xl">
-        <div className="absolute top-0.5 left-1.5 flex flex-col tracking-tight leading-3 place-items-center text-center gap-y-1 text-xs text-gray-600 bg-white rounded px-1 py-1.5 z-20">
-          Developer
-          <br />
-          mode
-          <Toggle
-            sr={"Dev Mode"}
-            enabled={devMode}
-            setEnabled={setDevMode}
-            size={"sm"}
-          />
-        </div>
         <div
           ref={scrollRef}
-          className="absolute top-3 mx-20 z-10 peer rounded-md mb-3 flex place-items-center py-1.5 px-4 border bg-gray-100 border-gray-700 text-gray-800 text-lg font-medium"
+          className="absolute top-3 mx-6 z-10 flex flex-row place-items-center gap-x-2"
         >
-          {questionText && <QuestionText questionText={questionText} />}
-          <InformationCircleIcon className="h-6 w-6 text-gray-600 ml-2" />
+          <div className="flex flex-col tracking-tight leading-3 place-items-center text-center gap-y-1 text-xs text-gray-600 bg-white rounded px-1 py-1.5 z-20">
+            Developer
+            <br />
+            mode
+            <Toggle
+              sr={"Dev Mode"}
+              enabled={devMode}
+              setEnabled={setDevMode}
+              size={"sm"}
+            />
+          </div>
+          <div
+            className={
+              "peer rounded-md flex place-items-center py-1.5 px-4 border bg-gray-100 border-gray-700 text-gray-800 text-lg font-medium"
+            }
+          >
+            {questionText && <QuestionText questionText={questionText} />}
+            <InformationCircleIcon className="h-6 w-6 text-gray-600 ml-2" />
+          </div>
+          <div className="flex flex-col tracking-tight leading-3 place-items-center text-center gap-y-1 text-xs text-gray-600 rounded px-1 py-1.5 z-20">
+            <FlyoutMenu
+              items={[
+                {
+                  name: "Delete",
+                  Icon: <TrashIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />,
+                  onClick: () =>
+                    setWarningModalData((p) => ({
+                      ...p,
+                      open: true,
+                      title:
+                        "Are you sure you want to delete this question & answer",
+                      description:
+                        "This will delete this question and all associated data. This action can't be reversed.",
+                      action: async () => {
+                        const { error } = await supabase
+                          .from("approval_answers")
+                          .delete()
+                          .eq("id", props.data.id);
+                        if (error) throw new Error(error.message);
+                        void router.push(
+                          `/approval/${await getNextAnswerId(
+                            supabase,
+                            props.data.group_id,
+                          )}`,
+                        );
+                      },
+                    })),
+                },
+              ]}
+              buttonClassName={
+                "border rounded-md bg-white hover:bg-gray-100 transition"
+              }
+            />
+          </div>
         </div>
         <div className={classNames("popup bg-gray-800 right-10 top-14 w-150")}>
           <p className="text-gray-400">Equivalent to:</p>
@@ -657,7 +698,15 @@ export function VerifyQuestionScreen(props: {
               )}
               onClick={() => {
                 if (loading) return;
-                setWarningModalOpen(true);
+                setWarningModalData((prev) => ({
+                  ...prev,
+                  open: true,
+                  title: "Are you sure you want to regenerate the answer?",
+                  description:
+                    "This will overwrite the current generated answer with a new one. This action cannot be undone.",
+                  actionName: "Regenerate Answer",
+                  action: async () => regenAnswer(0),
+                }));
               }}
             >
               Regenerate

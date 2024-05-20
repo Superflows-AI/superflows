@@ -66,7 +66,7 @@ export default function FlyoutMenu(props: {
                           e.stopPropagation();
                           item.onClick();
                         }}
-                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row gap-x-2 font-normal"
+                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row place-items-center gap-x-2 font-normal"
                       >
                         {item.Icon ?? ""}
                         {item.name}
@@ -77,7 +77,7 @@ export default function FlyoutMenu(props: {
                       <a
                         key={item.name}
                         href={item.href}
-                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row gap-x-2 font-normal"
+                        className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row place-items-center gap-x-2 font-normal"
                       >
                         {item.Icon ?? ""}
                         {item.name}
