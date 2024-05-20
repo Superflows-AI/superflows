@@ -49,3 +49,58 @@ export function convertIsoToHumanReadable(dateStr: string): string {
 
   return `${day}${suffix} ${monthNames[monthIndex]} ${year}`;
 }
+
+export function fillVariables(
+  requests: {
+    text: string;
+    embedded_text: string;
+    primary_question: boolean;
+  }[],
+  variables: Record<string, any>,
+  embedAll: Record<string, string[]>,
+): {
+  text: string;
+  embedded_text: string;
+  primary_question: boolean;
+}[] {
+  return requests
+    .map(({ text, embedded_text, primary_question }) => {
+      const matched = embedded_text.match(/\{.*?}/) as RegExpMatchArray | null;
+      if (!matched) return [{ text, embedded_text, primary_question }];
+
+      const matchName = matched[0].slice(1, -1);
+      if (matchName in embedAll) {
+        const possibleValues = embedAll[matchName];
+        return possibleValues
+          .map((val) => {
+            const newText = embedded_text.replace(`{${matchName}}`, val);
+            return fillVariables(
+              [{ text, embedded_text: newText, primary_question }],
+              variables,
+              embedAll,
+            );
+          })
+          .flat();
+      } else if (matchName in variables) {
+        // @ts-ignore
+        const val = variables[matchName];
+        return fillVariables(
+          [
+            {
+              text,
+              embedded_text: embedded_text.replace(
+                `{${matchName}}`,
+                Array.isArray(val) ? val.join(", ") : val,
+              ),
+              primary_question,
+            },
+          ],
+          variables,
+          embedAll,
+        );
+      } else {
+        throw new Error("Variable not found: " + matchName);
+      }
+    })
+    .flat();
+}

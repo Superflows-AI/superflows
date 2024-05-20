@@ -1,15 +1,17 @@
-import { Fragment, ReactNode, RefObject } from "react";
+import { Fragment, ReactNode, RefObject, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import classNames from "classnames";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
-export default function Modal(props: {
+export type ModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   children: ReactNode;
   classNames?: string;
   initialFocus?: RefObject<HTMLButtonElement>;
-}) {
+};
+
+export default function Modal(props: ModalProps) {
   return (
     <Transition.Root show={props.open} as={Fragment}>
       <Dialog

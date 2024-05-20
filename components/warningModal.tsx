@@ -1,7 +1,8 @@
-import React, { Fragment, useEffect, useRef } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { classNames } from "../lib/utils";
+import Modal, { ModalProps } from "./modal";
 
 export type WarningModalData = {
   title: string;
@@ -119,5 +120,36 @@ export default function WarningModal(props: WarningModalData) {
         </div>
       </Dialog>
     </Transition.Root>
+  );
+}
+
+export function ClarifyCloseModal(props: ModalProps) {
+  const [clarify, setClarify] = useState(false);
+
+  return (
+    <>
+      <Modal
+        {...{
+          ...props,
+          setOpen: () => {
+            // Show the clarify modal
+            setClarify(true);
+            return;
+          },
+        }}
+      >
+        {props.children}
+      </Modal>
+      <WarningModal
+        open={clarify}
+        setOpen={setClarify}
+        title={"Discard changes"}
+        description={
+          "There are unsaved changes. Are you sure you want to discard them?"
+        }
+        actionName={"Discard"}
+        action={() => props.setOpen(false)}
+      />
+    </>
   );
 }
