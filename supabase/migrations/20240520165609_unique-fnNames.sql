@@ -14,3 +14,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER check_unique_fnname_per_org
 BEFORE INSERT OR UPDATE ON "public"."approval_answers"
 FOR EACH ROW EXECUTE FUNCTION unique_fnname_per_org();
+
+-- Unique answer_groups
+CREATE UNIQUE INDEX unique_approval_answer_group_name_per_org ON public.approval_answer_groups USING btree (org_id, name);
+alter table "public"."approval_answer_groups" add constraint "unique_approval_answer_group_name_per_org" UNIQUE using index "unique_approval_answer_group_name_per_org";
