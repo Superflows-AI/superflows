@@ -286,6 +286,12 @@ export function groupItems(
   items: UIQuestionMessageData[],
 ): GroupedUIQuestionData[] {
   return items
+    .filter(
+      (item, idx) =>
+        items.findIndex(
+          (i) => i.approval_answers.id === item.approval_answers.id,
+        ) === idx,
+    )
     .reduce((acc, item) => {
       const verifiedAnswerGroup =
         item.approval_answers.approval_answer_groups.name;
