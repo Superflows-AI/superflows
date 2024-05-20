@@ -7,6 +7,7 @@ import classNames from "classnames";
 import {
   CheckCircleIcon,
   EllipsisHorizontalIcon,
+  PlusIcon,
   TrashIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
@@ -21,6 +22,7 @@ import QuestionText from "../../components/approval/question";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import FlyoutMenu from "../../components/flyoutMenu";
 import WarningModal, { WarningModalData } from "../../components/warningModal";
+import { AddActionModal } from "../../components/approval/addActionModal";
 
 export default function App() {
   return (
@@ -63,7 +65,7 @@ function Dashboard() {
     actionName: "Regenerate Answer",
   });
   const [fuse, setFuse] = useState<Fuse<any> | null>(null);
-  // const [addActionGroupId, setAddActionGroupId] = useState<string>("");
+  const [addActionGroupId, setAddActionGroupId] = useState<string>("");
 
   useEffect(() => {
     if (profile) {
@@ -115,10 +117,12 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={""} />
-      {/*<AddActionModal*/}
-      {/*  group_id={addActionGroupId}*/}
-      {/*  setGroupId={setAddActionGroupId}*/}
-      {/*/>*/}
+      <AddActionModal
+        group_id={addActionGroupId}
+        setGroupId={setAddActionGroupId}
+        groups={groupsOfQuestions}
+        setGroups={setGroupsOfQuestions}
+      />
       <WarningModal {...warningModalData} />
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-y-4 mx-auto max-w-6xl pb-10 px-4 sm:px-6 lg:px-8">
         <div className="mt-4 mb-2">
@@ -326,19 +330,21 @@ function Dashboard() {
                         )}
                     </div>
                   ))}
-
-                {/*<div*/}
-                {/*  className={*/}
-                {/*    "border-x border-x-gray-500 flex items-center justify-between bg-gray-750 hover:bg-gray-700 text-gray-200 border-b border-b-gray-500"*/}
-                {/*  }*/}
-                {/*>*/}
-                {/*  <button*/}
-                {/*    className="w-full flex place-items-center justify-center px-4 py-1"*/}
-                {/*    onClick={() => setAddActionGroupId(questionGroup.id)}*/}
-                {/*  >*/}
-                {/*    <PlusIcon className={"h-5 w-5 text-gray-400"} />*/}
-                {/*  </button>*/}
-                {/*</div>*/}
+                {showQuestionGroup && showQuestionGroup[questionGroup.id] && (
+                  <div
+                    className={
+                      "border-x border-x-gray-500 flex items-center justify-between bg-gray-750 hover:bg-gray-700 text-gray-300 border-b border-b-gray-500"
+                    }
+                  >
+                    <button
+                      className="w-full flex place-items-center justify-center gap-x-2 px-4 py-1 font-normal"
+                      onClick={() => setAddActionGroupId(questionGroup.id)}
+                    >
+                      <PlusIcon className={"h-5 w-5 text-gray-400"} /> Add
+                      question
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -394,50 +400,5 @@ function scoreItem(item: any) {
     ? -3
     : -2;
 }
-
-// function AddActionModal(props: { group_id: string; setGroupId: () => null }) {
-//   const supabase = useSupabaseClient<Database>();
-//   const [actionName, setActionName] = useState<string>("");
-//
-//   return (
-//     <Modal
-//       open={Boolean(props.group_id)}
-//       setOpen={props.setGroupId}
-//       classNames={"max-w-4xl"}
-//     >
-//       <div className="w-full flex flex-col">
-//         <h1 className={"text-lg text-gray-200 mb-2"}>Add Question</h1>
-//         <input
-//           value={actionName}
-//           onChange={(e) => setActionName(e.target.value)}
-//           className="rounded-md bg-gray-750 text-gray-200 px-2 py-1"
-//           placeholder={"Question name - include parameters like {parameter}"}
-//         />
-//         <div className={"flex flex-row justify-end gap-x-2 mt-2"}>
-//           <button
-//             className={"bg-gray-500 rounded px-2 py-1 text-gray-50"}
-//             onClick={props.setGroupId}
-//           >
-//             Cancel
-//           </button>
-//           <button
-//             className="bg-green-600 rounded px-2 py-1 text-gray-50"
-//             onClick={async () => {
-//               // const { error } = await supabase.from("approval_answers").insert({
-//               //   raw_text: localSuggestionText
-//               //     .map((t, i) => `- ${t}`)
-//               //     .join("\n"),
-//               // });
-//               // if (error) throw new Error(error.message);
-//               // props.setSuggestions(localSuggestionText);
-//             }}
-//           >
-//             Add Question
-//           </button>
-//         </div>
-//       </div>
-//     </Modal>
-//   );
-// }
 
 export const getServerSideProps = pageGetServerSideProps;

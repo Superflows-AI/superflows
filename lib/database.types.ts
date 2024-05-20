@@ -179,7 +179,7 @@ export type Database = {
         };
         Insert: {
           chosen_actions?: string[] | null;
-          conversation_id?: number;
+          conversation_id: number;
           conversation_index: number;
           created_at?: string;
           fresh?: boolean;
@@ -440,6 +440,7 @@ export type Database = {
           consts: string[];
           default: Json;
           description: string;
+          embed_all: boolean;
           id: string;
           name: string;
           org_id: number;
@@ -450,6 +451,7 @@ export type Database = {
           consts?: string[];
           default?: Json;
           description?: string;
+          embed_all?: boolean;
           id?: string;
           name?: string;
           org_id: number;
@@ -460,6 +462,7 @@ export type Database = {
           consts?: string[];
           default?: Json;
           description?: string;
+          embed_all?: boolean;
           id?: string;
           name?: string;
           org_id?: number;
@@ -498,7 +501,7 @@ export type Database = {
           chosen_actions?: string[] | null;
           chosen_route?: string | null;
           content: string;
-          conversation_id?: number;
+          conversation_id: number;
           conversation_index: number;
           created_at?: string;
           fresh?: boolean;
@@ -636,7 +639,7 @@ export type Database = {
           system_prompt: string | null;
         };
         Insert: {
-          conversation_id?: number;
+          conversation_id: number;
           conversation_length_at_feedback: number;
           created_at?: string | null;
           feedback_positive: boolean;
@@ -735,7 +738,7 @@ export type Database = {
           org_id: number;
         };
         Insert: {
-          conversation_id?: number;
+          conversation_id: number;
           conversation_index: number;
           created_at?: string;
           follow_up_text: string;
