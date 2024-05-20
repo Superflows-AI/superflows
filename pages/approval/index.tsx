@@ -146,12 +146,9 @@ function Dashboard() {
                 )}
               >
                 <div className="w-full flex flex-row justify-between">
-                  <div className="flex flex-row gap-x-2 place-items-center">
-                    <h2 className="ml-4 pt-3 mb-1.5 text-xl text-gray-200">
-                      {questionGroup.name}
-                    </h2>
+                  <div className="">
                     <button
-                      className="pt-2 w-fit ml-auto text-gray-400"
+                      className="flex flex-row gap-x-2 place-items-center w-fit ml-auto text-gray-400"
                       onClick={() =>
                         setShowQuestionGroup({
                           ...showQuestionGroup,
@@ -160,9 +157,12 @@ function Dashboard() {
                         })
                       }
                     >
+                      <h2 className="ml-4 pt-3 mb-1.5 text-xl text-gray-200">
+                        {questionGroup.name}
+                      </h2>
                       <ChevronDownIcon
                         className={classNames(
-                          "h-5 w-5 text-gray-400 transition",
+                          "mt-2 h-5 w-5 text-gray-400 transition",
                           showQuestionGroup &&
                             !showQuestionGroup[questionGroup.id] &&
                             "rotate-90",
