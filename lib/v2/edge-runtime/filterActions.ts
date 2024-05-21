@@ -6,7 +6,6 @@ import {
 import { ActionPlusApiInfo } from "../../types";
 import { exponentialRetryWrapper, snakeToCamel } from "../../utils";
 import { getLLMResponse } from "../../queryLLM";
-import log from "../../coflow";
 
 const defaultFilterParams = {
   temperature: 0.9,
@@ -51,11 +50,6 @@ export async function filterActions(
           );
           console.log(`LLM ${i} output #2:`, out);
         }
-        void log(
-          [...actionFilterPrompt, { role: "assistant", content: out }],
-          model,
-          org.id,
-        );
         return parseActionFilteringOutput(
           out,
           actions.map((a) => snakeToCamel(a.name)),

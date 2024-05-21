@@ -22,7 +22,6 @@ import {
   searchDocsActionName,
 } from "../../builtinActions";
 import { streamWithEarlyTermination } from "./utils";
-import log from "../../coflow";
 
 if (!process.env.CLARIFICATION_MODEL) {
   throw new Error("CLARIFICATION_MODEL env var is not defined");
@@ -175,11 +174,6 @@ export async function LLMPreProcess(args: {
       if (rawOutput === null) {
         return { error: "Call to Language Model API failed" };
       }
-      void log(
-        [...prompt, { role: "assistant", content: rawOutput }],
-        clarificationModel,
-        args.org.id,
-      );
       return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
     })(),
     // Run routing - should the request go to DOCS, DIRECT, or CODE?
@@ -206,11 +200,6 @@ export async function LLMPreProcess(args: {
       if (rawOutput === null) {
         return { error: "Call to Language Model API failed" };
       }
-      void log(
-        [...prompt, { role: "assistant", content: rawOutput }],
-        routingModel,
-        args.org.id,
-      );
       const parsedOutput = parseRoutingOutput(rawOutput, false);
       if (
         parsedOutput !== null &&
