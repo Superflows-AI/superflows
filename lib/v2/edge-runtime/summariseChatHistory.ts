@@ -5,7 +5,6 @@ import {
   chatHistorySummaryPrompt,
   summariseChatHistoryLLMParams,
 } from "../prompts/summariseChatHistory";
-import log from "../../coflow";
 
 export async function summariseChatHistory(
   chatHistory: ChatGPTMessage[],
@@ -31,17 +30,6 @@ export async function summariseChatHistory(
       getLLMResponse,
       [prompt, summariseChatHistoryLLMParams, "gpt-3.5-turbo-0125"],
       3,
-    );
-    void log(
-      [...prompt, { role: "assistant", content: out }],
-      "gpt-3.5-turbo-0125",
-      org.id,
-    );
-  } else {
-    void log(
-      [...prompt, { role: "assistant", content: out }],
-      use4 ? "gpt-4" : "gpt-4-0125-preview",
-      org.id,
     );
   }
   return out;
