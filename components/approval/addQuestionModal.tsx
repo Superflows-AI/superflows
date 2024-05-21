@@ -513,19 +513,21 @@ export function AddGroupModal(props: {
             )}
             onClick={async () => {
               if (!profile?.org_id || !groupName) return;
-              const { error } = await supabase
+              const { data, error } = await supabase
                 .from("approval_answer_groups")
                 .insert({
                   org_id: profile.org_id,
                   name: groupName,
-                });
+                })
+                .select()
+                .single();
               if (error) {
                 setError(`Failed to save group: ${error.message}`);
                 console.error(`Failed to save group: ${error.message}`);
                 return;
               }
               props.setGroups((prev) => [
-                { name: groupName, id: "", questions: [] },
+                { name: groupName, id: data.id, questions: [] },
                 ...prev,
               ]);
               props.close();
