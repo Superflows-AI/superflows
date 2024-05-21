@@ -4,6 +4,7 @@ import {
   formatPlotData,
 } from "../../v2/edge-runtime/dataAnalysis";
 import {
+  DebugMessage,
   ErrorMessage,
   GraphMessage,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
@@ -106,7 +107,7 @@ export function checkCodeExecutionOutput(
 
 export function convertToGraphData(
   executeCodeResponse: ExecuteCode2Item[],
-): (GraphMessage | FunctionMessage | ErrorMessage)[] {
+): (GraphMessage | FunctionMessage | ErrorMessage | DebugMessage)[] {
   if (executeCodeResponse.length === 0) {
     throw new Error("No logs, errors or API calls from code execution");
   }
@@ -188,5 +189,19 @@ export function convertToGraphData(
         : "\nCode executed successfully";
   }
 
-  return [functionMessage, ...errorMessages, ...plotMessages];
+  // Human-readable API logs
+  const humanReadableLogs = executeCodeResponse
+    .filter((m) => m.type === "call-human-format")
+    .map((m): { role: "debug"; content: string } => ({
+      role: "debug",
+      // @ts-ignore
+      content: m.args.message,
+    }));
+
+  return [
+    functionMessage,
+    ...humanReadableLogs,
+    ...errorMessages,
+    ...plotMessages,
+  ];
 }
