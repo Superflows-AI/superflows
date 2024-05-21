@@ -473,14 +473,14 @@ export function VerifyQuestionScreen(props: {
           </div>
           <div
             className={
-              "peer rounded-md flex place-items-center py-1.5 px-4 border bg-gray-100 border-gray-700 text-gray-800 text-lg font-medium"
+              "peer rounded-md flex place-items-center py-1.5 px-4 border bg-gray-100 border-gray-500 text-gray-800 text-lg font-medium"
             }
           >
             {questionText && <QuestionText questionText={questionText} />}
             <InformationCircleIcon className="h-6 w-6 text-gray-600 ml-2" />
           </div>
           <div
-            className={classNames("popup bg-gray-800 right-10 top-14 w-150")}
+            className={classNames("popup bg-gray-800 -right-20 top-14 w-150")}
           >
             <p className="text-gray-400">Equivalent to:</p>
             {answer.approval_questions
@@ -529,7 +529,7 @@ export function VerifyQuestionScreen(props: {
                 },
               ]}
               buttonClassName={
-                "border rounded-md bg-white hover:bg-gray-100 transition"
+                "border border-gray-500 rounded-md bg-white hover:bg-gray-100 transition"
               }
             />
           </div>
