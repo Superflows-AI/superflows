@@ -414,7 +414,7 @@ export async function Cassius(
         if (returnedData !== null) {
           const graphDataArr = convertToGraphData(returnedData);
           const generated_output = graphDataArr.map((m) => ({
-            role: m.role,
+            role: m.role === "graph" ? "function" : m.role,
             name: m.role === "graph" ? "plot" : "logs",
             content:
               typeof m.content === "string"
