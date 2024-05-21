@@ -413,9 +413,8 @@ export async function Cassius(
         }
         if (returnedData !== null) {
           const graphDataArr = convertToGraphData(returnedData);
-          graphDataArr.map(streamInfo);
           const generated_output = graphDataArr.map((m) => ({
-            role: m.role === "error" ? "error" : "function",
+            role: m.role,
             name: m.role === "graph" ? "plot" : "logs",
             content:
               typeof m.content === "string"
@@ -471,7 +470,9 @@ export async function Cassius(
               JSON.parse(userRequest!.raw_text),
             ),
           },
-          ...(codeMessage.generated_output as ChatGPTMessage[]),
+          ...(codeMessage.generated_output as ChatGPTMessage[]).filter((m) =>
+            ["function"].includes(m.role),
+          ),
         ];
         let graphCut: boolean;
         ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
