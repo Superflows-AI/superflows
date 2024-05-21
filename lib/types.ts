@@ -80,6 +80,9 @@ export type ApprovalAnswerData = Pick<
   approval_answer_messages: ApprovalAnswerMessage[];
 };
 
+export type ApprovalAnswerGroup =
+  Database["public"]["Tables"]["approval_answer_groups"]["Row"];
+
 export interface BertieGraphData {
   title: string | number;
   type: "line" | "bar" | "table";
