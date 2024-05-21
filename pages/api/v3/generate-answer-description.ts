@@ -327,7 +327,8 @@ export default async function handler(req: NextRequest) {
         await supabase
           .from("approval_answers")
           .select("fnName, description")
-          .eq("fnName", parsedOut.functionName);
+          .eq("fnName", parsedOut.functionName)
+          .neq("id", requestData.answer_id);
       if (existingAnswerError) throw new Error(existingAnswerError.message);
       if (existingAnswer.length > 0) {
         console.warn(`Name clash: ${parsedOut.functionName} already exists`);
@@ -347,7 +348,8 @@ export default async function handler(req: NextRequest) {
           .in(
             "fnName",
             range(2, 10).map((n) => parsedOut!.functionName + n),
-          );
+          )
+          .neq("id", requestData.answer_id);
       if (existingAnswerError) throw new Error(existingAnswerError.message);
       // If no matches, append 2 - otherwise increment the highest number match + 1 (extremely rare)
       if (existingAnswer.length === 0) {
