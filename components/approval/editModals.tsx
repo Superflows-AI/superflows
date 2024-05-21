@@ -529,7 +529,16 @@ export function EditUserMessageModal(props: {
   useEffect(() => {
     try {
       const parsedVariables = JSON.parse(props.userMessage?.raw_text ?? "{}");
-      setLocalVariables(parsedVariables);
+      setLocalVariables(
+        Object.entries(parsedVariables).reduce((acc, [k, v]) => {
+          if (Array.isArray(v) || typeof v === "object") {
+            acc[k] = JSON.stringify(v);
+          } else {
+            acc[k] = v;
+          }
+          return acc;
+        }, {} as Record<string, any>),
+      );
       setIsValid(Object.keys(parsedVariables).map(() => true));
     } catch (e) {
       console.error(e);
