@@ -3,7 +3,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF NEW."fnName" != '' AND EXISTS (
     SELECT 1 FROM "public"."approval_answers"
-    WHERE "org_id" = NEW."org_id" AND "fnName" = NEW."fnName"
+    WHERE "org_id" = NEW."org_id" AND "fnName" = NEW."fnName" AND "id" != NEW."id"
   ) THEN
     RAISE EXCEPTION 'Duplicate org_id and fnName combination';
   END IF;
