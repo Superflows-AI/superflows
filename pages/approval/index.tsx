@@ -7,6 +7,7 @@ import classNames from "classnames";
 import {
   CheckCircleIcon,
   EllipsisHorizontalIcon,
+  PencilSquareIcon,
   PlusIcon,
   TrashIcon,
   XCircleIcon,
@@ -17,15 +18,16 @@ import Fuse from "fuse.js";
 import { reformatFromFuse } from "../../lib/utils";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { Database } from "../../lib/database.types";
-import { ApprovalAnswer } from "../../lib/types";
+import { ApprovalAnswer, ApprovalVariable } from "../../lib/types";
 import QuestionText from "../../components/approval/question";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import FlyoutMenu from "../../components/flyoutMenu";
 import WarningModal, { WarningModalData } from "../../components/warningModal";
 import {
-  AddActionModal,
+  AddQuestionModal,
   AddGroupModal,
-} from "../../components/approval/addActionModal";
+  EditQuestionModal,
+} from "../../components/approval/addQuestionModal";
 
 export default function App() {
   return (
@@ -73,6 +75,8 @@ function Dashboard() {
   const [questionGroups, setQuestionGroups] = useState<
     { name: string; id: string }[]
   >([]);
+  const [editQuestionData, setEditQuestionData] =
+    useState<UIQuestionMessageData | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -110,6 +114,22 @@ function Dashboard() {
       })();
     }
   }, [profile]);
+  useEffect(() => {
+    console.log("All questions changed");
+    if (allQuestions.length > 0) {
+      setGroupsOfQuestions(groupItems(allQuestions, questionGroups));
+    }
+  }, [allQuestions]);
+  const [variableData, setVariableData] = useState<ApprovalVariable[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data: answerVariableData, error: variableError } = await supabase
+        .from("approval_variables")
+        .select("*");
+      if (variableError) throw new Error(variableError.message);
+      setVariableData(answerVariableData ?? []);
+    })();
+  }, []);
 
   const onSearchChange = useCallback(
     (value: string) => {
@@ -130,11 +150,20 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-800">
       <Navbar current={""} />
-      <AddActionModal
-        group_id={addActionGroupId}
+      <AddQuestionModal
+        groupId={addActionGroupId}
         setGroupId={setAddActionGroupId}
         groups={groupsOfQuestions}
-        setGroups={setGroupsOfQuestions}
+        setQuestions={setAllQuestions}
+        variableData={variableData}
+      />
+      <EditQuestionModal
+        open={editQuestionData !== null}
+        close={() => setEditQuestionData(null)}
+        editQuestionData={editQuestionData}
+        variableData={variableData}
+        groups={groupsOfQuestions}
+        setQuestions={setAllQuestions}
       />
       <AddGroupModal
         open={showAddGroupModal}
@@ -210,35 +239,35 @@ function Dashboard() {
                   </div>
 
                   {showQuestionGroup &&
-                  showQuestionGroup[questionGroup.id] &&
-                  questionGroup.questions.length > 0 ? (
-                    <div
-                      className={
-                        "flex place-items-end py-1 pr-1 text-sm text-gray-400 mr-10"
-                      }
-                    >
-                      Approved
-                    </div>
-                  ) : (
-                    <button
-                      className="h-8 mr-2 px-2 py-1 rounded-md flex flex-row place-items-center gap-x-1 text-gray-400 text-sm hover:text-gray-300 hover:bg-gray-700"
-                      onClick={async () => {
-                        const { error } = await supabase
-                          .from("approval_answer_groups")
-                          .delete()
-                          .match({ id: questionGroup.id });
-                        if (error) throw new Error(error.message);
-                        setGroupsOfQuestions((prev) =>
-                          prev.filter((g) => g.id !== questionGroup.id),
-                        );
-                        setQuestionGroups((prev) =>
-                          prev.filter((g) => g.id !== questionGroup.id),
-                        );
-                      }}
-                    >
-                      <TrashIcon className={"h-4 w-4"} /> Delete
-                    </button>
-                  )}
+                    showQuestionGroup[questionGroup.id] &&
+                    (questionGroup.questions.length > 0 ? (
+                      <div
+                        className={
+                          "flex place-items-end py-1 pr-1 text-sm text-gray-400 mr-10"
+                        }
+                      >
+                        Approved
+                      </div>
+                    ) : (
+                      <button
+                        className="h-8 mr-2 px-2 py-1 rounded-md flex flex-row place-items-center gap-x-1 text-gray-400 text-sm hover:text-gray-300 hover:bg-gray-700"
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from("approval_answer_groups")
+                            .delete()
+                            .match({ id: questionGroup.id });
+                          if (error) throw new Error(error.message);
+                          setGroupsOfQuestions((prev) =>
+                            prev.filter((g) => g.id !== questionGroup.id),
+                          );
+                          setQuestionGroups((prev) =>
+                            prev.filter((g) => g.id !== questionGroup.id),
+                          );
+                        }}
+                      >
+                        <TrashIcon className={"h-4 w-4"} /> Delete
+                      </button>
+                    ))}
                 </div>
                 {showQuestionGroup &&
                   showQuestionGroup[questionGroup.id] &&
@@ -273,6 +302,11 @@ function Dashboard() {
                           )}
                           <FlyoutMenu
                             items={[
+                              {
+                                name: "Edit",
+                                Icon: <PencilSquareIcon className="h-4 w-4" />,
+                                onClick: () => setEditQuestionData(item),
+                              },
                               {
                                 name: "Delete",
                                 Icon: <TrashIcon className="h-4 w-4" />,

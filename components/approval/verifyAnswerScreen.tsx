@@ -44,6 +44,7 @@ import Toggle from "../toggle";
 import { UIAnswerType, UIMessageData } from "./types";
 import WarningModal, { WarningModalData } from "../warningModal";
 import FlyoutMenu from "../flyoutMenu";
+import { EditQuestionModal } from "./addQuestionModal";
 
 export function VerifyQuestionScreen(props: {
   data: {
@@ -59,7 +60,7 @@ export function VerifyQuestionScreen(props: {
   const router = useRouter();
   const supabase = useSupabaseClient<Database>();
 
-  const [questionText, setQuestionText] = useState<string | null>(null);
+  const [questionText, setQuestionText] = useState<string>("");
   const [warningModalData, setWarningModalData] = useState<WarningModalData>({
     title: "",
     description: "",
@@ -85,7 +86,7 @@ export function VerifyQuestionScreen(props: {
   const [allActions, setAllActions] = useState<Action[] | null>(null);
   const [thoughtsVisible, setThoughtsVisible] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<
-    "code" | "filtering" | "routing" | "user" | "api-key" | null
+    "code" | "filtering" | "routing" | "user" | "api-key" | "question" | null
   >(null);
   const [userApiKey, setUserApiKey] = useState(() => {
     // Grab API key from localstorage
@@ -219,51 +220,13 @@ export function VerifyQuestionScreen(props: {
       if (!data) return;
 
       const reader = data.getReader();
-      const decoder = new TextDecoder();
-      const outputMessages = [
-        { role: "assistant", content: "" },
-      ] as ChatItemType[];
-      let incompleteChunk = "";
 
-      let done = false,
-        value: Uint8Array | undefined;
+      // Streaming here is fake - we just make DB calls to get the
+      // data when streamed items come in
+      let done = false;
       while (!done) {
-        ({ value, done } = await reader.read());
-        const chunkValue = incompleteChunk + decoder.decode(value);
-        // One server-side chunk can be split across multiple client-side chunks,
-        // so we catch errors thrown by JSON.parse() and append the next chunk
+        ({ done } = await reader.read());
         try {
-          // Can be multiple server-side chunks in one client-side chunk,
-          // separated by "data: ". The .slice(6) removes the "data: " at
-          // the start of the string
-          chunkValue
-            .slice(6)
-            .split("data: ")
-            .forEach((chunkOfChunk) => {
-              if (chunkOfChunk.length === 0) return;
-              const data = JSON.parse(chunkOfChunk) as StreamingStep;
-              if (
-                // Different message role from the last message
-                data.role !== outputMessages[outputMessages.length - 1]?.role ||
-                // Not the assistant (e.g. function, debug etc where the entire contents of a message is 1 chunk)
-                data.role !== "assistant" ||
-                // Includes explicit new message tag
-                data.content.includes("<<[NEW-MESSAGE]>>")
-              ) {
-                if (
-                  data.role === "assistant" &&
-                  data.content.includes("<<[NEW-MESSAGE]>>")
-                )
-                  data.content = data.content.replace("<<[NEW-MESSAGE]>>", "");
-                // Add new message
-                outputMessages.push({ ...data });
-              } else {
-                // Append message data to preceding message
-                outputMessages[outputMessages.length - 1].content +=
-                  data.content;
-              }
-              // setMessages([...messagesToViz, ...outputMessages]);
-            });
           ({ messagesToViz, messagesData, answer } = await pullInMessageData(
             props.data.id,
             supabase,
@@ -271,7 +234,6 @@ export function VerifyQuestionScreen(props: {
           setMessages(messagesToViz);
           setAllMessageData(messagesData);
           setAnswer(answer);
-          incompleteChunk = "";
         } catch (e) {
           console.warn(
             "If there is a JSON parsing error below, this is likely caused by a very large API response that the AI won't be able to handle.\n\n" +
@@ -279,7 +241,6 @@ export function VerifyQuestionScreen(props: {
               "'Include these keys in response' fields at the bottom of the edit action modal at https://dashboard.superflows.ai\n\n",
             e,
           );
-          incompleteChunk += chunkValue;
         }
       }
       setLoading(false);
@@ -387,6 +348,24 @@ export function VerifyQuestionScreen(props: {
               }}
             />
           )}
+          <EditQuestionModal
+            open={showModal === "question"}
+            close={() => setShowModal(null)}
+            editQuestionData={{
+              text: questionText,
+              approval_answers: props.data,
+            }}
+            variableData={allVariables}
+            setQuestionText={setQuestionText}
+            setAlternatives={(
+              alternatives: { text: string; primary_question: boolean }[],
+            ) => {
+              setAnswer((prev) => ({
+                ...prev,
+                approval_questions: alternatives,
+              }));
+            }}
+          />
           <EditAPIKeyModal
             open={showModal === "api-key"}
             setOpen={() => setShowModal(null)}
@@ -500,9 +479,28 @@ export function VerifyQuestionScreen(props: {
             {questionText && <QuestionText questionText={questionText} />}
             <InformationCircleIcon className="h-6 w-6 text-gray-600 ml-2" />
           </div>
+          <div
+            className={classNames("popup bg-gray-800 right-10 top-14 w-150")}
+          >
+            <p className="text-gray-400">Equivalent to:</p>
+            {answer.approval_questions
+              .filter((q) => !q.primary_question)
+              .map((q, idx) => (
+                <div key={idx} className="border-t">
+                  <QuestionText questionText={q.text} />
+                </div>
+              ))}
+          </div>
           <div className="flex flex-col tracking-tight leading-3 place-items-center text-center gap-y-1 text-xs text-gray-600 rounded px-1 py-1.5 z-20">
             <FlyoutMenu
               items={[
+                {
+                  name: "Edit",
+                  Icon: (
+                    <PencilSquareIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  ),
+                  onClick: () => setShowModal("question"),
+                },
                 {
                   name: "Delete",
                   Icon: <TrashIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />,
@@ -535,16 +533,6 @@ export function VerifyQuestionScreen(props: {
               }
             />
           </div>
-        </div>
-        <div className={classNames("popup bg-gray-800 right-10 top-14 w-150")}>
-          <p className="text-gray-400">Equivalent to:</p>
-          {answer.approval_questions
-            .filter((q) => !q.primary_question)
-            .map((q, idx) => (
-              <div key={idx} className="border-t">
-                <QuestionText questionText={q.text} />
-              </div>
-            ))}
         </div>
         <div className="pt-16 flex-1 bg-white px-4 w-full flex flex-col place-items-center overflow-x-hidden overflow-y-auto mb-16">
           {messages.map((m, idx) => {
