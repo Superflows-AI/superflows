@@ -10,7 +10,12 @@ import {
 } from "../../types";
 import { exponentialRetryWrapper, logPrompt, snakeToCamel } from "../../utils";
 import { MAX_TOKENS_OUT } from "../../consts";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+} from "@supabase/supabase-js";
 import { Database, Json } from "../../database.types";
 import {
   parseRoutingOutputv3,
@@ -372,8 +377,23 @@ export async function Cassius(
           }),
         });
         if (res.error) {
+          let errorMessage = "";
+          if (res.error instanceof FunctionsHttpError) {
+            errorMessage = await res.error.context.text();
+            if (errorMessage === "Internal Server Error") {
+              errorMessage =
+                "Timed out. Caused either by too much CPU time taken, or too long waiting for APIs.";
+            }
+            console.log("Function returned an error", errorMessage);
+          } else if (res.error instanceof FunctionsRelayError) {
+            errorMessage = res.error.message;
+            console.log("Relay error:", res.error.message);
+          } else if (res.error instanceof FunctionsFetchError) {
+            errorMessage = res.error.message;
+            console.log("Fetch error:", res.error.message);
+          }
           await addNewMessageToDB(
-            "Failed to execute code: " + res.error.toString(),
+            "Failed to execute code: " + errorMessage,
             "error",
           );
           streamInfo({
