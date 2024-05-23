@@ -171,7 +171,11 @@ export function AddQuestionModal(props: {
                     is_generating: true,
                     approved: false,
                     generation_failed: false,
-                    approval_answer_groups: { name: "" },
+                    approval_answer_groups: {
+                      name:
+                        props.groups.find((g) => g.id === chosenGroupId)
+                          ?.name ?? "",
+                    },
                     approval_answer_messages: [],
                   },
                 },
@@ -343,8 +347,11 @@ export function EditQuestionModal(props: {
               setError(null);
               setLoading(true);
 
-              // Question text hasn't changed
-              if (props.editQuestionData.text === questionText) {
+              // Group id has changed
+              if (
+                props.editQuestionData.approval_answers.group_id !==
+                chosenGroupId
+              ) {
                 // Update group_id
                 const { error: groupError } = await supabase
                   .from("approval_answers")
@@ -370,9 +377,12 @@ export function EditQuestionModal(props: {
                       allGroups.find((g) => g.id === chosenGroupId)?.name ?? "";
                     return newPrev;
                   });
-                props.close();
-                setLoading(false);
-                return;
+                // Question text hasn't changed
+                if (props.editQuestionData.text === questionText) {
+                  props.close();
+                  setLoading(false);
+                  return;
+                }
               }
 
               // Generate alternatives first
@@ -437,7 +447,6 @@ export function EditQuestionModal(props: {
                 .insert(
                   embedJson.data.map((toInsert: any) => ({
                     ...toInsert,
-                    group_id: chosenGroupId,
                     org_id: profile.org_id,
                     answer_id: props.editQuestionData?.approval_answers.id,
                   })),
@@ -452,14 +461,17 @@ export function EditQuestionModal(props: {
               props.setQuestionText && props.setQuestionText(questionText);
               props.setQuestions &&
                 props.setQuestions((prev) => {
-                  const idx = prev.findIndex(
+                  const newPrev = [...prev];
+                  const idx = newPrev.findIndex(
                     (q) =>
                       q.approval_answers.id ===
                       props.editQuestionData?.approval_answers.id,
                   );
-                  prev[idx].text = questionText;
-                  prev[idx].approval_answers.group_id = chosenGroupId;
-                  return prev;
+                  newPrev[idx].text = questionText;
+                  newPrev[idx].approval_answers.group_id = chosenGroupId;
+                  newPrev[idx].approval_answers.approval_answer_groups.name =
+                    allGroups.find((g) => g.id === chosenGroupId)?.name ?? "";
+                  return newPrev;
                 });
               props.setAlternatives &&
                 props.setAlternatives([
