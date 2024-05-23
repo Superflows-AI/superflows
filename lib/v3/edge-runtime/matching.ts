@@ -447,16 +447,6 @@ async function executeMessages(
         console.error("Error from generated code:", codeOk.error);
       }
       if (returnedData !== null) {
-        // Stream API calls
-        returnedData
-          .filter((m) => m.type === "call-human-format")
-          .map((m) =>
-            streamInfo({
-              role: "debug",
-              // @ts-ignore
-              content: m.args.message,
-            }),
-          );
         const graphDataArr = convertToGraphData(returnedData);
         // Stream the graph data, converting errors to non-red messages in frontend
         graphDataArr.map((m) =>
@@ -466,17 +456,19 @@ async function executeMessages(
               : m,
           ),
         );
-        codeMessages = graphDataArr.map(
-          (m) =>
-            ({
-              role: "function",
-              name: m.role === "graph" ? "plot" : "logs",
-              content:
-                typeof m.content === "string"
-                  ? m.content
-                  : JSON.stringify(m.content),
-            } as FunctionMessage),
-        );
+        codeMessages = graphDataArr
+          .filter((m) => m.role !== "debug")
+          .map(
+            (m) =>
+              ({
+                role: "function",
+                name: m.role === "graph" ? "plot" : "logs",
+                content:
+                  typeof m.content === "string"
+                    ? m.content
+                    : JSON.stringify(m.content),
+              } as FunctionMessage),
+          );
         console.log("Concatenating code messages", codeMessages);
         chatHistory = chatHistory.concat(codeMessages);
       }
