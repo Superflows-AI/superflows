@@ -525,6 +525,7 @@ export function VerifyQuestionScreen(props: {
                           )}`,
                         );
                       },
+                      actionName: "Delete",
                     })),
                 },
               ]}
