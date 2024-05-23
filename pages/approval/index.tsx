@@ -318,6 +318,7 @@ function Dashboard() {
                                       "Are you sure you want to delete this question? This can't be reversed",
                                     actionColour: "red",
                                     open: true,
+                                    actionName: "Delete",
                                     action: async () => {
                                       const { error } = await supabase
                                         .from("approval_answers")
