@@ -183,11 +183,14 @@ export function AddQuestionModal(props: {
               props.setGroupId(null);
               setLoading(false);
 
+              const userApiKey = localStorage.getItem("userApiKey");
+
               // Generate answer
               void fetch("/api/v3/generate-answer-offline", {
                 method: "POST",
                 body: JSON.stringify({
                   answer_id: answerData.id,
+                  user_api_key: userApiKey ?? "",
                 }),
               });
             }}
