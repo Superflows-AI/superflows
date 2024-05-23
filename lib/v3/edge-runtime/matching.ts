@@ -360,11 +360,13 @@ async function executeMessages(
 ): Promise<GPTMessageInclSummary[]> {
   let filteredActions: ActionPlusApiInfo[] = [],
     codeMessages: FunctionMessage[] = [],
-    route: "DOCS" | "CODE" | undefined = undefined;
+    route: "DOCS" | "CODE" = "CODE";
   for (const m of messages) {
     if (m.message_type === "routing") {
       const parsedRoutingOut = parseRoutingOutputv3(m.raw_text);
-      route = parsedRoutingOut?.choice;
+      if (!parsedRoutingOut?.choice)
+        console.error("No choice in routing:", m.raw_text);
+      route = parsedRoutingOut?.choice ?? "CODE";
     } else if (m.message_type === "filtering") {
       const parsedFOut = parseFilteringOutputv3(
         m.raw_text,
@@ -475,13 +477,18 @@ async function executeMessages(
     } else if (m.message_type === "text") {
       // Regenerate text manually
       let nonSystemMessages: ChatGPTMessage[] = chatHistory
-        .slice(Math.max(0, chatHistory.length - 7))
+        .slice(Math.max(0, chatHistory.length - 9))
         .map(MessageInclSummaryToGPT);
       let graphCut: boolean;
       ({ chatGptPrompt: nonSystemMessages, graphDataHidden: graphCut } =
         hideLongGraphOutputs(nonSystemMessages, ["logs", "plot"]));
       let prompt: ChatGPTMessage[];
-      if (route === "CODE" || route === undefined) {
+      if (route === "DOCS") {
+        prompt = [
+          chatToDocsPrompt(reqData.user_description, org, false, language),
+          ...nonSystemMessages.map(MessageInclSummaryToGPT),
+        ];
+      } else {
         prompt = explainPlotChatPrompt(
           nonSystemMessages,
           reqData.user_description ?? "",
@@ -489,11 +496,6 @@ async function executeMessages(
           language,
           graphCut,
         );
-      } else {
-        prompt = [
-          chatToDocsPrompt(reqData.user_description, org, false, language),
-          ...nonSystemMessages.map(MessageInclSummaryToGPT),
-        ];
       }
       logPrompt(prompt);
       let streamedText = "",

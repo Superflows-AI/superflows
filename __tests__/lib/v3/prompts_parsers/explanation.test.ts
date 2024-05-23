@@ -568,4 +568,31 @@ describe("formatChatHistoryToAnthropicFormat", () => {
       },
     ]);
   });
+  it("Real world example, user function", () => {
+    const prompt = formatChatHistoryToAnthropicFormat(
+      JSON.parse(
+        JSON.stringify([
+          { role: "user", content: "What warehouses are there?" },
+          {
+            role: "function",
+            name: "logs",
+            content:
+              "Logs and API calls from code execution:\n" +
+              "listSuppliers()\n" +
+              "Found 1 unique warehouses by extracting the distinct warehouseName values from the supplier data\n" +
+              "The warehouses are called: Klippan",
+          },
+        ]),
+      ),
+    );
+    expect(prompt).toHaveLength(1);
+    expect(prompt[0]).toEqual({
+      role: "user",
+      content:
+        "What warehouses are there?\n\n### FUNCTION:\nLogs and API calls from code execution:\n" +
+        "listSuppliers()\n" +
+        "Found 1 unique warehouses by extracting the distinct warehouseName values from the supplier data\n" +
+        "The warehouses are called: Klippan",
+    });
+  });
 });
