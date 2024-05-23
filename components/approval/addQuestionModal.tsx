@@ -324,7 +324,10 @@ export function EditQuestionModal(props: {
                 loading ||
                 !chosenGroupId ||
                 !questionText ||
-                !props.editQuestionData?.approval_answers.id
+                !props.editQuestionData?.approval_answers.id ||
+                (props.editQuestionData.text === questionText &&
+                  props.editQuestionData.approval_answers.group_id ===
+                    chosenGroupId)
               ) {
                 return;
               }
@@ -339,6 +342,38 @@ export function EditQuestionModal(props: {
               // Otherwise, it's valid
               setError(null);
               setLoading(true);
+
+              // Question text hasn't changed
+              if (props.editQuestionData.text === questionText) {
+                // Update group_id
+                const { error: groupError } = await supabase
+                  .from("approval_answers")
+                  .update({ group_id: chosenGroupId })
+                  .match({ id: props.editQuestionData.approval_answers.id });
+                if (groupError) {
+                  setError(`Failed to update group: ${groupError.message}`);
+                  console.error(
+                    `Failed to update group: ${groupError.message}`,
+                  );
+                  return;
+                }
+                props.setQuestions &&
+                  props.setQuestions((prev) => {
+                    const newPrev = [...prev];
+                    const idx = newPrev.findIndex(
+                      (q) =>
+                        q.approval_answers.id ===
+                        props.editQuestionData?.approval_answers.id,
+                    );
+                    newPrev[idx].approval_answers.group_id = chosenGroupId;
+                    newPrev[idx].approval_answers.approval_answer_groups.name =
+                      allGroups.find((g) => g.id === chosenGroupId)?.name ?? "";
+                    return newPrev;
+                  });
+                props.close();
+                setLoading(false);
+                return;
+              }
 
               // Generate alternatives first
               const out = await fetch("/api/generate-alternative-questions", {
@@ -402,6 +437,7 @@ export function EditQuestionModal(props: {
                 .insert(
                   embedJson.data.map((toInsert: any) => ({
                     ...toInsert,
+                    group_id: chosenGroupId,
                     org_id: profile.org_id,
                     answer_id: props.editQuestionData?.approval_answers.id,
                   })),
