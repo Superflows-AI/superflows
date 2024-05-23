@@ -50,7 +50,7 @@ Use when:
 1. Think step-by-step how to answer the user's request
 2. consider if the user's request requires documentation - use DOCS if so
 </thinking>
-<choice>DOCS|DIRECT</choice>
+<choice>CODE|DOCS</choice>
 </format>`,
     },
     { role: "user", content: args.userRequest },
