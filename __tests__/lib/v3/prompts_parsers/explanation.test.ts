@@ -595,4 +595,47 @@ describe("formatChatHistoryToAnthropicFormat", () => {
         "The warehouses are called: Klippan",
     });
   });
+  it("Real world example, user function", () => {
+    const prompt = formatChatHistoryToAnthropicFormat(
+      JSON.parse(
+        JSON.stringify([
+          { role: "user", content: "What warehouses are there?" },
+          {
+            role: "assistant",
+            content:
+              "Reasoning:\n1. This seems like a good idea!\n\nCommands:\nlistAllWarehouses()",
+          },
+          {
+            role: "function",
+            name: "logs",
+            content:
+              "Logs and API calls from code execution:\n" +
+              "listSuppliers()\n" +
+              "Found 1 unique warehouses by extracting the distinct warehouseName values from the supplier data\n" +
+              "The warehouses are called: Klippan",
+          },
+        ]),
+      ),
+    );
+    expect(prompt).toHaveLength(3);
+    expect(prompt).toEqual([
+      {
+        role: "user",
+        content: "What warehouses are there?",
+      },
+      {
+        role: "assistant",
+        content:
+          "Reasoning:\n1. This seems like a good idea!\n\nCommands:\nlistAllWarehouses()",
+      },
+      {
+        role: "user",
+        content:
+          "\n\n### FUNCTION:\nLogs and API calls from code execution:\n" +
+          "listSuppliers()\n" +
+          "Found 1 unique warehouses by extracting the distinct warehouseName values from the supplier data\n" +
+          "The warehouses are called: Klippan",
+      },
+    ]);
+  });
 });
