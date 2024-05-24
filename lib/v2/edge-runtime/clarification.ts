@@ -174,7 +174,10 @@ export async function LLMPreProcess(args: {
       if (rawOutput === null) {
         return { error: "Call to Language Model API failed" };
       }
-      return { output: rawOutput, parsed: parseClarificationOutput(rawOutput) };
+      return {
+        output: rawOutput.transformed,
+        parsed: parseClarificationOutput(rawOutput.transformed),
+      };
     })(),
     // Run routing - should the request go to DOCS, DIRECT, or CODE?
     (async (): Promise<Route | { error: string }> => {
@@ -200,7 +203,7 @@ export async function LLMPreProcess(args: {
       if (rawOutput === null) {
         return { error: "Call to Language Model API failed" };
       }
-      const parsedOutput = parseRoutingOutput(rawOutput, false);
+      const parsedOutput = parseRoutingOutput(rawOutput.transformed, false);
       if (
         parsedOutput !== null &&
         ["DIRECT", "DOCS", "CODE"].includes(parsedOutput.choice)

@@ -214,7 +214,7 @@ export async function runDataAnalysis(
               await new Promise((resolve) => setTimeout(resolve, 25000));
               return { error: "Stream failed" };
             }
-            parallelLlmResponse = streamedOut;
+            parallelLlmResponse = streamedOut.transformed;
             if (promiseFinished)
               return { error: "Another promise settled first" };
 

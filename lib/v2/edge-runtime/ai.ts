@@ -375,7 +375,10 @@ export async function Bertie( // Bertie will eat you for breakfast
           { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
         if (streamedText && completeOutput) {
-          chatHistory.push({ role: "assistant", content: completeOutput });
+          chatHistory.push({
+            role: "assistant",
+            content: completeOutput.transformed,
+          });
         }
       }
       return {
@@ -818,7 +821,10 @@ export async function Bertie( // Bertie will eat you for breakfast
             { "</thinking>": "", "<tellUser>": "Tell user:\n" },
           );
           if (streamedText && completeOutput) {
-            chatHistory.push({ role: "assistant", content: completeOutput });
+            chatHistory.push({
+              role: "assistant",
+              content: completeOutput.transformed,
+            });
           }
         }
         return {

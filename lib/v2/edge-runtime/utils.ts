@@ -13,12 +13,14 @@ export async function streamWithEarlyTermination(
   params: ChatGPTParams,
   model: string,
   shouldTerminate: (rawOutput: string) => boolean,
-  handleStreamingToUser: (rawOutput: string) => void,
+  handleStreamingToUser: (transformed: string, rawOutput: string) => void,
   promptName: string, // For logs
   initialRawOutput: string = "",
   placeholderToOriginalMap: Record<string, string> = {},
-): Promise<string | null> {
-  /** null means there's been an error **/
+): Promise<{ raw: string; transformed: string } | null> {
+  /** IMPORTANT: The function outputs the raw message, the handle streaming
+   * function has both raw and transformed outputs.
+   * null output means there's been an error **/
   const startTime = Date.now();
   let res = await exponentialRetryWrapper(
     streamLLMResponse,
@@ -39,6 +41,7 @@ export async function streamWithEarlyTermination(
   const reader = res.getReader();
 
   let rawOutput = initialRawOutput,
+    transformedOutput = initialRawOutput,
     done = false,
     incompleteChunk = "",
     first = true;
@@ -67,6 +70,7 @@ export async function streamWithEarlyTermination(
         first = false;
       }
 
+      rawOutput += content;
       if (usingPlaceholderMap) {
         // Replace variables with their real values so URL1 is replaced by the actual URL
         ({ content, placeholderBuffer } = replacePlaceholdersDuringStreaming(
@@ -75,10 +79,10 @@ export async function streamWithEarlyTermination(
           placeholderToOriginalMap,
         ));
       }
-      rawOutput += content;
+      transformedOutput += content;
 
       if (content) {
-        handleStreamingToUser(rawOutput);
+        handleStreamingToUser(transformedOutput, rawOutput);
         if (shouldTerminate(rawOutput)) {
           console.log(
             `${promptName} LLM stream completed in ${
@@ -88,11 +92,11 @@ export async function streamWithEarlyTermination(
           // Cancel stream
           reader.releaseLock();
           await res.cancel();
-          return rawOutput;
+          return { raw: rawOutput, transformed: transformedOutput };
         }
       }
     }
     done = contentItems.done;
   }
-  return rawOutput;
+  return { raw: rawOutput, transformed: transformedOutput };
 }
