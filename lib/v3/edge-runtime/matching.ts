@@ -229,8 +229,7 @@ export async function matchQuestionToAnswer(
     variables,
   });
   logPrompt(matchingPrompt);
-  let completeOutput = "",
-    nothingStreamed = true,
+  let transformedOut = "",
     numRetries = 0,
     parsedMatchingOut: MatchingParsedResponse | null = null,
     chosenMatch = null,
@@ -254,29 +253,31 @@ export async function matchQuestionToAnswer(
         ],
       },
       "anthropic/claude-3-opus-20240229",
-      () => {
-        return completeOutput.includes("</tellUser");
-      },
-      async (rawOutput: string) => {
-        if (completeOutput.includes("<tellUser>")) {
-          const newContent = rawOutput.replace(completeOutput, "");
-          streamInfo({
-            role: "assistant",
-            content:
-              nothingStreamed && newContent.startsWith("\n")
-                ? newContent.slice(1)
-                : newContent,
-          });
-          nothingStreamed = false;
-        }
-        completeOutput = rawOutput;
+      () => false,
+      async (transformed: string) => {
+        const newContent = transformed.replace(transformedOut, "");
+        streamInfo({
+          role: "assistant",
+          content: newContent,
+        });
+        transformedOut = transformed;
       },
       "Matching",
-      matchingPrompt[matchingPrompt.length - 1].content,
+      matchingPrompt[matchingPrompt.length - 1].content.replace(
+        "<thinking>",
+        "Reasoning:",
+      ),
+      {
+        "</tellUser>": "",
+        "</thinking>": "",
+        "<tellUser>": "Tell user:\n",
+        "<functionCall>": "Commands:\n",
+        "</functionCall>": "",
+      },
     );
     console.log("LLM out:", llmOut);
     if (llmOut) {
-      parsedMatchingOut = parseMatchingOutput(llmOut, variables);
+      parsedMatchingOut = parseMatchingOutput(llmOut.raw, variables);
       if (parsedMatchingOut?.functionName) {
         // Get messages from approval_answer_messages and use them to generate the answer, filling in variables
         chosenMatch = fnNameData.find(
@@ -292,6 +293,10 @@ export async function matchQuestionToAnswer(
           chosenMatch = null;
         }
       }
+      chatHistory.push({
+        role: "assistant",
+        content: llmOut.transformed,
+      });
     }
   }
   // If no function name or tellUser message, we ran out of retries
@@ -526,7 +531,10 @@ async function executeMessages(
           { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
         if (streamedText && completeOutput) {
-          chatHistory.push({ role: "assistant", content: completeOutput });
+          chatHistory.push({
+            role: "assistant",
+            content: completeOutput.transformed,
+          });
         }
       }
     }

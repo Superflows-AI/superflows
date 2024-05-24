@@ -517,7 +517,7 @@ export async function Cassius(
           { "</thinking>": "", "<tellUser>": "Tell user:\n" },
         );
         explanationMessage = await addNewMessageToDB(
-          completeOutput ?? "Failed to generate explanation",
+          completeOutput?.transformed ?? "Failed to generate explanation",
           completeOutput ? "text" : "error",
         );
         streamInfo(explanationMessage);
