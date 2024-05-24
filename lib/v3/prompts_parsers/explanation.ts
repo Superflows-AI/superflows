@@ -149,10 +149,10 @@ Explique cómo se ${
 
 Explain how ${
         graphOrTable
-          ? `the ${graphOrTable} was generated (don't mention functions by name) and how `
+          ? `the ${graphOrTable} was generated (DO NOT mention functions by name) and how `
           : ""
       }numbers were calculated based on the logs${
-        graphOrTable ? "" : " and don't mention functions by name"
+        graphOrTable ? "" : " and DO NOT mention functions by name"
       }${language && language !== "English" ? ` (in ${language})` : ""}`
 }
 </tellUser>
@@ -163,8 +163,8 @@ Explain how ${
       role: "assistant",
       content: `<thinking>\n1. Which rules apply? ${
         graphOrTable
-          ? `I must not list the ${graphOrTable}'s contents.`
-          : "I must answer the user's question, including all useful information from the logs."
+          ? `I must not list the ${graphOrTable}'s contents or mention functions by name.`
+          : "I must answer the user's question, including all useful information from the logs or mention functions by name."
       }${
         !language || language === "English"
           ? ""
