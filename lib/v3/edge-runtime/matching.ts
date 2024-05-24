@@ -336,12 +336,6 @@ export async function matchQuestionToAnswer(
       })),
       language,
     );
-  } else {
-    // No function name, there must be a tellUser message
-    chatHistory.push({
-      role: "assistant",
-      content: parsedMatchingOut!.tellUser,
-    });
   }
   return {
     nonSystemMessages: [...chatHistory],
