@@ -1,6 +1,7 @@
 import {
   checkCodeExecutionOutput,
   convertToGraphData,
+  ensureXandYinData,
   formatPlotData,
 } from "../../../../lib/v2/edge-runtime/dataAnalysis";
 import { ExecuteCode2Item } from "../../../../lib/types";
@@ -743,5 +744,76 @@ name: string;
   it("Type definition", () => {
     const out = stripBasicTypescriptTypes(`type Person  = string;`);
     expect(out).toEqual(``);
+  });
+});
+
+describe("ensureXandYinData", () => {
+  it("x and y present: do nothing", () => {
+    const dataOut = ensureXandYinData({
+      title: "title",
+      type: "line",
+      data: [
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(dataOut).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("x missing, get from labels", () => {
+    const dataOut = ensureXandYinData({
+      title: "title",
+      type: "line",
+      data: [
+        { date: 1, y: 2 },
+        { date: 1, y: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(dataOut).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("y missing, get from labels", () => {
+    const dataOut = ensureXandYinData({
+      title: "title",
+      type: "line",
+      data: [
+        { x: 1, value: 2 },
+        { x: 1, value: 2 },
+      ],
+      labels: { x: "date", y: "value" },
+    });
+    expect(dataOut).toStrictEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+  });
+  it("y missing, ensure order is (x, y, other)", () => {
+    const dataOut = ensureXandYinData({
+      title: "title",
+      type: "line",
+      data: [{ x: 1, value: 2, approved: true }],
+      labels: { x: "date", y: "value" },
+    });
+    dataOut.forEach((d) => {
+      Object.entries(d).forEach(([key, value], idx) => {
+        if (idx === 0) {
+          expect(key).toEqual("x");
+          expect(value).toStrictEqual(1);
+        } else if (idx === 1) {
+          expect(key).toEqual("y");
+          expect(value).toStrictEqual(2);
+        } else {
+          expect(key).toStrictEqual("approved");
+          expect(idx).toEqual(2);
+          expect(value).toStrictEqual(true);
+        }
+      });
+    });
   });
 });

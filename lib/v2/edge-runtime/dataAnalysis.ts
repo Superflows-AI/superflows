@@ -727,11 +727,18 @@ export function ensureXandYinData(
   }
 
   // Use the mapping to update the data
-  Object.entries(mapping).forEach(([key, value]) => {
-    graphDataOut.forEach((item) => {
-      item[key] = item[value];
+  return graphDataOut.map((item) => {
+    const xyValues = {
+      x: mapping.x ? item[mapping.x] : item.x,
+      y: mapping.y ? item[mapping.y] : item.y,
+    };
+    Object.entries(mapping).forEach(([key, value]) => {
+      delete item[key];
       delete item[value];
     });
+    return {
+      ...xyValues,
+      ...item,
+    };
   });
-  return graphDataOut;
 }
