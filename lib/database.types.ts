@@ -342,6 +342,7 @@ export type Database = {
           generation_failed: boolean;
           group_id: string;
           id: string;
+          is_docs: boolean;
           is_generating: boolean;
           org_id: number;
         };
@@ -353,6 +354,7 @@ export type Database = {
           generation_failed?: boolean;
           group_id: string;
           id?: string;
+          is_docs?: boolean;
           is_generating?: boolean;
           org_id: number;
         };
@@ -364,6 +366,7 @@ export type Database = {
           generation_failed?: boolean;
           group_id?: string;
           id?: string;
+          is_docs?: boolean;
           is_generating?: boolean;
           org_id?: number;
         };
