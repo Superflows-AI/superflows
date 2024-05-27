@@ -84,9 +84,10 @@ function Dashboard() {
         const { data: allQuestionsFromDB, error } = await supabase
           .from("approval_questions")
           .select(
-            "text, approval_answers(id,group_id,approved,is_generating,generation_failed,approval_answer_groups(name),approval_answer_messages(id))",
+            "text, approval_answers!inner(id,group_id,approved,is_generating,generation_failed,approval_answer_groups(name),approval_answer_messages(id))",
           )
-          .match({ primary_question: true, org_id: profile.org_id });
+          .match({ primary_question: true, org_id: profile.org_id })
+          .eq("approval_answers.is_docs", false);
         if (error) throw new Error(error.message);
         if (!allQuestionsFromDB) throw new Error("No questions found");
         if (allQuestionsFromDB.some((q) => q.approval_answers === null))
