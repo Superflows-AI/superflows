@@ -18,7 +18,6 @@ import {
 import { z } from "zod";
 import {
   codeFnNameDescriptionGenerationPrompt,
-  docsFnNameDescriptionGenerationPrompt,
   ParsedResponse,
   parseFnNameDescriptionOut,
   SimilarFunction,
@@ -312,8 +311,12 @@ export default async function handler(req: NextRequest) {
       complete = false;
     while (runCount < 3 && !complete) {
       runCount++;
+      if (isDocs) {
+        throw new Error(
+          "Docs answers not supported in function name description generation",
+        );
+      }
       const output = await generateFnNameAndDescription(
-        isDocs,
         approvalAnswersData,
         primaryQ,
         org,
@@ -399,7 +402,6 @@ export default async function handler(req: NextRequest) {
 }
 
 async function generateFnNameAndDescription(
-  isDocs: boolean,
   approvalAnswersData: Pick<
     ApprovalAnswer,
     "approved" | "generation_failed" | "is_generating"
@@ -418,108 +420,108 @@ async function generateFnNameAndDescription(
   similarFunctions: SimilarFunction[],
 ): Promise<ParsedResponse | Response> {
   let prompt: ChatGPTMessage[]; // Used when paths below rejoin
-  if (isDocs) {
-    const docsCall = approvalAnswersData.approval_answer_messages.find(
-      (q) => q.message_type === "function",
-    );
-    if (!docsCall) {
-      throw new Error("No docs call despite there being one earlier");
-    } else if (
-      // Absurd check to make TS happy
-      docsCall.generated_output === null ||
-      docsCall.generated_output.length === 0 ||
-      typeof docsCall.generated_output[0] !== "object" ||
-      docsCall.generated_output[0] === null ||
-      !("content" in docsCall.generated_output[0]) ||
-      !docsCall.generated_output[0].content
-    ) {
-      throw new Error("No generated output for docs call");
-    }
-    prompt = docsFnNameDescriptionGenerationPrompt({
-      userRequest: primaryQ.text,
-      org: org,
-      docsMessage: docsCall.generated_output[0]!.content.toString(),
-      similarFnNames: similarFunctions,
-    });
-  } else {
-    // Get all variable info
-    const { data: approvalVariableData, error: approvalVariableError } =
-      await serviceLevelSupabase
-        .from("approval_variables")
-        .select("*")
-        .eq("org_id", org.id);
-    if (approvalVariableError) throw new Error(approvalVariableError.message);
-
-    // Get actions
-    const { data: activeActions, error: actionErr } = await serviceLevelSupabase
-      .from("actions")
+  // if (isDocs) {
+  //   const docsCall = approvalAnswersData.approval_answer_messages.find(
+  //     (q) => q.message_type === "function",
+  //   );
+  //   if (!docsCall) {
+  //     throw new Error("No docs call despite there being one earlier");
+  //   } else if (
+  //     // Absurd check to make TS happy
+  //     docsCall.generated_output === null ||
+  //     docsCall.generated_output.length === 0 ||
+  //     typeof docsCall.generated_output[0] !== "object" ||
+  //     docsCall.generated_output[0] === null ||
+  //     !("content" in docsCall.generated_output[0]) ||
+  //     !docsCall.generated_output[0].content
+  //   ) {
+  //     throw new Error("No generated output for docs call");
+  //   }
+  //   prompt = docsFnNameDescriptionGenerationPrompt({
+  //     userRequest: primaryQ.text,
+  //     org: org,
+  //     docsMessage: docsCall.generated_output[0]!.content.toString(),
+  //     similarFnNames: similarFunctions,
+  //   });
+  // } else {
+  // Get all variable info
+  const { data: approvalVariableData, error: approvalVariableError } =
+    await serviceLevelSupabase
+      .from("approval_variables")
       .select("*")
-      .match({ active: true, org_id: org.id });
-    if (actionErr) throw new Error(actionErr.message);
+      .eq("org_id", org.id);
+  if (approvalVariableError) throw new Error(approvalVariableError.message);
 
-    if (
-      !activeActions ||
-      (activeActions.length === 0 && !org.chat_to_docs_enabled)
-    ) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
-        }),
-        { status: 400, headers },
-      );
-    }
+  // Get actions
+  const { data: activeActions, error: actionErr } = await serviceLevelSupabase
+    .from("actions")
+    .select("*")
+    .match({ active: true, org_id: org.id });
+  if (actionErr) throw new Error(actionErr.message);
 
-    const codeMessage = approvalAnswersData.approval_answer_messages.find(
-      (m) => m.message_type === "code",
+  if (
+    !activeActions ||
+    (activeActions.length === 0 && !org.chat_to_docs_enabled)
+  ) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "You have no active actions set for your organization. Add them if you have access to the Superflows dashboard or reach out to your IT team.",
+      }),
+      { status: 400, headers },
     );
-    if (!codeMessage) {
-      return new Response(
-        JSON.stringify({
-          error: "No code message associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    if (approvalAnswersData.approval_questions.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: "No questions associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    const filteringMessage = approvalAnswersData.approval_answer_messages.find(
-      (m) => m.message_type === "filtering",
-    );
-    if (!filteringMessage) {
-      return new Response(
-        JSON.stringify({
-          error: "No filtering message associated with this answer id",
-        }),
-        { status: 400, headers },
-      );
-    }
-    const filteredActions = parseFilteringOutputv3(
-      filteringMessage.raw_text,
-      activeActions.map((a) => snakeToCamel(a.name)),
-    )
-      .selectedFunctions.filter((fn) =>
-        // Only include functions actually used in the code
-        parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
-      )
-      .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
-      .filter(Boolean) as Action[];
-
-    prompt = codeFnNameDescriptionGenerationPrompt({
-      userRequest: primaryQ.text,
-      org: org,
-      code: codeMessage.raw_text,
-      filteredActions,
-      variables: approvalVariableData,
-      similarFnNames: similarFunctions,
-    });
   }
+
+  const codeMessage = approvalAnswersData.approval_answer_messages.find(
+    (m) => m.message_type === "code",
+  );
+  if (!codeMessage) {
+    return new Response(
+      JSON.stringify({
+        error: "No code message associated with this answer id",
+      }),
+      { status: 400, headers },
+    );
+  }
+  if (approvalAnswersData.approval_questions.length === 0) {
+    return new Response(
+      JSON.stringify({
+        error: "No questions associated with this answer id",
+      }),
+      { status: 400, headers },
+    );
+  }
+  const filteringMessage = approvalAnswersData.approval_answer_messages.find(
+    (m) => m.message_type === "filtering",
+  );
+  if (!filteringMessage) {
+    return new Response(
+      JSON.stringify({
+        error: "No filtering message associated with this answer id",
+      }),
+      { status: 400, headers },
+    );
+  }
+  const filteredActions = parseFilteringOutputv3(
+    filteringMessage.raw_text,
+    activeActions.map((a) => snakeToCamel(a.name)),
+  )
+    .selectedFunctions.filter((fn) =>
+      // Only include functions actually used in the code
+      parseCodeGenv3(codeMessage.raw_text).code.includes(fn),
+    )
+    .map((fn) => activeActions.find((a) => snakeToCamel(a.name) === fn))
+    .filter(Boolean) as Action[];
+
+  prompt = codeFnNameDescriptionGenerationPrompt({
+    userRequest: primaryQ.text,
+    org: org,
+    code: codeMessage.raw_text,
+    filteredActions,
+    variables: approvalVariableData,
+    similarFnNames: similarFunctions,
+  });
+  // }
 
   logPrompt(prompt);
   const llmResponse = await exponentialRetryWrapper(
