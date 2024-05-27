@@ -144,10 +144,8 @@ ${code}
 }
 
 export function docsFnNameDescriptionGenerationPrompt(args: {
-  userRequest: string;
-  docsMessage: string;
+  documentation: string;
   org: Pick<Organization, "name" | "description">;
-  similarFnNames: SimilarFunction[];
 }): ChatGPTMessage[] {
   return [
     {
@@ -156,7 +154,7 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
         args.org.name || "a software package"
       }. Your task is to write a concise function name and description for a function that returns the section of ${
         args.org.name || "software"
-      } documentation that is relevant to the question being asked.
+      } documentation in <documentation></documentation>
 
 <facts>
 1. ${args.org.description}
@@ -167,39 +165,26 @@ export function docsFnNameDescriptionGenerationPrompt(args: {
 2. BE CONCISE in the description
 3. NEVER use vague names or descriptions common to all functions that search the docs. Example: getRelevantDocs would be a poor name
 4. DO NOT describe and write a function name of what the docs say - rather the function that returns the docs
-5. ${
-        args.similarFnNames.length > 0
-          ? `AVOID naming the function any name in <namesToAvoid></namesToAvoid>\n6. Use camelCase for the function name
-7. Respond in the format given in <format></format> tags`
-          : "Use camelCase for the function name\n6. Respond in the format given in <format></format> tags"
-      }
+5. Use camelCase for the function name
+6. Write in English
+7. Respond in the format given in <format></format> tags
 </rules>
 
 <format>
+<thinking>Think step-by-step</thinking>
 <description>Concise function description</description>
 <functionName>exampleFunctionName</functionName>
-</format>${
-        args.similarFnNames.length > 0
-          ? `
-
-<namesToAvoid>
-${args.similarFnNames.map((n) => `- ${n.fnName}: ${n.description}`).join("\n")}
-</namesToAvoid>`
-          : ""
-      }`,
+</format>`,
     },
     {
       role: "user",
-      content: `Answering question: ${args.userRequest}
-
-Relevant documentation returned by function:
-"""
-${args.docsMessage}
-"""`,
+      content: `<documentation>
+${args.documentation}
+</documentation>`,
     },
     {
       role: "assistant",
-      content: "<description>",
+      content: "<thinking>I must write in English. The documentation is",
     },
   ];
 }

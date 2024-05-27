@@ -7,31 +7,10 @@ import {
   getSessionFromCookie,
   isValidBody,
 } from "../../lib/edge-runtime/utils";
-import {
-  Action,
-  ApprovalAnswer,
-  ApprovalAnswerMessage,
-  ApprovalQuestion,
-  Organization,
-  OrgJoinIsPaidFinetunedModels,
-} from "../../lib/types";
+import { OrgJoinIsPaidFinetunedModels } from "../../lib/types";
 import { z } from "zod";
-import {
-  codeFnNameDescriptionGenerationPrompt,
-  docsFnNameDescriptionGenerationPrompt,
-  ParsedResponse,
-  parseFnNameDescriptionOut,
-  SimilarFunction,
-} from "../../lib/v3/prompts_parsers/descriptionGeneration";
-import {
-  exponentialRetryWrapper,
-  logPrompt,
-  snakeToCamel,
-} from "../../lib/utils";
-import { parseFilteringOutputv3 } from "../../lib/v3/prompts_parsers/filtering";
-import { parseCodeGenv3 } from "../../lib/v3/prompts_parsers/codeGen";
+import { exponentialRetryWrapper } from "../../lib/utils";
 import { getLLMResponse } from "../../lib/queryLLM";
-import { ChatGPTMessage } from "../../lib/models";
 import {
   generateMoreRequestsPrompt,
   parseGenerateAlternativeQuestionsOutput,
