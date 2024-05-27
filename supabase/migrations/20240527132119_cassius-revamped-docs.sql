@@ -9,3 +9,6 @@ begin
     order by page_url, section_title) as sections);
 end;
 $$;
+
+-- Add docs column to approval_answers
+alter table "public"."approval_answers" add column "is_docs" boolean not null default false;
