@@ -39,7 +39,7 @@ ${facts.map((fact, i) => `${i + 1}. ${fact}`).join("\n")}
 <format>
 <thinking>
 1. Think step-by-step: What language should I write <tellUser></tellUser> in?
-2. What are the 3 most relevant pieces of information in the docs?
+2. What are the most relevant pieces of information in the docs?
 3. Do the docs answer the question?
 </thinking>
 <tellUser>
@@ -58,7 +58,7 @@ Answer the user's question if the docs contain the answer.
   - ${
     language ? `I must write in ${language}` : "The same language as the user"
   }
-2. What are the 3 most relevant pieces of information in the docs?
+2. What are the most relevant pieces of information in the docs?
   - The most relevant piece of information is`,
     },
   ];
