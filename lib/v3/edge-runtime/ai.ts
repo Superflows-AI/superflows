@@ -15,11 +15,6 @@ import {
   FunctionsRelayError,
 } from "@supabase/supabase-js";
 import { Database, Json } from "../../database.types";
-import {
-  parseRoutingOutputv3,
-  routingLLMParams,
-  routingPromptv3,
-} from "../prompts_parsers/routing";
 import { parseFilteringOutputv3 } from "../prompts_parsers/filtering";
 import {
   codeGenLLMParams,
@@ -33,11 +28,6 @@ import { streamWithEarlyTermination } from "../../v2/edge-runtime/utils";
 import { getLLMResponse } from "../../queryLLM";
 import { checkCodeExecutionOutput, convertToGraphData } from "./dataAnalysis";
 import { filterActions } from "../../v2/edge-runtime/filterActions";
-import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
-import { hallucinateDocsSystemPrompt } from "../../prompts/hallucinateDocs";
-import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
-import { sanitizeMessages } from "../../edge-runtime/apiResponseSimplification";
-import { chatToDocsPrompt } from "../../prompts/chatBot";
 import {
   explainPlotChatPrompt,
   EXPLANATION_MODEL,

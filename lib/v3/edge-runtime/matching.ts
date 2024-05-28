@@ -33,10 +33,7 @@ import { parseFilteringOutputv3 } from "../prompts_parsers/filtering";
 import { parseRoutingOutputv3 } from "../prompts_parsers/routing";
 import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { chatToDocsPrompt } from "../../prompts/chatBot";
-import {
-  MessageInclSummaryToGPT,
-  removeOldestFunctionCalls,
-} from "../../edge-runtime/utils";
+import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
 import { funLoadingMessages } from "../../funLoadingMessages";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 import {
@@ -44,7 +41,6 @@ import {
   EXPLANATION_MODEL,
   explanationParams,
 } from "../prompts_parsers/explanation";
-import { Dottie } from "../../edge-runtime/ai";
 import { hallucinateDocsSystemPrompt } from "../../prompts/hallucinateDocs";
 import { chatToDocsPromptv3 } from "../prompts_parsers/chatToDocs";
 
