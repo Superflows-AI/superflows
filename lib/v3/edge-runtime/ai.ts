@@ -1,4 +1,3 @@
-import { Redis } from "@upstash/redis/nodejs";
 import { ChatGPTMessage, GPTMessageInclSummary } from "../../models";
 import {
   ActionPlusApiInfo,
@@ -9,7 +8,6 @@ import {
   OrgJoinIsPaidFinetunedModels,
 } from "../../types";
 import { exponentialRetryWrapper, logPrompt, snakeToCamel } from "../../utils";
-import { MAX_TOKENS_OUT } from "../../consts";
 import {
   createClient,
   FunctionsFetchError,
@@ -45,10 +43,6 @@ import {
   EXPLANATION_MODEL,
   explanationParams,
 } from "../prompts_parsers/explanation";
-
-let redis: Redis | null = null;
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
-  redis = Redis.fromEnv();
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
