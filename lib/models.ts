@@ -17,6 +17,8 @@ export type ChatGPTMessage =
     }
   | NonSystemMessage;
 
+export type Claude3Message = Exclude<ChatGPTMessage, { role: "function" }>;
+
 export interface FunctionMessage {
   role: "function";
   content: string;
