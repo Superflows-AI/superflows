@@ -6,7 +6,7 @@ import {
 
 export type UIAnswerType = Omit<
   ApprovalAnswer,
-  "created_at" | "description" | "fnName" | "org_id"
+  "created_at" | "description" | "fnName" | "org_id" | "is_docs"
 > & {
   approval_questions: Pick<ApprovalQuestion, "text" | "primary_question">[];
 };
