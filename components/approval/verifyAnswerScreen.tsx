@@ -29,8 +29,6 @@ import {
 } from "./editModals";
 import {
   AssistantMessage,
-  ChatItemType,
-  StreamingStep,
   StreamingStepInput,
   UserMessage,
 } from "@superflows/chat-ui-react/dist/src/lib/types";
