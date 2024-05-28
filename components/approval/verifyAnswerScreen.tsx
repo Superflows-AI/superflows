@@ -19,14 +19,12 @@ import classNames from "classnames";
 import FollowUpSuggestions, { EditFollowUpsModal } from "./followUps";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { parseFilteringOutputv3 } from "../../lib/v3/prompts_parsers/filtering";
-import { parseRoutingOutputv3 } from "../../lib/v3/prompts_parsers/routing";
 import { Action, ApprovalVariable } from "../../lib/types";
 import { snakeToCamel } from "../../lib/utils";
 import {
   EditAPIKeyModal,
   EditCodeModal,
   EditFilteringModal,
-  EditRouteModal,
   EditUserMessageModal,
 } from "./editModals";
 import {
@@ -371,35 +369,6 @@ export function VerifyQuestionScreen(props: {
             setOpen={() => setShowModal(null)}
             apiKey={userApiKey ?? ""}
             setApiKey={setUserApiKey}
-          />
-          <EditRouteModal
-            open={showModal === "routing"}
-            setOpen={() => setShowModal(null)}
-            messageData={
-              allMessageData.find((m) => m.message_type === "routing")!
-            }
-            setRoute={async (route: "DOCS" | "CODE") => {
-              setAllMessageData((prev) => {
-                if (!prev) return prev;
-                return prev.map((m) => {
-                  if (m.message_type === "routing") {
-                    return {
-                      ...m,
-                      raw_text: m.raw_text.replace(
-                        /<choice>[\s\S]+<\/choice>/,
-                        `<choice>${route}</choice>`,
-                      ),
-                    };
-                  }
-                  return m;
-                });
-              });
-              setShowModal(null);
-              await regenAnswer(
-                allMessageData.find((m) => m.message_type === "routing")!
-                  .message_idx + 1,
-              );
-            }}
           />
           {allMessageData.find((m) => m.message_type === "user")?.raw_text !==
             "{}" && (
@@ -752,53 +721,7 @@ export function VerifyQuestionScreen(props: {
           allMessageData
             .filter((m) => m.message_type !== "user")
             .map((messageData) => {
-              if (messageData.message_type === "routing") {
-                const parsedOut = parseRoutingOutputv3(messageData.raw_text);
-                if (!parsedOut) return undefined;
-                return (
-                  <div
-                    key={`${messageData.id}-${parsedOut.choice}`}
-                    className="p-2 border-t border-t-gray-700"
-                  >
-                    <h2 className="text-base text-gray-300 mb-2">
-                      Answer Type
-                    </h2>
-                    {thoughtsVisible && (
-                      <div
-                        className={
-                          "mb-1 whitespace-pre-line rounded px-2 py-1 bg-gray-750 text-gray-200 text-sm"
-                        }
-                      >
-                        <p className="text-gray-400 text-sm">Reason:</p>
-                        {parsedOut.thoughts}
-                      </div>
-                    )}
-                    <div className="py-1 px-3 border border-gray-400 rounded bg-gray-850 w-fit">
-                      <p className="text-gray-200">
-                        {parsedOut.choice === "CODE" ? "API" : "Docs"}
-                      </p>
-                    </div>
-                    <div className="flex flex-row gap-x-2 mt-2">
-                      <button
-                        className="flex gap-x-1 place-items-center text-gray-400 text-little px-1.5 py-1 border border-transparent transition hover:border-gray-600 rounded hover:text-gray-300"
-                        onClick={() => setShowModal("routing")}
-                      >
-                        <PencilSquareIcon className="h-5 w-5" />
-                        Edit
-                      </button>
-                      {!thoughtsVisible && (
-                        <button
-                          className="flex gap-x-1 place-items-center text-gray-400 text-little px-1.5 py-1 border border-transparent transition hover:border-gray-600 rounded hover:text-gray-300"
-                          onClick={() => setThoughtsVisible(true)}
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                          View Reason
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              } else if (messageData.message_type === "filtering") {
+              if (messageData.message_type === "filtering") {
                 if (!allActions) return undefined;
                 const filteringParsed = parseFilteringOutputv3(
                   messageData.raw_text,
