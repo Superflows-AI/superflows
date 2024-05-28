@@ -17,7 +17,7 @@ import { summariseChatHistory } from "../../v2/edge-runtime/summariseChatHistory
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../database.types";
 import { exponentialRetryWrapper, logPrompt, snakeToCamel } from "../../utils";
-import { queryEmbedding } from "../../queryLLM";
+import { getLLMResponse, queryEmbedding } from "../../queryLLM";
 import {
   getMatchingPromptv3,
   MatchingParsedResponse,
@@ -33,7 +33,10 @@ import { parseFilteringOutputv3 } from "../prompts_parsers/filtering";
 import { parseRoutingOutputv3 } from "../prompts_parsers/routing";
 import { getRelevantDocChunks } from "../../embed-docs/docsSearch";
 import { chatToDocsPrompt } from "../../prompts/chatBot";
-import { MessageInclSummaryToGPT } from "../../edge-runtime/utils";
+import {
+  MessageInclSummaryToGPT,
+  removeOldestFunctionCalls,
+} from "../../edge-runtime/utils";
 import { funLoadingMessages } from "../../funLoadingMessages";
 import { StreamingStepInput } from "@superflows/chat-ui-react/dist/src/lib/types";
 import {
@@ -41,6 +44,9 @@ import {
   EXPLANATION_MODEL,
   explanationParams,
 } from "../prompts_parsers/explanation";
+import { Dottie } from "../../edge-runtime/ai";
+import { hallucinateDocsSystemPrompt } from "../../prompts/hallucinateDocs";
+import { chatToDocsPromptv3 } from "../prompts_parsers/chatToDocs";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, // The existence of these is checked by answers
@@ -93,7 +99,7 @@ export async function matchQuestionToAnswer(
     const { data: approvalAnswer, error: approvalAnswerErr } = await supabase
       .from("approval_answers")
       .select(
-        "fnName,description,approval_answer_messages(raw_text,message_type,message_idx)",
+        "fnName,description,is_docs,approval_answer_messages(raw_text,message_type,message_idx)",
       )
       .eq("id", answerId)
       .single();
@@ -120,6 +126,8 @@ export async function matchQuestionToAnswer(
       approvalAnswer.approval_answer_messages.sort(
         (a, b) => a.message_idx - b.message_idx,
       ),
+      approvalAnswer.is_docs,
+      reqData.user_input,
       actions,
       org,
       streamInfo,
@@ -334,10 +342,13 @@ export async function matchQuestionToAnswer(
       .eq("answer_id", chosenMatch.id)
       .order("message_idx", { ascending: true });
     if (messagesError) throw new Error(messagesError.message);
-    if (!messages) throw new Error("No messages found for " + chosenMatch.id);
+    if (!messages && !chosenMatch.is_docs)
+      throw new Error("No messages found for " + chosenMatch.id);
 
     chatHistory = await executeMessages(
       messages,
+      chosenMatch.is_docs,
+      userRequest,
       actions,
       org,
       streamInfo,
@@ -362,6 +373,8 @@ async function executeMessages(
     ApprovalAnswerMessage,
     "raw_text" | "message_idx" | "message_type"
   >[],
+  isDocs: boolean,
+  userRequest: string,
   actions: ActionPlusApiInfo[],
   org: OrgJoinIsPaidFinetunedModels,
   streamInfo: (step: StreamingStepInput) => void,
@@ -373,6 +386,82 @@ async function executeMessages(
   let filteredActions: ActionPlusApiInfo[] = [],
     codeMessages: FunctionMessage[] = [],
     route: "DOCS" | "CODE" = "CODE";
+  if (isDocs) {
+    // Hallucinate docs & search for relevant docs
+    const hallucinatedDocsPrompt: ChatGPTMessage[] = [
+      hallucinateDocsSystemPrompt(reqData.user_description, org),
+      { role: "user", content: userRequest },
+    ];
+    logPrompt(hallucinatedDocsPrompt);
+
+    const hallucinatedRes = await exponentialRetryWrapper(
+      getLLMResponse,
+      [
+        hallucinatedDocsPrompt,
+        { temperature: 0.6, max_tokens: 200 },
+        "gpt-3.5-turbo-0125",
+      ],
+      3,
+    );
+    console.log("Hallucination: ", hallucinatedRes);
+
+    const relevantDocs = await getRelevantDocChunks(
+      hallucinatedRes,
+      org.id,
+      3,
+      supabase,
+    );
+    let docSearchGPTMessage = {
+      role: "function",
+      content: relevantDocs.text,
+      name: "search_docs",
+      urls: relevantDocs.urls,
+    } as Extract<GPTMessageInclSummary, { role: "function" }>;
+    streamInfo(docSearchGPTMessage);
+
+    const prompt = chatToDocsPromptv3(
+      userRequest,
+      relevantDocs.text,
+      reqData.user_description,
+      org,
+      language,
+    );
+    console.log("EXPLANATION PROMPT:");
+    logPrompt(prompt);
+
+    chatHistory.push(docSearchGPTMessage);
+
+    let streamedText = "",
+      retryCount = 0;
+    while (!streamedText && retryCount < 3) {
+      retryCount++;
+      let completeOutput = await streamWithEarlyTermination(
+        prompt,
+        explanationParams,
+        "anthropic/claude-3-haiku-20240307",
+        () => false,
+        (rawOutput: string) => {
+          streamInfo({
+            role: "assistant",
+            content: rawOutput.replace(streamedText, ""),
+          });
+          streamedText = rawOutput;
+        },
+        "Explanation message",
+        prompt[prompt.length - 1].content.replace("<thinking>", "Reasoning:"),
+        { "</thinking>": "", "<tellUser>": "Tell user:\n" },
+      );
+      if (streamedText && completeOutput) {
+        chatHistory.push({
+          role: "assistant",
+          content: completeOutput.transformed,
+        });
+      }
+    }
+  }
+
+  // TODO: Untangle the routing code below to handle both docs and non-docs situations
+  //  https://learney.atlassian.net/browse/SF-2575
   for (const m of messages) {
     if (m.message_type === "routing") {
       const parsedRoutingOut = parseRoutingOutputv3(m.raw_text);
