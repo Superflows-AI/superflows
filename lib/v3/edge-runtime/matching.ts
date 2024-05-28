@@ -175,8 +175,8 @@ export async function matchQuestionToAnswer(
     {
       query_embedding: embedding,
       similarity_threshold: -1,
-      // Now using Opus, 10 is (hopefully) ok
-      match_count: 10,
+      // The limit in a prompt is 10, but we start with 20, but remove docs answers if >5
+      match_count: 15,
       _org_id: org.id,
     },
   );
@@ -192,7 +192,7 @@ export async function matchQuestionToAnswer(
   const { data: fnNameData, error: fnNameErr } = await supabase
     .from("approval_answers")
     .select(
-      "fnName, id, description, approval_questions(text,primary_question)",
+      "fnName, id, description, is_docs, approval_questions(text,primary_question)",
     )
     .in(
       "id",
@@ -209,17 +209,30 @@ export async function matchQuestionToAnswer(
     .eq("org_id", org.id);
   if (variableError) throw new Error(variableError.message);
 
-  const matchesWithFnNames = matches.map((m) => {
-    const match = fnNameData.find((f) => f.id === m.answer_id);
-    if (!match) throw new Error("No match found for " + m.answer_id);
-    let chosenQ = match.approval_questions.find((q) => q.primary_question);
-    if (!chosenQ) chosenQ = match.approval_questions[0];
-    return {
-      text: chosenQ.text,
-      fnName: match.fnName,
-      description: match.description,
-    };
-  });
+  let numDocs = 0;
+  const matchesWithFnNames = (
+    matches
+      .map((m) => {
+        const match = fnNameData.find((f) => f.id === m.answer_id);
+        if (!match) throw new Error("No match found for " + m.answer_id);
+
+        // Impose a limit of 5 docs answers to prevent too many docs answers
+        if (match.is_docs) numDocs += 1;
+        if (numDocs > 5) return null;
+        let chosenQ = match.approval_questions.find((q) => q.primary_question);
+        if (!chosenQ) chosenQ = match.approval_questions[0];
+        return {
+          text: chosenQ.text,
+          fnName: match.fnName,
+          description: match.description,
+        };
+      })
+      .filter(Boolean) as {
+      text: string;
+      fnName: string;
+      description: string;
+    }[]
+  ).slice(0, 10);
 
   const matchingPrompt = getMatchingPromptv3({
     userRequest,

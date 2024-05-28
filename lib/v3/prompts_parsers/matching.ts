@@ -5,7 +5,10 @@ import { variableToTypeDef } from "./utils";
 export function getMatchingPromptv3(args: {
   userRequest: string;
   matches: { text: string; fnName: string; description: string }[];
-  org: Pick<Organization, "name" | "description" | "chatbot_instructions">;
+  org: Pick<
+    Organization,
+    "name" | "description" | "chatbot_instructions" | "chat_to_docs_enabled"
+  >;
   userDescription: string;
   variables: ApprovalVariable[];
 }): ChatGPTMessage[] {
@@ -80,7 +83,7 @@ ${facts.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 4. DO NOT call a function if you aren't certain it will answer the user's request
 5. If the user has multiple requests - answer the FIRST one that you can answer
 6. Respond in the format given in <format></format> tags
-7. If a function is called, an AI will summarize the response and provide the user with the answer${
+7. If a function is called, an AI will summarize the output to answer the user's question${
         constsToInclude.length > 0
           ? `\n8. You may use <consts></consts> as parameters when calling a function`
           : ""
@@ -92,7 +95,11 @@ ${facts.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 1. Think step-by-step: what is the user requesting
 2. Has the user made multiple requests? Answer the first one you can answer
 3. Do any of the <functions></functions> achieve this
-4. Consider possible parameter values to answer the user's request
+4. Consider possible parameter values to answer the user's request${
+        args.org.chat_to_docs_enabled
+          ? "\n5. If no <functions></functions> achieve this directly, do any collect relevant documentation?"
+          : ""
+      }
 </thinking>
 <functionCall>None|function1({param1: "value1", param2: "value2", ...})</functionCall>
 <tellUser>If functionCall is None, tell the user their request isn't within your capabilities</tellUser>
