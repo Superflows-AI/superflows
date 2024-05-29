@@ -113,4 +113,38 @@ describe("parseMatchingOutput", () => {
         "I apologize, but I am not able to write a poem about EazyStock. My capabilities are focused on analyzing inventory data and generating visualizations to provide insights. Creative writing tasks like poetry are outside of my current skill set. Please let me know if there are any inventory-related questions I can assist with though!",
     });
   });
+  it("Real world, function using today", () => {
+    const textOut = `Reasoning:
+1. The user is requesting information on why the system predicts that SKU 382 will have no sales.
+2. The user has only made one request.
+3. The function summarizeProductsWithoutSalesBetweenDates could provide relevant information on products with no projected sales in a given date range. It plots their expected sales and summarizes key stats.
+4. To use this function, I need to specify a fromDate and toDate. I can use the today constant for fromDate and set toDate to 1 month later to get a forward-looking view.
+5. No other functions directly answer why a specific SKU has no projected sales. summarizeProductsWithoutSalesBetweenDates is the most relevant.
+</thinking>
+
+<functionCall>
+summarizeProductsWithoutSalesBetweenDates({
+  fromDate: today,
+  toDate: "2024-06-29"
+}`;
+    const todaysDate = new Date().toISOString().split("T")[0];
+    const out = parseMatchingOutput(textOut, [
+      {
+        consts: [`const today: ISODate = "${todaysDate}";`],
+        default: "",
+        description: "From date",
+        embed_all: false,
+        id: "",
+        name: "fromDate",
+        org_id: 1,
+        type: "string",
+        typeName: "ISODate",
+      },
+    ]);
+    expect(out).toEqual({
+      functionName: "summarizeProductsWithoutSalesBetweenDates",
+      variables: { fromDate: todaysDate, toDate: "2024-06-29" },
+      tellUser: "",
+    });
+  });
 });

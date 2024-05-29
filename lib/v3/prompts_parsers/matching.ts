@@ -188,7 +188,6 @@ export type MatchingParsedResponse = {
   tellUser: string;
 } | null;
 
-// TODO: WRITE TESTS FOR BELOW FUNCTION!
 export function parseMatchingOutput(
   text: string,
   variables: ApprovalVariable[],
