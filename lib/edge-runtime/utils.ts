@@ -193,10 +193,25 @@ export function deduplicateChunks(
    *
    * E.g. If one doc_chunk contains [a,b,c], the other [b,c,d], then we have a chunk
    * with [a,b,c,d] (no duplication of b and c). **/
+  // Deep copy to avoid modifying the original array
   chunks = JSON.parse(JSON.stringify(chunks));
+  const getChunkUniquenessString = (chunk: SimilaritySearchResult) =>
+    `${chunk.page_url} ${chunk.page_title} ${chunk.section_title}`;
+
+  const chunkOrdering = chunks.map((chunk) => getChunkUniquenessString(chunk));
+  chunks.sort((a, b) =>
+    `${chunkOrdering.findIndex((str) => str === getChunkUniquenessString(b))} ${
+      b.chunk_idx
+    }` >
+    `${chunkOrdering.findIndex((str) => str === getChunkUniquenessString(a))} ${
+      a.chunk_idx
+    }`
+      ? -1
+      : 1,
+  );
   const deduped: SimilaritySearchResult[] = [chunks[0]];
 
-  // Don't need to dedupe the first chunk
+  // Don't need to dedupe the first chunk, hence start with i=1
   for (let i = 1; i < chunks.length; i++) {
     const chunk = chunks[i];
     // Check if there's another chunk with the same page_url, page_title and section_title
