@@ -179,7 +179,7 @@ export default async function handler(req: NextRequest) {
         let type = v.type.trim();
         if (type.endsWith(")[]") && type.startsWith("(")) {
           // Set it to each of the options as solo options
-          type = type.slice(1, -2).trim();
+          type = type.slice(1, -3).trim();
         }
         if (type.match(/^".+"(\s*\|\s*".+")+$/)) {
           // This regex checks if it's a string enum type with multiple options
