@@ -155,7 +155,6 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    // TODO: From here
     const { data: variableData, error: varErr } = await supabase
       .from("approval_variables")
       .select("*")
@@ -177,7 +176,15 @@ export default async function handler(req: NextRequest) {
     console.log(variableDefaults, variableStrings);
     const embedAllObj = variableData.reduce((acc, v) => {
       if (v.embed_all) {
-        acc[v.name] = v.type.split("|").map((t) => t.trim().slice(1, -1));
+        let type = v.type.trim();
+        if (type.endsWith(")[]") && type.startsWith("(")) {
+          // Set it to each of the options as solo options
+          type = type.slice(1, -2).trim();
+        }
+        if (type.match(/^".+"(\s*\|\s*".+")+$/)) {
+          // This regex checks if it's a string enum type with multiple options
+          acc[v.name] = type.split("|").map((t) => t.trim().slice(1, -1));
+        }
       }
       return acc;
     }, {} as Record<string, string[]>);
