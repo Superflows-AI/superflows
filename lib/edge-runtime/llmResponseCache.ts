@@ -116,7 +116,8 @@ export class LlmResponseCache {
           "role,content,name,summary,conversation_index,conversation_id,chosen_actions,chosen_route,chat_summary",
         )
         .eq("org_id", orgId)
-        .eq("conversation_id", convId);
+        .eq("conversation_id", convId)
+        .order("conversation_index", { ascending: true });
       if (chatError) console.error(chatError.message);
 
       if (matchingChatData && matchingChatData.length > 1) {
