@@ -50,10 +50,12 @@ export function convertIsoToHumanReadable(dateStr: string): string {
   return `${day}${suffix} ${monthNames[monthIndex]} ${year}`;
 }
 
+// TODO: Write tests for this function
 export function fillVariables(
   requests: {
     text: string;
     embedded_text: string;
+    variable_values: Record<string, any>;
     primary_question: boolean;
   }[],
   variables: Record<string, any>,
@@ -61,12 +63,14 @@ export function fillVariables(
 ): {
   text: string;
   embedded_text: string;
+  variable_values: Record<string, any>;
   primary_question: boolean;
 }[] {
   return requests
-    .map(({ text, embedded_text, primary_question }) => {
+    .map(({ text, embedded_text, primary_question, variable_values }) => {
       const matched = embedded_text.match(/\{.*?}/) as RegExpMatchArray | null;
-      if (!matched) return [{ text, embedded_text, primary_question }];
+      if (!matched)
+        return [{ text, embedded_text, primary_question, variable_values }];
 
       const matchName = matched[0].slice(1, -1);
       if (matchName in embedAll) {
@@ -75,7 +79,14 @@ export function fillVariables(
           .map((val) => {
             const newText = embedded_text.replace(`{${matchName}}`, val);
             return fillVariables(
-              [{ text, embedded_text: newText, primary_question }],
+              [
+                {
+                  text,
+                  embedded_text: newText,
+                  primary_question,
+                  variable_values: { ...variable_values, [matchName]: val },
+                },
+              ],
               variables,
               embedAll,
             );
@@ -93,6 +104,7 @@ export function fillVariables(
                 Array.isArray(val) ? val.join(", ") : val,
               ),
               primary_question,
+              variable_values: { ...variable_values, [matchName]: val },
             },
           ],
           variables,
