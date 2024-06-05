@@ -32,6 +32,24 @@ export function explainPlotChatPrompt(
   }
 
   const instructions = org.chatbot_instructions.split("\n").filter(Boolean);
+  const rules = [
+    graphOrTable === null
+      ? "Answer the user's question"
+      : graphCut
+      ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
+      : `Answer the user's question. What you write accompanies the ${graphOrTable}`,
+    graphOrTable
+      ? `DO NOT repeat the ${graphOrTable} contents in a list or in text. THIS IS VERY IMPORTANT. DO NOT FORGET THIS.`
+      : "Repeat all information in the logs that answers the user's question - the user cannot see the logs",
+    "BE CONCISE",
+    language !== "English"
+      ? `Write the contents of <tellUser></tellUser> in ${
+          language ?? "the same language as the user"
+        }`
+      : "",
+    ...instructions,
+    `Your reply must follow the <format></format>`,
+  ].filter(Boolean);
   return [
     {
       role: "system",
@@ -92,23 +110,7 @@ The top product is DEMO_152 with projected revenue of $97,254 in the next 12 mon
     : ""
 }
 <rules>
-1. ${
-        graphOrTable === null
-          ? "Answer the user's question"
-          : graphCut
-          ? `DO NOT invent the contents of the ${graphOrTable} data cut for brevity. DO NOT tell the user that you cannot see the ${graphOrTable} or that you cannot tell them about the data. Instead, tell them to "View the ${graphOrTable} above".`
-          : `Answer the user's question. What you write accompanies the ${graphOrTable}`
-      }
-2. ${
-        graphOrTable
-          ? `DO NOT repeat the ${graphOrTable} contents in a list or in text. THIS IS VERY IMPORTANT. DO NOT FORGET THIS.`
-          : "Repeat all information in the logs that answers the user's question - the user cannot see the logs"
-      }
-3. BE CONCISE
-4. Write the contents of <tellUser></tellUser> in ${
-        language ?? "the same language as the user"
-      }${instructions.map((instr, i) => `\n${i + 5}. ${instr}`).join("")}
-${instructions.length + 5}. Your reply must follow the <format></format>
+${rules.map((instr, i) => `${i + 1}. ${instr}`).join("\n")}
 </rules>
 
 <format>
