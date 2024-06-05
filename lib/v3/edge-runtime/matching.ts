@@ -74,7 +74,9 @@ export async function matchQuestionToAnswer(
   // Check approval_messages cache
   const { data: approvalQuestionMatch, error: approvalQErr } = await supabase
     .from("approval_questions")
-    .select("answer_id, approval_answers!inner(id)")
+    .select(
+      "answer_id, variable_values, approval_answers!inner(id, is_docs, approval_answer_messages(raw_text,message_type,message_idx))",
+    )
     .match({
       embedded_text: reqData.user_input,
       org_id: org.id,
@@ -87,20 +89,10 @@ export async function matchQuestionToAnswer(
     console.log(
       `There's a match with answer id: ${approvalQuestionMatch[0].answer_id}`,
     );
+    const approvalQuestion = approvalQuestionMatch[0];
     const userMessage = chatHistory[chatHistory.length - 1];
     if (userMessage.role === "user")
       userMessage.chat_summary = reqData.user_input;
-
-    const answerId = approvalQuestionMatch[0].answer_id;
-    const { data: approvalAnswer, error: approvalAnswerErr } = await supabase
-      .from("approval_answers")
-      .select(
-        "fnName,description,is_docs,approval_answer_messages(raw_text,message_type,message_idx)",
-      )
-      .eq("id", answerId)
-      .single();
-    if (approvalAnswerErr) throw new Error(approvalAnswerErr.message);
-    if (!approvalAnswer) throw new Error("No answer found with id " + answerId);
 
     const { data: variables, error: variableError } = await supabase
       .from("approval_variables")
@@ -108,21 +100,11 @@ export async function matchQuestionToAnswer(
       .eq("org_id", org.id);
     if (variableError) throw new Error(variableError.message);
 
-    const userAnswerMsg = approvalAnswer.approval_answer_messages.find(
-      (m) => m.message_type === "user",
-    );
-    let vars: Record<string, any> = {};
-    if (userAnswerMsg) {
-      try {
-        vars = JSON.parse(userAnswerMsg.raw_text);
-      } catch (e) {}
-    }
-
     chatHistory = await executeMessages(
-      approvalAnswer.approval_answer_messages.sort(
+      approvalQuestion.approval_answers!.approval_answer_messages.sort(
         (a, b) => a.message_idx - b.message_idx,
       ),
-      approvalAnswer.is_docs,
+      approvalQuestion.approval_answers!.is_docs,
       reqData.user_input,
       actions,
       org,
@@ -131,7 +113,10 @@ export async function matchQuestionToAnswer(
       reqData,
       variables.map((v) => ({
         ...v,
-        default: vars[v.name] ?? v.default,
+        default:
+          ((approvalQuestion.variable_values as Record<string, any>) ?? {})[
+            v.name
+          ] ?? v.default,
       })),
       language,
     );
