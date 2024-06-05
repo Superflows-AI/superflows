@@ -193,6 +193,7 @@ export default async function handler(req: NextRequest) {
       text,
       embedded_text: text,
       primary_question: i === 0,
+      variable_values: {},
     }));
     const requestsToEmbed = fillVariables(
       allRequests,
@@ -213,12 +214,13 @@ export default async function handler(req: NextRequest) {
     return new Response(
       JSON.stringify({
         data: requestsToEmbed.map(
-          ({ text, embedded_text, primary_question }, i) => ({
+          ({ text, embedded_text, primary_question, variable_values }, i) => ({
             text,
             embedding: embeddings[i],
             embedded_text,
             primary_question,
             user_added: primary_question,
+            variable_values,
           }),
         ),
       }),
