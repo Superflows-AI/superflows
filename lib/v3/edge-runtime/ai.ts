@@ -125,6 +125,7 @@ export async function Cassius(
     //       iii. run the code - DONE
     //       iv. generate the text explaining the output - DONE
     //  TODO: 4. Generate suggestions if not present
+    //    (these aren't used downstream yet so no need for this until they are)
 
     // Generate the user's request if not present
     let userRequest: ApprovalAnswerMessage | undefined = pastMessages.find(
