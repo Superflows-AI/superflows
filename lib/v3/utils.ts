@@ -50,7 +50,6 @@ export function convertIsoToHumanReadable(dateStr: string): string {
   return `${day}${suffix} ${monthNames[monthIndex]} ${year}`;
 }
 
-// TODO: Write tests for this function
 export function fillVariables(
   requests: {
     text: string;
