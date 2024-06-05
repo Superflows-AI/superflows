@@ -398,6 +398,7 @@ export type Database = {
           primary_question: boolean;
           text: string;
           user_added: boolean;
+          variable_values: Json;
         };
         Insert: {
           answer_id: string;
@@ -409,6 +410,7 @@ export type Database = {
           primary_question?: boolean;
           text?: string;
           user_added?: boolean;
+          variable_values?: Json;
         };
         Update: {
           answer_id?: string;
@@ -420,6 +422,7 @@ export type Database = {
           primary_question?: boolean;
           text?: string;
           user_added?: boolean;
+          variable_values?: Json;
         };
         Relationships: [
           {
