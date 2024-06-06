@@ -21,6 +21,3 @@ where
       answer_id = approval_questions.answer_id
       and message_type = 'user'
   );
-
-CREATE UNIQUE INDEX unique_action_name_per_org ON public.actions USING btree (org_id, name);
-alter table "public"."actions" add constraint "unique_action_name_per_org" UNIQUE using index "unique_action_name_per_org";
