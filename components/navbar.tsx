@@ -23,7 +23,7 @@ const navigation = [
   { name: "Actions", href: "/actions" },
   { name: "AI", href: "/ai-settings" },
   { name: "Project", href: "/project" },
-  { name: "Analytics", href: "/analytics" },
+  { name: "Transcripts", href: "/analytics" },
   { name: "Usage", href: "/usage" },
   { name: "Chat to Docs", href: "/chat-to-docs" },
 ];
