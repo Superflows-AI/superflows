@@ -257,20 +257,6 @@ export default function TranscriptSearchSidebar(props: {
             )}
             onClick={async () => props.setSelectedTranscriptId(conversation.id)}
           >
-            {conversation.end_user_id && (
-              <div className="w-full flex flex-row justify-end mb-1">
-                <span
-                  className={classNames(
-                    "text-2xs text-gray-300 px-1.5 py-1 rounded-md",
-                    props.selectedTranscriptId === conversation.id
-                      ? "bg-gray-600"
-                      : "bg-gray-800",
-                  )}
-                >
-                  User: {conversation.end_user_id}
-                </span>
-              </div>
-            )}
             <div className="text-gray-200 font-normal">
               {conversation.chat_messages[0].content}
             </div>
@@ -297,6 +283,20 @@ export default function TranscriptSearchSidebar(props: {
                 )}
               </div>
             </div>
+            {conversation.end_user_id && (
+              <div className="w-full flex flex-row justify-end mt-1">
+                <span
+                  className={classNames(
+                    "text-2xs text-gray-300 px-1.5 py-1 rounded-md",
+                    props.selectedTranscriptId === conversation.id
+                      ? "bg-gray-600"
+                      : "bg-gray-800",
+                  )}
+                >
+                  User: {conversation.end_user_id}
+                </span>
+              </div>
+            )}
           </button>
         ))}
         {pageLoaded && conversations.length === 0 && (
