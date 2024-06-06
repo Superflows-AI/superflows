@@ -12,13 +12,13 @@ import SelectBoxOptionDropdownWithCheckboxes, {
 } from "../dropdown";
 import { DBChatMessage } from "../../lib/types";
 import { LoadingSpinner } from "../loadingspinner";
-import { useRouter } from "next/router";
 import { classNames } from "../../lib/utils";
 import { SupabaseClient } from "@supabase/supabase-js";
+import ComboBox from "../combobox";
 
 export type ConversationSidebarItem = Pick<
   Database["public"]["Tables"]["conversations"]["Row"],
-  "id" | "created_at" | "is_playground"
+  "id" | "created_at" | "is_playground" | "end_user_id"
 > & {
   chat_messages: Pick<DBChatMessage, "content">[];
   feedback: Pick<
@@ -34,7 +34,6 @@ export default function TranscriptSearchSidebar(props: {
   selectedTranscriptId: number | null;
   setSelectedTranscriptId: (id: number) => void;
 }) {
-  const router = useRouter();
   const { profile } = useProfile();
   const supabase = useSupabaseClient<Database>();
   const [conversations, setConversations] = useState<ConversationSidebarItem[]>(
@@ -232,7 +231,7 @@ export default function TranscriptSearchSidebar(props: {
               <AdjustmentsHorizontalIcon className="h-6 w-6 text-gray-300" />{" "}
               Filters
             </div>
-            <div className="flex flex-row place-items-center gap-x-2 px-3 pb-1.5">
+            <div className="flex flex-row flex-wrap place-items-center gap-x-2 gap-y-2 px-3 pb-1.5">
               <SelectBoxOptionDropdownWithCheckboxes
                 title={"From Playground"}
                 items={includePlaygroundItems}
@@ -258,6 +257,20 @@ export default function TranscriptSearchSidebar(props: {
             )}
             onClick={async () => props.setSelectedTranscriptId(conversation.id)}
           >
+            {conversation.end_user_id && (
+              <div className="w-full flex flex-row justify-end mb-1">
+                <span
+                  className={classNames(
+                    "text-2xs text-gray-300 px-1.5 py-1 rounded-md",
+                    props.selectedTranscriptId === conversation.id
+                      ? "bg-gray-600"
+                      : "bg-gray-800",
+                  )}
+                >
+                  User: {conversation.end_user_id}
+                </span>
+              </div>
+            )}
             <div className="text-gray-200 font-normal">
               {conversation.chat_messages[0].content}
             </div>
@@ -266,7 +279,7 @@ export default function TranscriptSearchSidebar(props: {
                 {getMessageCountText(conversation.chat_messages)} •{" "}
                 {pageLoaded && toDateString(new Date(conversation.created_at))}
               </div>
-              <div className="inline">
+              <div className="inline gap-x-0.5">
                 {conversation.is_playground && (
                   <span
                     className={classNames(
@@ -410,7 +423,7 @@ export async function getConversations(
       ({ data, error } = await supabase
         .from("conversations")
         .select(
-          "id,is_playground,created_at, chat_messages(content), feedback(feedback_positive)",
+          "id,is_playground,created_at,end_user_id, chat_messages(content), feedback(feedback_positive)",
         )
         .eq("chat_messages.role", "user")
         // Order by id to get the most recent conversations
@@ -424,7 +437,7 @@ export async function getConversations(
       ({ data, error } = await supabase
         .from("conversations")
         .select(
-          "id,is_playground,created_at, chat_messages(content), feedback(feedback_positive)",
+          "id,is_playground,created_at,end_user_id, chat_messages(content), feedback(feedback_positive)",
         )
         // Apply playground filters
         .eq("is_playground", includePlaygroundFilters[0])
@@ -443,7 +456,7 @@ export async function getConversations(
     ({ data, error } = await supabase
       .from("conversations")
       .select(
-        "id,is_playground,created_at, chat_messages(role,content), feedback!inner(feedback_positive)",
+        "id,is_playground,created_at,end_user_id, chat_messages(role,content), feedback!inner(feedback_positive)",
       )
       // Apply playground filters
       .in("is_playground", includePlaygroundFilters)

@@ -15,7 +15,7 @@ export default function SelectBoxOptionDropdownWithCheckboxes(props: {
   items: SelectBoxWithDropdownOption[];
 }) {
   return (
-    <Menu as="div" className="relative inline-block text-left">
+    <Menu as="div" className="relative inline-block text-left shrink-0">
       <div>
         <Menu.Button className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-gray-850 px-3 py-1.5 text-xs md:text-sm font-medium text-gray-300 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-900">
           {props.title}
