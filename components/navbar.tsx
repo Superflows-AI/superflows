@@ -154,7 +154,7 @@ export function Navbar(props: { current: string }) {
                 rel={"noopener noreferrer"}
                 className="rounded-md px-2 py-1 hover:bg-gray-900 text-gray-400 hover:text-gray-200 mt-[0.1875rem] text-sm flex flex-row place-items-center"
               >
-                <BookOpenIcon className={"h-5 w-5 m-1"} /> Integration Guide
+                <BookOpenIcon className={"h-5 w-5 m-1"} /> Docs
               </a>
               <FlyoutMenu
                 items={[
