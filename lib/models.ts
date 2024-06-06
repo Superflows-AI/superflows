@@ -202,6 +202,7 @@ export const AnswersZod = z.object({
   user_description: OptionalStringZod,
   user_api_key: OptionalStringZod,
   stream: z.optional(z.boolean()),
+  user_id: OptionalStringZod,
   mock_api_responses: z.optional(z.boolean()),
   api_params: z.optional(
     z.array(

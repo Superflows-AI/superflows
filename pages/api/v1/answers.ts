@@ -1,8 +1,7 @@
-import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { USAGE_LIMIT } from "../../../lib/consts";
 import { Database } from "../../../lib/database.types";
 import { Angela, Dottie } from "../../../lib/edge-runtime/ai";
@@ -19,7 +18,6 @@ import { getLanguage } from "../../../lib/language";
 import {
   AnswersType,
   AnswersZod,
-  ChatGPTMessage,
   GPTMessageInclSummary,
 } from "../../../lib/models";
 import {
@@ -259,12 +257,26 @@ export default async function handler(req: NextRequest) {
       conversationId = requestData.conversation_id;
       const convResp = await supabase
         .from("chat_messages")
-        .select()
+        .select("*, conversations(end_user_id)")
         .eq("conversation_id", requestData.conversation_id)
         .eq("org_id", org.id)
         .order("conversation_index", { ascending: true });
 
       if (convResp.error) throw new Error(convResp.error.message);
+
+      // User id set in request, not matched by DB
+      if (
+        convResp.data.length > 0 &&
+        requestData.user_id &&
+        convResp.data[0].conversations!.end_user_id !== requestData.user_id
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: `Conversation with ID=${requestData.conversation_id} does not belong to user with ID=${requestData.user_id}`,
+          }),
+          { status: 400, headers },
+        );
+      }
       const conversation = convResp.data.map(DBChatMessageToGPT);
 
       if (!conversation) {
@@ -304,6 +316,7 @@ export default async function handler(req: NextRequest) {
           org_id: org.id,
           is_playground,
           profile_id: session?.user?.id ?? null,
+          end_user_id: requestData.user_id ?? null,
         })
         .select()
         .single();
