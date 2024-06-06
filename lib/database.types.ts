@@ -554,6 +554,7 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string;
+          end_user_id: string | null;
           id: number;
           is_playground: boolean;
           org_id: number;
@@ -561,6 +562,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          end_user_id?: string | null;
           id?: number;
           is_playground?: boolean;
           org_id: number;
@@ -568,6 +570,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          end_user_id?: string | null;
           id?: number;
           is_playground?: boolean;
           org_id?: number;
