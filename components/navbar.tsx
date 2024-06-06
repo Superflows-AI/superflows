@@ -75,12 +75,12 @@ export function Navbar(props: { current: string }) {
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between px-4 sm:px-0">
             <div className="flex items-center">
-              <a
+              <Link
                 className="text-base sm:text-lg md:text-xl text-white font-medium"
                 href={"/"}
               >
                 Superflows
-              </a>
+              </Link>
               <div className="ml-6 md:ml-14 flex items-center gap-x-1 sm:gap-x-2 md:gap-x-4">
                 {navigation.map((item) => (
                   <Link
@@ -123,7 +123,7 @@ export function Navbar(props: { current: string }) {
                   {onboardingSteps.map((step, idx) => (
                     <div key={idx}>
                       {!profile?.onboarding_steps[idx] ? (
-                        <a
+                        <Link
                           className="flex flex-row place-items-center gap-x-2 group"
                           href={step.link}
                           target={step.link.startsWith("/") ? "" : "_blank"}
@@ -133,7 +133,7 @@ export function Navbar(props: { current: string }) {
                           <div className="group-hover:text-blue-500 group-hover:underline">
                             {step.name}
                           </div>
-                        </a>
+                        </Link>
                       ) : (
                         <div className="flex flex-row place-items-center gap-x-2 cursor-default">
                           <div className="h-4 w-4 bg-transparent overflow-visible border border-gray-300 rounded-full flex justify-center place-items-center">

@@ -2,6 +2,7 @@ import React, { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
 import classNames from "classnames";
+import Link from "next/link";
 
 export type Item = (
   | {
@@ -77,14 +78,14 @@ export default function FlyoutMenu(props: {
                     );
                   else
                     return (
-                      <a
+                      <Link
                         key={item.name}
                         href={item.href}
                         className="p-2 hover:bg-gray-200 w-full text-left px-3 rounded flex flex-row place-items-center gap-x-2 font-normal"
                       >
                         {item.Icon ?? ""}
                         {item.name}
-                      </a>
+                      </Link>
                     );
                 })}
               </div>
