@@ -142,48 +142,6 @@ export default async function handler(req: NextRequest) {
 
     if (updateError) throw new Error(updateError.message);
 
-    if (
-      process.env.CONTEXT_API_KEY &&
-      process.env.USE_CONTEXT_ON &&
-      org!.id === Number(process.env.USE_CONTEXT_ON)
-    ) {
-      // Note: this doesn't include the system messages
-      const { data: messages, error } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("conversation_id", requestData.conversation_id)
-        .order("conversation_index", { ascending: true });
-      if (error) throw new Error(error.message);
-
-      await fetch("https://api.context.ai/api/v1/log/conversation/upsert", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.CONTEXT_API_KEY}`,
-        },
-        body: JSON.stringify({
-          conversation: {
-            messages: messages
-              .map((m, idx) => {
-                if (requestData.conversation_length_at_feedback === idx + 1) {
-                  return {
-                    role: m.role,
-                    message: m.content,
-                    rating: requestData.feedback_positive ? 1 : -1,
-                  };
-                }
-                return {
-                  role: m.role,
-                  message: m.content,
-                };
-              })
-              // Context don't support function messages yet(!)
-              .filter((m) => m.role !== "function"),
-          },
-        }),
-      });
-    }
-
     // If negative feedback, make convo & all identical past convos not fresh
     if (!requestData.feedback_positive) {
       // Get messages in this convo
