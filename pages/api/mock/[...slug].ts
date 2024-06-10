@@ -307,22 +307,13 @@ export async function getMockedProperties(
     isArray,
   );
 
-  const nTokens = tokenizer.encodeChat(
-    messages as ChatMessage[],
-    "gpt-3.5-turbo",
-  ).length;
-
   const openAiResponse = await exponentialRetryWrapper(
     getLLMResponse,
     // Output tokens count towards your total token count
     [
       messages,
       { max_tokens: 600 },
-      getSecondaryModel(
-        orgInfo?.model ?? nTokens < 4096 - 600
-          ? "gpt-3.5-turbo-0613"
-          : "gpt-3.5-turbo-16k-0613",
-      ),
+      getSecondaryModel(orgInfo?.model ?? "gpt-3.5-turbo-0125"),
     ],
     3,
   );

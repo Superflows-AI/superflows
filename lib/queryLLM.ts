@@ -362,7 +362,7 @@ export function getSecondaryModel(mainModel: string): string {
     return mainModel;
   } else {
     // Default for fine-tuned models
-    return "gpt-3.5-turbo-0613";
+    return "gpt-3.5-turbo-0125";
   }
 }
 
