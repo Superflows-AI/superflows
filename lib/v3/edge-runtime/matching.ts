@@ -504,10 +504,10 @@ async function executeMessages(
         }),
       });
       // Stream code to frontend for debugging purposes
-      streamInfo({
-        role: "debug",
-        content: `Executing code:\n\`\`\`\n${executableCode}\n\`\`\``,
-      });
+      // streamInfo({
+      //   role: "debug",
+      //   content: `Executing code:\n\`\`\`\n${executableCode}\n\`\`\``,
+      // });
       if (res.error) {
         streamInfo({
           role: "function",
@@ -521,9 +521,11 @@ async function executeMessages(
       console.log(
         "Returned data",
         returnedData
-          ? returnedData.map((m) =>
-              JSON.stringify(m, undefined, 2).slice(0, 100),
-            )
+          ? "[" +
+              returnedData
+                .map((m) => JSON.stringify(m, undefined, 2).slice(0, 100))
+                .join(",\n") +
+              "]"
           : null,
       );
       const codeOk = checkCodeExecutionOutput(returnedData);
