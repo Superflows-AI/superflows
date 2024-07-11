@@ -2,21 +2,21 @@ import TranscriptSearchSidebar, {
   ConversationSidebarItem,
   getConversations,
   PAGESIZE,
-} from "../../components/transcripts/transcriptSearchSidebar";
-import Headers from "../../components/headers";
+} from "../components/transcripts/transcriptSearchSidebar";
+import Headers from "../components/headers";
 import React, { useEffect, useRef, useState } from "react";
-import { Navbar } from "../../components/navbar";
+import { Navbar } from "../components/navbar";
 import { ArrowLeftIcon, ShareIcon } from "@heroicons/react/24/outline";
 import { HandThumbDownIcon, HandThumbUpIcon } from "@heroicons/react/24/solid";
-import { pageGetServerSideProps } from "../../components/getServerSideProps";
+import { pageGetServerSideProps } from "../components/getServerSideProps";
 import { SuperflowsChatItem } from "@superflows/chat-ui-react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { Database } from "../../lib/database.types";
-import { DBChatMessage } from "../../lib/types";
-import { useProfile } from "../../components/contextManagers/profile";
-import { classNames } from "../../lib/utils";
-import Toggle from "../../components/toggle";
-import { dataAnalysisActionName } from "../../lib/v2/builtinActions";
+import { Database } from "../lib/database.types";
+import { DBChatMessage } from "../lib/types";
+import { useProfile } from "../components/contextManagers/profile";
+import { classNames } from "../lib/utils";
+import Toggle from "../components/toggle";
+import { dataAnalysisActionName } from "../lib/v2/builtinActions";
 import { GetServerSidePropsContext } from "next";
 import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/router";
@@ -84,7 +84,7 @@ export default function TranscriptPage(props: TranscriptPageProps) {
   return (
     <div className="min-h-screen bg-gray-800">
       <Headers />
-      <Navbar current={"analytics"} />
+      <Navbar current={"Transcripts"} />
       <div className={"flex flex-row w-screen overflow-x-hidden"}>
         <TranscriptSearchSidebar
           {...props}
