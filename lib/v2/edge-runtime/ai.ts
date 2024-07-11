@@ -86,7 +86,7 @@ const completionOptions: ChatGPTParams = {
   temperature: 0.2,
 };
 
-const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
+const FASTMODEL = "gpt-4o";
 
 export function hideLongGraphOutputs(
   chatGptPrompt: ChatGPTMessage[],
