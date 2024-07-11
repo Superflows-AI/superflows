@@ -24,6 +24,7 @@ const navigation = [
   { name: "AI", href: "/ai-settings" },
   { name: "Project", href: "/project" },
   { name: "Transcripts", href: "/analytics" },
+  { name: "Approval", href: "/approval" },
   { name: "Usage", href: "/usage" },
   { name: "Chat to Docs", href: "/chat-to-docs" },
 ];

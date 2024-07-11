@@ -150,7 +150,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-800">
-      <Navbar current={""} />
+      <Navbar current={"Approval"} />
       <AddQuestionModal
         groupId={addActionGroupId}
         setGroupId={setAddActionGroupId}
