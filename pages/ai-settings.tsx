@@ -17,6 +17,24 @@ export default function App() {
   );
 }
 
+const versions: SelectBoxOption[] = [
+  {
+    id: "V3",
+    name: "V3",
+    description: "Uses pre-approved answers. Rejects if not matched.",
+  },
+  {
+    id: "V2",
+    name: "V2",
+    description: "Generates code in real time.",
+  },
+  {
+    id: "V1",
+    name: "V1",
+    description: "Like V2, but typically slower and more error-prone.",
+  },
+];
+
 let allLLMsBase: SelectBoxOption[] = [
   {
     id: null,
@@ -123,6 +141,9 @@ function Dashboard() {
   const [llm, setLlm] = React.useState<null | string>(
     profile?.organizations?.model ?? null,
   );
+  const [sfVersion, setSfVersion] = React.useState<"V1" | "V2" | "V3" | null>(
+    null,
+  );
   const [loaded, setLoaded] = React.useState<boolean>(false);
   useEffect(() => {
     if (profile && !loaded) {
@@ -130,6 +151,13 @@ function Dashboard() {
       setLlm(profile!.organizations!.model);
       setLlmLanguage(profile!.organizations!.language);
       setChatInstructions(profile!.organizations!.chatbot_instructions);
+      setSfVersion(
+        profile?.organizations?.yond_cassius
+          ? "V3"
+          : profile?.organizations?.bertie_enabled
+          ? "V2"
+          : "V1",
+      );
     }
   }, [profile]);
 
@@ -170,53 +198,40 @@ function Dashboard() {
           <h1 className="text-xl text-gray-100">Language Model Settings</h1>
           <div className="w-full h-px mt-6 mb-4 bg-gray-700" />
           <div className="grid grid-cols-4 gap-y-12 mt-4">
-            <div className="col-start-1 flex flex-col place-items-start pr-4">
-              <h2 className="text-lg text-gray-200">Language Model</h2>
-              <p className="text-gray-400 text-sm">
-                This determines which language model is used by your project.
-                Typically there&apos;s a tradeoff between speed and accuracy.
-              </p>
-            </div>
-            <div className="mt-4 col-start-3 col-span-2">
-              <div className="flex flex-col">
-                <SelectBox
-                  options={allLLMs}
-                  theme={"dark"}
-                  selected={llm}
-                  setSelected={async (requestMethod) => {
-                    setLlm(requestMethod);
-                    const { error } = await supabase
-                      .from("organizations")
-                      .update({
-                        model: requestMethod,
-                      })
-                      .eq("id", profile?.organizations?.id!);
-                    if (error) throw error;
-                    await refreshProfile();
-                  }}
-                  size={"base"}
-                />
-                <p className="mt-3 text-sm w-full text-center text-gray-500">
-                  To self-host the{" "}
-                  <a
-                    href="https://huggingface.co/Superflows/Superflows-1"
-                    className="text-blue-500 hover:underline visited:text-pink-500"
-                  >
-                    our open source fine-tuned model
-                  </a>{" "}
-                  (based on Mistral 7B),{" "}
-                  <a
-                    href={
-                      "mailto:henry@superflows.ai?subject=Self-hosting+OS+Model:+Superflows&body=Hi+Henry%2C%0A%0AI+work+at+COMPANY+as+ROLE.%0A%0AWe%27d+specifically+like+to+use+the+Open+Source+model+because+REASON.%0A%0AAll+the+best%2C%0AYOUR+NAME+%3A%29"
-                    }
-                    className="text-blue-500 hover:underline visited:text-pink-500"
-                  >
-                    reach out to us
-                  </a>
-                  .
-                </p>
-              </div>
-            </div>
+            {!profile?.organizations?.bertie_enabled &&
+              !profile?.organizations?.yond_cassius && (
+                <>
+                  <div className="col-start-1 flex flex-col place-items-start pr-4">
+                    <h2 className="text-lg text-gray-200">Language Model</h2>
+                    <p className="text-gray-400 text-sm">
+                      This determines which language model is used by your
+                      project. Typically there&apos;s a tradeoff between speed
+                      and accuracy.
+                    </p>
+                  </div>
+                  <div className="mt-4 col-start-3 col-span-2">
+                    <div className="flex flex-col">
+                      <SelectBox
+                        options={allLLMs}
+                        theme={"dark"}
+                        selected={llm}
+                        setSelected={async (requestMethod) => {
+                          setLlm(requestMethod);
+                          const { error } = await supabase
+                            .from("organizations")
+                            .update({
+                              model: requestMethod,
+                            })
+                            .eq("id", profile?.organizations?.id!);
+                          if (error) throw error;
+                          await refreshProfile();
+                        }}
+                        size={"base"}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             <div className="col-start-1 flex flex-col place-items-start pr-4">
               <h2 className="text-lg text-gray-200">Language Used</h2>
               <p className="text-gray-400 text-sm">
@@ -271,6 +286,42 @@ function Dashboard() {
               }}
               minHeight={80}
             />
+            <div className="col-start-1 flex flex-col place-items-start pr-4">
+              <h2 className="text-lg text-gray-200">Superflows Version</h2>
+              <p className="text-gray-400 text-sm">
+                V2 will attempt to answer any user question. It generates code
+                in real time.
+                <br />
+                V3 relies on pre-approved answers and will reject the user
+                question if it doesn&apos;t match.
+              </p>
+            </div>
+            <div className="mt-4 col-start-3 col-span-2">
+              <div className="flex flex-col">
+                <SelectBox
+                  options={versions}
+                  theme={"dark"}
+                  selected={sfVersion}
+                  setSelected={async (requestMethod) => {
+                    // @ts-ignore
+                    setSfVersion(requestMethod);
+                    const update =
+                      requestMethod === "V3"
+                        ? { yond_cassius: true }
+                        : requestMethod === "V2"
+                        ? { bertie_enabled: true, yond_cassius: false }
+                        : { bertie_enabled: false, yond_cassius: false };
+                    const { error } = await supabase
+                      .from("organizations")
+                      .update(update)
+                      .eq("id", profile?.organizations?.id!);
+                    if (error) throw error;
+                    await refreshProfile();
+                  }}
+                  size={"base"}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

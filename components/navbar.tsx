@@ -10,7 +10,7 @@ import {
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { classNames } from "../lib/utils";
 import { useProfile } from "./contextManagers/profile";
 import Flyout from "./flyout";
@@ -24,7 +24,6 @@ const navigation = [
   { name: "AI", href: "/ai-settings" },
   { name: "Project", href: "/project" },
   { name: "Transcripts", href: "/analytics" },
-  { name: "Approval", href: "/approval" },
   { name: "Usage", href: "/usage" },
   { name: "Chat to Docs", href: "/chat-to-docs" },
 ];
@@ -53,6 +52,18 @@ export function Navbar(props: { current: string }) {
   const supabase = useSupabaseClient();
   const { profile, refreshProfile } = useProfile();
   const router = useRouter();
+  useEffect(() => {
+    if (
+      profile?.organizations?.yond_cassius &&
+      // Don't add it twice!
+      !navigation.some((item) => item.name === "Approval")
+    ) {
+      navigation.splice(4, 0, {
+        name: "Approval",
+        href: "/approval",
+      });
+    }
+  }, [profile]);
 
   return (
     <>
