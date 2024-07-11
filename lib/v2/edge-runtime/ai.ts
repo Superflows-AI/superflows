@@ -86,8 +86,6 @@ const completionOptions: ChatGPTParams = {
   temperature: 0.2,
 };
 
-const FASTMODEL = "gpt-4o";
-
 export function hideLongGraphOutputs(
   chatGptPrompt: ChatGPTMessage[],
   fnNames?: string[],
@@ -276,7 +274,7 @@ export async function Bertie( // Bertie will eat you for breakfast
       reqData.user_api_key,
     );
     chatHistory = chatHistory.concat(outMessages);
-    model = FASTMODEL;
+    model = EXPLANATION_MODEL;
     console.log(
       "\n\nNum of non system messages:",
       chatHistory.length,
@@ -309,10 +307,7 @@ export async function Bertie( // Bertie will eat you for breakfast
     );
 
     // If over context limit, remove oldest function calls
-    chatGptPrompt = removeOldestFunctionCalls(
-      [...chatGptPrompt],
-      model === "gpt-4-0613" ? "4" : "3",
-    );
+    chatGptPrompt = removeOldestFunctionCalls([...chatGptPrompt], "3");
 
     console.log(
       "Plot explanation prompt:\n",
@@ -329,7 +324,7 @@ export async function Bertie( // Bertie will eat you for breakfast
     } else {
       // If still over the context limit tell the user to remove actions
       const tokenCount = getTokenCount(chatGptPrompt);
-      const maxTokens = model.includes("gpt-3.5") ? 4096 : 8192;
+      const maxTokens = 8192;
 
       if (tokenCount >= maxTokens - MAX_TOKENS_OUT) {
         console.error(
