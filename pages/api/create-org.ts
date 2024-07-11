@@ -1,16 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../lib/database.types";
-import { z } from "zod";
 import { generateApiKey } from "../../lib/apiKey";
 import { v4 as uuidv4 } from "uuid";
-import {
-  getSessionFromCookie,
-  isValidBody,
-} from "../../lib/edge-runtime/utils";
+import { getSessionFromCookie } from "../../lib/edge-runtime/utils";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
-import { createMiddlewareSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 if (process.env.SERVICE_LEVEL_KEY_SUPABASE === undefined) {
   throw new Error("SERVICE_LEVEL_KEY_SUPABASE is not defined!");
@@ -98,6 +93,7 @@ export default async function handler(req: NextRequest) {
       description: "",
       join_link_id: uuidv4(),
       model: process.env.NEXT_PUBLIC_FINETUNED_GPT_DEFAULT ?? "gpt-4-0613",
+      bertie_enabled: true, // Set to v2 by default
     })
     .select();
   if (error) throw new Error(error.message);
