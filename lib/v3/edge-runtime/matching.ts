@@ -589,9 +589,7 @@ async function executeMessages(
         let completeOutput = await streamWithEarlyTermination(
           prompt,
           explanationParams,
-          route === "DOCS"
-            ? "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY"
-            : EXPLANATION_MODEL,
+          route === "DOCS" ? "gpt-4o" : EXPLANATION_MODEL,
           () => false,
           (rawOutput: string) => {
             streamInfo({

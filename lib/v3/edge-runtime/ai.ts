@@ -169,7 +169,7 @@ export async function Cassius(
         ),
         actions,
         org,
-        "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY",
+        "gpt-4o",
       );
       filteringMessage = await addNewMessageToDB(
         `<thinking>\n${filterOutput.thoughts.join(

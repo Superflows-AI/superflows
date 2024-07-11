@@ -36,7 +36,7 @@ const routingModel = process.env.ROUTING_MODEL;
 if (!process.env.IS_USER_REQUEST_POSSIBLE_MODEL) {
   throw new Error("IS_USER_REQUEST_POSSIBLE_MODEL env var is not defined");
 }
-const FASTMODEL = "ft:gpt-3.5-turbo-0613:superflows:general-2:81WtjDqY";
+const FASTMODEL = "gpt-4o";
 
 export type Route = "DOCS" | "DIRECT" | "CODE";
 
